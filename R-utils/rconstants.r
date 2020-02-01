@@ -42,6 +42,7 @@ t00       <<- 273.15            # 0 degC                                       [
 rmol      <<- 8.314510          # Molar gas constant                           [   J/mol/K]
 volmol    <<- 0.022710980       # Molar volume at STP                          [        m3]
 volmoll   <<- volmol*1.e3       # Molar volume at STP                          [         L]
+clight    <<- 299792458         # Speed of light                               [       m/s]
 #------------------------------------------------------------------------------------------#
 
 
@@ -134,8 +135,8 @@ dkin.visc  <<- 0.007        # Temperature dependency slop                       
 #------------------------------------------------------------------------------------------#
 rdry    <<- rmol/mmdry       # Gas constant for dry air (Ra)                    [   J/kg/K]
 rdryi   <<- mmdry/rmol       # 1./Gas constant for dry air (Ra)                 [   kg K/J]
-cpdry   <<- 1004.            # Specific heat at constant pressure               [   J/kg/K]
-cvdry   <<- 717.             # Specific heat at constant volume                 [   J/kg/K]
+cpdry   <<- 3.5 * rdry       # Specific heat at constant pressure               [   J/kg/K]
+cvdry   <<- 2.5 * rdry       # Specific heat at constant volume                 [   J/kg/K]
 cpog    <<- cpdry /grav      # cp/g                                             [      m/K]
 rocp    <<- rdry / cpdry     # Ra/cp                                            [     ----]
 cpor    <<- cpdry / rdry     # Cp/Ra                                            [     ----]
@@ -330,7 +331,6 @@ lnexp.max <<-  38.
 #------------------------------------------------------------------------------------------#
 
 
-
 #------------------------------------------------------------------------------------------#
 #     These are the just default huge and tiny numbers that are not the actual huge or     #
 # tiny values from Fortran intrinsic functions, so if you do any numerical operations you  #
@@ -338,4 +338,24 @@ lnexp.max <<-  38.
 #------------------------------------------------------------------------------------------#
 huge.num  <<- 1.e+19
 tiny.num  <<- 1.e-19
+#------------------------------------------------------------------------------------------#
+
+
+
+#------------------------------------------------------------------------------------------#
+#     These are useful to test numbers with a safe margin.                                 #
+#------------------------------------------------------------------------------------------#
+almost.zero <<- sqrt(.Machine$double.eps)
+almost.one  <<- 1.-almost.zero
+#------------------------------------------------------------------------------------------#
+
+
+
+#------------------------------------------------------------------------------------------#
+#     Default NA for chron objects.                                                        #
+#------------------------------------------------------------------------------------------#
+NA_dates_   <<- chron(dates=NA)
+NA_times_   <<- chron(times=NA)
+NA_chron_   <<- chron(dates=NA,times=NA)
+NA_logical_ <<- as.logical(NA)
 #------------------------------------------------------------------------------------------#

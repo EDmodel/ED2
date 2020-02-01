@@ -15,7 +15,6 @@ module ed_mem_alloc
                                      , n_dist_types            & ! intent(in)
                                      , n_dbh                   & ! intent(in)
                                      , maxgrds                 ! ! intent(in)
-      use ed_mem_grid_dim_defs, only : define_grid_dim_pointer ! ! subroutine
       use ed_state_vars       , only : gdpy                    & ! intent(in)
                                      , edgrid_g                & ! intent(out)
                                      , allocate_edglobals      & ! subroutine

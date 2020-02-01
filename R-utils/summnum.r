@@ -11,7 +11,7 @@
 #    - finite.only -- Use finite values only?                                              #
 #    - neverlog    -- Variable names that should never be log (partial match is fine too). #
 #------------------------------------------------------------------------------------------#
-summnum <<- function(x,byrow=FALSE,finite.only=TRUE,neverlog=NULL){
+summnum <<- function(x,byrow=FALSE,finite.only=TRUE,neverlog=NULL,is.debug=FALSE){
    #----- In case x is matrix, turn it into a data frame. ---------------------------------#
    if (is.matrix(x)){
       if (byrow) x = t(x)
@@ -25,7 +25,25 @@ summnum <<- function(x,byrow=FALSE,finite.only=TRUE,neverlog=NULL){
 
 
    #----- Apply the summary function. -----------------------------------------------------#
-   ans = sapply(X=x,FUN=summnum.int,finite.only=finite.only)
+   if (is.debug){
+      ans = NULL
+      for (a in seq_along(x)){
+         nmnow   = names(x)[[a]]
+         ans.now = try(summnum.int(x=x[[a]],finite.only=finite.only),silent=TRUE)
+         if ("try-error" %in% is(ans.now)){
+            cat0("Problems with summnum.int.")
+            cat0("Variable: ",nmnow,".")
+            browser()
+         }else if (is.null(ans)){
+            ans          = data.frame(x=ans.now)
+            names(ans)   = nmnow
+         }else{
+            ans[[nmnow]] = ans.now
+         }#end if ("try-error" %in% is(ans.now))
+      }#end for (a in seq_along(x))
+   }else{
+      ans = sapply(X=x,FUN=summnum.int,finite.only=finite.only)
+   }#end if
    ans = data.frame(t(ans),stringsAsFactors=FALSE)
    #---------------------------------------------------------------------------------------#
 
@@ -54,9 +72,37 @@ summnum <<- function(x,byrow=FALSE,finite.only=TRUE,neverlog=NULL){
 
 
       #------ Third, check that the log-normal distribution is better. --------------------#
-      lnlike            = sapply(X=x, FUN=lnlike.comp)
+      if (is.debug){
+         lnlike = NULL
+         for (a in seq_along(x)){
+            nmnow   = names(x)[[a]]
+            ans.now = try(c(unlist(lnlike.comp(x=x[[a]]))),silent=TRUE)
+            if ("try-error" %in% is(ans.now)){
+               cat0("Problems with lnlike.comp.")
+               cat0("Variable: ",nmnow,".")
+               browser()
+            }else{
+               lnlike          = rbind(lnlike,ans.now)
+            }#end if ("try-error" %in% is(ans.now))
+         }#end for (a in seq_along(x))
+         rownames(lnlike) = names(x)
+      }else{
+         lnlike = sapply(X=x, FUN=lnlike.comp)
+      }#end if (is.debug)
       lnlike            = data.frame(t(lnlike),stringsAsFactors=FALSE)
-      lognorm.is.better = signif(lnlike$lnorm,3) %>=% signif(lnlike$norm,3)
+      ln.lnorm          = with( lnlike
+                              , ifelse( test = is.finite(lnorm)
+                                      , yes  = signif(lnorm,3)
+                                      , no   = NA_real_
+                                      )#end ifelse
+                              )#end with
+      ln.norm           = with( lnlike
+                              , ifelse( test = is.finite(norm)
+                                      , yes  = signif(norm,3)
+                                      , no   = NA_real_
+                                      )#end ifelse
+                              )#end with
+      lognorm.is.better = ln.lnorm %>=% ln.norm
       #------------------------------------------------------------------------------------#
 
 
@@ -100,9 +146,9 @@ summnum.int <<- function(x,finite.only){
    if ("try-error" %in% is(wcm.2)){wcm.2 = NA}else if (is.null(wcm.2)){wcm.2 = NA}
    if ("try-error" %in% is(wcm.1)){wcm.1 = NA}else if (is.null(wcm.1)){wcm.1 = NA}
 
-   if (! all(c(wcm.1,wcm.2,wcm.3) %==% c("lapply","sapply","summnum"))){
-      stop(" Function summnum.int is internal, and must be called through summnum","\n")
-   }#end if
+   #if (! all(c(wcm.1,wcm.2,wcm.3) %==% c("lapply","sapply","summnum"))){
+   #   stop(" Function summnum.int is internal, and must be called through summnum","\n")
+   #}#end if
    #---------------------------------------------------------------------------------------#
 
 
@@ -114,7 +160,7 @@ summnum.int <<- function(x,finite.only){
 
    #----- Make sure x is a simple vector. -------------------------------------------------#
    x  = unlist(c(x))
-   if (finite.only) x[! is.finite(x)] = NA
+   if (finite.only) x[! is.finite(x)] = NA_real_
    nx = length(x)
    #---------------------------------------------------------------------------------------#
 
@@ -139,19 +185,19 @@ summnum.int <<- function(x,finite.only){
              , ntot   = nx
              )#end c
    }else{
-      ans = c( min    = NA
-             , q025   = NA
-             , q100   = NA
-             , q250   = NA
-             , median = NA
-             , q750   = NA
-             , q900   = NA
-             , q975   = NA
-             , max    = NA
-             , mean   = NA
-             , sdev   = NA
-             , skew   = NA
-             , kurt   = NA
+      ans = c( min    = NA_real_
+             , q025   = NA_real_
+             , q100   = NA_real_
+             , q250   = NA_real_
+             , median = NA_real_
+             , q750   = NA_real_
+             , q900   = NA_real_
+             , q975   = NA_real_
+             , max    = NA_real_
+             , mean   = NA_real_
+             , sdev   = NA_real_
+             , skew   = NA_real_
+             , kurt   = NA_real_
              , navl   = nx
              , npos   = nx
              , ntot   = nx
@@ -165,7 +211,7 @@ summnum.int <<- function(x,finite.only){
 
    #----- Make sure the moments are finite. -----------------------------------------------#
    mfin = c("mean","sdev","skew","kurt")
-   ans[mfin] = ifelse(is.finite(ans[mfin]),ans[mfin],NA)
+   ans[mfin] = ifelse(test=is.finite(ans[mfin]),yes=ans[mfin],no=NA_real_)
    #---------------------------------------------------------------------------------------#
 
 
@@ -187,7 +233,7 @@ summnum.int <<- function(x,finite.only){
 #     This function returns TRUE if the log-normal distribution has better support than    #
 # the normal distribution.                                                                 #
 #------------------------------------------------------------------------------------------#
-lnlike.comp <<- function(x){
+lnlike.comp <<- function(x,xlab="nothing"){
    #----- Make sure this function has been called by summnum.  Otherwise, stop. -----------#
    patt  = "^([A-Za-z0-9]+)(\\({1})(.*)(\\){1})$"
    repl  = "\\1"
@@ -198,9 +244,9 @@ lnlike.comp <<- function(x){
    if ("try-error" %in% is(wcm.2)){wcm.2 = NA}else if (is.null(wcm.2)){wcm.2 = NA}
    if ("try-error" %in% is(wcm.1)){wcm.1 = NA}else if (is.null(wcm.1)){wcm.1 = NA}
 
-   if (! all(c(wcm.1,wcm.2,wcm.3) %==% c("lapply","sapply","summnum"))){
-      stop(" Function sw.pvalue is internal and must be called through summnum","\n")
-   }#end if
+   #if (! all(c(wcm.1,wcm.2,wcm.3) %==% c("lapply","sapply","summnum"))){
+   #   stop(" Function sw.pvalue is internal and must be called through summnum","\n")
+   #}#end if
    #---------------------------------------------------------------------------------------#
 
 
@@ -211,8 +257,8 @@ lnlike.comp <<- function(x){
 
 
    #----- Make sure x is a simple vector.  Keep only the positive terms. ------------------#
-   x   = unlist(c(x))
-   lnx = ifelse(x %>% 0,log(x),NA)
+   x   = as.numeric(unlist(c(x)))
+   lnx = ifelse(test=x %>% 0,yes=log(x),no=NA_real_)
    sel = is.finite(lnx)
    x   = x  [sel]
    lnx = lnx[sel]
@@ -225,8 +271,8 @@ lnlike.comp <<- function(x){
       lnlike.lnorm  = fitdistr(x=x,densfun="lognormal")$loglik
    }else{
       #----- Not enough points, don't use log. --------------------------------------------#
-      lnlike.norm   = NA
-      lnlike.lnorm  = NA
+      lnlike.norm   = NA_real_
+      lnlike.lnorm  = NA_real_
       #------------------------------------------------------------------------------------#
    }#end if
    #---------------------------------------------------------------------------------------#

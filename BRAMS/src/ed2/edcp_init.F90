@@ -175,7 +175,8 @@ subroutine copy_in_bramsmpi(master_num_b,mchnum_b,mynum_b,nmachs_b,machs_b,ipara
                           , recvnum    & ! intent(out)
                           , sendnum    ! ! intent(out)
    use ed_para_coms, only : iparallel  & ! intent(out)
-                          , mainnum    ! ! intent(out)
+                          , mainnum    & ! intent(out)
+                          , nthreads   ! ! intent(out)
    use ed_max_dims , only : maxgrds    ! ! intent(out)
    use grid_coms   , only : ngrids     & ! intent(out)
                           , nnxp       & ! intent(out)
@@ -205,6 +206,10 @@ subroutine copy_in_bramsmpi(master_num_b,mchnum_b,mynum_b,nmachs_b,machs_b,ipara
    nmachs          = nmachs_b
    machs(1:nmachs) = machs_b(1:nmachs)
    nnodetot        = nmachs_b
+
+   !----- Assume single thread. -----------------------------------------------------------!
+   ntrheads        = 1
+   !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
    !     Define the number of the nodes that will send information about when it is safe   !

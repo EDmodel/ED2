@@ -1,14 +1,20 @@
-function plot_laimaps(usepft,lai_gt,lai_gc,lon_gc,...
-    lat_gc,npoly,laimap_img,visible,grid_name)
+function plot_laimaps(usepft,lai_gt,lai_gc,lon_gc,lat_gc,npoly,laimap_pref...
+                     ,status_gt,status_gc,visible,grid_name)
 
 global fasz;
 global pftname;
+global pftshort;
+global actcmap;
+global diffcmap;
+global map_colour;
+
 load rywcbmap.mat;
 load wygmap.mat;
 
 [lonpcrns,latpcrns] = approx_patch_4corners(double(lat_gc),double(lon_gc));
 
 % Match the validation grid to the model grid
+
 
 nupft = sum(usepft);
 
@@ -52,52 +58,52 @@ maxlat = maxlat + 0.15*dlat;
 ax = axes;
 set(ax,'Position',[0 0.95 1 0.05]);
 axis off;
-text(0.5,0.45,sprintf('LAI - %s',grid_name),...
-    'FontSize',fasz,'HorizontalAlignment','center');
+text(0.5,0.45,sprintf('LAI - %s.  Test %s;  Main: %s.',grid_name,status_gt,status_gc) ...
+    ,'FontSize',fasz,'HorizontalAlignment','center');
 
 
 % LEFT - Total LAI
 
 patch_lai_dgt = zeros(4,npoly);
-patch_lai_gc = zeros(4,npoly);
+patch_lai_gc  = zeros(4,npoly);
+patch_lai_gt  = zeros(4,npoly);
 for ipy=1:npoly
     tot_lai_gc = sum(lai_gc(ipy,:));
     tot_lai_gt = sum(lai_gt(ipy,:));
     if (tot_lai_gc == 0. && tot_lai_gt == 0.)
        patch_lai_dgt(:,ipy) = 0.0;
     else
-       patch_lai_dgt(:,ipy) = 200.*(sum(lai_gt(ipy,:))-sum(lai_gc(ipy,:)))...
-                           ./ (tot_lai_gc + tot_lai_gt);
+       patch_lai_dgt(:,ipy) = tot_lai_gt-tot_lai_gc;
     end
     patch_lai_gc(:,ipy) = sum(lai_gc(ipy,:));
+    patch_lai_gt(:,ipy) = sum(lai_gt(ipy,:));
 end
-minc = 0.0;
-maxc = max(max(patch_lai_gc));
+mint = 0.0;
+maxt = max(max(patch_lai_gt));
+
 
 ax1 = axes;
 set(ax1,'Position',[bx by+dy+my dx dy],'FontSize',fasz);
 hold on;
-patch(lonpcrns,latpcrns,patch_lai_gc);
-colormap(wygmap);
+patch(lonpcrns,latpcrns,patch_lai_gt);
+colormap(actcmap);
 grid on; box on;
-caxis([minc maxc]);
+caxis([mint maxt]);
 shading flat;
-ylabel('Main','Fontsize',12);
+ylabel('Test','Fontsize',12);
 set(gca,'XtickLabel',{});
-cobar=colorbar('South','Position',[bx+0.05*dx by+dy+0.02 0.9*dx 0.03],'FontSize',fasz);
-set(cobar,'XTick',[minc,maxc]);
+cobar=colorbar('South','Position',[bx+0.05*dx by+dy+0.04 0.9*dx 0.02],'FontSize',fasz);
+%set(cobar,'XTick',[mint,maxt]);
 for b=1:nbnds
-plot(geodata(b).lon,geodata(b).lat,'Color',[0.9 0.5 0.5],'LineWidth',1.0);
+plot(geodata(b).lon,geodata(b).lat,'Color',map_colour,'LineWidth',1.0);
 end
 hold off;
 xlim([minlon maxlon]);
 ylim([minlat maxlat]);
-title('Total LAI [m2/m2]','FontSize',fasz);
-freezeColors;
-cbfreeze;
+title('Total LAI [m^2/m^2]','FontSize',fasz);
 
 
-maxdc = max([1,abs(max(max(patch_lai_dgt)))]);
+maxdc = max([1,max(max(abs(patch_lai_dgt)))]);
 mindc = -maxdc;
 
 
@@ -105,20 +111,18 @@ ax2 = axes;
 set(ax2,'Position',[bx by dx dy],'FontSize',fasz);
 hold on;
 patch(lonpcrns,latpcrns,patch_lai_dgt);
-colormap(rywcbmap);
+colormap(gca,diffcmap);
 grid on; box on;
 caxis([mindc maxdc]);
 shading flat;
-colorbar('South','Position',[bx+0.05*dx 0.05 0.9*dx 0.03],'FontSize',fasz)
+colorbar('South','Position',[bx+0.05*dx 0.07 0.9*dx 0.02],'FontSize',fasz)
 for b=1:nbnds
-plot(geodata(b).lon,geodata(b).lat,'Color',[0.9 0.5 0.5],'LineWidth',1.0);
+plot(geodata(b).lon,geodata(b).lat,'Color',map_colour,'LineWidth',1.0);
 end
 hold off;
 xlim([minlon maxlon])
 ylim([minlat maxlat]);
-ylabel('200(Test-Main)/(Test+Main)','FontSize',fasz);
-freezeColors;
-cbfreeze;
+ylabel('Test-Main','FontSize',fasz);
 
 ipfts=find(usepft>0);
 
@@ -127,48 +131,46 @@ ipfts=find(usepft>0);
 
 for ip=1:numel(ipfts)
 
-ipft=ipfts(ip);    
+ipft=ipfts(ip);
 
 patch_lai_dgt = zeros(4,npoly);
-patch_lai_gc = zeros(4,npoly);
+patch_lai_gc  = zeros(4,npoly);
+patch_lai_gt  = zeros(4,npoly);
 
 for ipy=1:npoly
     if (lai_gc(ipy,ipft) == 0. && lai_gt(ipy,ipft) == 0.)
        patch_lai_dgt(:,ipy) = 0.;
     else
-       patch_lai_dgt(:,ipy) = 200. * (lai_gt(ipy,ipft)-lai_gc(ipy,ipft))...
-                           ./ (lai_gt(ipy,ipft)+lai_gc(ipy,ipft));
+       patch_lai_dgt(:,ipy) = lai_gt(ipy,ipft)-lai_gc(ipy,ipft);
     end
-%    patch_lai_dgt(:,ipy) = lai_gt(ipy,ipft)-lai_gc(ipy,ipft);
     patch_lai_gc(:,ipy) = lai_gc(ipy,ipft);
+    patch_lai_gt(:,ipy) = lai_gt(ipy,ipft);
 end
-minc = 0.0;
-maxc = max(max(patch_lai_gc));
+mint = 0.0;
+maxt = max(max(patch_lai_gt));
 
 
 ax = axes; %#ok<LAXES>
 set(ax,'Position',[bx+ip*(dx+mx) by+my+dy dx dy],'FontSize',fasz);
 hold on;
-patch(lonpcrns,latpcrns,patch_lai_gc);
-colormap(wygmap);
+patch(lonpcrns,latpcrns,patch_lai_gt);
+colormap(gca,actcmap);
 grid on; box on;
-caxis([minc maxc]);
+caxis([mint maxt]);
 shading flat;
-title(sprintf('%s',pftname{ipft}),'Fontsize',fasz);
-colorbar('South','Position',[bx+ip*(dx+mx)+0.05*dx by+dy+0.02 0.9*dx 0.03],'FontSize',fasz)
+title(pftshort{ipft},'Fontsize',fasz);
+colorbar('South','Position',[bx+ip*(dx+mx)+0.05*dx by+dy+0.04 0.9*dx 0.02],'FontSize',fasz)
 set(gca,'XtickLabel',{});
 set(gca,'YtickLabel',{});
-freezeColors;
-cbfreeze;
 
 for b=1:nbnds
-plot(geodata(b).lon,geodata(b).lat,'Color',[0.9 0.5 0.5],'LineWidth',1.0);
+plot(geodata(b).lon,geodata(b).lat,'Color',map_colour,'LineWidth',1.0);
 end
 hold off;
 xlim([minlon maxlon]);
 ylim([minlat maxlat]);
 
-maxdc = max([1,abs(max(max(patch_lai_dgt)))]);
+maxdc = max([1,max(max(abs(patch_lai_dgt)))]);
 mindc = -maxdc;
 
 %maxdc = max([0.001*maxc  ,max(max(abs(patch_lai_dgt)))]);
@@ -178,20 +180,18 @@ ax = axes; %#ok<LAXES>
 set(ax,'Position',[bx+ip*(dx+mx) by dx dy],'FontSize',fasz);
 hold on;
 patch(lonpcrns,latpcrns,patch_lai_dgt);
-colormap(rywcbmap);
+colormap(gca,diffcmap);
 grid on; box on;
 caxis([mindc maxdc]);
 shading flat;
-colorbar('South','Position',[bx+ip*(dx+mx)+0.05*dx 0.05 0.9*dx 0.03],'FontSize',fasz)
+colorbar('South','Position',[bx+ip*(dx+mx)+0.05*dx 0.07 0.9*dx 0.02],'FontSize',fasz)
 set(gca,'YtickLabel',{});
 for b=1:nbnds
-plot(geodata(b).lon,geodata(b).lat,'Color',[0.9 0.5 0.5],'LineWidth',1.0);
+plot(geodata(b).lon,geodata(b).lat,'Color',map_colour,'LineWidth',1.0);
 end
 hold off;
 xlim([minlon maxlon]);
 ylim([minlat maxlat]);
-freezeColors;
-cbfreeze;
 
 end
 
@@ -202,13 +202,11 @@ oldpaperpos = get(gcf,'PaperPosition');
 set(gcf,'Units','pixels');
 scrpos = get(gcf,'Position');
 newpos = scrpos/100;
-set(gcf,'PaperUnits','inches',...
-'PaperPosition',newpos)
-print('-depsc', laimap_img, '-r200');
+set(gcf,'PaperUnits','inches','PaperPosition',newpos)
+print('-depsc', sprintf('%s.eps',laimap_pref), '-r300');
+print('-dpng', sprintf('%s.png',laimap_pref), '-r300');
 drawnow
-set(gcf,'Units',oldscreenunits,...
-'PaperUnits',oldpaperunits,...
-'PaperPosition',oldpaperpos)
+set(gcf,'Units',oldscreenunits,'PaperUnits',oldpaperunits,'PaperPosition',oldpaperpos)
 
 
 

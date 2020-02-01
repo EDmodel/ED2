@@ -9,12 +9,17 @@ addons:
       - libhdf5-openmpi-dev
 
 before_install:
+    - sudo apt-get clean && sudo apt-get update
+    - sudo apt-get install gcc gfortran libopenmpi-dev
+    - sudo apt-get install hdf5-tools libhdf5-dev
     - which gfortran
     - gfortran --version
     - which gcc
-    - gcc --version
+    - which h5dump
+    - ls /usr/include/hdf5/serial
 
 script:
     - set -e
     - cd ED/build/
+    - ./install.sh -k C -p travisci -g -c
     - ./install.sh -k C -p travisci -g

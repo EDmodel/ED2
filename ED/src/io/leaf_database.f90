@@ -5,10 +5,13 @@ subroutine leaf_database(ofn,nsite,nlandsea,iaction,lat,lon,classout,pctout)
    use hdf5_utils , only : shdf5_open_f  & ! subroutine
                          , shdf5_close_f & ! subroutine
                          , shdf5_irec_f  ! ! subroutine
-   use soil_coms  , only : nslcon        & ! intent(in)
+   use soil_coms  , only : nzg           & ! intent(in)
+                         , slz           & ! intent(in)
+                         , nslcon        & ! intent(in)
                          , isoilcol      & ! intent(in)
                          , ed_nstyp      & ! intent(in)
-                         , ed_nvtyp      ! ! intent(in)
+                         , ed_nvtyp      & ! intent(in)
+                         , ed_nscol      ! ! intent(in)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    character(len=*)                          , intent(in)  :: ofn
@@ -27,7 +30,6 @@ subroutine leaf_database(ofn,nsite,nlandsea,iaction,lat,lon,classout,pctout)
    integer                                                 :: njosh
    integer                                                 :: ifiles
    integer                                                 :: jfiles
-   real                                                    :: offpix
    integer                                                 :: west
    integer                                                 :: south
    !----- Variables for file handling. ----------------------------------------------------!
@@ -57,8 +59,12 @@ subroutine leaf_database(ofn,nsite,nlandsea,iaction,lat,lon,classout,pctout)
    integer        , dimension(4*nlandsea)                  :: cnr_ipoly
    integer        , dimension(:,:)           , allocatable :: class_count
    integer        , dimension(:)             , allocatable :: rankpct
+   logical        , dimension(:)             , allocatable :: shmask
+   real           , dimension(:)             , allocatable :: ed_slz
    real           , dimension(:)             , allocatable :: fraction
    real                                                    :: total_count
+   real                                                    :: zdepth
+   real                                                    :: xyoff
    integer                                                 :: ifile
    integer                                                 :: ifile2
    integer                                                 :: jfile
@@ -83,6 +89,8 @@ subroutine leaf_database(ofn,nsite,nlandsea,iaction,lat,lon,classout,pctout)
    integer                                                 :: ilandsea
    integer                                                 :: dq
    integer                                                 :: ed_nctyp
+   integer                                                 :: nsh
+   integer                                                 :: idefault
    !------ External functions. ------------------------------------------------------------!
    integer, external                                       :: find_rank
    !---------------------------------------------------------------------------------------!
@@ -91,13 +99,17 @@ subroutine leaf_database(ofn,nsite,nlandsea,iaction,lat,lon,classout,pctout)
 
 
    !----- Allocate some auxiliary variables and initialise them. --------------------------!
-   ed_nctyp = max(ed_nvtyp,ed_nstyp)
+   ed_nctyp = max(ed_nvtyp,ed_nstyp,ed_nscol,nzg)
    allocate(class_count(0:ed_nctyp,nlandsea))
-   allocate(rankpct(ed_nstyp))
-   allocate(fraction(ed_nstyp))
+   allocate(rankpct(ed_nctyp))
+   allocate(fraction(ed_nctyp))
+   allocate(ed_slz(nzg))
+   allocate(shmask(nzg))
    class_count(:,:) = 0
-   rankpct    (:)   = 0
+   rankpct    (:)   = (/ (i,i=1,ed_nctyp) /)
    fraction   (:)   = 0.
+   ed_slz     (:)   = slz(1:nzg)
+   shmask     (:)   = .false.
    !---------------------------------------------------------------------------------------!
 
 
@@ -125,15 +137,10 @@ subroutine leaf_database(ofn,nsite,nlandsea,iaction,lat,lon,classout,pctout)
    ! number of files in database that span all latitudes and longitudes on Earth.  [This   !
    ! algorithm will change when multiple resolutions of the SRTM data become available.]   !
    !---------------------------------------------------------------------------------------!
-   if (mod(nio,nperdeg) == 2) then
-      offpix = .5
-      niosh = nio - 2
-      njosh = njo - 2
-   else
-      offpix = 0.
-      niosh = nio - 1
-      njosh = njo - 1
-   end if
+   nsh   = mod(nio,nperdeg)
+   niosh = nio - nsh
+   njosh = njo - nsh
+   xyoff = 0.5 * real(nsh - 1) / real(nperdeg)
    !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
@@ -168,7 +175,8 @@ subroutine leaf_database(ofn,nsite,nlandsea,iaction,lat,lon,classout,pctout)
       do ic=2,3
          do jc=2,3
             call get_file_indices(lat(jc,ilandsea),lon(ic,ilandsea),west,south,nperdeg     &
-                                 ,niosh,njosh,io_full,jo_full,io_loc,jo_loc,ifile,jfile)
+                                 ,niosh,njosh,xyoff,io_full,jo_full,io_loc,jo_loc          &
+                                 ,ifile,jfile)
 
             nump(ifile,jfile) = nump(ifile,jfile) + 1
             if(nump(ifile,jfile)>max_per_file) max_per_file = nump(ifile,jfile)
@@ -194,7 +202,8 @@ subroutine leaf_database(ofn,nsite,nlandsea,iaction,lat,lon,classout,pctout)
 
             !----- Get the file indices and the local indices within the file. ------------!
             call get_file_indices(lat(jc,ilandsea),lon(ic,ilandsea),west,south,nperdeg     &
-                                 ,niosh,njosh,io_full,jo_full,io_loc,jo_loc,ifile,jfile)
+                                 ,niosh,njosh,xyoff,io_full,jo_full,io_loc,jo_loc          &
+                                 ,ifile,jfile)
 
             nump(ifile,jfile) = nump(ifile,jfile) + 1
 
@@ -207,25 +216,26 @@ subroutine leaf_database(ofn,nsite,nlandsea,iaction,lat,lon,classout,pctout)
             cnr_j1(ind) = jo_loc
 
             !----- Get the local indices of the other corner. -----------------------------!
-            call get_file_indices(lat(j2,ilandsea),lon(i2,ilandsea),west,south,nperdeg      &
-                                 ,niosh,njosh,io_full,jo_full,io_loc,jo_loc,ifile2,jfile2)
+            call get_file_indices(lat(j2,ilandsea),lon(i2,ilandsea),west,south,nperdeg     &
+                                 ,niosh,njosh,xyoff,io_full,jo_full,io_loc,jo_loc          &
+                                 ,ifile2,jfile2)
 
             !----- This is the local index where you find the second i point. -------------!
             if (ifile2 == ifile) then
                cnr_i2(ind) = io_loc
             else if (ifile2 > ifile) then
-               cnr_i2(ind) = niosh+1
+               cnr_i2(ind) = nio - floor(real(nsh)/2.)
             else
-               cnr_i2(ind) = 2
+               cnr_i2(ind) = 1 + ceiling(real(nsh)/2.)
             end if
 
             !----- This is the local index where you find the second j point. -------------!
             if (jfile2 == jfile) then
                cnr_j2(ind) = jo_loc
             else if (jfile2 > jfile) then
-               cnr_j2(ind) = njosh+1
+               cnr_j2(ind) = njo - floor(real(nsh)/2.)
             else
-               cnr_j2(ind) = 2
+               cnr_j2(ind) = 1 + ceiling(real(nsh)/2.)
             end if
          end do
       end do
@@ -276,11 +286,13 @@ subroutine leaf_database(ofn,nsite,nlandsea,iaction,lat,lon,classout,pctout)
                
                select case (trim(iaction))
                case ('leaf_class')
-                  call shdf5_irec_f(ndims,idims,'oge2',ivara=idato)
+                  call shdf5_irec_f(ndims,idims,'oge2'  ,ivara=idato)
                case ('soil_text')
-                  call shdf5_irec_f(ndims,idims,'fao',ivara=idato)
+                  call shdf5_irec_f(ndims,idims,'fao'   ,ivara=idato)
                case ('soil_col')
                   call shdf5_irec_f(ndims,idims,'colour',ivara=idato)
+               case ('soil_depth')
+                  call shdf5_irec_f(ndims,idims,'depth' ,ivara=idato)
                case default
                   call fatal_error('Incorrect action specified in leaf_database'           &
                                   ,'leaf_database','leaf_database.f90')
@@ -297,6 +309,10 @@ subroutine leaf_database(ofn,nsite,nlandsea,iaction,lat,lon,classout,pctout)
                   idato(:,:) = nslcon
                case ('soil_col')
                   idato(:,:) = isoilcol
+               case ('soil_depth')
+                  !---- Default soil depth is the depth of the bottomost layer. -----------!
+                  idato(:,:) = ceiling(abs(slz(1))*100)
+                  !------------------------------------------------------------------------!
                case default
                   call fatal_error('Incorrect action specified in leaf_database'           &
                                   ,'leaf_database','leaf_database.f90')
@@ -355,7 +371,23 @@ subroutine leaf_database(ofn,nsite,nlandsea,iaction,lat,lon,classout,pctout)
                         class_count(dq,ilandsea) = class_count(dq,ilandsea) + 1
                      end do
                   end do
-
+                     
+               case ('soil_depth')
+                  do j=j1,j2
+                     do i=i1,i2
+                        !------------------------------------------------------------------!
+                        !    Find the shallowest layer that is deeper than the reference,  !
+                        ! but make sure that the model will have at least two valid        !
+                        ! layers (To do: check whether this requirement is still           !
+                        ! necessary.                                                       !
+                        !------------------------------------------------------------------!
+                        zdepth    = -1. * real(idato(i,j)) / 100.
+                        shmask(:) = ed_slz(:) <= zdepth
+                        dq        = min(max(1,maxloc(ed_slz(:),dim=1,mask=shmask)),nzg-1)
+                        class_count(dq,ilandsea) = class_count(dq,ilandsea) + 1
+                        !------------------------------------------------------------------!
+                     end do
+                  end do
                end select
                !---------------------------------------------------------------------------!
             end do
@@ -384,10 +416,26 @@ subroutine leaf_database(ofn,nsite,nlandsea,iaction,lat,lon,classout,pctout)
       end do
       !------------------------------------------------------------------------------------!
 
-   case ('soil_text')
+   case default
       !------------------------------------------------------------------------------------!
-      !     We must determine the abundance of each soil classes so that the output will   !
-      ! be have the commonest soil type as the first, and the rarest as the last.          !
+      !     We must determine the abundance of each soil class (texture, depth, or colour) !
+      ! so that the output will be have the commonest class as the first, and the rarest   !
+      ! as the last.                                                                       !
+      !------------------------------------------------------------------------------------!
+      select case (trim(iaction))
+      case ('soil_text' )
+         ed_nctyp = ed_nstyp
+         idefault = nslcon
+      case ('soil_col'  )
+         ed_nctyp = ed_nscol
+         idefault = isoilcol
+      case ('soil_depth')
+         ed_nctyp = nzg
+         idefault = 1
+      end select
+      !------------------------------------------------------------------------------------!
+
+
       !------------------------------------------------------------------------------------!
       do ilandsea = 1,nlandsea
          !---------------------------------------------------------------------------------!
@@ -395,7 +443,7 @@ subroutine leaf_database(ofn,nsite,nlandsea,iaction,lat,lon,classout,pctout)
          ! that causes the total_count variable to be zero, we assume that only one site   !
          ! can exist, with the user-defined default.                                       !
          !---------------------------------------------------------------------------------!
-         total_count         = real(sum(class_count(1:ed_nstyp,ilandsea)))
+         total_count         = real(sum(class_count(1:ed_nctyp,ilandsea)))
          if (total_count == 0.) then
             pctout(:,ilandsea) = 0.
             pctout(1,ilandsea) = 1.
@@ -403,30 +451,32 @@ subroutine leaf_database(ofn,nsite,nlandsea,iaction,lat,lon,classout,pctout)
             !    Assign the default class as this may be used if soil and land use maps    !
             ! disagree about whether a place is land or water.                             !
             !------------------------------------------------------------------------------!
-            classout(:,ilandsea) = nslcon
+            classout(:,ilandsea) = idefault
             !------------------------------------------------------------------------------!
 
          else
             !------ Normalise the areas. --------------------------------------------------!
-            fraction(1:ed_nstyp) = real(class_count(1:ed_nstyp,ilandsea)) / total_count
+            fraction(1:ed_nctyp) = real(class_count(1:ed_nctyp,ilandsea)) / total_count
             !------------------------------------------------------------------------------!
 
             !------ Rank the sites (1 = commonest, ed_nstyp = rarest). --------------------!
-            call rank_down(ed_nstyp,fraction,rankpct)
+            call rank_down_r(ed_nctyp,fraction,rankpct)
             !------------------------------------------------------------------------------!
 
 
             !------ Fill in sites with the right order. -----------------------------------!
             do irank = 1,nsite
                !----- Itext is the texture type that has rank irank. ----------------------!
-               itext = find_rank(irank,ed_nstyp,rankpct)
+               itext = find_rank(irank,ed_nctyp,rankpct)
                
                classout(irank,ilandsea) = itext
                pctout  (irank,ilandsea) = fraction(itext)
             end do
             !------------------------------------------------------------------------------!
          end if
+         !---------------------------------------------------------------------------------!
       end do
+      !------------------------------------------------------------------------------------!
    end select
    !---------------------------------------------------------------------------------------!
 
@@ -439,6 +489,8 @@ subroutine leaf_database(ofn,nsite,nlandsea,iaction,lat,lon,classout,pctout)
    deallocate(class_count)
    deallocate(rankpct    )
    deallocate(fraction   )
+   deallocate(ed_slz     )
+   deallocate(shmask     )
    !---------------------------------------------------------------------------------------!
   return
 end subroutine leaf_database
@@ -455,8 +507,8 @@ end subroutine leaf_database
 !     This subroutine looks for the indices of a given longitude and latitude within an    !
 ! input file.                                                                              !
 !------------------------------------------------------------------------------------------!
-subroutine get_file_indices(lat,lon,west,south,nper,ni,nj,io_full,jo_full,io_loc,jo_loc    &
-                           ,ifile,jfile)
+subroutine get_file_indices(lat,lon,west,south,nper,ni,nj,xyoff,io_full,jo_full,io_loc     &
+                           ,jo_loc,ifile,jfile)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    real   , intent(in)  :: lat
@@ -466,6 +518,7 @@ subroutine get_file_indices(lat,lon,west,south,nper,ni,nj,io_full,jo_full,io_loc
    integer, intent(in)  :: nper
    integer, intent(in)  :: ni
    integer, intent(in)  :: nj
+   real   , intent(in)  :: xyoff
    integer, intent(out) :: io_full
    integer, intent(out) :: jo_full
    integer, intent(out) :: io_loc
@@ -482,14 +535,14 @@ subroutine get_file_indices(lat,lon,west,south,nper,ni,nj,io_full,jo_full,io_loc
 
 
    !----- Set the lat and lon for file lookup. --------------------------------------------!
-   wlat = max(-89.9999,min(89.9999,lat))
-   wlon = lon
+   wlat = max(-89.9999,min(89.9999,lat - xyoff))
+   wlon = lon - xyoff
    if(wlon >= 180.) wlon = wlon - 360.
    if(wlon < -180.) wlon = wlon + 360.
    wlon = max(-179.9999,min(179.9999,wlon))
    
-   rio_full = (wlon -  west) * real(nper) ! must ignore pixel offset here
-   rjo_full = (wlat - south) * real(nper) ! must ignore pixel offset here
+   rio_full = (wlon -  west) * real(nper)
+   rjo_full = (wlat - south) * real(nper)
    
    io_full = int(rio_full)
    jo_full = int(rjo_full)
@@ -499,7 +552,7 @@ subroutine get_file_indices(lat,lon,west,south,nper,ni,nj,io_full,jo_full,io_loc
    
    io_loc = mod(io_full,ni) + 1
    jo_loc = mod(jo_full,nj) + 1
-   
+
    return
 end subroutine get_file_indices
 !==========================================================================================!

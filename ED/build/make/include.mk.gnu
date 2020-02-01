@@ -206,6 +206,7 @@ USE_MPIWTIME=1
 
 #-----------------  LINUX G95 compiler g95/gcc  ------------------
 CMACH=PC_LINUX1
+FC_TYPE=GNU
 F_COMP=mpif90
 C_COMP=mpicc
 LOADER=mpif90

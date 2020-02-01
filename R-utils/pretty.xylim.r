@@ -36,9 +36,8 @@ pretty.xylim <<- function(u,fracexp=0.00,is.log=FALSE){
 
    #----- Select the data that we consider for the range. ---------------------------------#
    vec.u  = c(u)
-   if (is.log) vec.u[! is.finite(vec.u) | vec.u <= 0] = NA
+   if (is.log) vec.u[! (vec.u %>% 0)] = NA
    ulimit  = range(vec.u,finite=TRUE)
-   dulimit = diff(ulimit)
    #---------------------------------------------------------------------------------------#
 
 
@@ -51,6 +50,7 @@ pretty.xylim <<- function(u,fracexp=0.00,is.log=FALSE){
    #     Expand the axis.                                                                  #
    #---------------------------------------------------------------------------------------#
    if (is.log) ulimit = log(ulimit)
+   dulimit = diff(ulimit)
    if (any(! is.finite(ulimit)) || (ulimit[1] == ulimit[2] && ulimit[1] == 0)){
       ulimit = c(-1,1)
    }else if (ulimit[1] == ulimit[2] ){

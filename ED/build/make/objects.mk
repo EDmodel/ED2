@@ -10,7 +10,6 @@ MAINOBJ = edmain.o
 
 OBJ_MODEL =                        \
 	allometry.o                \
-	an_header.o                \
 	average_utils.o            \
 	bdf2_solver.o              \
 	budget_utils.o             \
@@ -29,16 +28,16 @@ OBJ_MODEL =                        \
 	edio.o                     \
 	ed_1st.o                   \
 	ed_bigleaf_init.o          \
+	ed_cn_utils.o              \
 	ed_driver.o                \
 	ed_filelist.o              \
 	ed_grid.o                  \
 	ed_init.o                  \
 	ed_init_atm.o              \
-	ed_init_full_history.o     \
+	ed_init_history.o          \
 	ed_load_namelist.o         \
 	ed_max_dims.o              \
 	ed_mem_alloc.o             \
-	ed_mem_grid_dim_defs.o     \
 	ed_met_driver.o            \
 	ed_misc_coms.o             \
 	ed_model.o                 \
@@ -61,20 +60,21 @@ OBJ_MODEL =                        \
 	ename_coms.o               \
 	euler_driver.o             \
 	events.o                   \
-	farq_leuning.o             \
 	farq_katul.o               \
+	farq_leuning.o             \
 	fatal_error.o              \
 	fire.o                     \
 	forestry.o                 \
 	fusion_fission_coms.o      \
 	fuse_fiss_utils.o          \
-	patch_pft_size_profile_mod.o  \
+	great_circle.o             \
 	grid_coms.o                \
 	growth_balive.o            \
 	h5_output.o                \
 	hdf5_coms.o                \
 	hdf5_utils.o               \
 	heun_driver.o              \
+	hrzshade_utils.o           \
 	hybrid_driver.o            \
 	hydrology_coms.o           \
 	hydrology_constants.o      \
@@ -90,6 +90,7 @@ OBJ_MODEL =                        \
 	multiple_scatter.o         \
 	numutils.o                 \
 	old_twostream_rad.o        \
+	pft_coms.o                 \
 	phenology_aux.o            \
 	phenology_coms.o           \
 	phenology_driv.o           \
@@ -97,12 +98,12 @@ OBJ_MODEL =                        \
 	photosyn_driv.o            \
 	physiology_coms.o          \
 	plant_hydro.o              \
-	pft_coms.o                 \
 	radiate_driver.o           \
 	radiate_utils.o            \
+	random_utils.o             \
 	reproduction.o             \
 	rk4_coms.o                 \
-    rk4_copy_patch.o           \
+	rk4_copy_patch.o           \
 	rk4_derivs.o               \
 	rk4_driver.o               \
 	rk4_integ_utils.o          \
@@ -115,7 +116,7 @@ OBJ_MODEL =                        \
 	therm_lib.o                \
 	therm_lib8.o               \
 	twostream_rad.o            \
-	update_derived_props.o     \
+	update_derived_utils.o     \
 	utils_c.o                  \
 	utils_f.o                  \
 	vegetation_dynamics.o

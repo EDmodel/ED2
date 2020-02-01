@@ -1,11 +1,11 @@
 #==========================================================================================#
 #==========================================================================================#
-#     Function that finds the cubic root, for both positive and negative numbers.          #
+#     Function that finds the cube root, for both positive and negative numbers.           #
 #------------------------------------------------------------------------------------------#
 cbrt <<- function(x){
    x333      = sign(x) * abs(x)^onethird
    bad       = is.nan(x333)
-   x333[bad] = NA
+   x333[bad] = NA_real_
    return(x333)
 }#end function cbrt
 #==========================================================================================#
@@ -35,6 +35,48 @@ round.log2  <<- function(x,...) 2^(round(log2(x),...))
 #------------------------------------------------------------------------------------------#
 exp10 <<- function(x,...) 10^x
 
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
+#     Bound data between lower and upper limit.                                            #
+#------------------------------------------------------------------------------------------#
+bound <<- function(x,lwr=min(x,na.rm=TRUE),upr=max(x,na.rm=TRUE),buff=2^-23){
+   #---- Return the original data in case nothing is valid. -------------------------------#
+   if (! any(is.finite(x))) return(x)
+   #---------------------------------------------------------------------------------------#
+
+   #---------------------------------------------------------------------------------------#
+   #   Don't let the bounds to be insane.                                                  #
+   #---------------------------------------------------------------------------------------#
+   if (lwr %>% upr){
+      cat0(" - Lower limit: ",lwr)
+      cat0(" - Upper limit: ",upr)
+      stop(" Lower and upper limit must be finite and lower cannot be greater than upper.")
+   }#end if (lwr %>% upr)
+   #---------------------------------------------------------------------------------------#
+
+
+   #---------------------------------------------------------------------------------------#
+   #   Don't let the bounds to be insane.                                                  #
+   #---------------------------------------------------------------------------------------#
+   if (! (buff %wr% c(0,1-2^-23))){
+      cat0(" - buff: ",buff)
+      stop(" Buffer must be between 0 (including) and 1 (excluding).")
+   }#end if (lwr %>% upr)
+   #---------------------------------------------------------------------------------------#
+
+
+   xlwr = lwr + buff * (upr - lwr)
+   xupr = upr - buff * (upr - lwr)
+   ans  = pmin(xupr,pmax(xlwr,x)) + 0 * x
+   return(ans)
+}#end bound
 #==========================================================================================#
 #==========================================================================================#
 
@@ -145,12 +187,122 @@ qu.mean <<- function(x,p,na.rm=FALSE,lower=TRUE){
 
 #==========================================================================================#
 #==========================================================================================#
+#     This function is a quick integrator.  For more elegant ways to integrate a function, #
+# check function quadrature.                                                               #
+#------------------------------------------------------------------------------------------#
+weighted.sum <<- function(x,w,na.rm=FALSE) sum(x*w,na.rm=na.rm)
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
+#     These functions find weighted averages by applying the same weighting factor for     #
+# each column (weighted.rowMeans) or rows (weighted.colMeans).                             #
+#------------------------------------------------------------------------------------------#
+weighted.rowMeans <<- function(X,wc,na.rm=FALSE){
+   ans = apply( X      = X
+              , MARGIN = 1
+              , FUN    = weighted.mean
+              , w      = wc
+              , na.rm  = na.rm
+              )#end apply
+   return(ans)
+}#end weighted.rowMeans
+weighted.colMeans <<- function(X,wr,na.rm=FALSE){
+   ans = apply( X      = X
+              , MARGIN = 2
+              , FUN    = weighted.mean
+              , w      = wr
+              , na.rm  = na.rm
+              )#end apply
+   return(ans)
+}#end weighted.colMeans
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
+#     This function finds the weighted fraction for each element of data.frame x, using    #
+# weight w.  In case x is not a data frame, we will try to coerce it to a data frame,      #
+# if it doesn't work then we crash it.  It will correct the final answer to provide        #
+# weights that add up to one, and it will create a vector of equal chances in case weights #
+# are all zeroes.                                                                          #
+#------------------------------------------------------------------------------------------#
+weighted.frac <<- function(x,w,na.rm=TRUE){
+   #----- Make sure "x" is a data frame. --------------------------------------------------#
+   if (! is.data.frame(x)){
+      x = try(as.data.frame(x),silent=TRUE)
+      #----- Give the bad news in case it doesn't coerce to a data frame. -----------------#
+      if ("try-error" %in% is(x)){
+         stop(" 'x' must be an object that can be coerced into a data frame!")
+      }#end if ("try-error" %in% is(x))
+      #------------------------------------------------------------------------------------#
+   }#end if (! is.data.frame(x))
+   #---------------------------------------------------------------------------------------#
+
+
+   #---------------------------------------------------------------------------------------#
+   #     Stop in case the dimensions of x and w don't match.                               #
+   #---------------------------------------------------------------------------------------#
+   w = c(unlist(w))
+   if (length(w) != nrow(x)){
+      stop(" 'x' and 'w' must have compatible dimensions (length(x) = nrow(x))!")
+   }#end if (length(w) != nrow(x))
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #------ In case all weights are zero, make them equal. ---------------------------------#
+   if (na.rm){
+      keep = rowSums(! is.finite(as.matrix(x))) == 0 & is.finite(w)
+      x    = x[keep,,drop=FALSE]
+      w    = w[keep]
+   }else if (any(! is.finite(w))){
+      #----- Return NA in case w has non-finite elements and na.rm = FALSE. ---------------#
+      ans        = rep(NA,times=length(x))
+      names(ans) = names(x)
+      return(ans)
+      #------------------------------------------------------------------------------------#
+   }else if (all(w %==% 0.)){
+      #----- Give equal chances in case all weights were zero. ----------------------------#
+      w = rep(x=1.,times=nrow(x))
+      #------------------------------------------------------------------------------------#
+   }#end if
+   #---------------------------------------------------------------------------------------#
+
+
+   #---------------------------------------------------------------------------------------#
+   #      Find the weighted mean of each element of x.                                     #
+   #---------------------------------------------------------------------------------------#
+   ans = sapply(X=x,FUN=weighted.mean,w=w)
+   ans = ans / sum(ans)
+   names(ans) = names(x)
+   return(ans)
+   #---------------------------------------------------------------------------------------#
+}#end weighted.frac
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
 #     This function estimates the quantile for a table of observations x, each of which    #
 # having a weight w.  This is done by finding the median of a pseudo dataset built using   #
 # sample.  If the size of the resampling is not provided, then the number of samples is    #
 # dependent on the range of probabilities.  By default we find the 0.50 quantile (median). #
 #------------------------------------------------------------------------------------------#
-weighted.quantile <<- function(x,w,qu=0.50,size.minp=10,na.rm=FALSE){
+weighted.quantile <<- function(x,w,qu=0.50,size.minp=10,na.rm=FALSE,out.case=FALSE){
 
    #----- Delete the missing values if the user asked to do it. ---------------------------#
    if (any(w <= 0, na.rm = TRUE) || any(is.infinite(w)) || any(is.na(w))){
@@ -211,8 +363,14 @@ weighted.quantile <<- function(x,w,qu=0.50,size.minp=10,na.rm=FALSE){
    #---------------------------------------------------------------------------------------#
 
 
-   ans = list(q = qout, case = case)
+   #---- Decide what to return. -----------------------------------------------------------#
+   if (out.case){
+      ans = list(q = qout, case = case)
+   }else{
+      ans = qout
+   }#end if (out.case)
    return(ans)
+   #---------------------------------------------------------------------------------------#
 }#end function weighted.quantile
 #==========================================================================================#
 #==========================================================================================#
@@ -226,7 +384,7 @@ weighted.quantile <<- function(x,w,qu=0.50,size.minp=10,na.rm=FALSE){
 #==========================================================================================#
 #     This function estimates the weighted standard deviation.                             #
 #------------------------------------------------------------------------------------------#
-weighted.sd <<- function(x,w,na.rm=FALSE){
+weighted.sd <<- function(x,w,M=NULL,na.rm=FALSE){
 
    #----- Delete the missing values if the user asked to do it. ---------------------------#
    if (any(w < 0, na.rm = TRUE) || any(is.infinite(w)) || any(is.na(w))){
@@ -239,6 +397,9 @@ weighted.sd <<- function(x,w,na.rm=FALSE){
    #---------------------------------------------------------------------------------------#
 
 
+   #----- Assume M to be inversely proportional to the smallest weight. -------------------#
+   if (is.null(M)) M = min(w)
+   #---------------------------------------------------------------------------------------#
 
    #---------------------------------------------------------------------------------------#
    #      Check whether at least one weight is non-zero.                                   #
@@ -247,10 +408,9 @@ weighted.sd <<- function(x,w,na.rm=FALSE){
       ans = NA
    }else{
       xwm    = weighted.mean(x=x,w=w)
-      M      = sum(w %>% 0)
       w.sum  = sum(w)
       r2.sum = sum(w*(x-xwm)^2)
-      ans    = sqrt(M * r2.sum / ( (M-1) * w.sum))
+      ans    = sqrt(M * r2.sum / (M * w.sum - 1))
    }#end if
    #---------------------------------------------------------------------------------------#
 
@@ -370,6 +530,8 @@ skew <<- function (x, na.rm = FALSE){
 #==========================================================================================#
 #==========================================================================================#
 #     This function computes the kurtosis, or the fourth moment of a distribution.         #
+#     NOTE: This calculates the absolute kurtosis, to get the excess kurtosis you must     #
+#           subtract 3.                                                                    #
 #------------------------------------------------------------------------------------------#
 kurt <<- function (x, na.rm = FALSE){
 
@@ -407,7 +569,7 @@ kurt <<- function (x, na.rm = FALSE){
       nx = length(xx)
       xx.mean = mean(xx)
       xx.sdev = sd(xx)
-      ans     = sum((xx-xx.mean)^4) / (nx * xx.sdev^4) - 3
+      ans     = sum((xx-xx.mean)^4) / (nx * xx.sdev^4)
       #------------------------------------------------------------------------------------#
    }#end if
    #---------------------------------------------------------------------------------------#
@@ -481,17 +643,20 @@ four.moments <<- function (x, na.rm = FALSE){
 
    #---- We follow the same convention as the standard deviation. -------------------------#
    if (is.matrix(x)) {
-      msg = "four.moment(<matrix>) is deprecated.\n Use apply(*, 2, kurt) instead."
+      msg = "four.moments(<matrix>) is deprecated.\n Use apply(*, 2, four.moments) instead."
       warning(paste(msg, collapse = ""), call. = FALSE, domain = NA)
-      ans = apply(X = x, MARGIN = 2, FUN = kurt, na.rm = na.rm)
+      ans = apply(X = x, MARGIN = 2, FUN = four.moments, na.rm = na.rm)
    }else if (is.list(x)){
-      msg = "four.moment(<list>) is deprecated.\n Use lapply(*, kurt) instead."
+      msg = "four.moments(<list>) is deprecated.\n Use lapply(*, four.moments) instead."
       warning(paste(msg, collapse = ""), call. = FALSE, domain = NA)
-      ans = lapply(X = x, FUN = kurt, na.rm = na.rm)
+      ans = lapply(X = x, FUN = four.moments, na.rm = na.rm)
    }else if (is.data.frame(x)){
-      msg = "four.moment(<data.frame>) is deprecated.\n Use sapply(*, kurt) instead."
+      msg = paste0("four.moments(<data.frame>) is deprecated."
+                  ,"\n"
+                  ,"Use sapply(*, four.moments) instead."
+                  )#end paste0
       warning(paste(msg, collapse = ""), call. = FALSE, domain = NA)
-      ans = sapply(X = x, kurt, na.rm = na.rm)
+      ans = sapply(X = x, four.moments, na.rm = na.rm)
    }else{
       #----- Coerce x to a vector. --------------------------------------------------------#
       if (is.vector(x)){
@@ -509,7 +674,7 @@ four.moments <<- function (x, na.rm = FALSE){
 
 
 
-      #----- Find the skewness. -----------------------------------------------------------#
+      #----- Find the four moments. -------------------------------------------------------#
       nx  = length(xx)
       ans = c( mean     = mean(xx)
              , variance = var (xx)
@@ -522,6 +687,66 @@ four.moments <<- function (x, na.rm = FALSE){
 
    return(ans)
 }#end function four.moments
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
+#     This function computes the mean, standard deviation, and coefficient of variation    #
+# of a vector.                                                                             #
+#------------------------------------------------------------------------------------------#
+meansdcv <<- function (x, na.rm = FALSE){
+
+   #---- We follow the same convention as the standard deviation. -------------------------#
+   if (is.matrix(x)) {
+      msg = "meansdcv(<matrix>) is deprecated.\n Use apply(*, 2, meansdcv) instead."
+      warning(paste(msg, collapse = ""), call. = FALSE, domain = NA)
+      ans = apply(X = x, MARGIN = 2, FUN = meansdcv, na.rm = na.rm)
+   }else if (is.list(x)){
+      msg = "meansdcv(<list>) is deprecated.\n Use lapply(*, meansdcv) instead."
+      warning(paste(msg, collapse = ""), call. = FALSE, domain = NA)
+      ans = lapply(X = x, FUN = meansdcv, na.rm = na.rm)
+   }else if (is.data.frame(x)){
+      msg = "meansdcv(<data.frame>) is deprecated.\n Use sapply(*, meansdcv) instead."
+      warning(paste(msg, collapse = ""), call. = FALSE, domain = NA)
+      ans = sapply(X = x, meansdcv, na.rm = na.rm)
+   }else{
+      #----- Coerce x to a vector. --------------------------------------------------------#
+      if (is.vector(x)){
+         xx = x
+      }else{
+         xx = as.vector(x)
+      }#end if
+      #------------------------------------------------------------------------------------#
+
+
+
+      #----- Decide whether to delete NA or not. ------------------------------------------#
+      if (na.rm) xx = xx[! is.na(xx)]
+      #------------------------------------------------------------------------------------#
+
+
+
+      #----- Find the mean, standard deviation, and coefficient of variation. -------------#
+      nx    = length(xx)
+      mu    = mean(xx)
+      sigma = sd(xx)
+      cvar  = ifelse(sigma %>% 0,mu/sigma,NA)
+      
+      ans = c( mean = mu
+             , sd   = sigma
+             , cv   = cvar
+             )#end c
+      #------------------------------------------------------------------------------------#
+   }#end if
+   #---------------------------------------------------------------------------------------#
+
+   return(ans)
+}#end function meansdcv
 #==========================================================================================#
 #==========================================================================================#
 
@@ -820,28 +1045,6 @@ rowWgtMeans <<- function(x,w,...,na.rm=FALSE){
 
 #==========================================================================================#
 #==========================================================================================#
-#     This function normalises a vector.  Results are just the normalised values, mean and #
-# standard deviation are in attributes.                                                    #
-#------------------------------------------------------------------------------------------#
-normalise <<- function(x,mu,sigma){
-   if (missing(mu   )) mu    = mean(x,na.rm = TRUE)
-   if (missing(sigma)) sigma = sd  (x,na.rm = TRUE)
-   nx      = sum(is.finite(x))
-   normal  = (x - mu) / sigma
-   normal  = ifelse(is.finite(normal),normal,NA)
-   attributes(normal) = list(mean = mu, sdev = sigma, n = nx)
-   return(normal)
-}#end normalise
-#==========================================================================================#
-#==========================================================================================#
-
-
-
-
-
-
-#==========================================================================================#
-#==========================================================================================#
 #     This function converts data into percentil (0-100).                                  #
 #------------------------------------------------------------------------------------------#
 percentil <<- function(x,trim=0.0){
@@ -870,9 +1073,22 @@ sum2           <<- function(x,...)   sqrt(x = sum          (x=x^2               
 mean2          <<- function(x,...)   sqrt(x = mean         (x=x^2               ,...))
 meanlog        <<- function(x,...)   exp (x = mean         (x=log(x)            ,...))
 weighted.mean2 <<- function(x,w,...) sqrt(x = weighted.mean(x=x^2,w=(w/sum(w))^2,...))
+mean.se        <<- function(x,...)   sqrt(x = mean(x=x^2,...) / length(x[is.finite(x)]))
 #==========================================================================================#
 #==========================================================================================#
 
+
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
+#     Mean of elements that are finite and above minimum.                                  #
+#------------------------------------------------------------------------------------------#
+mean.above <<- function(x,xlwr,xnot=xlwr) if(any(x%>=%xlwr)){mean(x[x%>=%xlwr])}else{xnot}
+#==========================================================================================#
+#==========================================================================================#
 
 
 
@@ -1062,10 +1278,19 @@ n.six.summary     <<- length(six.summary.names)
 #     This function calculates the four moments of the distribution plus the 95% C.I. of   #
 # the mean using t distributioon.                                                          #
 #------------------------------------------------------------------------------------------#
-six.summary <<- function(x,conf=0.95,finite=TRUE,...){
+six.summary <<- function(x,conf=0.95,finite=TRUE,cint.type=c("se","sd","quantile"),...){
    #------ Remove non-finite data in case finite=TRUE. ------------------------------------#
    if (finite) x = x[is.finite(x)]
    nx = length(x)
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #       Decide which type of confidence interval to display (CI on the mean, using t    #
+   # distribution and standard error, or the quantile distribution.                        #
+   #---------------------------------------------------------------------------------------#
+   cint.type = match.arg(cint.type)
    #---------------------------------------------------------------------------------------#
 
 
@@ -1086,8 +1311,22 @@ six.summary <<- function(x,conf=0.95,finite=TRUE,...){
       variance = var (x)
       skewness = skew(x)
       kurtosis = kurt(x)
-      ci.lower = expected + qt(p=0.5*(1.0-conf),df=nx-1) * se(x)
-      ci.upper = expected + qt(p=0.5*(1.0+conf),df=nx-1) * se(x)
+      if (cint.type %in% "se"){
+         #----- Find confidence interval of the average. ----------------------------------#
+         ci.lower = expected + qt(p=0.5*(1.0-conf),df=nx-1) * se(x)
+         ci.upper = expected + qt(p=0.5*(1.0+conf),df=nx-1) * se(x)
+         #---------------------------------------------------------------------------------#
+      }else if (cint.type %in% "sd"){
+         #----- Find range instead of CI, using t distribution. ---------------------------#
+         ci.lower = expected + qt(p=0.5*(1.0-conf),df=nx-1) * sd(x)
+         ci.upper = expected + qt(p=0.5*(1.0+conf),df=nx-1) * sd(x)
+         #---------------------------------------------------------------------------------#
+      }else{
+         #----- Find the quantiles. -------------------------------------------------------#
+         ci.lower = quantile(x=x,probs=0.5*(1.0-conf),names=FALSE)
+         ci.upper = quantile(x=x,probs=0.5*(1.0+conf),names=FALSE)
+         #---------------------------------------------------------------------------------#
+      }#end if 
       #------------------------------------------------------------------------------------#
 
 
@@ -1123,6 +1362,197 @@ six.summary <<- function(x,conf=0.95,finite=TRUE,...){
 
 
 
+
+
+#==========================================================================================#
+#==========================================================================================#
+#      Thirteen-number summary:                                                            #
+#                                                                                          #
+# qmin - minimum                                                                           #
+# q025 - 2.5 percentile                                                                    #
+# q250 - first quartile                                                                    #
+# q500 - median                                                                            #
+# q750 - third quartile                                                                    #
+# q975 - 97.5 percentile                                                                   #
+# qmax - maximum                                                                           #
+# mean - mean                                                                              #
+# sdev - standard deviation                                                                #
+# skew - skewness                                                                          #
+# kurt - kurtosis                                                                          #
+# ntot - total number                                                                      #
+# nval - total number of valide (i.e. finite) entries)                                     #
+#------------------------------------------------------------------------------------------#
+thirteen.num <<- function(x){
+   #----- Count total number and number of valid entries. ---------------------------------#
+   ntot = length(x)
+   fine = is.finite(x)
+   nval = sum(fine)
+   #---------------------------------------------------------------------------------------#
+
+
+   #----- Discard invalid numbers. --------------------------------------------------------#
+   x    = x[fine]
+   #---------------------------------------------------------------------------------------#
+
+
+   #----- Find quantiles. -----------------------------------------------------------------#
+   quant = quantile(x=x,probs=c(0,0.025,0.25,0.50,0.75,0.975,1.000))
+   names(quant) = c("qmin","q025","q250","q500","q750","q975","q100")
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #----- Find mean, sd, skewness and kurtosis. -------------------------------------------#
+   four  = c(mean=mean(x),sdev=sd(x),skew=skew(x),kurt=kurt(x))
+   #---------------------------------------------------------------------------------------#
+
+
+   #----- Append all results, and standardise weird values to NA. -------------------------#
+   ans   = c(quant,four,ntot=ntot,nval=nval)
+   ans[! is.finite(ans)] = NA
+   #---------------------------------------------------------------------------------------#
+
+   return(ans)
+}#end thirteen.num
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
+#      Thirteen-number error assessment:                                                   #
+#                                                                                          #
+#  Input:                                                                                  #
+#    x       -- Input variable                                                             #
+#    e       -- Error (same units as x)                                                    #
+#    min.ok  -- Minimum acceptable value                                                   #
+#    max.ok  -- Maximum acceptable value                                                   #
+#    nr      -- Number of replicates                                                       #
+#    szmax   -- Maximum memory size to be allocated (so large vectors don't exhaust the    #
+#               computer).                                                                 #
+#    fun     -- Function to apply to the data set.                                         #
+#    verbose -- Should the run be verbose?                                                 #
+#                                                                                          #
+#  Output:                                                                                 #
+#    emean  -- expected mean (no replications)                                             #
+#    rmean  -- average of all replications.                                                #
+#    rsdev  -- standard deviation of the replicates (standard error of the mean)           #
+#    rqmin  -- minimum average from replications                                           #
+#    rq025  -- 2.5 percentile                                                              #
+#    rq250  -- first quartile                                                              #
+#    rq500  -- median                                                                      #
+#    rq750  -- third quartile                                                              #
+#    rq975  -- 97.5 percentile                                                             #
+#    rqmax  -- maximum                                                                     #
+#    ntot   -- total number                                                                #
+#    nval   -- total number of valid (i.e. finite) entries)                                #
+#    nrep   -- number of replicates (same as input)                                        #
+#------------------------------------------------------------------------------------------#
+thirteen.err <<- function( x
+                         , e
+                         , min.ok  = -Inf
+                         , max.ok  = +Inf
+                         , nr      = 10000
+                         , szmax   = 100000
+                         , fun     = "mean"
+                         , verbose = FALSE
+                         , ...
+                         ){
+   #----- Find the function. --------------------------------------------------------------#
+   fun = match.fun(fun)
+   #---------------------------------------------------------------------------------------#
+
+   #----- Count total number and number of valid entries. ---------------------------------#
+   ntot  = length(x)
+   #---------------------------------------------------------------------------------------#
+
+   #---------------------------------------------------------------------------------------#
+   #    Select only those entries with actual error evaluation.                            #
+   #---------------------------------------------------------------------------------------#
+   fine  = is.finite(x) & is.finite(e)
+   nval  = sum(fine)
+   xfine = x[fine]
+   efine = e[fine]
+   #---------------------------------------------------------------------------------------#
+
+   
+   #---------------------------------------------------------------------------------------#
+   #     Create vector with outcomes of each realisation.                                  #
+   #---------------------------------------------------------------------------------------#
+   xr = rep(NA,times=nr)
+   #---------------------------------------------------------------------------------------#
+
+   
+   #---------------------------------------------------------------------------------------#
+   #     Find the maximum block size.                                                      #
+   #---------------------------------------------------------------------------------------#
+   block.size = max(1,floor(szmax/nval))
+   ia.full    = seq(from=1,to=nr,by=block.size)
+   iz.full    = c(ia.full[-1]-1,nr)
+   nblocks    = length(ia.full)
+   if (verbose){
+      cat("    -> 13.err.  Vector size: ",nval,".","\n",sep="")
+      cat("    -> 13.err.  Total number of blocks: ",nblocks,".","\n",sep="")
+   }#end if (verbose)
+   #---------------------------------------------------------------------------------------#
+
+
+   #---------------------------------------------------------------------------------------#
+   #     Populate outcome vector by blocks, so we run it efficiently but don't run out of  #
+   # memory.                                                                               #
+   #---------------------------------------------------------------------------------------#
+   ishow = round(sequence(10)*nblocks/10)
+   lshow = 10*sequence(10)
+   for (b in sequence(nblocks)){
+      if (verbose && b %in% ishow){
+         lshow.now = lshow[match(b,ishow)]
+         cat("       .. 13.err.  ",lshow[match(b,ishow)],"% completed...","\n",sep="")
+      }#end if (verbose && b %in% ishow)
+      #----- Prepare selection. -----------------------------------------------------------#
+      idx  = seq(from=ia.full[b],to=iz.full[b],by=1)
+      nidx = length(idx)
+      #------------------------------------------------------------------------------------#
+
+      #----- Discard bad entries. ---------------------------------------------------------#
+      X = matrix(data=rep(x=xfine,times=nidx),nrow=nval,ncol=nidx)
+      E = matrix(data=rep(x=efine,times=nidx),nrow=nval,ncol=nidx)
+      #------------------------------------------------------------------------------------#
+
+
+      #----- Create vector with random error. ---------------------------------------------#
+      XR      = 0.*X + pmax(min.ok,pmin(max.ok,rnorm(n=nval*nidx,mean=X,sd=E)))
+      xr[idx] = apply(X=XR,MARGIN=2,FUN=fun,...)
+      rm(X,E,XR)
+      #------------------------------------------------------------------------------------#
+   }#end for (b in sequence(nblocks))
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #----- Find mean, sd, skewness and kurtosis. -------------------------------------------#
+   three = c(expct = fun(xfine,...), rmean = mean(xr), rsdev = sd  (xr))
+   #---------------------------------------------------------------------------------------#
+
+
+   #----- Find quantiles. -----------------------------------------------------------------#
+   quant = quantile(x=xr,probs=c(0,0.025,0.25,0.50,0.75,0.975,1.000))
+   names(quant) = c("rqmin","rq025","rq250","rq500","rq750","rq975","rq100")
+   #---------------------------------------------------------------------------------------#
+
+
+   #----- Append all results, and standardise weird values to NA. -------------------------#
+   ans   = c(three,quant,ntot=ntot,nval=nval,nrep=nr)
+   ans[! is.finite(ans)] = NA
+   #---------------------------------------------------------------------------------------#
+
+   return(ans)
+}#end thirteen.err
+#==========================================================================================#
+#==========================================================================================#
 
 
 #==========================================================================================#
@@ -1181,5 +1611,192 @@ neat.breaks <<- function(x,res,...){
    breaks   = seq(from=xextreme[1],to=xextreme[2],by=res)
    return(breaks)
 }#end function neat.breaks
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
+#     This function is just like zoo's na.approx, except that it doesn't crash if the      #
+# all values are NA.                                                                       #
+#------------------------------------------------------------------------------------------#
+na.approx.safe <<- function(object,...){
+   ans = try(na.approx(object,...),silent=TRUE)
+   if ("try-error" %in% is(ans)) ans = object
+   return(ans)
+}#end na.approx.safe
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
+#     These functions are the same as cumsum and cumprod, except that it shifts the        #
+# cumulative values to the value until right before the point.                             #
+#------------------------------------------------------------------------------------------#
+left.cumsum  <<- function(x) c(0,cumsum (x)[-length(x)])
+left.cumprod <<- function(x) c(0,cumprod(x)[-length(x)])
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
+#     This function aggregates x using some function "fun" as long as the number of valid  #
+# entries is greater than or equal to fmin * total number of entries.  This is normally    #
+# used by rasterize, hence the dots, but na.rm will not be used.                           #
+#                                                                                          #
+# INPUT:                                                                                   #
+# x    - the vector with points to be aggregated                                           #
+# fun  - the function.  It may be the actual function or a character indicating the        #
+#        function                                                                          #
+# fmin - minimum number of finite entries relative to the original size.                   #
+#        This must be between 0 and 1.  fmin = 1 is equivalent to na.rm =FALSE, and        #
+#        fmin = 0 is equivalent to na.rm = TRUE.                                           #
+# ...  - additional arguments to be passed to function fun.  Note that na.rm will not      #
+#        matter because non-finite numbers will be excluded prior to calling the function. #
+#------------------------------------------------------------------------------------------#
+aggr.fmin <<- function(x,fun=mean,fmin=0.5,...){
+   #----- Check that fmin makes sense. ----------------------------------------------------#
+   if (! (fmin %>=% 0.0 & fmin %<=% 1.0)){
+      stop (paste0("fmin must be between 0 and 1!  Yours is set to ",fmin,"..."))
+   }#end if
+   #---------------------------------------------------------------------------------------#
+
+
+   #----- Make sure fun is a function. ----------------------------------------------------#
+   fun = match.fun(fun)
+   #---------------------------------------------------------------------------------------#
+
+
+   #----- Find the minimum number of entries to actually calculate the answer. ------------#
+   keep  = is.finite(x)
+   nkeep = sum(keep)
+   ntot  = length(x)
+   nmin  = max(1,min(ntot,ceiling(fmin * ntot)))
+   #---------------------------------------------------------------------------------------#
+
+   #----- Check whether to calculate function or return NA. -------------------------------#
+   if (nkeep >= nmin){
+      #----- Use only valid points. -------------------------------------------------------#
+      xuse         = x[is.finite(x)]
+      ans          = fun(xuse,...)
+      discard      = ! is.finite(ans)
+      ans[discard] = NA
+      #------------------------------------------------------------------------------------#
+   }else if (nkeep >= 1){
+      #----- Use only valid points. -------------------------------------------------------#
+      xuse = lit.sample(x=x[is.finite(x)],size=nmin,replace=TRUE)
+      ans  = fun(xuse,...)
+      ans  = rep(NA,times=length(ans))
+      #------------------------------------------------------------------------------------#
+   }else{
+      #----- Make dummy vector, apply the function then discard data. ---------------------#
+      xuse = rnorm(n=nmin)
+      ans  = fun(xuse,...)
+      ans  = rep(NA,times=length(ans))
+      #------------------------------------------------------------------------------------#
+   }#end if
+   #---------------------------------------------------------------------------------------#
+
+   return(ans)
+}#end aggr.fmin
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
+#     This function aggregates standard error assuming Gaussian distribution and           #
+# independent errors.  It will return a finite result provided that the number of valid    #
+# entries is greater than or equal to fmin * total number of entries.  This is normally    #
+# used by rasterize, hence the dots, but na.rm will not be used.                           #
+#                                                                                          #
+# INPUT:                                                                                   #
+# x    - the vector with standard error to be aggregated                                   #
+# fmin - minimum number of finite entries relative to the original size.                   #
+#        This must be between 0 and 1.  fmin = 1 is equivalent to na.rm =FALSE, and        #
+#        fmin = 0 is equivalent to na.rm = TRUE.                                           #
+# ...  - additional arguments to be passed to function fun.  Note that na.rm will not      #
+#        matter because non-finite numbers will be excluded prior to calling the function. #
+#------------------------------------------------------------------------------------------#
+aggr.se <<- function(x,fmin=0.5,...){
+   #----- Check that fmin makes sense. ----------------------------------------------------#
+   if (! (fmin %>=% 0.0 & fmin %<=% 1.0)){
+      stop (paste0("fmin must be between 0 and 1!  Yours is set to ",fmin,"..."))
+   }#end if
+   #---------------------------------------------------------------------------------------#
+
+
+   #----- Find the minimum number of entries to actually calculate the answer. ------------#
+   keep  = is.finite(x)
+   nkeep = sum(keep)
+   ntot  = length(x)
+   nmin  = max(1,min(ntot,ceiling(fmin * ntot)))
+   #---------------------------------------------------------------------------------------#
+
+   #----- Check whether to calculate function or return NA. -------------------------------#
+   if (nkeep >= nmin){
+      #----- Use only valid points. -------------------------------------------------------#
+      xuse         = x[is.finite(x)]
+      nuse         = length(xuse)
+      ans          = sqrt(mean(xuse^2)/nuse)
+      discard      = ! is.finite(ans)
+      ans[discard] = NA
+      #------------------------------------------------------------------------------------#
+   }else{
+      #----- Return NA. -------------------------------------------------------------------#
+      ans  = NA
+      #------------------------------------------------------------------------------------#
+   }#end if
+   #---------------------------------------------------------------------------------------#
+
+   return(ans)
+}#end aggr.se
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
+#     This function finds the maximum absolute elementwise difference of two vectors.      #
+#------------------------------------------------------------------------------------------#
+max.abs.diff <<- function(x,y,na.rm=TRUE) max(abs(x-y),na.rm=na.rm) 
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
+#     This function counts the number of valid entries.                                    #
+#------------------------------------------------------------------------------------------#
+count.valid <<- function(x,qq.rm=FALSE){
+   type.x = typeof(x)
+   if (type.x %in% "logical"){
+      ans = sum(! is.na(x))
+   }else if (type.x %in% "character"){
+      ans = sum(! ( is.na(x) | ((x %in% "") & qq.rm)))
+   }else{
+      ans = sum(is.finite(x))
+   }#end if (type.x %in% c("logical","character"))
+   return(ans)
+}#end count.finite
 #==========================================================================================#
 #==========================================================================================#

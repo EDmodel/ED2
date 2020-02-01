@@ -19,6 +19,8 @@
 !     !  17  : rank 2 : age                                 !                              !
 !     !  155 : rank 2 : max_lu_years                        !                              !
 !     !  156 : rank 3 : max_lu_years, num_lu_transitions    !                              !
+!     !  19  : rank 2 : months (12)                         !                              !
+!     !  191 : rank 2 : months+1 (13)                       !                              !
 !     !-----------------------------------------------------!                              !
 !                                                                                          !
 !     !----- SITE: -----------------------------------------!                              !
@@ -51,18 +53,20 @@
 !     !  35  : rank 2 : disturbance                         !                              !
 !     !  36  : rank 2 : dbh                                 !                              !
 !     !  37  : rank 2 : age                                 !                              !
+!     !  38  : rank 2 : mortality                           !                              !
+!     !  39  : rank 2 : months (12)                         !                              !
 !     !-----------------------------------------------------!                              !
 !                                                                                          !
 !     !----- COHORT: ---------------------------------------!                              !
 !     !  40  : rank 1 : integer                             !                              !
-!     !  41  : rank 1 : cohort (real)                       !                              !
+!     !  41  : rank 1 : real                                !                              !
 !     ! -41  : rank 2 : ndcycle                             !                              !
-!     !  42  : rank 2 : cohort, s-layer                     !                              !
-!     !  44  : rank 2 : cohort, pft                         !                              !
-!     !  46  : rank 2 : cohort, dbh                         !                              !
-!     !  47  : rank 2 : cohort, age                         !                              !
-!     !  48  : rank 2 : cohort, mort                        !                              !
-!     !  49  : rank 2 : cohort, nmonths+1                   !                              !
+!     !  44  : rank 2 : pft                                 !                              !
+!     !  46  : rank 2 : dbh                                 !                              !
+!     !  47  : rank 2 : age                                 !                              !
+!     !  48  : rank 2 : mort                                !                              !
+!     !  49  : rank 2 : nmonths (12)                        !                              !
+!     !  491 : rank 2 : nmonths+1 (13)                      !                              !
 !     !-----------------------------------------------------!                              !
 !                                                                                          !
 !     !----- OTHER: ----------------------------------------!                              !
@@ -75,10 +79,23 @@
 !------------------------------------------------------------------------------------------!
 module ed_var_tables
    use ed_max_dims, only : str_len
+
+
+   !---------------------------------------------------------------------------------------!
+   !    Define lengths for elements in the var table, to avoid warning messages.           !
+   !---------------------------------------------------------------------------------------!
+   integer, parameter :: name_len   = 64
+   integer, parameter :: dtype_len  =  2
+   integer, parameter :: lname_len  = 64
+   integer, parameter :: units_len  = 16
+   integer, parameter :: dimlab_len = 64
+   integer, parameter :: ctab_len   =  8
+   !---------------------------------------------------------------------------------------!
+
    !---------------------------------------------------------------------------------------!
    !    Define data type for main variable table                                           !
    !---------------------------------------------------------------------------------------!
-   integer, parameter :: maxvars = 1800
+   integer, parameter :: maxvars = 2000
    !---------------------------------------------------------------------------------------!
 
 
@@ -102,28 +119,28 @@ module ed_var_tables
 
    !---------------------------------------------------------------------------------------!
    type var_table
-      integer             :: idim_type
-      integer             :: nptrs
-      integer             :: ihist
-      integer             :: ianal
-      integer             :: imean
-      integer             :: ilite
-      integer             :: impti
-      integer             :: impt1
-      integer             :: impt2
-      integer             :: impt3
-      integer             :: irecycle
-      integer             :: iyear
-      integer             :: iopti
-      integer             :: imont
-      integer             :: idcyc
-      integer             :: idail
-      integer             :: var_len_global
-      character (len=64)  :: name
-      character (len=2)   :: dtype
-      character (len=64)  :: lname   ! Long name for description in file
-      character (len=16)  :: units   ! Unit description of the data
-      character (len=64)  :: dimlab
+      integer                    :: idim_type
+      integer                    :: nptrs
+      integer                    :: ihist
+      integer                    :: ianal
+      integer                    :: imean
+      integer                    :: ilite
+      integer                    :: impti
+      integer                    :: impt1
+      integer                    :: impt2
+      integer                    :: impt3
+      integer                    :: irecycle
+      integer                    :: iyear
+      integer                    :: iopti
+      integer                    :: imont
+      integer                    :: idcyc
+      integer                    :: idail
+      integer                    :: var_len_global
+      character (len=name_len)   :: name
+      character (len=dtype_len)  :: dtype
+      character (len=lname_len)  :: lname   ! Long name for description in file
+      character (len=units_len)  :: units   ! Unit description of the data
+      character (len=dimlab_len) :: dimlab
       logical             :: vector_allocated
       !----- Multiple pointer defs (maxptrs) ----------------------------------------------!
       type(var_table_vector), pointer, dimension(:) :: vt_vector
@@ -172,24 +189,24 @@ module ed_var_tables
       use ed_max_dims, only : str_len ! ! intent(in)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
-      integer                                , intent(in) :: npts
-      real(kind=4)          , dimension(npts), target     :: var
-      integer                                , intent(in) :: nv
-      integer                                , intent(in) :: igr
-      integer                                , intent(in) :: init
-      integer                                , intent(in) :: glob_id
-      integer                                , intent(in) :: var_len
-      integer                                , intent(in) :: var_len_global
-      integer                                , intent(in) :: max_ptrs
-      character (len=*)                      , intent(in) :: tabstr
+      integer                                 , intent(in) :: npts
+      real(kind=4)           , dimension(npts), target     :: var
+      integer                                 , intent(in) :: nv
+      integer                                 , intent(in) :: igr
+      integer                                 , intent(in) :: init
+      integer                                 , intent(in) :: glob_id
+      integer                                 , intent(in) :: var_len
+      integer                                 , intent(in) :: var_len_global
+      integer                                 , intent(in) :: max_ptrs
+      character (len=*)                       , intent(in) :: tabstr
       !----- Local variables. -------------------------------------------------------------!
-      integer                                             :: iptr
-      character(len=str_len), dimension(10)               :: tokens
-      character(len=8)                                    :: ctab
-      integer                                             :: ntok
-      integer                                             :: nt
+      integer                                              :: iptr
+      character(len=str_len) , dimension(10)               :: tokens
+      character(len=ctab_len)                              :: ctab
+      integer                                              :: ntok
+      integer                                              :: nt
       !----- Local constants. -------------------------------------------------------------!
-      character (len=1)                      , parameter  :: toksep=':'
+      character (len=1)                       , parameter  :: toksep=':'
       !------------------------------------------------------------------------------------!
 
 
@@ -208,7 +225,7 @@ module ed_var_tables
          num_var(igr) = num_var(igr) + 1
          call tokenize1(tabstr,tokens,ntok,toksep)
 
-         vt_info(nv,igr)%name           = tokens(1)
+         vt_info(nv,igr)%name           = trim(tokens(1)(1:name_len))
          vt_info(nv,igr)%dtype          = 'R'  ! This is a real variable (vector)
          vt_info(nv,igr)%nptrs          = 0
          vt_info(nv,igr)%var_len_global = var_len_global
@@ -233,7 +250,7 @@ module ed_var_tables
          vt_info(nv,igr)%iopti    = 0
          
          do nt=3,ntok
-            ctab=tokens(nt)
+            ctab=tokens(nt)(1:ctab_len)
 
             select case (trim(ctab))
             case('hist') 
@@ -276,7 +293,8 @@ module ed_var_tables
                vt_info(nv,igr)%iopti    = 1
 
             case default
-               print*, 'Illegal table specification for var:', tokens(1),ctab
+               write(unit=*,fmt='(a,2(1x,a))')                                             &
+                   'Illegal table specification for var:',trim(tokens(1)),trim(ctab)
                call fatal_error('Bad var table','vtable_edio_r','ed_var_tables.f90')
             end select
          end do
@@ -341,24 +359,24 @@ module ed_var_tables
       use ed_max_dims, only : str_len ! ! intent(in)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
-      integer                                , intent(in) :: npts
-      integer               , dimension(npts), target     :: var
-      integer                                , intent(in) :: nv
-      integer                                , intent(in) :: igr
-      integer                                , intent(in) :: init
-      integer                                , intent(in) :: glob_id
-      integer                                , intent(in) :: var_len
-      integer                                , intent(in) :: var_len_global
-      integer                                , intent(in) :: max_ptrs
-      character (len=*)                      , intent(in) :: tabstr
+      integer                                 , intent(in) :: npts
+      integer                , dimension(npts), target     :: var
+      integer                                 , intent(in) :: nv
+      integer                                 , intent(in) :: igr
+      integer                                 , intent(in) :: init
+      integer                                 , intent(in) :: glob_id
+      integer                                 , intent(in) :: var_len
+      integer                                 , intent(in) :: var_len_global
+      integer                                 , intent(in) :: max_ptrs
+      character (len=*)                       , intent(in) :: tabstr
       !----- Local variables. -------------------------------------------------------------!
-      integer                                             :: iptr
-      character(len=str_len), dimension(10)               :: tokens
-      character(len=8)                                    :: ctab
-      integer                                             :: ntok
-      integer                                             :: nt
+      integer                                              :: iptr
+      character(len=str_len) , dimension(10)               :: tokens
+      character(len=ctab_len)                              :: ctab
+      integer                                              :: ntok
+      integer                                              :: nt
       !----- Local constants. -------------------------------------------------------------!
-      character (len=1)                      , parameter  :: toksep=':'
+      character (len=1)                       , parameter  :: toksep=':'
       !------------------------------------------------------------------------------------!
 
 
@@ -377,7 +395,7 @@ module ed_var_tables
          num_var(igr) = num_var(igr) + 1
          call tokenize1(tabstr,tokens,ntok,toksep)
 
-         vt_info(nv,igr)%name           = tokens(1)
+         vt_info(nv,igr)%name           = trim(tokens(1)(1:name_len))
          vt_info(nv,igr)%dtype          = 'I'  ! Integer variable (vector)
          vt_info(nv,igr)%nptrs          = 0
          vt_info(nv,igr)%var_len_global = var_len_global
@@ -402,7 +420,7 @@ module ed_var_tables
          vt_info(nv,igr)%iopti    = 0
          
          do nt=3,ntok
-            ctab=tokens(nt)
+            ctab=tokens(nt)(1:ctab_len)
 
             select case (trim(ctab))
             case('hist') 
@@ -445,7 +463,8 @@ module ed_var_tables
                vt_info(nv,igr)%iopti    = 1
 
             case default
-               print*, 'Illegal table specification for var:', tokens(1),ctab
+               write(unit=*,fmt='(a,2(1x,a))')                                             &
+                   'Illegal table specification for var:',trim(tokens(1)),trim(ctab)
                call fatal_error('Bad var table','vtable_edio_r','ed_var_tables.f90')
             end select
          end do
@@ -513,23 +532,23 @@ module ed_var_tables
       use ed_max_dims, only : str_len ! ! intent(in)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
-      real(kind=4)                           , target     :: var
-      integer                                , intent(in) :: nv
-      integer                                , intent(in) :: igr
-      integer                                , intent(in) :: init
-      integer                                , intent(in) :: glob_id
-      integer                                , intent(in) :: var_len
-      integer                                , intent(in) :: var_len_global
-      integer                                , intent(in) :: max_ptrs
-      character (len=*)                      , intent(in) :: tabstr
+      real(kind=4)                            , target     :: var
+      integer                                 , intent(in) :: nv
+      integer                                 , intent(in) :: igr
+      integer                                 , intent(in) :: init
+      integer                                 , intent(in) :: glob_id
+      integer                                 , intent(in) :: var_len
+      integer                                 , intent(in) :: var_len_global
+      integer                                 , intent(in) :: max_ptrs
+      character (len=*)                       , intent(in) :: tabstr
       !----- Local variables. -------------------------------------------------------------!
-      integer                                             :: iptr
-      character(len=str_len), dimension(10)               :: tokens
-      character(len=8)                                    :: ctab
-      integer                                             :: ntok
-      integer                                             :: nt
+      integer                                              :: iptr
+      character(len=str_len) , dimension(10)               :: tokens
+      character(len=ctab_len)                              :: ctab
+      integer                                              :: ntok
+      integer                                              :: nt
       !----- Local constants. -------------------------------------------------------------!
-      character (len=1)                      , parameter  :: toksep=':'
+      character (len=1)                       , parameter  :: toksep=':'
       !------------------------------------------------------------------------------------!
 
 
@@ -548,7 +567,7 @@ module ed_var_tables
          num_var(igr) = num_var(igr) + 1
          call tokenize1(tabstr,tokens,ntok,toksep)
 
-         vt_info(nv,igr)%name           = tokens(1)
+         vt_info(nv,igr)%name           = trim(tokens(1)(1:name_len))
          vt_info(nv,igr)%dtype          = 'r'  ! Real variable (scalar)
          vt_info(nv,igr)%nptrs          = 0
          vt_info(nv,igr)%var_len_global = var_len_global
@@ -573,7 +592,7 @@ module ed_var_tables
          vt_info(nv,igr)%iopti    = 0
          
          do nt=3,ntok
-            ctab=tokens(nt)
+            ctab=tokens(nt)(1:ctab_len)
 
             select case (trim(ctab))
             case('hist') 
@@ -616,8 +635,9 @@ module ed_var_tables
                vt_info(nv,igr)%iopti    = 1
 
             case default
-               print*, 'Illegal table specification for var:', tokens(1),ctab
-               call fatal_error('Bad var table','vtable_edio_r','ed_var_tables.f90')
+               write(unit=*,fmt='(a,2(1x,a))')                                             &
+                   'Illegal table specification for var:',trim(tokens(1)),trim(ctab)
+               call fatal_error('Bad var table','vtable_edio_r_sca','ed_var_tables.f90')
             end select
          end do
       else
@@ -683,23 +703,23 @@ module ed_var_tables
       use ed_max_dims, only : str_len ! ! intent(in)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
-      integer                                , target     :: var
-      integer                                , intent(in) :: nv
-      integer                                , intent(in) :: igr
-      integer                                , intent(in) :: init
-      integer                                , intent(in) :: glob_id
-      integer                                , intent(in) :: var_len
-      integer                                , intent(in) :: var_len_global
-      integer                                , intent(in) :: max_ptrs
-      character (len=*)                      , intent(in) :: tabstr
+      integer                                 , target     :: var
+      integer                                 , intent(in) :: nv
+      integer                                 , intent(in) :: igr
+      integer                                 , intent(in) :: init
+      integer                                 , intent(in) :: glob_id
+      integer                                 , intent(in) :: var_len
+      integer                                 , intent(in) :: var_len_global
+      integer                                 , intent(in) :: max_ptrs
+      character (len=*)                       , intent(in) :: tabstr
       !----- Local variables. -------------------------------------------------------------!
-      integer                                             :: iptr
-      character(len=str_len), dimension(10)               :: tokens
-      character(len=8)                                    :: ctab
-      integer                                             :: ntok
-      integer                                             :: nt
+      integer                                              :: iptr
+      character(len=str_len) , dimension(10)               :: tokens
+      character(len=ctab_len)                              :: ctab
+      integer                                              :: ntok
+      integer                                              :: nt
       !----- Local constants. -------------------------------------------------------------!
-      character (len=1)                      , parameter  :: toksep=':'
+      character (len=1)                       , parameter  :: toksep=':'
       !------------------------------------------------------------------------------------!
 
 
@@ -718,7 +738,7 @@ module ed_var_tables
          num_var(igr) = num_var(igr) + 1
          call tokenize1(tabstr,tokens,ntok,toksep)
 
-         vt_info(nv,igr)%name           = tokens(1)
+         vt_info(nv,igr)%name           = trim(tokens(1)(1:name_len))
          vt_info(nv,igr)%dtype          = 'i'  ! Integer variable (scalar)
          vt_info(nv,igr)%nptrs          = 0
          vt_info(nv,igr)%var_len_global = var_len_global
@@ -743,7 +763,7 @@ module ed_var_tables
          vt_info(nv,igr)%iopti    = 0
          
          do nt=3,ntok
-            ctab=tokens(nt)
+            ctab=tokens(nt)(1:ctab_len)
 
             select case (trim(ctab))
             case('hist') 
@@ -786,8 +806,9 @@ module ed_var_tables
                vt_info(nv,igr)%iopti    = 1
 
             case default
-               print*, 'Illegal table specification for var:', tokens(1),ctab
-               call fatal_error('Bad var table','vtable_edio_r','ed_var_tables.f90')
+               write(unit=*,fmt='(a,2(1x,a))')                                             &
+                   'Illegal table specification for var:',trim(tokens(1)),trim(ctab)
+               call fatal_error('Bad var table','vtable_edio_r_sca','ed_var_tables.f90')
             end select
          end do
       else
