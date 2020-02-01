@@ -2259,7 +2259,6 @@ subroutine write_ed_xml_config
      call putConfigINT  ("fuse_relax"         ,ival               )
      !------ New patch/cohort fusion parameters
      call putConfigINT  ("niter_patfus"       ,niter_patfus       )
-     call putConfigREAL ("lai_fuse_tol"       ,lai_fuse_tol       )
      call putConfigREAL ("pat_light_tol_min"  ,pat_light_tol_min  )
      call putConfigREAL ("pat_light_tol_max"  ,pat_light_tol_max  )
      call putConfigREAL ("pat_light_tol_mult" ,pat_light_tol_mult )
@@ -2376,7 +2375,11 @@ subroutine putConfigSTRING(tag,value)
   character(*),intent(in) :: tag 
   character(*),intent(in) :: value
   integer :: lenval 
-  lenval = len(value)
+  !! `len(value)` includes trailing whitespace and other stuff, but below, we
+  !! only write `trim(value)`, which is shorter. This leads to a bunch of
+  !! non-readable garbage getting dumped into the output file. We can avoid that
+  !! by doing `len(trim(value))` here, so the lengths match.
+  lenval = len(trim(value))
   call libxml2f90_ll_opentag(tag)
   call libxml2f90_ll_addid(trim(tag),lenval,trim(value))
   call libxml2f90_ll_closetag(tag)
