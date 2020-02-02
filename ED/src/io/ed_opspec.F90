@@ -2451,8 +2451,8 @@ end do
                     ,icanrad,'...'
       ifaterr = ifaterr +1
       call opspec_fatal(reason,'opspec_misc')
-   elseif (icanrad /= 0 .and. crown_mod == 1) then
-      write(reason,fmt='(a)') 'CROWN_MOD must be turned off when ICANRAD is 1 or 2...'
+   elseif (icanrad == 2 .and. crown_mod == 1) then
+      write(reason,fmt='(a)') 'CROWN_MOD must be turned off when ICANRAD is 2...'
       ifaterr = ifaterr +1
       call opspec_fatal(reason,'opspec_misc')
    end if
