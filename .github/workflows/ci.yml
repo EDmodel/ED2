@@ -52,3 +52,20 @@ jobs:
       run: |
         chmod +x "$GITHUB_WORKSPACE"/ed2-binary/ed_2.2-dbg
         ./run-test.sh tonzi "$GITHUB_WORKSPACE/ed2-binary/ed_2.2-dbg"
+
+  test-tonzi-harvest:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - name: Retrieve compiled binary
+      uses: actions/download-artifact@v1
+      with:
+        name: ed2-binary
+    - name: Install dependencies
+      run: sudo apt-get install -y --no-install-recommends gfortran libhdf5-openmpi-dev libopenmpi-dev
+    - name: Run ED2
+      working-directory: ./EDTS/
+      run: |
+        chmod +x "$GITHUB_WORKSPACE"/ed2-binary/ed_2.2-dbg
+        ./run-test.sh tonzi.harvest "$GITHUB_WORKSPACE/ed2-binary/ed_2.2-dbg"
