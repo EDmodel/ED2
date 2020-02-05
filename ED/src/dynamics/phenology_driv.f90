@@ -151,6 +151,8 @@ module phenology_driv
       real                                  :: br_max
       real                                  :: old_leaf_hcap
       real                                  :: old_wood_hcap
+      real                                  :: old_leaf_water
+      real                                  :: old_wood_water
       real                                  :: old_leaf_water_im2
       real                                  :: old_wood_water_im2
       real                                  :: elongf_try
@@ -233,6 +235,16 @@ module phenology_driv
             pat_bleaf_in      = pat_bleaf_in    + cpatch%nplant(ico) * cpatch%bleaf   (ico)
             pat_broot_in      = pat_broot_in    + cpatch%nplant(ico) * cpatch%broot   (ico)
             pat_bstorage_in   = pat_bstorage_in + cpatch%nplant(ico) * cpatch%bstorage(ico)
+            !------------------------------------------------------------------------------!
+
+
+            !----- Save original heat capacities and water content. -----------------------!
+            old_leaf_hcap       = cpatch%leaf_hcap     (ico)
+            old_wood_hcap       = cpatch%wood_hcap     (ico)
+            old_leaf_water      = cpatch%leaf_water    (ico)
+            old_wood_water      = cpatch%wood_water    (ico)
+            old_leaf_water_im2  = cpatch%leaf_water_im2(ico)
+            old_wood_water_im2  = cpatch%wood_water_im2(ico)
             !------------------------------------------------------------------------------!
 
 
@@ -746,7 +758,6 @@ module phenology_driv
 
 
 
-
                   !----- Adjust plant carbon pools and elongation factor. -----------------!
                   cpatch%bleaf     (ico) = cpatch%bleaf(ico) - delta_bleaf
                   cpatch%bstorage  (ico) = cpatch%bstorage(ico)                            &
@@ -943,10 +954,6 @@ module phenology_driv
             !    The leaf biomass of the cohort has changed, update the vegetation energy  !
             ! using a constant temperature assumption.                                     !
             !------------------------------------------------------------------------------!
-            old_leaf_hcap       = cpatch%leaf_hcap(ico)
-            old_wood_hcap       = cpatch%wood_hcap(ico)
-            old_leaf_water_im2  = cpatch%leaf_water_im2(ico)
-            old_wood_water_im2  = cpatch%wood_water_im2(ico)
             call calc_veg_hcap(cpatch%bleaf(ico),cpatch%bdeada(ico),cpatch%bsapwooda(ico)  &
                               ,cpatch%bbarka(ico),cpatch%nplant(ico),cpatch%pft(ico)       &
                               ,cpatch%leaf_hcap(ico),cpatch%wood_hcap(ico) )
@@ -960,8 +967,9 @@ module phenology_driv
                         ,cpatch%nplant(ico),cpatch%leaf_water_im2(ico)                     &
                         ,cpatch%wood_water_im2(ico))
             call update_veg_energy_cweh(csite,ipa,ico,old_leaf_hcap,old_wood_hcap          &
-                                       ,old_leaf_water_im2,old_wood_water_im2,.true.)
-            call is_resolvable(csite,ipa,ico)
+                                       ,old_leaf_water,old_wood_water,old_leaf_water_im2   &
+                                       ,old_wood_water_im2,.true.,.false.)
+            call is_resolvable(csite,ipa,ico,.false.,.false.,'update_phenology')
             !------------------------------------------------------------------------------!
 
 
@@ -996,10 +1004,6 @@ module phenology_driv
             !------------------------------------------------------------------------------!
 
          end do cohortloop
-         !---------------------------------------------------------------------------------!
-
-
-         !---------------------------------------------------------------------------------!
          !---------------------------------------------------------------------------------!
 
 

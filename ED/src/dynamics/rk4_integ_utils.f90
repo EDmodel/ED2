@@ -12,13 +12,15 @@ module rk4_integ_utils
 
       use ed_state_vars  , only : sitetype               & ! structure
                                 , patchtype              & ! structure
-                                , polygontype
+                                , polygontype            ! ! structure
       use rk4_coms       , only : integration_vars       & ! structure
+                                , rk4patchtype           & ! structure
                                 , integration_buff       & ! intent(inout)
                                 , maxstp                 & ! intent(in)
                                 , tbeg                   & ! intent(in)
                                 , tend                   & ! intent(in)
                                 , dtrk4                  & ! intent(in)
+                                , dtrk4i                 & ! intent(in)
                                 , tiny_offset            & ! intent(in)
                                 , checkbudget            & ! intent(in)
                                 , norm_rk4_fluxes        ! ! sub-routine
@@ -26,6 +28,7 @@ module rk4_integ_utils
       use rk4_derivs     , only : leaf_derivs            ! ! sub-routine
       use rk4_misc       , only : adjust_sfcw_properties & ! sub-routine
                                 , update_diagnostic_vars & ! sub-routine
+                                , update_density_vars    & ! sub-routine
                                 , print_rk4patch         ! ! sub-routine
       use ed_misc_coms   , only : fast_diagnostics       ! ! intent(in)
       use grid_coms      , only : nzg                    & ! intent(in)
@@ -44,6 +47,8 @@ module rk4_integ_utils
       integer                   , intent(out) :: nsteps  !< Number of steps taken.
       !----- Local variables --------------------------------------------------------------!
       type(patchtype)           , pointer     :: cpatch  !< Current patch
+      type(rk4patchtype)        , pointer     :: initp   !< Current RK4 patch
+      type(rk4patchtype)        , pointer     :: ylast   !< Last RK4 patch
       integer                                 :: i       !< Step counter
       integer                                 :: ksn     !< # of snow/water layers
       real(kind=8)                            :: x       !< Elapsed time
@@ -105,15 +110,31 @@ module rk4_integ_utils
          !---------------------------------------------------------------------------------!
          hgoal = h
          if ((x+h-tend)*(x+h-tbeg) > 0.d0) h = tend - x
+         !---------------------------------------------------------------------------------!
+
 
          !----- Take the step -------------------------------------------------------------!
          call rkqs(x,h,hgoal,hdid,hnext,csite,ipa,isi,ibuff)
+         !---------------------------------------------------------------------------------!
+
+
 
          !----- If the integration reached the next step, make some final adjustments -----!
-         if((x-tend)*dtrk4 >= 0.d0)then
+         if ((x-tend)*dtrk4 >= 0.d0) then
 
-            ksn = integration_buff(ibuff)%y%nlev_sfcwater
+            !----- Use pointers to simplify code. -----------------------------------------!
+            initp => integration_buff(ibuff)%initp
+            ylast => integration_buff(ibuff)%y
+            !------------------------------------------------------------------------------!
 
+
+            !------ Copy the temporary patch to the next intermediate step ----------------!
+            call copy_rk4_patch(ylast,initp,cpatch)
+            !------------------------------------------------------------------------------!
+
+            !----- Number of temporary surface water layers. ------------------------------!
+            ksn = initp%nlev_sfcwater
+            !------------------------------------------------------------------------------!
 
 
             !------------------------------------------------------------------------------!
@@ -122,33 +143,29 @@ module rk4_integ_utils
             ! runoff_time scale. If the time scale is too tiny, then it will be forced to  !
             ! be hdid (no reason to be faster than that).                                  !
             !------------------------------------------------------------------------------!
-            if (simplerunoff .and. ksn >= 1) then
-               if (integration_buff(ibuff)%y%sfcwater_mass(ksn)    > 0.d0   .and.          &
-                   integration_buff(ibuff)%y%sfcwater_fracliq(ksn) > 1.d-1) then
+            if ( simplerunoff .and. ksn >= 1) then
+               !---------------------------------------------------------------------------!
+               !    Test mass and liquid fraction inside the if block to avoid bound       !
+               ! check errors.                                                             !
+               !---------------------------------------------------------------------------!
+               if ( initp%sfcwater_mass   (ksn) > 0.d0  .and.                              &
+                    initp%sfcwater_fracliq(ksn) > 1.d-1        ) then
 
-                  wfreeb = min(1.d0, dtrk4 * runoff_time_i)                                &
-                         * integration_buff(ibuff)%y%sfcwater_mass(ksn)                    &
-                         * (integration_buff(ibuff)%y%sfcwater_fracliq(ksn) - 1.d-1)       &
-                         / 9.d-1
+                  !----- Find the amount of water to be lost as runoff. -------------------!
+                  wfreeb = min(1.d0, dtrk4 * runoff_time_i) * initp%sfcwater_mass(ksn)     &
+                         * (initp%sfcwater_fracliq(ksn) - 1.d-1) / 9.d-1
+                  qwfree = wfreeb * tl2uint8(initp%sfcwater_tempk(ksn),1.d0)
+                  !------------------------------------------------------------------------!
 
-                  qwfree = wfreeb * tl2uint8(integration_buff(ibuff)%y%sfcwater_tempk(ksn) &
-                                            ,1.d0)
 
-                  integration_buff(ibuff)%y%sfcwater_mass(ksn) =                           &
-                                      integration_buff(ibuff)%y%sfcwater_mass(ksn)         &
-                                    - wfreeb
 
-                  integration_buff(ibuff)%y%sfcwater_depth(ksn) =                          &
-                                      integration_buff(ibuff)%y%sfcwater_depth(ksn)        &
-                                    - wfreeb*wdnsi8
+                  !----- Update the state variables. --------------------------------------!
+                  initp%sfcwater_mass  (ksn) = initp%sfcwater_mass  (ksn) - wfreeb
+                  initp%sfcwater_depth (ksn) = initp%sfcwater_depth (ksn) - wfreeb * wdnsi8
+                  initp%sfcwater_energy(ksn) = initp%sfcwater_energy(ksn) - qwfree
+                  !------------------------------------------------------------------------!
 
-                  !----- Remove internal energy lost due to runoff. -----------------------!
-                  integration_buff(ibuff)%y%sfcwater_energy(ksn) =                         &
-                                        integration_buff(ibuff)%y%sfcwater_energy(ksn)     &
-                                      - qwfree
 
-                  call adjust_sfcw_properties(nzg,nzs,integration_buff(ibuff)%y,dtrk4,ibuff)
-                  call update_diagnostic_vars(integration_buff(ibuff)%y,csite,ipa,ibuff)
 
                   !----- Compute runoff for output ----------------------------------------!
                   if (fast_diagnostics) then
@@ -157,7 +174,7 @@ module rk4_integ_utils
                      ! which will be done in subroutine normalize_averaged_vars.           !
                      !---------------------------------------------------------------------!
                      csite%runoff       (ipa) = csite%runoff(ipa)                          &
-                                              + sngloff(wfreeb,tiny_offset)
+                                              + sngloff(wfreeb * dtrk4i,tiny_offset)
                      csite%fmean_runoff (ipa) = csite%fmean_runoff(ipa)                    &
                                               + sngloff(wfreeb,tiny_offset)
                      csite%fmean_qrunoff(ipa) = csite%fmean_qrunoff(ipa)                   &
@@ -168,21 +185,26 @@ module rk4_integ_utils
                      !      To make sure that the previous values of wbudget_loss2runoff   !
                      ! and ebudget_loss2runoff are accumulated to the next time step.      !
                      !---------------------------------------------------------------------!
-                     integration_buff(ibuff)%y%wbudget_loss2runoff = wfreeb                &
-                                       + integration_buff(ibuff)%y%wbudget_loss2runoff
-                     integration_buff(ibuff)%y%ebudget_loss2runoff = qwfree                &
-                                       + integration_buff(ibuff)%y%ebudget_loss2runoff
-                     integration_buff(ibuff)%y%wbudget_storage =                           &
-                                         integration_buff(ibuff)%y%wbudget_storage - wfreeb
-                     integration_buff(ibuff)%y%ebudget_storage =                           &
-                                         integration_buff(ibuff)%y%ebudget_storage - qwfree
+                     initp%wbudget_loss2runoff = initp%wbudget_loss2runoff + wfreeb
+                     initp%ebudget_loss2runoff = initp%ebudget_loss2runoff + qwfree
+                     initp%wbudget_storage     = initp%wbudget_storage     - wfreeb
+                     initp%ebudget_storage     = initp%ebudget_storage     - qwfree
+                     !---------------------------------------------------------------------!
                   end if
-               end if
-            end if
+                  !------------------------------------------------------------------------!
 
-            !------ Copy the temporary patch to the next intermediate step ----------------!
-            call copy_rk4_patch(integration_buff(ibuff)%y,integration_buff(ibuff)%initp    &
-                               ,cpatch)
+
+                  !----- Make sure all diagnostic variables are consistent and bounded. ---!
+                  call adjust_sfcw_properties(nzg,nzs,initp,dtrk4,csite,ipa)
+                  call update_diagnostic_vars(initp,csite,ipa,ibuff)
+                  call update_density_vars   (initp,ylast)
+                  !------------------------------------------------------------------------!
+               end if
+               !---------------------------------------------------------------------------!
+            end if
+            !------------------------------------------------------------------------------!
+
+
 
             !------ Update the substep for next time and leave ----------------------------!
             csite%hprev(ipa) = csite%htry(ipa)
@@ -200,14 +222,19 @@ module rk4_integ_utils
             !------------------------------------------------------------------------------!
             return
          end if
-         
+         !---------------------------------------------------------------------------------!
+
          !----- Use hnext as the next substep ---------------------------------------------!
          h = hnext
+         !---------------------------------------------------------------------------------!
       end do timesteploop
+      !------------------------------------------------------------------------------------!
+
 
       !----- If it reached this point, that is really bad news... -------------------------!
       write (unit=*,fmt='(a)') ' ==> Too many steps in routine odeint'
       call print_rk4patch(integration_buff(ibuff)%y, csite,ipa)
+      !------------------------------------------------------------------------------------!
 
       return
    end subroutine odeint
@@ -1814,6 +1841,7 @@ module rk4_integ_utils
                                , adjust_topsoil_properties & ! sub-routine
                                , adjust_sfcw_properties    & ! sub-routine
                                , update_diagnostic_vars    & ! sub-routine
+                               , update_density_vars       & ! sub-routine
                                , print_rk4_state           ! ! sub-routine
       use ed_state_vars , only : sitetype                  & ! structure
                                , patchtype                 ! ! structure
@@ -1973,11 +2001,14 @@ module rk4_integ_utils
             !----- i.   Final update of leaf properties to avoid negative water. ----------!
             call adjust_veg_properties(integration_buff(ibuff)%ytemp,h,csite,ipa,ibuff)
             !----- ii.  Final update of top soil properties to avoid off-bounds moisture. -!
-            call adjust_topsoil_properties(integration_buff(ibuff)%ytemp,h,ibuff)
+            call adjust_topsoil_properties(integration_buff(ibuff)%ytemp,h)
             !----- iii. Make temporary surface water stable and positively defined. -------!
-            call adjust_sfcw_properties(nzg,nzs,integration_buff(ibuff)%ytemp, h,ibuff)
+            call adjust_sfcw_properties(nzg,nzs,integration_buff(ibuff)%ytemp,h,csite,ipa)
             !----- iv.  Update the diagnostic variables. ----------------------------------!
-            call update_diagnostic_vars(integration_buff(ibuff)%ytemp, csite,ipa,ibuff)
+            call update_diagnostic_vars(integration_buff(ibuff)%ytemp,csite,ipa,ibuff)
+            !----- v.  Update density. ----------------------------------------------------!
+            call update_density_vars(integration_buff(ibuff)%ytemp                         &
+                                    ,integration_buff(ibuff)%y    )
             !------------------------------------------------------------------------------!
 
             !------------------------------------------------------------------------------!

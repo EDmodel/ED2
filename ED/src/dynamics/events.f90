@@ -296,7 +296,7 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
   use allometry, only : bd2dbh, dbh2h, bl2dbh, bl2h, h2dbh, area_indices &
                       , ed_biomass,size2bt,size2xb,ed_balive
   use consts_coms, only : pio4
-  use ed_misc_coms     , only : igrass               ! ! intent(in)
+  use ed_misc_coms     , only : igrass,frqsumi               ! ! intent(in)
   use plant_hydro,     only : rwc2tw,twi2twe                   ! ! sub-routine
   implicit none
   real(kind=8),intent(in) :: agb_frac8
@@ -308,6 +308,8 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
   real :: agb_frac,bgb_frac,fol_frac,stor_frac
   real :: old_leaf_hcap
   real :: old_wood_hcap
+  real :: old_leaf_water
+  real :: old_wood_water
   real :: old_leaf_water_im2
   real :: old_wood_water_im2
   real :: elim_nplant
@@ -360,35 +362,56 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
 
                  ialloc     =  1.0 / (1.0 + q(pft) + (qsw(pft)+qbark(pft))*cpatch%hite(ico))
                  bdeada_new = cpatch%bdeada(ico) * ( 1.0 - agb_frac)
+                 bdeada_new = max(0.0, bdeada_new)
                  bdeadb_new = cpatch%bdeadb(ico) * ( 1.0 - bgb_frac)
+                 bdeadb_new = max(0.0, bdeadb_new)
                  bsapa_new  = cpatch%balive(ico) * qsw(pft) * cpatch%hite(ico) * ialloc    &
                             * agf_bs(pft) * (1.0-agb_frac)
+                 bsapa_new = max(0.0, bsapa_new)
                  bsapb_new  = cpatch%balive(ico) * qsw(pft) * cpatch%hite(ico) * ialloc    &
                             * (1.0 - agf_bs(pft)) * (1.0-bgb_frac)
+                 bsapb_new = max(0.0, bsapb_new)
                  bbarka_new = cpatch%balive(ico) * qbark(pft) * cpatch%hite(ico) * ialloc  &
                             * agf_bs(pft) * (1.0-agb_frac)
+                 bbarka_new = max(0.0, bbarka_new)
                  bbarkb_new = cpatch%balive(ico) * qbark(pft) * cpatch%hite(ico) * ialloc  &
                             * (1.0 - agf_bs(pft)) * (1.0-bgb_frac)
+                 bbarkb_new = max(0.0, bbarkb_new)
 
                  bstore_new = cpatch%bstorage(ico) * (1.0-stor_frac)
+                 bstore_new = max(0.0, bstore_new)
                  bleaf_new  = cpatch%balive(ico)   * ialloc *(1.0-fol_frac)
                  bfr_new    = cpatch%balive(ico)   * q(pft) * ialloc * (1.0-bgb_frac)
+                 bfr_new    = max(0.0, bfr_new)
 
                  !! move residual frac to debris/litter pools
                    !! For now assume 100% removal [[needs to be updated]]
 
+                 !! Adjust C balance to reflect new values
+                 !! See https://github.com/EDmodel/ED2/issues/300
+                 csite%cbudget_loss2yield(ipa) = csite%cbudget_loss2yield(ipa) &
+                      + frqsumi * cpatch%nplant(ico) * &
+                      ( (cpatch%broot(ico) - bfr_new) &
+                      + (cpatch%bsapwooda(ico) - bsapa_new) &
+                      + (cpatch%bsapwoodb(ico) - bsapb_new) &
+                      + (cpatch%bbarka(ico) - bbarka_new)  &
+                      + (cpatch%bbarkb(ico) - bbarkb_new) &
+                      + (cpatch%bdeada(ico) - bdeada_new) &
+                      + (cpatch%bdeadb(ico) - bdeadb_new)   &
+                      + (cpatch%bstorage(ico) - bstore_new) )
 
                  !! update biomass pools
                  !! [[this needs to be more sophisticated]]
 
-                 cpatch%broot(ico)     = max(0.0,bfr_new)
-                 cpatch%bsapwooda(ico) = max(0.0,bsapa_new)
-                 cpatch%bsapwoodb(ico) = max(0.0,bsapb_new)
-                 cpatch%bbarka(ico)    = max(0.0,bbarka_new)
-                 cpatch%bbarkb(ico)    = max(0.0,bbarkb_new)
-                 cpatch%bdeada(ico)    = max(0.0,bdeada_new)
-                 cpatch%bdeadb(ico)    = max(0.0,bdeadb_new)
-                 cpatch%bstorage(ico)  = max(0.0,bstore_new)
+                 cpatch%broot(ico)     = bfr_new
+                 cpatch%bsapwooda(ico) = bsapa_new
+                 cpatch%bsapwoodb(ico) = bsapb_new
+                 cpatch%bbarka(ico)    = bbarka_new
+                 cpatch%bbarkb(ico)    = bbarkb_new
+                 cpatch%bdeada(ico)    = bdeada_new
+                 cpatch%bdeadb(ico)    = bdeadb_new
+                 cpatch%bstorage(ico)  = bstore_new
+
                  cpatch%balive(ico)    = ed_balive(cpatch,ico)
                  
                  if(bleaf_new .le. tiny(1.0)) then
@@ -398,6 +421,9 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
                     cpatch%bleaf(ico)      = 0.0
                  else
                     cpatch%phenology_status(ico) = 1
+                    !! Again, adjust C balance accordingly.
+                    csite%cbudget_loss2yield(ipa) = csite%cbudget_loss2yield(ipa) &
+                         + (cpatch%bleaf(ico) - bleaf_new) * cpatch%nplant(ico) * frqsumi
                     cpatch%bleaf(ico)   = bleaf_new
                  end if
 
@@ -434,6 +460,8 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
                  !-------------------------------------------------------------------------!
                  old_leaf_hcap      = cpatch%leaf_hcap     (ico)
                  old_wood_hcap      = cpatch%wood_hcap     (ico)
+                 old_leaf_water     = cpatch%leaf_water    (ico)
+                 old_wood_water     = cpatch%wood_water    (ico)
                  old_leaf_water_im2 = cpatch%leaf_water_im2(ico)
                  old_wood_water_im2 = cpatch%wood_water_im2(ico)
                  call calc_veg_hcap(cpatch%bleaf(ico),cpatch%bdeada(ico)                   &
@@ -449,16 +477,17 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
                              ,cpatch%nplant(ico),cpatch%leaf_water_im2(ico)                &
                              ,cpatch%wood_water_im2(ico))
                  call update_veg_energy_cweh(csite,ipa,ico,old_leaf_hcap,old_wood_hcap     &
+                                            ,old_leaf_water,old_wood_water                 &
                                             ,old_leaf_water_im2,old_wood_water_im2         &
-                                            ,.true.)
+                                            ,.true.,.false.)
 
                  !----- Update flags telling whether leaves and branches can be solved. ---!
-                 call is_resolvable(csite,ipa,ico)
+                 call is_resolvable(csite,ipa,ico,.false.,.false.,'event_harvest')
 
               enddo
 
               !! remove small cohorts
-              call terminate_cohorts(csite,ipa,cmet,elim_nplant,elim_lai)
+              call terminate_cohorts(csite,ipa,cmet,.false.,elim_nplant,elim_lai)
 
               call update_patch_derived_props(csite,ipa,.true.)
             end if  !! check to make sure there ARE cohorts
@@ -889,7 +918,7 @@ subroutine event_till(rval8)
 
               enddo
               !! remove small cohorts
-              call terminate_cohorts(csite,ipa,cmet,elim_nplant,elim_lai)
+              call terminate_cohorts(csite,ipa,cmet,.false.,elim_nplant,elim_lai)
 
               !! update patch properties
               call update_patch_derived_props(csite,ipa,.true.)

@@ -118,7 +118,6 @@ module photosyn_driv
       !------------------------------------------------------------------------------------!
 
 
-
       !----- Allocate the available water function for plants. ----------------------------!
       if (cpatch%ncohorts > 0) then
          allocate (avail_h2o_coh(cpatch%ncohorts))
@@ -312,6 +311,7 @@ module photosyn_driv
 
 
 
+
                !---------------------------------------------------------------------------!
                !    Call the photosynthesis for maximum photosynthetic rates.  The units   !
                ! of the input and output are the standard in most of ED modules, but many  !
@@ -477,6 +477,7 @@ module photosyn_driv
 
 
 
+            
             !------------------------------------------------------------------------------!
             !    Call the photosynthesis for actual photosynthetic rates.  The units       !
             ! of the input and output are the standard in most of ED modules, but many     !
@@ -589,7 +590,9 @@ module photosyn_driv
                                          + cpatch%leaf_respiration(ico)                    &
                                          * dtlsm_o_frqsum * umols_2_kgCyr                  &
                                          / cpatch%nplant          (ico)
+            !------------------------------------------------------------------------------!
 
+            !----- Integrate available water. ---------------------------------------------!
             root_depth_indices(kroot) = .true.
             broot_tot                 = broot_tot + broot_loc
             pss_available_water       = pss_available_water                                &
@@ -643,7 +646,6 @@ module photosyn_driv
                !---------------------------------------------------------------------------!
             end select
             !------------------------------------------------------------------------------!
-
 
 
             !------------------------------------------------------------------------------!

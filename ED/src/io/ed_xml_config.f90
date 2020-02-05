@@ -237,6 +237,7 @@ recursive subroutine read_ed_xml_config(filename)
          call getConfigINT  ('integration_scheme','misc',i,ival,texist)
          if(texist) integration_scheme = ival
 
+
          call libxml2f90__ll_selecttag('UP','config',1) !move back up to top level
 
       enddo
@@ -1479,7 +1480,7 @@ recursive subroutine read_ed_xml_config(filename)
 
         call getConfigINT  ('trait_plasticity_scheme','physiology',i,ival,texist)
         if(texist) trait_plasticity_scheme = ival
-        
+
         call libxml2f90__ll_selecttag('UP','config',1) !move back up to top level
      enddo
   endif
@@ -2062,7 +2063,7 @@ subroutine write_ed_xml_config
         call putConfigREAL("b1Efrd"  , b1Efrd  (i))
         call putConfigREAL("b2Efrd"  , b2Efrd  (i))
         
-        call putConfigREAL("init_laimax",init_laimax(i))
+        call putConfigSCIENTIFIC("init_laimax",init_laimax(i))
 
      !! NITRO
         call putConfigREAL("c2n_leaf",   c2n_leaf(i))
@@ -2258,7 +2259,6 @@ subroutine write_ed_xml_config
      call putConfigINT  ("fuse_relax"         ,ival               )
      !------ New patch/cohort fusion parameters
      call putConfigINT  ("niter_patfus"       ,niter_patfus       )
-     call putConfigREAL ("lai_fuse_tol"       ,lai_fuse_tol       )
      call putConfigREAL ("pat_light_tol_min"  ,pat_light_tol_min  )
      call putConfigREAL ("pat_light_tol_max"  ,pat_light_tol_max  )
      call putConfigREAL ("pat_light_tol_mult" ,pat_light_tol_mult )
@@ -2296,7 +2296,7 @@ subroutine write_ed_xml_config
      call putConfigINT("ianth_disturb",ianth_disturb)
      ! --- Treefall
      call putConfigREAL("treefall_disturbance_rate",treefall_disturbance_rate)
-     call putConfigREAL("Time2Canopy",Time2Canopy)
+     call putConfigSCIENTIFIC("Time2Canopy",Time2Canopy)
      call putConfigREAL("treefall_hite_threshold",treefall_hite_threshold)
      ! --- Forestry
      call putConfigINT("forestry_on",forestry_on)
@@ -2338,6 +2338,10 @@ subroutine write_ed_xml_config
   !************   PHYSIOLOGY  *****************
   call libxml2f90_ll_opentag("physiology")
      call putConfigINT("n_plant_lim",n_plant_lim)
+     call putConfigINT("plant_hydro_scheme",plant_hydro_scheme)
+     call putConfigINT("istomata_scheme",istomata_scheme)
+     call putConfigINT("istruct_growth_scheme",istruct_growth_scheme)
+     call putConfigINT("trait_plasticity_scheme",trait_plasticity_scheme)
   call libxml2f90_ll_closetag("physiology")
 
   !************   INITIAL CONDITIONS  *****************
@@ -2371,7 +2375,11 @@ subroutine putConfigSTRING(tag,value)
   character(*),intent(in) :: tag 
   character(*),intent(in) :: value
   integer :: lenval 
-  lenval = len(value)
+  !! `len(value)` includes trailing whitespace and other stuff, but below, we
+  !! only write `trim(value)`, which is shorter. This leads to a bunch of
+  !! non-readable garbage getting dumped into the output file. We can avoid that
+  !! by doing `len(trim(value))` here, so the lengths match.
+  lenval = len(trim(value))
   call libxml2f90_ll_opentag(tag)
   call libxml2f90_ll_addid(trim(tag),lenval,trim(value))
   call libxml2f90_ll_closetag(tag)
@@ -2402,6 +2410,19 @@ subroutine putConfigREAL(tag,rvalue)
   call libxml2f90_ll_addid(trim(tag),lenval,trim(value))
   call libxml2f90_ll_closetag(tag)
 end subroutine putConfigREAL
+
+subroutine putConfigSCIENTIFIC(tag,rvalue)
+  use ed_max_dims, only : str_len
+  character(*),intent(in) :: tag 
+  real,intent(in) :: rvalue
+  character(str_len) :: value
+  integer :: lenval 
+  write(value,"(es14.7)") rvalue
+  lenval = len(trim(value))
+  call libxml2f90_ll_opentag(tag)
+  call libxml2f90_ll_addid(trim(tag),lenval,trim(value))
+  call libxml2f90_ll_closetag(tag)
+end subroutine putConfigSCIENTIFIC
 
 subroutine putConfigREAL8(tag,rvalue)
   use ed_max_dims, only : str_len

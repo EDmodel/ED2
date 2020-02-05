@@ -6,76 +6,77 @@ module euler_driver
    !     This subroutine is the main driver for the Euler integration scheme.              !
    !---------------------------------------------------------------------------------------!
    subroutine euler_timestep(cgrid)
-      use rk4_coms              , only : integration_vars           & ! structure
-                                       , rk4patchtype               & ! structure
-                                       , zero_rk4_patch             & ! subroutine
-                                       , zero_rk4_cohort            & ! subroutine
-                                       , integration_buff           ! ! intent(out)
-      use ed_para_coms          , only : nthreads                   ! ! intent(in)
-      use ed_state_vars         , only : edtype                     & ! structure
-                                       , polygontype                & ! structure
-                                       , sitetype                   ! ! structure
-      use met_driver_coms       , only : met_driv_state             ! ! structure
-      use grid_coms             , only : nzg                        & ! intent(in)
-                                       , nzs                        ! ! intent(in)
-      use ed_misc_coms          , only : current_time               & ! intent(in)
-                                       , dtlsm                      ! ! intent(in)
-      use ed_max_dims           , only : n_dbh                      ! ! intent(in)
-      use budget_utils          , only : update_cbudget_committed   & ! function
-                                       , compute_budget             ! ! function
-      use soil_respiration      , only : soil_respiration_driver    ! ! function
-      use photosyn_driv         , only : canopy_photosynthesis      ! ! function
-      use update_derived_utils  , only : update_patch_thermo_props  & ! subroutine
-                                       , update_patch_derived_props ! ! subroutine
-      use rk4_integ_utils       , only : copy_met_2_rk4site         ! ! subroutine
-      use rk4_misc              , only : copy_patch_init            & ! subroutine
-                                       , sanity_check_veg_energy    ! ! subroutine
-      use plant_hydro           , only : plant_hydro_driver         ! ! subroutine
-      use therm_lib             , only : tq2enthalpy                ! ! function
+      use rk4_coms               , only : integration_vars           & ! structure
+                                        , rk4patchtype               & ! structure
+                                        , zero_rk4_patch             & ! subroutine
+                                        , zero_rk4_cohort            & ! subroutine
+                                        , integration_buff           ! ! intent(out)
+      use ed_para_coms           , only : nthreads                   ! ! intent(in)
+      use ed_state_vars          , only : edtype                     & ! structure
+                                        , polygontype                & ! structure
+                                        , sitetype                   ! ! structure
+      use met_driver_coms        , only : met_driv_state             ! ! structure
+      use grid_coms              , only : nzg                        ! ! intent(in)
+      use ed_misc_coms           , only : current_time               & ! intent(in)
+                                        , dtlsm                      ! ! intent(in)
+      use ed_max_dims            , only : n_dbh                      ! ! intent(in)
+      use budget_utils           , only : update_cbudget_committed   & ! function
+                                        , compute_budget             ! ! function
+      use soil_respiration       , only : soil_respiration_driver    ! ! function
+      use photosyn_driv          , only : canopy_photosynthesis      ! ! function
+      use update_derived_utils   , only : update_patch_derived_props ! ! subroutine
+      use rk4_integ_utils        , only : copy_met_2_rk4site         ! ! subroutine
+      use rk4_misc               , only : sanity_check_veg_energy    ! ! sub-routine
+      use rk4_copy_patch         , only : copy_rk4patch_init         ! ! sub-routine
+      use plant_hydro            , only : plant_hydro_driver         ! ! subroutine
+      use therm_lib              , only : tq2enthalpy                ! ! function
       !$ use omp_lib
 
       implicit none
       !----- Arguments --------------------------------------------------------------------!
-      type(edtype)             , target      :: cgrid
+      type(edtype)             , target       :: cgrid
       !----- Local variables --------------------------------------------------------------!
-      type(polygontype)        , pointer     :: cpoly
-      type(sitetype)           , pointer     :: csite
-      type(met_driv_state)     , pointer     :: cmet
-      type(rk4patchtype)       , pointer     :: initp
-      type(rk4patchtype)       , pointer     :: dinitp
-      type(rk4patchtype)       , pointer     :: ytemp
-      type(rk4patchtype)       , pointer     :: yerr
-      type(rk4patchtype)       , pointer     :: yscal
-      type(rk4patchtype)       , pointer     :: dydx
-      type(rk4patchtype)       , pointer     :: y
-      integer                                :: ipy
-      integer                                :: isi
-      integer                                :: ipa
-      integer                                :: nsteps
-      integer                                :: imon
-      real                                   :: patch_vels
-      real                                   :: wcurr_loss2atm
-      real                                   :: ecurr_netrad
-      real                                   :: ecurr_loss2atm
-      real                                   :: co2curr_loss2atm
-      real                                   :: wcurr_loss2drainage
-      real                                   :: ecurr_loss2drainage
-      real                                   :: wcurr_loss2runoff
-      real                                   :: ecurr_loss2runoff
-      real                                   :: old_can_prss
-      real                                   :: old_can_enthalpy
-      real                                   :: old_can_temp
-      real                                   :: old_can_shv
-      real                                   :: old_can_co2
-      real                                   :: old_can_rhos
-      real                                   :: old_can_dmol
-      real                                   :: mid_can_rhos
-      real                                   :: mid_can_dmol
-      integer                                :: ibuff
-      integer                                :: npa_thread
-      integer                                :: ita
+      type(polygontype)        , pointer      :: cpoly
+      type(sitetype)           , pointer      :: csite
+      type(met_driv_state)     , pointer      :: cmet
+      type(rk4patchtype)       , pointer      :: initp
+      type(rk4patchtype)       , pointer      :: dinitp
+      type(rk4patchtype)       , pointer      :: ytemp
+      type(rk4patchtype)       , pointer      :: yerr
+      type(rk4patchtype)       , pointer      :: yscal
+      type(rk4patchtype)       , pointer      :: dydx
+      type(rk4patchtype)       , pointer      :: y
+      integer                                 :: ipy
+      integer                                 :: isi
+      integer                                 :: ipa
+      integer                                 :: nsteps
+      integer                                 :: imon
+      real                                    :: patch_vels
+      real                                    :: wcurr_loss2atm
+      real                                    :: ecurr_netrad
+      real                                    :: ecurr_loss2atm
+      real                                    :: co2curr_loss2atm
+      real                                    :: wcurr_loss2drainage
+      real                                    :: ecurr_loss2drainage
+      real                                    :: wcurr_loss2runoff
+      real                                    :: ecurr_loss2runoff
+      real                                    :: co2curr_denseffect
+      real                                    :: ecurr_denseffect
+      real                                    :: wcurr_denseffect
+      real                                    :: ecurr_prsseffect
+      real                                    :: old_can_prss
+      real                                    :: old_can_enthalpy
+      real                                    :: old_can_temp
+      real                                    :: old_can_shv
+      real                                    :: old_can_co2
+      real                                    :: old_can_rhos
+      real                                    :: old_can_dmol
+      real                                    :: rshort_tot
+      integer                                 :: ibuff
+      integer                                 :: npa_thread
+      integer                                 :: ita
       !----- Local constants. -------------------------------------------------------------!
-      logical                  , parameter   :: test_energy_sanity = .false.
+      logical                  , parameter    :: test_energy_sanity = .false.
       !------------------------------------------------------------------------------------!
 
 
@@ -122,9 +123,10 @@ module euler_driver
             !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(                                     &
             !$OMP  ipa,ita,initp,ytemp,yerr,yscal,dydx,y,patch_vels,old_can_prss           &
             !$OMP ,old_can_enthalpy,old_can_temp,old_can_shv,old_can_co2,old_can_rhos      &
-            !$OMP ,old_can_dmol,mid_can_rhos,mid_can_dmol,ecurr_netrad,wcurr_loss2atm      &
-            !$OMP ,ecurr_loss2atm,co2curr_loss2atm,wcurr_loss2drainage,ecurr_loss2drainage &
-            !$OMP ,wcurr_loss2runoff,ecurr_loss2runoff,nsteps)
+            !$OMP ,old_can_dmol,ecurr_netrad,wcurr_loss2atm,ecurr_loss2atm                 &
+            !$OMP ,co2curr_loss2atm,wcurr_loss2drainage,ecurr_loss2drainage                &
+            !$OMP ,wcurr_loss2runoff,ecurr_loss2runoff,co2curr_denseffect,ecurr_denseffect &
+            !$OMP ,wcurr_denseffect,ecurr_prsseffect,rshort_tot,nsteps)
             threadloop: do ibuff=1,nthreads
                !------ Update pointers. ---------------------------------------------------!
                initp  => integration_buff(ibuff)%initp
@@ -192,6 +194,17 @@ module euler_driver
 
 
 
+                  !----- Find incoming radiation used by the radiation driver. ------------!
+                  if (cpoly%nighttime(isi)) then
+                     rshort_tot = 0.0
+                  else
+                     rshort_tot = cmet%par_beam * csite%fbeam(ipa) + cmet%par_diffuse      &
+                                + cmet%nir_beam * csite%fbeam(ipa) + cmet%nir_diffuse
+                  end if
+                  !------------------------------------------------------------------------!
+
+
+
                   !------------------------------------------------------------------------!
                   !      Test whether temperature and energy are reasonable.               !
                   !------------------------------------------------------------------------!
@@ -234,8 +247,9 @@ module euler_driver
                   !------------------------------------------------------------------------!
                   !     Set up the integration patch.                                      !
                   !------------------------------------------------------------------------!
-                  call copy_patch_init(csite,ipa,ibuff,integration_buff(ibuff)%initp       &
-                                      ,patch_vels,mid_can_rhos,mid_can_dmol)
+                  call copy_rk4patch_init(csite,ipa,ibuff,initp,patch_vels                 &
+                                         ,old_can_enthalpy,old_can_rhos,old_can_dmol       &
+                                         ,ecurr_prsseffect)
                   !------------------------------------------------------------------------!
 
 
@@ -253,7 +267,8 @@ module euler_driver
                                             ,wcurr_loss2atm,ecurr_netrad,ecurr_loss2atm    &
                                             ,co2curr_loss2atm,wcurr_loss2drainage          &
                                             ,ecurr_loss2drainage,wcurr_loss2runoff         &
-                                            ,ecurr_loss2runoff,nsteps)
+                                            ,ecurr_loss2runoff,co2curr_denseffect          &
+                                            ,ecurr_denseffect,wcurr_denseffect,nsteps)
                   !------------------------------------------------------------------------!
 
 
@@ -278,8 +293,6 @@ module euler_driver
                   !    Update roughness and canopy depth.  This should be done after the   !
                   ! integration.                                                           !
                   !------------------------------------------------------------------------!
-                  call update_patch_thermo_props(csite,ipa,ipa,nzg,nzs                     &
-                                                ,cpoly%ntext_soil(:,isi))
                   call update_patch_derived_props(csite,ipa,.false.)
                   !------------------------------------------------------------------------!
 
@@ -288,14 +301,16 @@ module euler_driver
                   !------------------------------------------------------------------------!
                   !     Compute the residuals.                                             !
                   !------------------------------------------------------------------------!
-                  call compute_budget(csite,cpoly%lsl(isi),cmet%pcpg,cmet%qpcpg,ipa        &
-                                     ,wcurr_loss2atm,ecurr_netrad,ecurr_loss2atm           &
-                                     ,co2curr_loss2atm,wcurr_loss2drainage                 &
-                                     ,ecurr_loss2drainage,wcurr_loss2runoff                &
-                                     ,ecurr_loss2runoff,cpoly%area(isi)                    &
-                                     ,cgrid%cbudget_nep(ipy),old_can_prss,old_can_enthalpy &
-                                     ,old_can_temp,old_can_shv,old_can_co2,old_can_rhos    &
-                                     ,old_can_dmol,mid_can_rhos,mid_can_dmol)
+                  call compute_budget(csite,cpoly%lsl(isi),cmet%pcpg,cmet%qpcpg            &
+                                     ,rshort_tot,cmet%rlong,ipa,wcurr_loss2atm             &
+                                     ,ecurr_netrad,ecurr_loss2atm,co2curr_loss2atm         &
+                                     ,wcurr_loss2drainage,ecurr_loss2drainage              &
+                                     ,wcurr_loss2runoff,ecurr_loss2runoff                  &
+                                     ,co2curr_denseffect,ecurr_denseffect,wcurr_denseffect &
+                                     ,ecurr_prsseffect,cpoly%area(isi)                     &
+                                     ,cgrid%cbudget_nep(ipy),old_can_prss                  &
+                                     ,old_can_enthalpy,old_can_temp,old_can_shv            &
+                                     ,old_can_co2,old_can_rhos,old_can_dmol)
                   !------------------------------------------------------------------------!
                end do taskloop
                !---------------------------------------------------------------------------!
@@ -326,7 +341,8 @@ module euler_driver
                                    ,nighttime,wcurr_loss2atm,ecurr_netrad,ecurr_loss2atm   &
                                    ,co2curr_loss2atm,wcurr_loss2drainage                   &
                                    ,ecurr_loss2drainage,wcurr_loss2runoff                  &
-                                   ,ecurr_loss2runoff,nsteps)
+                                   ,ecurr_loss2runoff,co2curr_denseffect                   &
+                                   ,ecurr_denseffect,wcurr_denseffect,nsteps)
       use ed_state_vars   , only : sitetype             & ! structure
                                  , patchtype            ! ! structure
       use ed_misc_coms    , only : dtlsm                ! ! intent(in)
@@ -338,7 +354,7 @@ module euler_driver
                                  , tend                 & ! intent(inout)
                                  , dtrk4                & ! intent(inout)
                                  , dtrk4i               ! ! intent(inout)
-      use rk4_driver      , only : initp2modelp         ! ! subroutine
+      use rk4_copy_patch  , only : initp2modelp         ! ! subroutine
 
       implicit none
       !----- Arguments --------------------------------------------------------------------!
@@ -360,6 +376,9 @@ module euler_driver
       real                  , intent(out) :: ecurr_loss2drainage
       real                  , intent(out) :: wcurr_loss2runoff
       real                  , intent(out) :: ecurr_loss2runoff
+      real                  , intent(out) :: co2curr_denseffect
+      real                  , intent(out) :: ecurr_denseffect
+      real                  , intent(out) :: wcurr_denseffect
       integer               , intent(out) :: nsteps
       !----- Local variables --------------------------------------------------------------!
       real(kind=8)                        :: hbeg
@@ -410,7 +429,8 @@ module euler_driver
       !------------------------------------------------------------------------------------!
       call initp2modelp(tend-tbeg,initp,csite,ipa,nighttime,wcurr_loss2atm,ecurr_netrad    &
                        ,ecurr_loss2atm,co2curr_loss2atm,wcurr_loss2drainage                &
-                       ,ecurr_loss2drainage,wcurr_loss2runoff,ecurr_loss2runoff)
+                       ,ecurr_loss2drainage,wcurr_loss2runoff,ecurr_loss2runoff            &
+                       ,co2curr_denseffect,ecurr_denseffect,wcurr_denseffect)
       !------------------------------------------------------------------------------------!
 
       return
@@ -461,6 +481,7 @@ module euler_driver
                                 , rk4_sanity_check          & ! sub-routine
                                 , print_sanity_check        ! ! sub-routine
       use rk4_misc       , only : update_diagnostic_vars    & ! sub-routine
+                                , update_density_vars       & ! sub-routine
                                 , adjust_veg_properties     & ! sub-routine
                                 , adjust_topsoil_properties & ! sub-routine
                                 , adjust_sfcw_properties    & ! sub-routine
@@ -638,11 +659,13 @@ module euler_driver
                !----- i.   Update leaf properties to avoid negative water. ----------------!
                call adjust_veg_properties(ytemp,h,csite,ipa,ibuff)
                !----- ii.  Update top soil properties to avoid off-bounds moisture. -------!
-               call adjust_topsoil_properties(ytemp,h,ibuff)
+               call adjust_topsoil_properties(ytemp,h)
                !----- ii. Make temporary surface water stable and positively defined. -----!
-               call adjust_sfcw_properties(nzg,nzs,ytemp,h,ibuff)
+               call adjust_sfcw_properties(nzg,nzs,ytemp,h,csite,ipa)
                !----- iii.  Update the diagnostic variables. ------------------------------!
                call update_diagnostic_vars(ytemp, csite,ipa,ibuff)
+               !----- iv.  Update density variables. --------------------------------------!
+               call update_density_vars(ytemp,initp)
                !---------------------------------------------------------------------------!
 
                !---------------------------------------------------------------------------!
@@ -685,13 +708,21 @@ module euler_driver
 
                exit hstep
             end if
+            !------------------------------------------------------------------------------!
          end do hstep
+         !---------------------------------------------------------------------------------!
 
          !----- If the integration reached the next step, make some final adjustments -----!
          if((x-tend)*dtrk4 >= 0.d0)then
-            call copy_rk4_patch(initp,ytemp,csite%patch(ipa))
 
+
+            !------ Copy the temporary patch to the next intermediate step ----------------!
+            call copy_rk4_patch(initp,ytemp,cpatch)
+            !------------------------------------------------------------------------------!
+
+            !----- Number of temporary surface water layers. ------------------------------!
             ksn = initp%nlev_sfcwater
+            !------------------------------------------------------------------------------!
 
             !------------------------------------------------------------------------------!
             !   Make temporary surface liquid water disappear.  This will not happen       !
@@ -699,38 +730,63 @@ module euler_driver
             ! runoff_time scale.                                                           !
             !------------------------------------------------------------------------------!
             if (simplerunoff .and. ksn >= 1) then
+               !---------------------------------------------------------------------------!
+               !    Test mass and liquid fraction inside the if block to avoid bound       !
+               ! check errors.                                                             !
+               !---------------------------------------------------------------------------!
+               if ( initp%sfcwater_mass(ksn)    > 0.d0   .and.                             &
+                    initp%sfcwater_fracliq(ksn) > 1.d-1        ) then
 
-               if (initp%sfcwater_mass(ksn)    > 0.d0   .and.                              &
-                   initp%sfcwater_fracliq(ksn) > 1.d-1        ) then
-
-                  wfreeb = min(1.d0,dtrk4*runoff_time_i) * initp%sfcwater_mass(ksn)        &
+                  !----- Find the amount of water to be lost as runoff. -------------------!
+                  wfreeb = min(1.d0, dtrk4 * runoff_time_i) * initp%sfcwater_mass(ksn)     &
                          * (initp%sfcwater_fracliq(ksn) - 1.d-1) / 9.d-1
                   qwfree = wfreeb * tl2uint8(initp%sfcwater_tempk(ksn),1.d0)
+                  !------------------------------------------------------------------------!
 
-                  initp%sfcwater_mass(ksn) = initp%sfcwater_mass(ksn)   - wfreeb
-                  initp%sfcwater_depth(ksn) = initp%sfcwater_depth(ksn) - wfreeb * wdnsi8
-                  !----- Recompute the energy removing runoff -----------------------------!
+
+
+                  !----- Update the state variables. --------------------------------------!
+                  initp%sfcwater_mass  (ksn) = initp%sfcwater_mass  (ksn) - wfreeb
+                  initp%sfcwater_depth (ksn) = initp%sfcwater_depth (ksn) - wfreeb * wdnsi8
                   initp%sfcwater_energy(ksn) = initp%sfcwater_energy(ksn) - qwfree
+                  !------------------------------------------------------------------------!
 
-                  call adjust_sfcw_properties(nzg,nzs,initp,dtrk4,ibuff)
-                  call update_diagnostic_vars(initp,csite,ipa,ibuff)
+
 
                   !----- Compute runoff for output ----------------------------------------!
                   if (fast_diagnostics) then
+                     !---------------------------------------------------------------------!
+                     !      There is no need to divide wfreeb and qwfree  by time step,    !
+                     ! which will be done in subroutine normalize_averaged_vars.           !
+                     !---------------------------------------------------------------------!
                      csite%runoff       (ipa) = csite%runoff(ipa)                          &
                                               + sngloff(wfreeb * dtrk4i,tiny_offset)
                      csite%fmean_runoff (ipa) = csite%fmean_runoff(ipa)                    &
-                                              + sngloff(wfreeb * dtrk4i,tiny_offset)
+                                              + sngloff(wfreeb,tiny_offset)
                      csite%fmean_qrunoff(ipa) = csite%fmean_qrunoff(ipa)                   &
-                                              + sngloff(qwfree * dtrk4i,tiny_offset)
+                                              + sngloff(qwfree,tiny_offset)
                   end if
                   if (checkbudget) then
+                     !---------------------------------------------------------------------!
+                     !      To make sure that the previous values of wbudget_loss2runoff   !
+                     ! and ebudget_loss2runoff are accumulated to the next time step.      !
+                     !---------------------------------------------------------------------!
                      initp%wbudget_loss2runoff = initp%wbudget_loss2runoff + wfreeb
                      initp%ebudget_loss2runoff = initp%ebudget_loss2runoff + qwfree
-                     initp%wbudget_storage     = initp%wbudget_storage - wfreeb
-                     initp%ebudget_storage     = initp%ebudget_storage - qwfree
+                     initp%wbudget_storage     = initp%wbudget_storage     - wfreeb
+                     initp%ebudget_storage     = initp%ebudget_storage     - qwfree
+                     !---------------------------------------------------------------------!
                   end if
+                  !------------------------------------------------------------------------!
+
+
+                  !----- Make sure all diagnostic variables are consistent and bounded. ---!
+                  call adjust_sfcw_properties(nzg,nzs,initp,dtrk4,csite,ipa)
+                  call update_diagnostic_vars(initp,csite,ipa,ibuff)
+                  call update_density_vars   (initp,ytemp)
+                  !------------------------------------------------------------------------!
                end if
+               !---------------------------------------------------------------------------!
             end if
             !------------------------------------------------------------------------------!
 
@@ -746,16 +802,22 @@ module euler_driver
             csite%fmean_rk4step(ipa) = csite%fmean_rk4step(ipa)                            &
                                      + sngl((tend-tbeg)*(tend-tbeg))/real(i)
             nsteps = i
+            !------------------------------------------------------------------------------!
             return
          end if
+         !---------------------------------------------------------------------------------!
+
 
          !----- Use hnext as the next substep ---------------------------------------------!
          h = hnext
+         !---------------------------------------------------------------------------------!
       end do timesteploop
+      !------------------------------------------------------------------------------------!
 
       !----- If it reached this point, that is really bad news... -------------------------!
       write (unit=*,fmt='(a)') ' ==> Too many steps in routine euler_integ'
       call print_rk4patch(ytemp, csite,ipa)
+      !------------------------------------------------------------------------------------!
 
       return
    end subroutine euler_integ

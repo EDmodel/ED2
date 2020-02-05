@@ -125,6 +125,8 @@ module growth_balive
       real                             :: dlnndt
       real                             :: old_leaf_hcap
       real                             :: old_wood_hcap
+      real                             :: old_leaf_water
+      real                             :: old_wood_water
       real                             :: old_leaf_water_im2
       real                             :: old_wood_water_im2
       real                             :: nitrogen_uptake
@@ -201,7 +203,6 @@ module growth_balive
 
                   !----- Alias for current PFT. -------------------------------------------!
                   ipft = cpatch%pft(ico)
-
                   !----- Initialize cohort nitrogen uptake. -------------------------------!
                   nitrogen_uptake = 0.0
                   N_uptake_pot    = 0.0
@@ -245,6 +246,21 @@ module growth_balive
                   pat_balive_in   = pat_balive_in   + nplant_in * balive_in
                   pat_bdead_in    = pat_bdead_in    + nplant_in * (bdeada_in + bdeadb_in)
                   pat_bstorage_in = pat_bstorage_in + nplant_in * bstorage_in
+                  !------------------------------------------------------------------------!
+
+
+
+
+                  !------------------------------------------------------------------------!
+                  !     Save original heat capacities and water content (needed for the    !
+                  ! energy and water budget checks).                                       !
+                  !------------------------------------------------------------------------!
+                  old_leaf_hcap      = cpatch%leaf_hcap     (ico)
+                  old_wood_hcap      = cpatch%wood_hcap     (ico)
+                  old_leaf_water     = cpatch%leaf_water    (ico)
+                  old_wood_water     = cpatch%wood_water    (ico)
+                  old_leaf_water_im2 = cpatch%leaf_water_im2(ico)
+                  old_wood_water_im2 = cpatch%wood_water_im2(ico)
                   !------------------------------------------------------------------------!
 
 
@@ -320,9 +336,8 @@ module growth_balive
                                   ,tr_bbarkb,tr_bstorage,carbon_debt,flushing,balive_aim   &
                                   ,carbon_miss,xfer_case)
 
-                  call apply_c_xfers(cpatch,ico,npp_actual,tr_bleaf,tr_broot               &
-                                    ,tr_bsapwooda,tr_bsapwoodb,tr_bbarka,tr_bbarkb         &
-                                    ,tr_bstorage)
+                  call apply_c_xfers(cpatch,ico,tr_bleaf,tr_broot,tr_bsapwooda             &
+                                    ,tr_bsapwoodb,tr_bbarka,tr_bbarkb,tr_bstorage)
                   
                   call update_today_npp_vars(cpatch,ico,tr_bleaf,tr_broot,tr_bsapwooda     &
                                             ,tr_bsapwoodb,tr_bbarka,tr_bbarkb              &
@@ -492,10 +507,6 @@ module growth_balive
                   !     It is likely that biomass has changed, therefore, update           !
                   ! vegetation energy and heat capacity.                                   !
                   !------------------------------------------------------------------------!
-                  old_leaf_hcap      = cpatch%leaf_hcap     (ico)
-                  old_wood_hcap      = cpatch%wood_hcap     (ico)
-                  old_leaf_water_im2 = cpatch%leaf_water_im2(ico)
-                  old_wood_water_im2 = cpatch%wood_water_im2(ico)
                   call calc_veg_hcap(cpatch%bleaf(ico) ,cpatch%bdeada(ico)                 &
                                     ,cpatch%bsapwooda(ico),cpatch%bbarka(ico)              &
                                     ,cpatch%nplant(ico),cpatch%pft(ico)                    &
@@ -509,10 +520,11 @@ module growth_balive
                               ,cpatch%nplant(ico),cpatch%leaf_water_im2(ico)               &
                               ,cpatch%wood_water_im2(ico))
                   call update_veg_energy_cweh(csite,ipa,ico,old_leaf_hcap,old_wood_hcap    &
+                                             ,old_leaf_water,old_wood_water                &
                                              ,old_leaf_water_im2,old_wood_water_im2        &
-                                             ,.true.)
+                                             ,.true.,.false.)
                   !----- Update the stability status. -------------------------------------!
-                  call is_resolvable(csite,ipa,ico)
+                  call is_resolvable(csite,ipa,ico,.false.,.false.,'dbalive_dt')
                   !------------------------------------------------------------------------!
 
 
@@ -545,7 +557,7 @@ module growth_balive
                ! as height and biomass may change every day.                               !
                !---------------------------------------------------------------------------!
                if (veget_dyn_on .and. (igrass == 1)) then
-                  call terminate_cohorts(csite,ipa,cmet,elim_nplant,elim_lai)
+                  call terminate_cohorts(csite,ipa,cmet,.false.,elim_nplant,elim_lai)
                   call sort_cohorts(cpatch)
                end if
                !---------------------------------------------------------------------------!
@@ -940,6 +952,7 @@ module growth_balive
       ! bother checking the partition amongst tissues.                                     !
       !------------------------------------------------------------------------------------!
       if (growresp_actual < tiny_num) then
+         growresp_actual               = 0.0
          cpatch%leaf_growth_resp (ico) = 0.0
          cpatch%root_growth_resp (ico) = 0.0
          cpatch%sapa_growth_resp (ico) = 0.0
@@ -1086,7 +1099,7 @@ module growth_balive
       select case (iddmort_scheme)
       case (0) ! Storage is not accounted.
          total_maintenance = tissue_maintenance
-      case (1) ! Storage is not accounted.
+      case (1) ! Storage is accounted.
          total_maintenance = tissue_maintenance + storage_maintenance
       end select
       !------------------------------------------------------------------------------------!
@@ -1310,7 +1323,7 @@ module growth_balive
                     + bsapwooda_aim + bsapwoodb_aim                                        &
                     + bbarka_aim    + bbarkb_aim
       !------------------------------------------------------------------------------------!
-
+      
 
 
       !------------------------------------------------------------------------------------!
@@ -1674,15 +1687,14 @@ module growth_balive
 
    !=======================================================================================!
    !=======================================================================================!
-   subroutine apply_c_xfers(cpatch,ico,npp_actual,tr_bleaf,tr_broot,tr_bsapwooda           &
-                           ,tr_bsapwoodb,tr_bbarka,tr_bbarkb,tr_bstorage)
+   subroutine apply_c_xfers(cpatch,ico,tr_bleaf,tr_broot,tr_bsapwooda,tr_bsapwoodb         &
+                           ,tr_bbarka,tr_bbarkb,tr_bstorage)
       use ed_state_vars , only : patchtype  ! ! structure
       use allometry     , only : ed_balive  ! ! function
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       type(patchtype), target        :: cpatch
       integer        , intent(in)    :: ico
-      real           , intent(in)    :: npp_actual
       real           , intent(in)    :: tr_bleaf
       real           , intent(in)    :: tr_broot
       real           , intent(in)    :: tr_bsapwooda
@@ -1703,15 +1715,6 @@ module growth_balive
       cpatch%bbarka   (ico) = cpatch%bbarka   (ico) + tr_bbarka
       cpatch%bbarkb   (ico) = cpatch%bbarkb   (ico) + tr_bbarkb
       cpatch%balive   (ico) = ed_balive(cpatch,ico)
-      !------------------------------------------------------------------------------------!
-
-
-      !----- NPP allocation in diff pools in KgC/m2/day. ----------------------------------!
-      cpatch%today_nppleaf(ico)    = tr_bleaf                      * cpatch%nplant(ico)
-      cpatch%today_nppfroot(ico)   = tr_broot                      * cpatch%nplant(ico)
-      cpatch%today_nppsapwood(ico) = (tr_bsapwooda + tr_bsapwoodb) * cpatch%nplant(ico)
-      cpatch%today_nppbark(ico)    = (tr_bbarka    + tr_bbarkb   ) * cpatch%nplant(ico)
-      cpatch%today_nppdaily(ico)   = npp_actual                    * cpatch%nplant(ico)
       !------------------------------------------------------------------------------------!
 
 

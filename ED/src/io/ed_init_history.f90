@@ -3716,6 +3716,8 @@ module ed_init_history
                      ,'WBUDGET_WCAPEFFECT          ',dsetrank,iparallel,.true. ,foundvar)
       call hdf_getslab_r(csite%wbudget_zcaneffect                                          &
                      ,'WBUDGET_ZCANEFFECT          ',dsetrank,iparallel,.true. ,foundvar)
+      call hdf_getslab_r(csite%wbudget_pheneffect                                          &
+                     ,'WBUDGET_PHENEFFECT          ',dsetrank,iparallel,.true. ,foundvar)
       call hdf_getslab_r(csite%wbudget_precipgain                                          &
                      ,'WBUDGET_PRECIPGAIN          ',dsetrank,iparallel,.true. ,foundvar)
       call hdf_getslab_r(csite%wbudget_loss2runoff                                         &
@@ -3738,6 +3740,8 @@ module ed_init_history
                      ,'EBUDGET_WCAPEFFECT          ',dsetrank,iparallel,.true. ,foundvar)
       call hdf_getslab_r(csite%ebudget_zcaneffect                                          &
                      ,'EBUDGET_ZCANEFFECT          ',dsetrank,iparallel,.true. ,foundvar)
+      call hdf_getslab_r(csite%ebudget_pheneffect                                          &
+                     ,'EBUDGET_PHENEFFECT          ',dsetrank,iparallel,.true. ,foundvar)
       call hdf_getslab_r(csite%ebudget_loss2runoff                                         &
                      ,'EBUDGET_LOSS2RUNOFF         ',dsetrank,iparallel,.true. ,foundvar)
       call hdf_getslab_r(csite%ebudget_loss2drainage                                       &

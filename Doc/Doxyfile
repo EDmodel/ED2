@@ -841,6 +841,7 @@ FILE_PATTERNS          = *.c \
                          *.py \
                          *.pyw \
                          *.f90 \
+                         *.F90 \   # some files ends with F90
                          *.f \
                          *.for \
                          *.tcl \

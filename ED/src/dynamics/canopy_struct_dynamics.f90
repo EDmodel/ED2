@@ -294,7 +294,7 @@ module canopy_struct_dynamics
 
 
       return
-    end subroutine canopy_turbulence_init
+   end subroutine canopy_turbulence_init
    !=======================================================================================!
    !=======================================================================================!
 
@@ -378,7 +378,6 @@ module canopy_struct_dynamics
                                   , patchtype            ! ! structure
       use rk4_coms         , only : rk4patchtype         & ! structure
                                   , rk4site              & ! intent(in)
-                                  , rk4aux               & ! intent(out)
                                   , tiny_offset          & ! intent(in)
                                   , ibranch_thermo       ! ! intent(in)
       use grid_coms        , only : nzg                  ! ! intent(in)
@@ -562,19 +561,6 @@ module canopy_struct_dynamics
          !---------------------------------------------------------------------------------!
          initp%ggveg = 0.d0
          initp%ggnet = initp%ggbare
-         !---------------------------------------------------------------------------------!
-
-
-         !---------------------------------------------------------------------------------!
-         !     Calculate the heat and mass storage capacity of the canopy.                 !
-         !---------------------------------------------------------------------------------!
-         call can_whccap8(initp%can_rhos,initp%can_dmol,initp%can_depth                    &
-                         ,rk4aux(ibuff)%wcapcan                                            &
-                         ,rk4aux(ibuff)%hcapcan                                            &
-                         ,rk4aux(ibuff)%ccapcan                                            &
-                         ,rk4aux(ibuff)%wcapcani                                           &
-                         ,rk4aux(ibuff)%hcapcani                                           &
-                         ,rk4aux(ibuff)%ccapcani)
          !---------------------------------------------------------------------------------!
 
          return
@@ -783,19 +769,6 @@ module canopy_struct_dynamics
             !------------------------------------------------------------------------------!
          end do
 
-
-         !---------------------------------------------------------------------------------!
-         !     Calculate the heat and mass storage capacity of the canopy.                 !
-         !---------------------------------------------------------------------------------!
-         call can_whccap8(initp%can_rhos,initp%can_dmol,initp%can_depth                    &
-                         ,rk4aux(ibuff)%wcapcan                                            &
-                         ,rk4aux(ibuff)%hcapcan                                            &
-                         ,rk4aux(ibuff)%ccapcan                                            &
-                         ,rk4aux(ibuff)%wcapcani                                           &
-                         ,rk4aux(ibuff)%hcapcani                                           &
-                         ,rk4aux(ibuff)%ccapcani)
-         !---------------------------------------------------------------------------------!
-
          !---------------------------------------------------------------------------------!
          !     Find the net ground conductance.  The net conductance is derived from the   !
          ! net resistance, which is, in turn, the weighted average of the resistances in   !
@@ -962,20 +935,6 @@ module canopy_struct_dynamics
             end if
             !------------------------------------------------------------------------------!
          end do
-         !---------------------------------------------------------------------------------!
-
-
-
-         !---------------------------------------------------------------------------------!
-         !     Calculate the heat and mass storage capacity of the canopy.                 !
-         !---------------------------------------------------------------------------------!
-         call can_whccap8(initp%can_rhos,initp%can_dmol,initp%can_depth                    &
-                         ,rk4aux(ibuff)%wcapcan                                            &
-                         ,rk4aux(ibuff)%hcapcan                                            &
-                         ,rk4aux(ibuff)%ccapcan                                            &
-                         ,rk4aux(ibuff)%wcapcani                                           &
-                         ,rk4aux(ibuff)%hcapcani                                           &
-                         ,rk4aux(ibuff)%ccapcani)
          !---------------------------------------------------------------------------------!
 
 
@@ -1599,20 +1558,6 @@ module canopy_struct_dynamics
             initp%ggnet = initp%ggbare * initp%ggveg                                       &
                         / (initp%ggveg + (1.d0 - initp%opencan_frac) * initp%ggbare )
          end if
-         !---------------------------------------------------------------------------------!
-
-
-
-         !---------------------------------------------------------------------------------!
-         !     Calculate the heat and mass storage capacity of the canopy.                 !
-         !---------------------------------------------------------------------------------!
-         call can_whccap8(initp%can_rhos,initp%can_dmol,initp%can_depth                    &
-                         ,rk4aux(ibuff)%wcapcan                                            &
-                         ,rk4aux(ibuff)%hcapcan                                            &
-                         ,rk4aux(ibuff)%ccapcan                                            &
-                         ,rk4aux(ibuff)%wcapcani                                           &
-                         ,rk4aux(ibuff)%hcapcani                                           &
-                         ,rk4aux(ibuff)%ccapcani)
          !---------------------------------------------------------------------------------!
 
       end select

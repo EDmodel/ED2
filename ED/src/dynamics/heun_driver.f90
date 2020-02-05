@@ -8,76 +8,77 @@ module heun_driver
    !     This subroutine is the main driver for the Heun's (RK2) integration scheme.       !
    !---------------------------------------------------------------------------------------!
    subroutine heun_timestep(cgrid)
-      use rk4_coms              , only : integration_vars           & ! structure
-                                       , rk4patchtype               & ! structure
-                                       , zero_rk4_patch             & ! subroutine
-                                       , zero_rk4_cohort            & ! subroutine
-                                       , integration_buff           ! ! intent(out)
-      use ed_para_coms          , only : nthreads                   ! ! intent(in)
-      use ed_state_vars         , only : edtype                     & ! structure
-                                       , polygontype                & ! structure
-                                       , sitetype                   & ! structure
-                                       , patchtype                  ! ! structure
-      use met_driver_coms       , only : met_driv_state             ! ! structure
-      use grid_coms             , only : nzg                        & ! intent(in)
-                                       , nzs                        ! ! intent(in)
-      use ed_misc_coms          , only : current_time               & ! intent(in)
-                                       , dtlsm                      ! ! intent(in)
-      use ed_max_dims           , only : n_dbh                      ! ! intent(in)
-      use budget_utils          , only : update_cbudget_committed   & ! function
-                                       , compute_budget             ! ! function
-      use soil_respiration      , only : soil_respiration_driver    ! ! function
-      use photosyn_driv         , only : canopy_photosynthesis      ! ! function
-      use update_derived_utils  , only : update_patch_thermo_props  & ! subroutine
-                                       , update_patch_derived_props ! ! subroutine
-      use rk4_integ_utils       , only : copy_met_2_rk4site         ! ! subroutine
-      use rk4_misc              , only : copy_patch_init            & ! subroutine
-                                       , sanity_check_veg_energy    ! ! subroutine
-      use plant_hydro           , only : plant_hydro_driver         ! ! subroutine
-      use therm_lib             , only : tq2enthalpy                ! ! function
+      use rk4_coms               , only : integration_vars           & ! structure
+                                        , rk4patchtype               & ! structure
+                                        , zero_rk4_patch             & ! subroutine
+                                        , zero_rk4_cohort            & ! subroutine
+                                        , integration_buff           ! ! intent(out)
+      use ed_para_coms           , only : nthreads                   ! ! intent(in)
+      use ed_state_vars          , only : edtype                     & ! structure
+                                        , polygontype                & ! structure
+                                        , sitetype                   & ! structure
+                                        , patchtype                  ! ! structure
+      use met_driver_coms        , only : met_driv_state             ! ! structure
+      use grid_coms              , only : nzg                        ! ! intent(in)
+      use ed_misc_coms           , only : current_time               & ! intent(in)
+                                        , dtlsm                      ! ! intent(in)
+      use ed_max_dims            , only : n_dbh                      ! ! intent(in)
+      use budget_utils           , only : update_cbudget_committed   & ! function
+                                        , compute_budget             ! ! function
+      use soil_respiration       , only : soil_respiration_driver    ! ! function
+      use photosyn_driv          , only : canopy_photosynthesis      ! ! function
+      use update_derived_utils   , only : update_patch_derived_props ! ! subroutine
+      use rk4_integ_utils        , only : copy_met_2_rk4site         ! ! subroutine
+      use rk4_misc               , only : sanity_check_veg_energy    ! ! sub-routine
+      use rk4_copy_patch         , only : copy_rk4patch_init         ! ! sub-routine
+      use plant_hydro            , only : plant_hydro_driver         ! ! subroutine
+      use therm_lib              , only : tq2enthalpy                ! ! function
       !$ use omp_lib
 
       implicit none
       !----- Arguments --------------------------------------------------------------------!
-      type(edtype)             , target      :: cgrid
+      type(edtype)             , target       :: cgrid
       !----- Local variables --------------------------------------------------------------!
-      type(polygontype)        , pointer     :: cpoly
-      type(sitetype)           , pointer     :: csite
-      type(met_driv_state)     , pointer     :: cmet
-      type(rk4patchtype)       , pointer     :: initp
-      type(rk4patchtype)       , pointer     :: ytemp
-      type(rk4patchtype)       , pointer     :: yerr
-      type(rk4patchtype)       , pointer     :: yscal
-      type(rk4patchtype)       , pointer     :: dydx
-      type(rk4patchtype)       , pointer     :: y
-      integer                                :: ipy
-      integer                                :: isi
-      integer                                :: ipa
-      integer                                :: imon
-      integer                                :: nsteps
-      real                                   :: wcurr_loss2atm
-      real                                   :: ecurr_netrad
-      real                                   :: ecurr_loss2atm
-      real                                   :: co2curr_loss2atm
-      real                                   :: wcurr_loss2drainage
-      real                                   :: ecurr_loss2drainage
-      real                                   :: wcurr_loss2runoff
-      real                                   :: ecurr_loss2runoff
-      real                                   :: old_can_prss
-      real                                   :: old_can_enthalpy
-      real                                   :: old_can_temp
-      real                                   :: old_can_shv
-      real                                   :: old_can_co2
-      real                                   :: old_can_rhos
-      real                                   :: old_can_dmol
-      real                                   :: mid_can_rhos
-      real                                   :: mid_can_dmol
-      real                                   :: patch_vels
-      integer                                :: ibuff
-      integer                                :: npa_thread
-      integer                                :: ita
+      type(polygontype)        , pointer      :: cpoly
+      type(sitetype)           , pointer      :: csite
+      type(met_driv_state)     , pointer      :: cmet
+      type(rk4patchtype)       , pointer      :: initp
+      type(rk4patchtype)       , pointer      :: ytemp
+      type(rk4patchtype)       , pointer      :: yerr
+      type(rk4patchtype)       , pointer      :: yscal
+      type(rk4patchtype)       , pointer      :: dydx
+      type(rk4patchtype)       , pointer      :: y
+      integer                                 :: ipy
+      integer                                 :: isi
+      integer                                 :: ipa
+      integer                                 :: imon
+      integer                                 :: nsteps
+      real                                    :: wcurr_loss2atm
+      real                                    :: ecurr_netrad
+      real                                    :: ecurr_loss2atm
+      real                                    :: co2curr_loss2atm
+      real                                    :: wcurr_loss2drainage
+      real                                    :: ecurr_loss2drainage
+      real                                    :: wcurr_loss2runoff
+      real                                    :: ecurr_loss2runoff
+      real                                    :: co2curr_denseffect
+      real                                    :: ecurr_denseffect
+      real                                    :: wcurr_denseffect
+      real                                    :: ecurr_prsseffect
+      real                                    :: old_can_prss
+      real                                    :: old_can_enthalpy
+      real                                    :: old_can_temp
+      real                                    :: old_can_shv
+      real                                    :: old_can_co2
+      real                                    :: old_can_rhos
+      real                                    :: old_can_dmol
+      real                                    :: patch_vels
+      real                                    :: rshort_tot
+      integer                                 :: ibuff
+      integer                                 :: npa_thread
+      integer                                 :: ita
       !----- Local constants. -------------------------------------------------------------!
-      logical                   , parameter  :: test_energy_sanity = .false.
+      logical                   , parameter   :: test_energy_sanity = .false.
       !------------------------------------------------------------------------------------!
 
       polyloop: do ipy = 1,cgrid%npolygons
@@ -122,9 +123,10 @@ module heun_driver
             !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(                                     &
             !$OMP  ipa,ita,initp,ytemp,yerr,yscal,dydx,y,patch_vels,old_can_prss           &
             !$OMP ,old_can_enthalpy,old_can_temp,old_can_shv,old_can_co2,old_can_rhos      &
-            !$OMP ,old_can_dmol,mid_can_rhos,mid_can_dmol,ecurr_netrad,wcurr_loss2atm      &
-            !$OMP ,ecurr_loss2atm,co2curr_loss2atm,wcurr_loss2drainage,ecurr_loss2drainage &
-            !$OMP ,wcurr_loss2runoff,ecurr_loss2runoff,nsteps)
+            !$OMP ,old_can_dmol,ecurr_netrad,wcurr_loss2atm,ecurr_loss2atm                 &
+            !$OMP ,co2curr_loss2atm,wcurr_loss2drainage,ecurr_loss2drainage                &
+            !$OMP ,wcurr_loss2runoff,ecurr_loss2runoff,co2curr_denseffect,ecurr_denseffect &
+            !$OMP ,wcurr_denseffect,ecurr_prsseffect,rshort_tot,nsteps)
             threadloop: do ibuff=1,nthreads
                !------ Update pointers. ---------------------------------------------------!
                initp => integration_buff(ibuff)%initp
@@ -190,6 +192,17 @@ module heun_driver
 
 
 
+                  !----- Find incoming radiation used by the radiation driver. ------------!
+                  if (cpoly%nighttime(isi)) then
+                     rshort_tot = 0.0
+                  else
+                     rshort_tot = cmet%par_beam * csite%fbeam(ipa) + cmet%par_diffuse      &
+                                + cmet%nir_beam * csite%fbeam(ipa) + cmet%nir_diffuse
+                  end if
+                  !------------------------------------------------------------------------!
+
+
+
                   !------------------------------------------------------------------------!
                   !      Test whether temperature and energy are reasonable.               !
                   !------------------------------------------------------------------------!
@@ -233,8 +246,9 @@ module heun_driver
                   !------------------------------------------------------------------------!
                   !     Set up the integration patch.                                      !
                   !------------------------------------------------------------------------!
-                  call copy_patch_init(csite,ipa,ibuff,initp,patch_vels,mid_can_rhos       &
-                                      ,mid_can_dmol)
+                  call copy_rk4patch_init(csite,ipa,ibuff,initp,patch_vels                 &
+                                         ,old_can_enthalpy,old_can_rhos,old_can_dmol       &
+                                         ,ecurr_prsseffect)
                   !------------------------------------------------------------------------!
 
 
@@ -248,7 +262,8 @@ module heun_driver
                                            ,wcurr_loss2atm,ecurr_netrad,ecurr_loss2atm     &
                                            ,co2curr_loss2atm,wcurr_loss2drainage           &
                                            ,ecurr_loss2drainage,wcurr_loss2runoff          &
-                                           ,ecurr_loss2runoff,nsteps)
+                                           ,ecurr_loss2runoff,co2curr_denseffect           &
+                                           ,ecurr_denseffect,wcurr_denseffect,nsteps)
                   !------------------------------------------------------------------------!
 
 
@@ -273,8 +288,6 @@ module heun_driver
                   !    Update roughness and canopy depth.  This should be done after the   !
                   ! integration.                                                           !
                   !------------------------------------------------------------------------!
-                  call update_patch_thermo_props(csite,ipa,ipa,nzg,nzs                     &
-                                                ,cpoly%ntext_soil(:,isi))
                   call update_patch_derived_props(csite,ipa,.false.)
                   !------------------------------------------------------------------------!
 
@@ -284,14 +297,16 @@ module heun_driver
                   !------------------------------------------------------------------------!
                   !     Compute the residuals.                                             !
                   !------------------------------------------------------------------------!
-                  call compute_budget(csite,cpoly%lsl(isi),cmet%pcpg,cmet%qpcpg,ipa        &
-                                     ,wcurr_loss2atm,ecurr_netrad,ecurr_loss2atm           &
-                                     ,co2curr_loss2atm,wcurr_loss2drainage                 &
-                                     ,ecurr_loss2drainage,wcurr_loss2runoff                &
-                                     ,ecurr_loss2runoff,cpoly%area(isi)                    &
-                                     ,cgrid%cbudget_nep(ipy),old_can_prss,old_can_enthalpy &
-                                     ,old_can_temp,old_can_shv,old_can_co2,old_can_rhos    &
-                                     ,old_can_dmol,mid_can_rhos,mid_can_dmol)
+                  call compute_budget(csite,cpoly%lsl(isi),cmet%pcpg,cmet%qpcpg            &
+                                     ,rshort_tot,cmet%rlong,ipa,wcurr_loss2atm             &
+                                     ,ecurr_netrad,ecurr_loss2atm,co2curr_loss2atm         &
+                                     ,wcurr_loss2drainage,ecurr_loss2drainage              &
+                                     ,wcurr_loss2runoff,ecurr_loss2runoff                  &
+                                     ,co2curr_denseffect,ecurr_denseffect,wcurr_denseffect &
+                                     ,ecurr_prsseffect,cpoly%area(isi)                     &
+                                     ,cgrid%cbudget_nep(ipy),old_can_prss                  &
+                                     ,old_can_enthalpy,old_can_temp,old_can_shv            &
+                                     ,old_can_co2,old_can_rhos,old_can_dmol)
                   !------------------------------------------------------------------------!
                end do taskloop
                !---------------------------------------------------------------------------!
@@ -321,7 +336,8 @@ module heun_driver
    subroutine integrate_patch_heun(csite,ipa,isi,ibuff,nighttime,wcurr_loss2atm            &
                                   ,ecurr_netrad,ecurr_loss2atm,co2curr_loss2atm            &
                                   ,wcurr_loss2drainage,ecurr_loss2drainage                 &
-                                  ,wcurr_loss2runoff,ecurr_loss2runoff,nsteps)
+                                  ,wcurr_loss2runoff,ecurr_loss2runoff,co2curr_denseffect  &
+                                  ,ecurr_denseffect,wcurr_denseffect,nsteps)
       use ed_state_vars   , only : sitetype             & ! structure
                                  , patchtype            ! ! structure
       use rk4_coms        , only : integration_vars     & ! structure
@@ -331,7 +347,7 @@ module heun_driver
                                  , tbeg                 & ! intent(inout)
                                  , tend                 & ! intent(inout)
                                  , dtrk4i               ! ! intent(inout)
-      use rk4_driver      , only : initp2modelp         ! ! subroutine
+      use rk4_copy_patch  , only : initp2modelp         ! ! subroutine
 
       implicit none
       !----- Arguments --------------------------------------------------------------------!
@@ -348,6 +364,9 @@ module heun_driver
       real                  , intent(out) :: ecurr_loss2drainage
       real                  , intent(out) :: wcurr_loss2runoff
       real                  , intent(out) :: ecurr_loss2runoff
+      real                  , intent(out) :: co2curr_denseffect
+      real                  , intent(out) :: ecurr_denseffect
+      real                  , intent(out) :: wcurr_denseffect
       integer               , intent(out) :: nsteps
       !----- Local variables --------------------------------------------------------------!
       real(kind=8)                        :: hbeg
@@ -394,7 +413,8 @@ module heun_driver
       call initp2modelp(tend-tbeg,integration_buff(ibuff)%initp,csite,ipa,nighttime        &
                        ,wcurr_loss2atm,ecurr_netrad,ecurr_loss2atm,co2curr_loss2atm        &
                        ,wcurr_loss2drainage,ecurr_loss2drainage,wcurr_loss2runoff          &
-                       ,ecurr_loss2runoff)
+                       ,ecurr_loss2runoff,co2curr_denseffect,ecurr_denseffect              &
+                       ,wcurr_denseffect)
       !------------------------------------------------------------------------------------!
 
       return
@@ -419,6 +439,7 @@ module heun_driver
                                 , patchtype                 & ! structure
                                 , polygontype               ! ! structure
       use rk4_coms       , only : integration_vars          & ! structure
+                                , rk4patchtype              & ! structure
                                 , integration_buff          & ! structure
                                 , rk4site                   & ! intent(in)
                                 , print_detailed            & ! intent(in)
@@ -452,6 +473,7 @@ module heun_driver
                                 , adjust_topsoil_properties & ! sub-routine
                                 , adjust_sfcw_properties    & ! sub-routine
                                 , update_diagnostic_vars    & ! sub-routine
+                                , update_density_vars       & ! sub-routine
                                 , print_rk4_state           ! ! sub-routine
       use ed_misc_coms   , only : fast_diagnostics          & ! intent(in)
                                 , dtlsm                     ! ! intent(in)
@@ -466,36 +488,38 @@ module heun_driver
 
       implicit none
       !----- Arguments --------------------------------------------------------------------!
-      type(sitetype)            , target      :: csite         ! Current site
-      integer                   , intent(in)  :: ipa           ! Current patch ID
-      integer                   , intent(in)  :: isi           ! Current site ID
-      integer                   , intent(in)  :: ibuff         ! Current thread
-      real(kind=8)              , intent(in)  :: h1            ! First guess of delta-t
-      integer                   , intent(out) :: nsteps        ! Number of steps taken.
+      type(sitetype)            , target      :: csite         !< Current site
+      integer                   , intent(in)  :: ipa           !< Current patch ID
+      integer                   , intent(in)  :: isi           !< Current site ID
+      integer                   , intent(in)  :: ibuff         !< Current thread
+      real(kind=8)              , intent(in)  :: h1            !< First guess of delta-t
+      integer                   , intent(out) :: nsteps        !< Number of steps taken.
       !----- Local variables --------------------------------------------------------------!
-      type(patchtype)           , pointer     :: cpatch        ! Current patch
-      logical                                 :: reject_step   ! Should I reject the step?
-      logical                                 :: reject_result ! Should I reject the result?
-      logical                                 :: minstep       ! Minimum time step reached
-      logical                                 :: stuck         ! Tiny step, it won't advance
-      logical                                 :: test_reject   ! Reject the test
-      logical                                 :: gapstep       ! This a "gap-filler" step
-      integer                                 :: i             ! Step counter
-      integer                                 :: k             ! Format counter
-      integer                                 :: ksn           ! # of snow/water layers
-      real(kind=8)                            :: x             ! Elapsed time
-      real(kind=8)                            :: xnew          ! Elapsed time + h
-      real(kind=8)                            :: newh          ! New time step suggested
-      real(kind=8)                            :: oldh          ! Old time step
-      real(kind=8)                            :: h             ! Current delta-t attempt
-      real(kind=8)                            :: fgrow         ! Delta-t increase factor
-      real(kind=8)                            :: hgoal         ! Delta-t ignoring overstep
-      real(kind=8)                            :: hnext         ! Next delta-t
-      real(kind=8)                            :: hdid          ! delta-t that worked (???)
-      real(kind=8)                            :: qwfree        ! Free water internal energy
-      real(kind=8)                            :: wfreeb        ! Free water
-      real(kind=8)                            :: errmax        ! Maximum error of this step
-      real(kind=8)                            :: elaptime      ! Absolute elapsed time.
+      type(patchtype)           , pointer     :: cpatch        !< Current patch
+      type(rk4patchtype)        , pointer     :: initp         !< Current RK4 patch
+      type(rk4patchtype)        , pointer     :: ylast         !< Last RK4 patch
+      logical                                 :: reject_step   !< Flag: reject the step
+      logical                                 :: reject_result !< Flag: reject the result
+      logical                                 :: minstep       !< Minimum time step reached
+      logical                                 :: stuck         !< Flag: tiny step
+      logical                                 :: test_reject   !< Reject the test
+      logical                                 :: gapstep       !< This a "gap-filler" step
+      integer                                 :: i             !< Step counter
+      integer                                 :: k             !< Format counter
+      integer                                 :: ksn           !< # of snow/water layers
+      real(kind=8)                            :: x             !< Elapsed time
+      real(kind=8)                            :: xnew          !< Elapsed time + h
+      real(kind=8)                            :: newh          !< New time step suggested
+      real(kind=8)                            :: oldh          !< Old time step
+      real(kind=8)                            :: h             !< Current delta-t attempt
+      real(kind=8)                            :: fgrow         !< Delta-t increase factor
+      real(kind=8)                            :: hgoal         !< Delta-t ignoring overstep
+      real(kind=8)                            :: hnext         !< Next delta-t
+      real(kind=8)                            :: hdid          !< delta-t that worked (???)
+      real(kind=8)                            :: qwfree        !< Free water int. energy
+      real(kind=8)                            :: wfreeb        !< Free water
+      real(kind=8)                            :: errmax        !< Max. error of this step
+      real(kind=8)                            :: elaptime      !< Absolute elapsed time
       !----- External function. -----------------------------------------------------------!
       real                      , external    :: sngloff
       !------------------------------------------------------------------------------------!
@@ -680,11 +704,15 @@ module heun_driver
                !----- i.   Update leaf properties to avoid negative water. ----------------!
                call adjust_veg_properties(integration_buff(ibuff)%ytemp,h,csite,ipa,ibuff)
                !----- ii.  Update of top soil properties to avoid off-bounds moisture. ----!
-               call adjust_topsoil_properties(integration_buff(ibuff)%ytemp,h,ibuff)
+               call adjust_topsoil_properties(integration_buff(ibuff)%ytemp,h)
                !----- iii.  Make snow layers stable and positively defined. ---------------!
-               call adjust_sfcw_properties(nzg,nzs,integration_buff(ibuff)%ytemp,h,ibuff)
+               call adjust_sfcw_properties(nzg,nzs,integration_buff(ibuff)%ytemp,h         &
+                                          ,csite,ipa)
                !----- iv. Update the diagnostic variables. --------------------------------!
                call update_diagnostic_vars(integration_buff(ibuff)%ytemp,csite,ipa,ibuff)
+               !----- v.  Update the density variables. -----------------------------------!
+               call update_density_vars(integration_buff(ibuff)%ytemp                      &
+                                       ,integration_buff(ibuff)%y     )
                !---------------------------------------------------------------------------!
 
 
@@ -731,12 +759,29 @@ module heun_driver
 
                exit hstep
             end if
+            !------------------------------------------------------------------------------!
          end do hstep
+         !---------------------------------------------------------------------------------!
+
+
 
          !----- If the integration reached the next step, make some final adjustments -----!
-         if((x-tend)*dtrk4 >= 0.d0)then
+         if ((x-tend)*dtrk4 >= 0.d0) then
 
-            ksn = integration_buff(ibuff)%y%nlev_sfcwater
+            !----- Use pointers to simplify code. -----------------------------------------!
+            initp => integration_buff(ibuff)%initp
+            ylast => integration_buff(ibuff)%y
+            !------------------------------------------------------------------------------!
+
+
+            !------ Copy the temporary patch to the next intermediate step ----------------!
+            call copy_rk4_patch(ylast,initp,cpatch)
+            !------------------------------------------------------------------------------!
+
+            !----- Number of temporary surface water layers. ------------------------------!
+            ksn = initp%nlev_sfcwater
+            !------------------------------------------------------------------------------!
+
 
             !------------------------------------------------------------------------------!
             !   Make temporary surface liquid water disappear.  This will not happen       !
@@ -744,61 +789,74 @@ module heun_driver
             ! runoff_time scale. If the time scale is too tiny, then it will be forced to  !
             ! be hdid (no reason to be faster than that).                                  !
             !------------------------------------------------------------------------------!
-            if (simplerunoff .and. ksn >= 1) then
+            if ( simplerunoff .and. ksn >= 1) then
+               !---------------------------------------------------------------------------!
+               !    Test mass and liquid fraction inside the if block to avoid bound       !
+               ! check errors.                                                             !
+               !---------------------------------------------------------------------------!
+               if ( initp%sfcwater_mass   (ksn) > 0.d0  .and.                              &
+                    initp%sfcwater_fracliq(ksn) > 1.d-1        ) then
 
-               if (integration_buff(ibuff)%y%sfcwater_mass(ksn)    > 0.d0  .and.           &
-                   integration_buff(ibuff)%y%sfcwater_fracliq(ksn) > 1.d-1 ) then
+                  !----- Find the amount of water to be lost as runoff. -------------------!
+                  wfreeb = min(1.d0, dtrk4 * runoff_time_i) * initp%sfcwater_mass(ksn)     &
+                         * (initp%sfcwater_fracliq(ksn) - 1.d-1) / 9.d-1
+                  qwfree = wfreeb * tl2uint8(initp%sfcwater_tempk(ksn),1.d0)
+                  !------------------------------------------------------------------------!
 
-                  wfreeb = min(1.d0,dtrk4*runoff_time_i)                                   &
-                         * integration_buff(ibuff)%y%sfcwater_mass(ksn)                    &
-                         * (integration_buff(ibuff)%y%sfcwater_fracliq(ksn) - 1.d-1)       &
-                         / 9.d-1
-                  qwfree = wfreeb                                                          &
-                         * tl2uint8(integration_buff(ibuff)%y%sfcwater_tempk(ksn),1.d0)
 
-                  integration_buff(ibuff)%y%sfcwater_mass(ksn) =                           &
-                                     integration_buff(ibuff)%y%sfcwater_mass(ksn)  - wfreeb
-                  integration_buff(ibuff)%y%sfcwater_depth(ksn) =                          &
-                                     integration_buff(ibuff)%y%sfcwater_depth(ksn)         &
-                                   - wfreeb * wdnsi8
-                  !----- Recompute the energy removing runoff -----------------------------!
-                  integration_buff(ibuff)%y%sfcwater_energy(ksn) =                         &
-                                  integration_buff(ibuff)%y%sfcwater_energy(ksn) - qwfree
 
-                  call adjust_sfcw_properties(nzg,nzs,integration_buff(ibuff)%y,dtrk4,ibuff)
-                  call update_diagnostic_vars(integration_buff(ibuff)%y,csite,ipa,ibuff)
+                  !----- Update the state variables. --------------------------------------!
+                  initp%sfcwater_mass  (ksn) = initp%sfcwater_mass  (ksn) - wfreeb
+                  initp%sfcwater_depth (ksn) = initp%sfcwater_depth (ksn) - wfreeb * wdnsi8
+                  initp%sfcwater_energy(ksn) = initp%sfcwater_energy(ksn) - qwfree
+                  !------------------------------------------------------------------------!
+
+
 
                   !----- Compute runoff for output ----------------------------------------!
                   if (fast_diagnostics) then
+                     !---------------------------------------------------------------------!
+                     !      There is no need to divide wfreeb and qwfree  by time step,    !
+                     ! which will be done in subroutine normalize_averaged_vars.           !
+                     !---------------------------------------------------------------------!
                      csite%runoff       (ipa) = csite%runoff(ipa)                          &
                                               + sngloff(wfreeb * dtrk4i,tiny_offset)
                      csite%fmean_runoff (ipa) = csite%fmean_runoff(ipa)                    &
-                                              + sngloff(wfreeb * dtrk4i,tiny_offset)
+                                              + sngloff(wfreeb,tiny_offset)
                      csite%fmean_qrunoff(ipa) = csite%fmean_qrunoff(ipa)                   &
-                                              + sngloff(qwfree * dtrk4i,tiny_offset)
+                                              + sngloff(qwfree,tiny_offset)
                   end if
                   if (checkbudget) then
-                     integration_buff(ibuff)%y%wbudget_loss2runoff = wfreeb                &
-                           + integration_buff(ibuff)%y%wbudget_loss2runoff
-                     integration_buff(ibuff)%y%ebudget_loss2runoff = qwfree                &
-                           + integration_buff(ibuff)%y%ebudget_loss2runoff
-                     integration_buff(ibuff)%y%wbudget_storage     =                       &
-                                        integration_buff(ibuff)%y%wbudget_storage - wfreeb
-                     integration_buff(ibuff)%y%ebudget_storage    =                        &
-                                        integration_buff(ibuff)%y%ebudget_storage - qwfree
+                     !---------------------------------------------------------------------!
+                     !      To make sure that the previous values of wbudget_loss2runoff   !
+                     ! and ebudget_loss2runoff are accumulated to the next time step.      !
+                     !---------------------------------------------------------------------!
+                     initp%wbudget_loss2runoff = initp%wbudget_loss2runoff + wfreeb
+                     initp%ebudget_loss2runoff = initp%ebudget_loss2runoff + qwfree
+                     initp%wbudget_storage     = initp%wbudget_storage     - wfreeb
+                     initp%ebudget_storage     = initp%ebudget_storage     - qwfree
+                     !---------------------------------------------------------------------!
                   end if
-               end if
-            end if
+                  !------------------------------------------------------------------------!
 
-            !------ Copy the temporary patch to the next intermediate step ----------------!
-            call copy_rk4_patch( integration_buff(ibuff)%y                                 &
-                               , integration_buff(ibuff)%initp,cpatch)
+
+                  !----- Make sure all diagnostic variables are consistent and bounded. ---!
+                  call adjust_sfcw_properties(nzg,nzs,initp,dtrk4,csite,ipa)
+                  call update_diagnostic_vars(initp,csite,ipa,ibuff)
+                  call update_density_vars   (initp,ylast)
+                  !------------------------------------------------------------------------!
+               end if
+               !---------------------------------------------------------------------------!
+            end if
             !------------------------------------------------------------------------------!
+
+
 
             !------ Update the substep for next time and leave ----------------------------!
             csite%hprev(ipa) = csite%htry(ipa)
             csite%htry(ipa)  = sngl(hnext)
             !------------------------------------------------------------------------------!
+
 
             !------------------------------------------------------------------------------!
             !     Update the average time step.  The square of DTLSM (tend-tbeg) is needed !
@@ -807,16 +865,22 @@ module heun_driver
             csite%fmean_rk4step(ipa) = csite%fmean_rk4step(ipa)                            &
                                      + sngl((tend-tbeg)*(tend-tbeg))/real(i)
             nsteps = i
+            !------------------------------------------------------------------------------!
             return
          end if
+         !---------------------------------------------------------------------------------!
 
          !----- Use hnext as the next substep ---------------------------------------------!
          h = hnext
+         !---------------------------------------------------------------------------------!
       end do timesteploop
+      !------------------------------------------------------------------------------------!
+
 
       !----- If it reached this point, that is really bad news... -------------------------!
       write (unit=*,fmt='(a)') ' ==> Too many steps in routine heun_integ'
       call print_rk4patch(integration_buff(ibuff)%ytemp, csite,ipa)
+      !------------------------------------------------------------------------------------!
 
       return
    end subroutine heun_integ

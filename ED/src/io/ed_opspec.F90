@@ -1773,6 +1773,13 @@ end do
                     ,iphysiol,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
+   else if (iphysiol == 4 .and. (istomata_scheme /= 1)) then
+      write (reason,fmt='(a,1x,i4,a)')                                                     &
+                    'ISTOMATA_SCHEME must be set to 1, when IPHYSIOL is set to 4. Yours is set to'        &
+                    ,istomata_scheme,'...'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+
    end if
 
    if (iallom < 0 .or. iallom > 3) then
@@ -2444,8 +2451,8 @@ end do
                     ,icanrad,'...'
       ifaterr = ifaterr +1
       call opspec_fatal(reason,'opspec_misc')
-   elseif (icanrad /= 0 .and. crown_mod == 1) then
-      write(reason,fmt='(a)') 'CROWN_MOD must be turned off when ICANRAD is 1 or 2...'
+   elseif (icanrad == 2 .and. crown_mod == 1) then
+      write(reason,fmt='(a)') 'CROWN_MOD must be turned off when ICANRAD is 2...'
       ifaterr = ifaterr +1
       call opspec_fatal(reason,'opspec_misc')
    end if

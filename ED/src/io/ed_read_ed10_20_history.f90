@@ -608,9 +608,9 @@ subroutine read_ed10_ed20_history_file
                   csite%mineralized_soil_N(ip) = msn (ip)
                   csite%fast_grnd_N       (ip) =        agf_fsc  * fsn (ip)
                   csite%fast_soil_N       (ip) = (1.0 - agf_fsc) * fsn (ip)
-                  csite%structural_grnd_N (ip) = csite%structural_grnd_N (ip)              &
+                  csite%structural_grnd_N (ip) = csite%structural_grnd_C (ip)              &
                                                / c2n_structural
-                  csite%structural_soil_N (ip) = csite%structural_soil_N (ip)              &
+                  csite%structural_soil_N (ip) = csite%structural_soil_C (ip)              &
                                                / c2n_structural
                   csite%pname             (ip) = trim(pname(ip))
                   csite%sum_dgd           (ip) = 0.0
@@ -893,9 +893,6 @@ subroutine read_ed10_ed20_history_file
                         cpatch%bbarkb(ic2)    = (1.-agf_bs(ipft(ic)))                      &
                                               * cpatch%bleaf(ic2)                          &
                                               * qbark(ipft(ic)) * cpatch%hite(ic2)
-                        cpatch%bstorage(ic2)  = max( almost_zero                           &
-                                                   , f_bstorage_init(ipft(ic)))     &
-                                              * cpatch%balive(ic2)
                         !------------------------------------------------------------------!
 
 
@@ -913,6 +910,12 @@ subroutine read_ed10_ed20_history_file
                         cpatch%balive(ic2) = ed_balive(cpatch, ic2)
                         !------------------------------------------------------------------!
 
+
+                        !----- Initialise storage biomass (after setting balive). ---------#
+                        cpatch%bstorage(ic2)  = max( almost_zero                           &
+                                                   , f_bstorage_init(ipft(ic)))            &
+                                              * cpatch%balive(ic2)
+                        !------------------------------------------------------------------!
 
 
                         !------------------------------------------------------------------!

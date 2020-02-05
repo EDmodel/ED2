@@ -562,7 +562,7 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
 
                cpatch%sla(ico) = SLA(cpatch%pft(ico))
 
-               call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%bdead(ico),cpatch%balive(ico),cpatch%dbh(ico),cpatch%hite(ico),cpatch%pft(ico),cpatch%sla(ico),cpatch%lai(ico),cpatch%wai(ico),cpatch%crown_area(ico),cpatch%bsapwooda(ico))
+               call area_indices(cpatch, ico)
 
                !---------------------------------------------------------------------------!
                !     Here we only tell the true LAI if the leaf is resolvable, and the     !
@@ -606,12 +606,12 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
                !      Decide whether to assume infinite crown, or the crown area allometry !
                ! method as in Dietze and Clark (2008).                                     !
                !---------------------------------------------------------------------------!
-!               select case (crown_mod)
-!               case (0)
-!                  radscr(ibuff)%CA_array(cohort_count) = 1.d0
-!               case (1)
+               select case (crown_mod)
+               case (0)
+                  radscr(ibuff)%CA_array(cohort_count) = 1.d0
+               case (1)
                   radscr(ibuff)%CA_array(cohort_count) = dble(cpatch%crown_area(ico))
-!               end select
+               end select
                !---------------------------------------------------------------------------!
             end if
             !------------------------------------------------------------------------------!
@@ -806,10 +806,10 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
          !      Community Land Model (CLM). NCAR Technical Note NCAR/TN-478+STR.           !
          !                                                                                 !
          !---------------------------------------------------------------------------------!
-         albedo_sfcw_par = albedo_damp_par + csite%sfcwater_fracliq(ksn,ipa)               &
-                                           * ( snow_albedo_vis - albedo_damp_par )
-         albedo_sfcw_nir = albedo_damp_nir + csite%sfcwater_fracliq(ksn,ipa)               &
-                                           * ( snow_albedo_nir - albedo_damp_nir )
+         albedo_sfcw_par = snow_albedo_vis + csite%sfcwater_fracliq(ksn,ipa)               &
+                                           * ( albedo_damp_par - snow_albedo_vis )
+         albedo_sfcw_nir = snow_albedo_nir + csite%sfcwater_fracliq(ksn,ipa)               &
+                                           * ( albedo_damp_nir - snow_albedo_nir )
          !---------------------------------------------------------------------------------!
 
 
@@ -1416,6 +1416,10 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
          write(32,*) aln
          close(32)
 
+         open(33,file='LAI.dat')
+         write(33,*) cpatch%lai
+         close(33)
+         
          !---------------------------------------------------------------------------------!
          !     Absorption rates of PAR, rshort, and rlong of the vegetation.  Here we      !
          ! check again whether we are solving big leaf or size- and age-structure.         !

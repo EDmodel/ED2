@@ -232,7 +232,7 @@ subroutine ed_init_atm()
                                                       , cpatch%wood_temp     (ico)         &
                                                       , cpatch%wood_fliq     (ico) )
 
-                  call is_resolvable(csite,ipa,ico)
+                  call is_resolvable(csite,ipa,ico,.true.,.false.,'ed_init_atm')
 
                   !----- Initialise the leaf surface and intercellular properties. --------!
                   cpatch%lsfc_shv_open(ico)   = cmet%atm_shv
@@ -528,8 +528,8 @@ subroutine ed_init_atm()
                      case (1)
                         call new_fuse_cohorts(csite,ipa,cpoly%lsl(isi),.true.)
                      end select
-                     call terminate_cohorts(csite,ipa,cmet,elim_nplant,elim_lai)
-                     call split_cohorts(csite,ipa, cpoly%green_leaf_factor(:,isi))
+                     call terminate_cohorts(csite,ipa,cmet,.true.,elim_nplant,elim_lai)
+                     call split_cohorts(csite,ipa, cpoly%green_leaf_factor(:,isi),.true.)
                   end if
 
                   cohortloop3: do ico = 1,cpatch%ncohorts

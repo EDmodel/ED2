@@ -441,8 +441,7 @@ module plant_hydro
       use consts_coms     , only : pi18                 & ! intent(in)
                                  , lnexp_min8           ! ! intent(in)
       use rk4_coms        , only : tiny_offset          ! ! intent(in)
-      use pft_coms        , only : is_grass             & ! intent(in) 
-                                 , leaf_water_cap       & ! intent(in) 
+      use pft_coms        , only : leaf_water_cap       & ! intent(in) 
                                  , wood_water_cap       & ! intent(in)
                                  , leaf_psi_min         & ! intent(in)
                                  , wood_psi_min         & ! intent(in)
@@ -453,8 +452,7 @@ module plant_hydro
                                  , vessel_curl_factor   & ! intent(in)
                                  , root_beta            & ! intent(in)
                                  , SRA                  & ! intent(in)
-                                 , C2B                  & ! intent(in)
-                                 , hgt_min              ! ! intent(in)
+                                 , C2B                  ! ! intent(in)
       use ed_misc_coms    , only : current_time         ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!

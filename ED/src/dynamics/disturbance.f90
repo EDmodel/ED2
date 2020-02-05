@@ -72,6 +72,7 @@ module disturbance
                                      , update_site_derived_props  ! ! subroutine
       use fusion_fission_coms , only : ifusion                    ! ! intent(in)
       use ed_type_init        , only : new_patch_sfc_props        ! ! subroutine
+      use stable_cohorts      , only : is_resolvable              ! ! subroutine
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       type(edtype)                    , target      :: cgrid
@@ -877,8 +878,10 @@ module disturbance
                      case (1)
                         call new_fuse_cohorts(csite,onsp+new_lu,cpoly%lsl(isi),.false.)
                      end select
-                     call terminate_cohorts(csite,onsp+new_lu,cmet,elim_nplant,elim_lai)
-                     call split_cohorts(csite,onsp+new_lu, cpoly%green_leaf_factor(:,isi))
+                     call terminate_cohorts(csite,onsp+new_lu,cmet,.false.                 &
+                                           ,elim_nplant,elim_lai)
+                     call split_cohorts(csite,onsp+new_lu, cpoly%green_leaf_factor(:,isi)  &
+                                       ,.false.)
                   end if
                   !------------------------------------------------------------------------!
 
@@ -1071,9 +1074,39 @@ module disturbance
                               do ico=2,cpatch%ncohorts
                                  new_nplant = cpatch%nplant(ico) + cpatch%nplant(1)
                                  ipft       = cpatch%pft(1)
+
+                                 !---------------------------------------------------------!
+                                 !    Temporarily make both cohorts "resolvable".  This is !
+                                 ! to avoid energy/water leaks when a non-resolvable       !
+                                 ! cohort is fused with a resolvable cohort.               !
+                                 !---------------------------------------------------------!
+                                 call is_resolvable(csite,ipa,ico,.false.,.true.           &
+                                                   ,'apply_disturbances (ico,BLE,before)')
+                                 call is_resolvable(csite,ipa,1,.false.,.true.             &
+                                                   ,'apply_disturbances (1,BLE,before)')
+                                 !---------------------------------------------------------!
+
+
+                                 !----- Fuse cohorts. -------------------------------------!
                                  call fuse_2_cohorts(cpatch,ico,1, csite%can_prss(ipa)     &
                                                     ,csite%can_shv (ipa),cpoly%lsl(isi)    &
                                                     ,.false.)
+                                 !---------------------------------------------------------!
+
+
+
+                                 !---------------------------------------------------------!
+                                 !     Check whether the final fused cohort is resolvable. !
+                                 ! In case it is not, then we must subtract the phenology  !
+                                 ! effect that was temporarily added before fusing the     !
+                                 ! cohorts.  Unlike the "before" calls, here we do not     !
+                                 ! force cohorts to be resolvable.                         !
+                                 !---------------------------------------------------------!
+                                 call is_resolvable(csite,ipa,1,.false.,.false.            &
+                                                   ,'apply_disturbances (1,BLE,after)')
+                                 !---------------------------------------------------------!
+
+
 
                                  !---------------------------------------------------------!
                                  !     Set nplant to a tiny number, we will delete this    !
@@ -1086,7 +1119,8 @@ module disturbance
 
 
                               !------ Remove emptied cohorts. -----------------------------!
-                              call terminate_cohorts(csite,ipa,cmet,elim_nplant,elim_lai)
+                              call terminate_cohorts(csite,ipa,cmet,.false.                &
+                                                    ,elim_nplant,elim_lai)
                               !------------------------------------------------------------!
 
 
@@ -2045,6 +2079,9 @@ module disturbance
       csite%wbudget_zcaneffect      (np) = csite%wbudget_zcaneffect      (np)              &
                                          + csite%wbudget_zcaneffect      (cp)              &
                                          * area_fac
+      csite%wbudget_pheneffect      (np) = csite%wbudget_pheneffect      (np)              &
+                                         + csite%wbudget_pheneffect      (cp)              &
+                                         * area_fac
       csite%wbudget_residual        (np) = csite%wbudget_residual        (np)              &
                                          + csite%wbudget_residual        (cp)              &
                                          * area_fac
@@ -2077,6 +2114,9 @@ module disturbance
                                          * area_fac
       csite%ebudget_zcaneffect      (np) = csite%ebudget_zcaneffect      (np)              &
                                          + csite%ebudget_zcaneffect      (cp)              &
+                                         * area_fac
+      csite%ebudget_pheneffect      (np) = csite%ebudget_pheneffect      (np)              &
+                                         + csite%ebudget_pheneffect      (cp)              &
                                          * area_fac
       csite%ebudget_residual        (np) = csite%ebudget_residual        (np)              &
                                          + csite%ebudget_residual        (cp)              &
@@ -3344,6 +3384,7 @@ module disturbance
 
 
 
+
       !------------------------------------------------------------------------------------!
       !     If the new patch has received survivors from a donor already, then it should   !
       ! have cohorts.  So the temporary patch vector will be the sum of the new cohorts    !
@@ -4005,7 +4046,7 @@ module disturbance
                                         + cpatch%wood_water_im2(nc)                        &
                                         , cpatch%wood_temp     (nc)                        &
                                         , cpatch%wood_fliq     (nc) )
-      call is_resolvable(csite,np,nc)
+      call is_resolvable(csite,np,nc,.true.,.false.,'plant_patch')
       !------------------------------------------------------------------------------------!
 
       !----- Should plantations be considered recruits? -----------------------------------!
@@ -4082,6 +4123,8 @@ module disturbance
       real                                         :: bbarka_in
       real                                         :: old_leaf_hcap
       real                                         :: old_wood_hcap
+      real                                         :: old_leaf_water
+      real                                         :: old_wood_water
       real                                         :: old_leaf_water_im2
       real                                         :: old_wood_water_im2
       real                                         :: bleaf_max
@@ -4132,6 +4175,8 @@ module disturbance
             bbarka_in          = cpatch%bbarka        (ico)
             old_leaf_hcap      = cpatch%leaf_hcap     (ico)
             old_wood_hcap      = cpatch%wood_hcap     (ico)
+            old_leaf_water     = cpatch%leaf_water    (ico)
+            old_wood_water     = cpatch%wood_water    (ico)
             old_leaf_water_im2 = cpatch%leaf_water_im2(ico)
             old_wood_water_im2 = cpatch%wood_water_im2(ico)
             !add the agb_f to bdead
@@ -4179,9 +4224,10 @@ module disturbance
                         ,cpatch%nplant(ico),cpatch%leaf_water_im2(ico)                     &
                         ,cpatch%wood_water_im2(ico))
             call update_veg_energy_cweh(csite,np,ico,old_leaf_hcap,old_wood_hcap           &
-                                       ,old_leaf_water_im2,old_wood_water_im2,.true.)
+                                       ,old_leaf_water,old_wood_water,old_leaf_water_im2   &
+                                       ,old_wood_water_im2,.true.,.false.)
             !----- Update the stability status. -------------------------------------------!
-            call is_resolvable(csite,np,ico)
+            call is_resolvable(csite,np,ico,.false.,.false.,'prune_lianas')
             !------------------------------------------------------------------------------!
 
 

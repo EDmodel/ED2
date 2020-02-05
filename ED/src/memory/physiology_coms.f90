@@ -47,29 +47,30 @@ module physiology_coms
    !---------------------------------------------------------------------------------------!
 
 
-   !---------------------------------------------------------------------------------------!
-   ! IPHYSIOL --  This variable will determine the functional form that will control how   !
-   !              the various parameters will vary with temperature, and how the CO2       !
-   !              compensation point for gross photosynthesis (Gamma*) will be found.      !
-   !              Options are:                                                             !
-   !                                                                                       !
-   ! 0 -- Original ED-2.1, we use the "Arrhenius" function as in Foley et al. (1996) and   !
-   !      Moorcroft et al. (2001).  Gamma* is found using the parameters for tau as in     !
-   !      Foley et al. (1996).                                                             !
-   ! 1 -- Similar to case 0, but we use Jmax to determine the RubP-regeneration (aka       !
-   !      light) limitation case, account for the triose phosphate utilisation limitation  !
-   !      case (C3), and use the Michaelis-Mentel coefficients along with other parameters !
-   !      from von Caemmerer (2000).                                                       !
-   ! 2 -- Collatz et al. (1991).  We use the power (Q10) equations, with Collatz et al.    !
-   !      parameters for compensation point, and the Michaelis-Mentel coefficients.  The   !
-   !      correction for high and low temperatures are the same as in Moorcroft et al.     !
-   !      (2001).                                                                          !
-   ! 3 -- Similar to case 2, but we use Jmax to determine the RubP-regeneration (aka       !
-   !      light) limitation case, account for the triose phosphate utilisation limitation  !
-   !      case (C3), and use the Michaelis-Mentel coefficients along with other parameters !
-   !      from von Caemmerer (2000).                                                       !
-   !---------------------------------------------------------------------------------------!
    integer                :: iphysiol 
+   !---------------------------------------------------------------------------------------!
+   !< IPHYSIOL --  This variable will determine the functional form that will control how  
+   !<              the various parameters will vary with temperature, and how the CO2      
+   !<              compensation point for gross photosynthesis (Gamma*) will be found.     
+   !<              Options are:                                                            
+   !<                                                                                      
+   !< 0 -- Original ED-2.1, we use the "Arrhenius" function as in Foley et al. (1996) and  
+   !<      Moorcroft et al. (2001).  Gamma* is found using the parameters for tau as in    
+   !<      Foley et al. (1996).                                                            
+   !< 1 -- Similar to case 0, but we use Jmax to determine the RubP-regeneration (aka      
+   !<      light) limitation case, account for the triose phosphate utilisation limitation 
+   !<      case (C3), and use the Michaelis-Mentel coefficients along with other parameters
+   !<      from von Caemmerer (2000).                                                      
+   !< 2 -- Collatz et al. (1991).  We use the power (Q10) equations, with Collatz et al.   
+   !<      parameters for compensation point, and the Michaelis-Mentel coefficients.  The  
+   !<      correction for high and low temperatures are the same as in Moorcroft et al.    
+   !<      (2001).                                                                         
+   !< 3 -- Similar to case 2, but we use Jmax to determine the RubP-regeneration (aka      
+   !<      light) limitation case, account for the triose phosphate utilisation limitation 
+   !<      case (C3), and use the Michaelis-Mentel coefficients along with other parameters
+   !<      from von Caemmerer (2000).                                                      
+   !< 4 -- Use "Arrhenius" function as in Harley et al. (1991). This has to be run with     \n
+   !<      ISTOMATA_SCHEME = 1
    !---------------------------------------------------------------------------------------!
 
 
@@ -82,38 +83,37 @@ module physiology_coms
    !---------------------------------------------------------------------------------------!
 
 
-   !---------------------------------------------------------------------------------------!
-   ! H2O_PLANT_LIM -- this determines whether plant photosynthesis can be limited by       !
-   !                  soil moisture, the FSW, defined as FSW = Supply / (Demand + Supply). !
-   !                                                                                       !
-   ! Demand is always the transpiration rates in case soil moisture is not limiting (the   !
-   ! psi_0 term times LAI).  The supply is determined by                                   !
-   !                                                                                       !
-   ! Kw * nplant * Broot * Available_Water,                                                !
-   !                                                                                       !
-   ! and the definition of available water changes depending on H2O_PLANT_LIM:             !
-   ! 0.  Force FSW = 1 (effectively available water is infinity).                          !
-   ! 1.  (Legacy) Available water is the total soil water above wilting point, integrated  !
-   !     across all layers within the rooting zone.                                        !
-   ! 2.  (ED-2.2 default) Available water is the soil water at field capacity minus wilt-  !
-   !     ing point, scaled by the so-called wilting factor:                                !
-   !                                                                                       !
-   !          (psi(k) - (H - z(k)) - psi_wp) / (psi_fc - psi_wp)                           !
-   !                                                                                       !
-   !     where psi is the matric potentital at layer k, z is the layer depth, H it the     !
-   !     crown height and psi_fc and psi_wp are the matric potentials at wilting point     !
-   !     and field capacity.                                                               !
-   ! 3.  (Beta) Use leaf water potential to modify fsw following Powell et al. (2017).     !
-   !     This setting requires PLANT_HYDRO_SCHEME to be non-zero.                          !
-   ! 4.  (Beta) Use leaf water potential to modify the optimization-based stomatal model   !
-   !     following Xu et al. (2016).  This setting requires PLANT_HYDRO_SCHEME to be       !
-   !     non-zero values and set ISTOMATA_SCHEME to 1.                                     !
-   ! 5.  (Beta) Similar to 2, but the water supply directly affects gsw, as opposed to     !
-   !     fsw.  This is done by making D0 a function of soil moisture.  Note that this      !
-   !     still uses Kw but Kw must be significantly lower, at least for tropical trees     !
-   !     (1/15 - 1/10 of the original).                                                    !
-   !---------------------------------------------------------------------------------------!
    integer               :: h2o_plant_lim 
+   !---------------------------------------------------------------------------------------!
+   !< H2O_PLANT_LIM -- this determines whether plant photosynthesis can be limited by      
+   !<                  soil moisture, the FSW, defined as FSW = Supply / (Demand + Supply).
+   !<                                                                                      
+   !< Demand is always the transpiration rates in case soil moisture is not limiting (the  
+   !< psi_0 term times LAI).  The supply is determined by                                  
+   !<                                                                                      
+   !< Kw * nplant * Broot * Available_Water,                                               
+   !<                                                                                      
+   !< and the definition of available water changes depending on H2O_PLANT_LIM:            
+   !< 0.  Force FSW = 1 (effectively available water is infinity).                         
+   !< 1.  (Legacy) Available water is the total soil water above wilting point, integrated 
+   !<     across all layers within the rooting zone.                                       
+   !< 2.  (ED-2.2 default) Available water is the soil water at field capacity minus wilt- 
+   !<     ing point, scaled by the so-called wilting factor:                               
+   !<                                                                                      
+   !<          (psi(k) - (H - z(k)) - psi_wp) / (psi_fc - psi_wp)                          
+   !<                                                                                      
+   !<     where psi is the matric potentital at layer k, z is the layer depth, H it the    
+   !<     crown height and psi_fc and psi_wp are the matric potentials at wilting point    
+   !<     and field capacity.                                                              
+   !< 3.  (Beta) Use leaf water potential to modify fsw following Powell et al. (2017).    
+   !<     This setting requires PLANT_HYDRO_SCHEME to be non-zero.                         
+   !< 4.  (Beta) Use leaf water potential to modify the optimization-based stomatal model  
+   !<     following Xu et al. (2016).  This setting requires PLANT_HYDRO_SCHEME to be      
+   !<     non-zero values and set ISTOMATA_SCHEME to 1.                                    
+   !< 5.  (Beta) Similar to 2, but the water supply directly affects gsw, as opposed to    
+   !<     fsw.  This is done by making D0 a function of soil moisture.  Note that this     
+   !<     still uses Kw but Kw must be significantly lower, at least for tropical trees    
+   !<     (1/15 - 1/10 of the original).                                                   
    !---------------------------------------------------------------------------------------!
 
    integer               :: istruct_growth_scheme

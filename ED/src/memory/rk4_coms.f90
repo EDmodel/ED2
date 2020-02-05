@@ -143,6 +143,19 @@ module rk4_coms
       real(kind=8)                        :: tpwp
       real(kind=8)                        :: wpwp
       !------------------------------------------------------------------------------------!
+      
+      !-------------------------------------------------------------------------------------!
+      !      Canopy air space capacities.  These variables are used to convert the intensive!
+      ! version of canopy air space prognostic variables (specific enthalpy, water vapour   !
+      ! specific humidity and CO2 mixing ratio) into extensive variables.                   ! 
+      !-------------------------------------------------------------------------------------!
+      real(kind=8) :: wcapcan  ! Water capacity                             [  kg_air/m2gnd]
+      real(kind=8) :: hcapcan  ! Enthalpy capacity                          [  kg_air/m2gnd]
+      real(kind=8) :: ccapcan  ! CO2 capacity                               [ mol_air/m2gnd]
+      real(kind=8) :: wcapcani ! Inverse of water capacity                  [  m2gnd/kg_air]
+      real(kind=8) :: hcapcani ! Inverse of enthalpy capacity               [  m2gnd/kg_air]
+      real(kind=8) :: ccapcani ! Inverse of CO2 capacity                    [ m2gnd/mol_air]
+      !-------------------------------------------------------------------------------------!
 
 
 
@@ -359,15 +372,18 @@ module rk4_coms
       !----- Full budget variables --------------------------------------------------------!
       real(kind=8) :: co2budget_storage
       real(kind=8) :: co2budget_loss2atm
+      real(kind=8) :: co2budget_denseffect
       real(kind=8) :: ebudget_storage
       real(kind=8) :: ebudget_netrad
       real(kind=8) :: ebudget_loss2atm
       real(kind=8) :: ebudget_loss2drainage
       real(kind=8) :: ebudget_loss2runoff
+      real(kind=8) :: ebudget_denseffect
       real(kind=8) :: wbudget_storage
       real(kind=8) :: wbudget_loss2atm
       real(kind=8) :: wbudget_loss2drainage
       real(kind=8) :: wbudget_loss2runoff
+      real(kind=8) :: wbudget_denseffect
    end type rk4patchtype
    !---------------------------------------------------------------------------------------!
 
@@ -449,18 +465,6 @@ module rk4_coms
       !----- Flag to tell whether there is at least one "resolvable" cohort in this patch -!
       logical :: any_resolvable
       !------------------------------------------------------------------------------------!
-      
-      !-------------------------------------------------------------------------------------!
-      !      Canopy air space capacities.  These variables are used to convert the intensive!
-      ! version of canopy air space prognostic variables (specific enthalpy, water vapour   !
-      ! specific humidity and CO2 mixing ratio) into extensive variables.                   ! 
-      !-------------------------------------------------------------------------------------!
-      real(kind=8) :: wcapcan  ! Water capacity                             [  kg_air/m2gnd]
-      real(kind=8) :: hcapcan  ! Enthalpy capacity                          [  kg_air/m2gnd]
-      real(kind=8) :: ccapcan  ! CO2 capacity                               [ mol_air/m2gnd]
-      real(kind=8) :: wcapcani ! Inverse of water capacity                  [  m2gnd/kg_air]
-      real(kind=8) :: hcapcani ! Inverse of enthalpy capacity               [  m2gnd/kg_air]
-      real(kind=8) :: ccapcani ! Inverse of CO2 capacity                    [ m2gnd/mol_air]
 
 
       
@@ -1030,15 +1034,18 @@ module rk4_coms
 
       y%co2budget_storage              = 0.d0
       y%co2budget_loss2atm             = 0.d0
+      y%co2budget_denseffect           = 0.d0
       y%ebudget_storage                = 0.d0
       y%ebudget_netrad                 = 0.d0
       y%ebudget_loss2atm               = 0.d0
       y%ebudget_loss2drainage          = 0.d0
       y%ebudget_loss2runoff            = 0.d0
+      y%ebudget_denseffect             = 0.d0
       y%wbudget_storage                = 0.d0
       y%wbudget_loss2atm               = 0.d0
       y%wbudget_loss2drainage          = 0.d0
       y%wbudget_loss2runoff            = 0.d0
+      y%wbudget_denseffect             = 0.d0
 
 
       y%can_temp                       = 0.d0
@@ -1110,7 +1117,14 @@ module rk4_coms
       y%tpwp                           = 0.d0
       y%qpwp                           = 0.d0
       y%cpwp                           = 0.d0
-      
+
+      y%wcapcan                        = 0.d0
+      y%hcapcan                        = 0.d0
+      y%ccapcan                        = 0.d0
+      y%wcapcani                       = 0.d0
+      y%hcapcani                       = 0.d0
+      y%ccapcani                       = 0.d0
+
       y%rasveg                         = 0.d0
 
       y%avg_ustar                      = 0.d0

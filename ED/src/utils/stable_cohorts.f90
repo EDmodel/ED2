@@ -48,7 +48,7 @@ module stable_cohorts
                cohortloop: do ico=1, cpatch%ncohorts
 
                   !----- Check whether we can resolve this cohort. ------------------------!
-                  call is_resolvable(csite,ipa,ico)
+                  call is_resolvable(csite,ipa,ico,.false.,.false.,'flag_stable_cohorts')
                   !------------------------------------------------------------------------!
 
                end do cohortloop
@@ -78,8 +78,12 @@ module stable_cohorts
    ! 2. The cohort is buried in snow or under water                                        !
    ! 3. The cohort is extremely sparse.                                                    !
    ! 4. The user doesn't want to solve wood thermodynamics (wood only).                    !
+   !                                                                                       !
+   !    The one exception is during cohort fusion (except during initialisation).  In this !
+   ! case we force cohorts to be resolvable to ensure water and energy changes are         !
+   ! accounted                                                                             !
    !---------------------------------------------------------------------------------------!
-   subroutine is_resolvable(csite,ipa,ico)
+   subroutine is_resolvable(csite,ipa,ico,is_initial,force_resolvable,called_from)
       use ed_state_vars  , only : sitetype               & ! structure
                                 , patchtype              ! ! structure
       use pft_coms       , only : C2B                    & ! intent(in)
@@ -93,6 +97,9 @@ module stable_cohorts
                                 , wood_water_cap         & ! intent(in)
                                 , hgt_min                ! ! intent(in)
       use ed_max_dims    , only : n_pft                  ! ! intent(in)
+      use ed_misc_coms   , only : frqsumi                & ! intent(in)
+                                , frqsum                 & ! intent(in)
+                                , current_time           ! ! intent(in)
       use physiology_coms, only : istomata_scheme        & ! function
                                 , plant_hydro_scheme     ! ! function
       use allometry      , only : dbh2sf                 & ! function
@@ -104,30 +111,51 @@ module stable_cohorts
       use ed_therm_lib   , only : update_veg_energy_cweh ! ! subroutine
       implicit none
       !----- Arguments --------------------------------------------------------------------!
-      type(sitetype)        , target     :: csite      ! Current site
-      integer               , intent(in) :: ipa        ! Patch index
-      integer               , intent(in) :: ico        ! Cohort index
+      type(sitetype)  , target     :: csite              ! Current site
+      integer         , intent(in) :: ipa                ! Patch index
+      integer         , intent(in) :: ico                ! Cohort index
+      logical         , intent(in) :: is_initial         ! Initial assignment?
+      logical         , intent(in) :: force_resolvable   ! Impose resolvable?
+      character(len=*), intent(in) :: called_from        ! Parent subroutine
       !----- Local variables. -------------------------------------------------------------!
-      type(patchtype), pointer    :: cpatch             ! Current patch
-      integer                     :: ipft               ! Cohort PFT
-      logical                     :: exposed            ! Cohort is above snow     [   T|F]
-      logical                     :: leaf_enough        ! Cohort has enough leaves [   T|F]
-      logical                     :: wood_enough        ! Cohort has enough wood   [   T|F]
-      logical                     :: hydro_req          ! Plant hydr. requirement  [   T|F]
-      logical                     :: old_leaf_res       ! Leaf was resolvable      [   T|F]
-      logical                     :: old_wood_res       ! Wood was resolvable      [   T|F]
-      logical                     :: update_hydro       ! Update hydraulic props   [   T|F]
-      real                        :: old_leaf_hcap      ! Old leaf heat capacity   [J/kg/K]
-      real                        :: old_wood_hcap      ! Old wood heat capacity   [J/kg/K]
-      real                        :: old_leaf_water_im2 ! Old leaf internal water  [ kg/m2]
-      real                        :: old_wood_water_im2 ! Old wood internal water  [ kg/m2]
-      real                        :: c_leaf             ! Leaf water capacity      [  kg/m]
-      real                        :: c_stem             ! Stem water capacity      [  kg/m]
-      real                        :: sap_frac           ! Sapwood fraction         [   ---]
-      real                        :: bleafhydro         ! Hydro leaf biomass       [kgC/pl]
-      real                        :: broothydro         ! Hydro fine-root biomass  [kgC/pl]
-      real                        :: bsapwhydro         ! Hydro sapwood biomass    [kgC/pl]
-      real                        :: bdeadhydro         ! Hydro heartwood biomass  [kgC/pl]
+      type(patchtype) , pointer    :: cpatch             ! Current patch
+      integer                      :: ipft               ! Cohort PFT
+      logical                      :: exposed            ! Cohort is above snow     [   T|F]
+      logical                      :: leaf_enough        ! Cohort has enough leaves [   T|F]
+      logical                      :: wood_enough        ! Cohort has enough wood   [   T|F]
+      logical                      :: hydro_req          ! Plant hydr. requirement  [   T|F]
+      logical                      :: old_leaf_res       ! Leaf was resolvable      [   T|F]
+      logical                      :: old_wood_res       ! Wood was resolvable      [   T|F]
+      logical                      :: update_hydro       ! Update hydraulic props   [   T|F]
+      logical                      :: is_pheneffect      ! Phenology effect updated [   T|F]
+      logical                      :: switch_leaf_on     ! Leaf became resolvable   [   T|F]
+      logical                      :: switch_wood_on     ! Wood became resolvable   [   T|F]
+      logical                      :: switch_leaf_off    ! Leaf became unresolvable [   T|F]
+      logical                      :: switch_wood_off    ! Wood became unresolvable [   T|F]
+      real                         :: mid_leaf_hcap      ! Mid leaf heat capacity   [J/kg/K]
+      real                         :: mid_wood_hcap      ! Mid wood heat capacity   [J/kg/K]
+      real                         :: mid_leaf_water     ! Mid leaf surface water   [ kg/m2]
+      real                         :: mid_wood_water     ! Mid wood surface water   [ kg/m2]
+      real                         :: mid_leaf_water_im2 ! Mid leaf internal water  [ kg/m2]
+      real                         :: mid_wood_water_im2 ! Mid wood internal water  [ kg/m2]
+      real                         :: c_leaf             ! Leaf water capacity      [  kg/m]
+      real                         :: c_stem             ! Stem water capacity      [  kg/m]
+      real                         :: sap_frac           ! Sapwood fraction         [   ---]
+      real                         :: bleafhydro         ! Hydro leaf biomass       [kgC/pl]
+      real                         :: broothydro         ! Hydro fine-root biomass  [kgC/pl]
+      real                         :: bsapwhydro         ! Hydro sapwood biomass    [kgC/pl]
+      real                         :: bdeadhydro         ! Hydro heartwood biomass  [kgC/pl]
+      !----- Local constants. -------------------------------------------------------------!
+      logical          , parameter :: is_debug    = .false.
+      character(len=18), parameter :: stable_file = 'stable_details.txt'
+      character(len= 8), parameter :: fmtc='(a,1x,a)'
+      character(len=10), parameter :: fmti='(a,1x,i14)'
+      character(len=10), parameter :: fmtl='(a,14x,l1)'
+      character(len=12), parameter :: fmtf='(a,1x,f14.3)'
+      character(len=13), parameter :: fmte='(a,1x,es14.7)'
+      character(len=27), parameter :: fmtt='(a,i4.4,2(1x,i2.2),1x,f6.0)'
+      !----- Saved variables. -------------------------------------------------------------!
+      logical          , save      :: first_time = .true.
       !------------------------------------------------------------------------------------!
 
 
@@ -138,21 +166,29 @@ module stable_cohorts
       !------------------------------------------------------------------------------------!
 
 
-      !------ Start by assuming that no update in internal water is needed. ---------------!
-      update_hydro = .false.
+
+      !------------------------------------------------------------------------------------!
+      !     In case we are debugging, create the debugging file.                           !
+      !------------------------------------------------------------------------------------!
+      if (is_debug .and. first_time) then
+         first_time = .false.
+         open (unit=53,file=stable_file,status='replace',action='write')
+         write(unit=53,fmt='(a)') '-------------------------------------------------------'
+         write(unit=53,fmt='(a)') ' Subroutine is_resolvable'
+         write(unit=53,fmt='(a)') '-------------------------------------------------------'
+         write(unit=53,fmt='(a)') ' '
+         write(unit=53,fmt='(a)') ' '
+         close(unit=53,status='keep')
+      end if
       !------------------------------------------------------------------------------------!
 
 
       !------------------------------------------------------------------------------------!
-      !     Save previous condition, to avoid singularities for leaves and wood coming     !
-      ! out of senescence.                                                                 !
+      !     Save original "resolvable" condition.  These are used to decide whether to     !
+      ! update heat capacity, internal water, and the budget terms.                        !
       !------------------------------------------------------------------------------------!
       old_leaf_res       = cpatch%leaf_resolvable(ico)
       old_wood_res       = cpatch%wood_resolvable(ico)
-      old_leaf_hcap      = cpatch%leaf_hcap      (ico)
-      old_wood_hcap      = cpatch%wood_hcap      (ico)
-      old_leaf_water_im2 = cpatch%leaf_water_im2 (ico)
-      old_wood_water_im2 = cpatch%wood_water_im2 (ico)
       !------------------------------------------------------------------------------------!
 
 
@@ -194,8 +230,96 @@ module stable_cohorts
       !------------------------------------------------------------------------------------!
       !     Save the tests in the cohort variable, so the checks are done consistently.    !
       !------------------------------------------------------------------------------------!
-      cpatch%leaf_resolvable(ico) = exposed .and. leaf_enough
-      cpatch%wood_resolvable(ico) = exposed .and. ( wood_enough .or. hydro_req )
+      if (force_resolvable) then
+         cpatch%leaf_resolvable(ico) = .true.
+         cpatch%wood_resolvable(ico) = .true.
+      else
+         cpatch%leaf_resolvable(ico) = exposed .and. leaf_enough
+         cpatch%wood_resolvable(ico) = exposed .and. ( wood_enough .or. hydro_req )
+      end if
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Save logical tests to decide whether there was any switch in resolvable        !
+      ! statuses.                                                                          !
+      !------------------------------------------------------------------------------------!
+      switch_leaf_on  = cpatch%leaf_resolvable(ico) .and. (.not. old_leaf_res)
+      switch_wood_on  = cpatch%wood_resolvable(ico) .and. (.not. old_wood_res)
+      switch_leaf_off = (.not. cpatch%leaf_resolvable(ico)) .and. old_leaf_res
+      switch_wood_off = (.not. cpatch%wood_resolvable(ico)) .and. old_wood_res
+      !------------------------------------------------------------------------------------!
+
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Update phenology effect in the case the leaf and/or wood status have changed.  !
+      !------------------------------------------------------------------------------------!
+      is_pheneffect = .false.
+      if (.not. is_initial) then
+         !----- Leaves became resolvable. -------------------------------------------------!
+         if (switch_leaf_on) then
+            csite%wbudget_pheneffect(ipa) = csite%wbudget_pheneffect(ipa)                  &
+                                          + frqsumi * ( cpatch%leaf_water    (ico)         &
+                                                      + cpatch%leaf_water_im2(ico) )
+            csite%ebudget_pheneffect(ipa) = csite%ebudget_pheneffect(ipa)                  &
+                                          + frqsumi * cpatch%leaf_energy(ico)
+            is_pheneffect = .true.
+         end if
+         !----- Wood became resolvable. ---------------------------------------------------!
+         if (switch_wood_on) then
+            csite%wbudget_pheneffect(ipa) = csite%wbudget_pheneffect(ipa)                  &
+                                          + frqsumi * ( cpatch%wood_water    (ico)         &
+                                                      + cpatch%wood_water_im2(ico) )
+            csite%ebudget_pheneffect(ipa) = csite%ebudget_pheneffect(ipa)                  &
+                                          + frqsumi * cpatch%wood_energy(ico)
+            is_pheneffect = .true.
+         end if
+         !----- Leaves are no longer resolvable. ------------------------------------------!
+         if (switch_leaf_off) then
+            csite%wbudget_pheneffect(ipa) = csite%wbudget_pheneffect(ipa)                  &
+                                          - frqsumi * ( cpatch%leaf_water    (ico)         &
+                                                      + cpatch%leaf_water_im2(ico) )
+            csite%ebudget_pheneffect(ipa) = csite%ebudget_pheneffect(ipa)                  &
+                                          - frqsumi * cpatch%leaf_energy(ico)
+            is_pheneffect = .true.
+         end if
+         !----- Wood is no longer resolvable. ---------------------------------------------!
+         if (switch_wood_off) then
+            csite%wbudget_pheneffect(ipa) = csite%wbudget_pheneffect(ipa)                  &
+                                          - frqsumi * ( cpatch%wood_water    (ico)         &
+                                                      + cpatch%wood_water_im2(ico) )
+            csite%ebudget_pheneffect(ipa) = csite%ebudget_pheneffect(ipa)                  &
+                                          - frqsumi * cpatch%wood_energy(ico)
+            is_pheneffect = .true.
+         end if
+         !---------------------------------------------------------------------------------!
+      end if
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Before we move on, we save the heat capacity and water (surface and internal). !
+      ! In case we must update internal water, we will need these to adjust the budget     !
+      ! variables.                                                                         !
+      !------------------------------------------------------------------------------------!
+      mid_leaf_hcap      = cpatch%leaf_hcap      (ico)
+      mid_wood_hcap      = cpatch%wood_hcap      (ico)
+      mid_leaf_water     = cpatch%leaf_water     (ico)
+      mid_wood_water     = cpatch%wood_water     (ico)
+      mid_leaf_water_im2 = cpatch%leaf_water_im2 (ico)
+      mid_wood_water_im2 = cpatch%wood_water_im2 (ico)
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Decide whether to update hydrology.                                            !
+      !------------------------------------------------------------------------------------!
+      update_hydro = ( switch_leaf_on .or. switch_wood_on ) .and. (.not. force_resolvable)
       !------------------------------------------------------------------------------------!
 
 
@@ -207,30 +331,26 @@ module stable_cohorts
       select case (plant_hydro_scheme)
       case (0)
          !----- Impose saturated conditions. ----------------------------------------------!
-         if (cpatch%wood_resolvable(ico) .and. (.not. old_wood_res)) then
+         if (switch_wood_on) then
             !----- Make sure relative water content is bounded. ---------------------------!
             cpatch%wood_rwc(ico) = 1.0
-            update_hydro         = .true.
             !------------------------------------------------------------------------------!
          end if
-         if (cpatch%leaf_resolvable(ico) .and. (.not. old_leaf_res)) then
+         if (switch_leaf_on) then
             !----- Make sure relative water content is bounded. ---------------------------!
             cpatch%leaf_rwc(ico) = 1.0
-            update_hydro         = .true.
             !------------------------------------------------------------------------------!
          end if
          !---------------------------------------------------------------------------------!
       case default
-         if (cpatch%wood_resolvable(ico) .and. (.not. old_wood_res)) then
+         if (switch_wood_on) then
             !----- Make sure relative water content is bounded. ---------------------------!
             cpatch%wood_rwc(ico) = max(wood_rwc_min(ipft),min(1.0,cpatch%wood_rwc(ico)))
-            update_hydro         = .true.
             !------------------------------------------------------------------------------!
          end if
-         if (cpatch%leaf_resolvable(ico) .and. (.not. old_leaf_res)) then
+         if (switch_wood_on) then
             !----- Make sure relative water content is bounded. ---------------------------!
             cpatch%leaf_rwc(ico) = max(leaf_rwc_min(ipft),min(1.0,cpatch%leaf_rwc(ico)))
-            update_hydro         = .true.
             !------------------------------------------------------------------------------!
          end if
          !---------------------------------------------------------------------------------!
@@ -266,8 +386,9 @@ module stable_cohorts
 
 
          !----- Update internal energy. ---------------------------------------------------!
-         call update_veg_energy_cweh(csite,ipa,ico,old_leaf_hcap,old_wood_hcap             &
-                                    ,old_leaf_water_im2,old_wood_water_im2,.true.)
+         call update_veg_energy_cweh(csite,ipa,ico,mid_leaf_hcap,mid_wood_hcap             &
+                                    ,mid_leaf_water,mid_wood_water,mid_leaf_water_im2      &
+                                    ,mid_wood_water_im2,.true.,is_initial)
          !---------------------------------------------------------------------------------!
       end if
       !------------------------------------------------------------------------------------!
@@ -323,6 +444,53 @@ module stable_cohorts
          end select
          !---------------------------------------------------------------------------------!
       end select
+      !------------------------------------------------------------------------------------!
+
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Print debugging information.                                                   !
+      !------------------------------------------------------------------------------------!
+      if (is_pheneffect .and. is_debug) then
+         open (unit=53,file=stable_file,status='old',position='append',action='write')
+         write(unit=53,fmt='(a)') '--------------------------------------------------------'
+         write(unit=53,fmt=fmtt )  ' TIME       = ', current_time%year                     &
+                                                   , current_time%month                    &
+                                                   , current_time%date                     &
+                                                   , current_time%time
+         write(unit=53,fmt='(a)') ' '
+         write(unit=53,fmt=fmtc ) ' CALLED_FROM = ', called_from
+         write(unit=53,fmt='(a)') ' '
+         write(unit=53,fmt=fmti ) ' PATCH       = ', ipa
+         write(unit=53,fmt=fmti ) ' COHORT      = ', ico
+         write(unit=53,fmt=fmti ) ' PFT         = ', cpatch%pft(ico)
+         write(unit=53,fmt=fmti ) ' PHEN_STATUS = ', cpatch%phenology_status(ico)
+         write(unit=53,fmt='(a)') ' '
+         write(unit=53,fmt=fmtf ) ' DBH         = ', cpatch%dbh   (ico)
+         write(unit=53,fmt=fmtf ) ' HITE        = ', cpatch%hite  (ico)
+         write(unit=53,fmt=fmtf ) ' NPLANT_HA   = ', cpatch%nplant(ico) * 10000.
+         write(unit=53,fmt=fmtf ) ' LAI         = ', cpatch%lai   (ico)
+         write(unit=53,fmt=fmtf ) ' WAI         = ', cpatch%wai   (ico)
+         write(unit=53,fmt=fmtf ) ' ELONGF      = ', cpatch%elongf(ico)
+         write(unit=53,fmt='(a)') ' '
+         write(unit=53,fmt=fmtl ) ' FORCE_RES   = ', force_resolvable
+         write(unit=53,fmt=fmtl ) ' LEAF_ON     = ', switch_leaf_on
+         write(unit=53,fmt=fmtl ) ' LEAF_OFF    = ', switch_leaf_off
+         write(unit=53,fmt=fmtl ) ' WOOD_ON     = ', switch_wood_on
+         write(unit=53,fmt=fmtl ) ' WOOD_OFF    = ', switch_wood_off
+         write(unit=53,fmt=fmtl ) ' UP_HYDRO    = ', update_hydro
+         write(unit=53,fmt='(a)') ' '
+         write(unit=53,fmt=fmte ) ' EB_PHEN     = ', csite%ebudget_pheneffect(ipa) * frqsum
+         write(unit=53,fmt=fmte ) ' EB_WCAP     = ', csite%ebudget_wcapeffect(ipa) * frqsum
+         write(unit=53,fmt=fmte ) ' EB_HCAP     = ', csite%ebudget_hcapeffect(ipa) * frqsum
+         write(unit=53,fmt=fmte ) ' WB_PHEN     = ', csite%wbudget_pheneffect(ipa) * frqsum
+         write(unit=53,fmt=fmte ) ' WB_WCAP     = ', csite%wbudget_wcapeffect(ipa) * frqsum
+         write(unit=53,fmt='(a)') '========================================================'
+         write(unit=53,fmt='(a)') ' '
+         write(unit=53,fmt='(a)') ' '
+         close(unit=53,status='keep')
+      end if
       !------------------------------------------------------------------------------------!
       return
    end subroutine is_resolvable

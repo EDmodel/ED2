@@ -917,7 +917,6 @@ subroutine read_ed21_history_file
                            !----- Assign LAI, WAI, and CAI --------------------------------!
                            call area_indices(cpatch, ico)
 
-
                            !----- Update the derived patch-level variables. ---------------!
                            csite%plant_ag_biomass(ipa) = csite%plant_ag_biomass(ipa)       &
                                                        + cpatch%agb(ico)*cpatch%nplant(ico)
@@ -945,7 +944,7 @@ subroutine read_ed21_history_file
                      !    Eliminate any "unwanted" cohort (i.e., those which nplant was    !
                      ! set to zero so it would be removed).                                !
                      !---------------------------------------------------------------------!
-                     call terminate_cohorts(csite,ipa,cmet,elim_nplant,elim_lai)
+                     call terminate_cohorts(csite,ipa,cmet,.true.,elim_nplant,elim_lai)
                      !---------------------------------------------------------------------!
                   end do patchloop
                   !------------------------------------------------------------------------!
@@ -2313,7 +2312,7 @@ subroutine read_ed21_history_unstruct
                      !    Eliminate any "unwanted" cohort (i.e., those which nplant was    !
                      ! set to zero so it would be removed).                                !
                      !---------------------------------------------------------------------!
-                     call terminate_cohorts(csite,ipa,cmet,elim_nplant,elim_lai)
+                     call terminate_cohorts(csite,ipa,cmet,.true.,elim_nplant,elim_lai)
                      !---------------------------------------------------------------------!
                   end do patchloop
                   !------------------------------------------------------------------------!
@@ -3659,7 +3658,7 @@ subroutine read_ed21_polyclone
                      !    Eliminate any "unwanted" cohort (i.e., those which nplant was    !
                      ! set to zero so it would be removed).                                !
                      !---------------------------------------------------------------------!
-                     call terminate_cohorts(csite,ipa,cmet,elim_nplant,elim_lai)
+                     call terminate_cohorts(csite,ipa,cmet,.true.,elim_nplant,elim_lai)
                      !---------------------------------------------------------------------!
                   end do patchloop
                   !------------------------------------------------------------------------!

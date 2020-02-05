@@ -23,7 +23,6 @@ module reproduction
       use pft_coms            , only : recruittype                 & ! structure
                                      , zero_recruit                & ! subroutine
                                      , copy_recruit                & ! subroutine
-                                     , seedling_mortality          & ! intent(in)
                                      , min_recruit_size            & ! intent(in)
                                      , one_plant_c                 & ! intent(in)
                                      , c2n_recruit                 & ! intent(in)
@@ -115,15 +114,10 @@ module reproduction
 
 
       !------------------------------------------------------------------------------------!
-      !    If this is the first time, check whether the user wants reproduction.  If not,  !
-      ! kill all potential recruits and send their biomass to the litter pool.             !
+      !    If this is the first time, check whether to write a log with reproduction       !
+      ! details.                                                                           !
       !------------------------------------------------------------------------------------!
       if (first_time) then
-         !---- Halt reproduction by killing all seedlings. --------------------------------!
-         if (repro_scheme == 0 .or. (.not. veget_dyn_on)) then
-            seedling_mortality(1:n_pft) = 1.0
-         end if
-         !---------------------------------------------------------------------------------!
 
          !----- Make the header. ----------------------------------------------------------!
          if (printout .and. veget_dyn_on) then
@@ -441,9 +435,17 @@ module reproduction
                         inew = inew + 1
 
                         !----- Copy from recruitment table (I). ---------------------------!
-                        cpatch%pft(ico)       = recruit(inew)%pft
-                        cpatch%hite(ico)      = recruit(inew)%hite
-                        cpatch%dbh(ico)       = recruit(inew)%dbh
+                        cpatch%pft   (ico)    = recruit(inew)%pft
+                        cpatch%hite  (ico)    = recruit(inew)%hite
+                        cpatch%dbh   (ico)    = recruit(inew)%dbh
+                        cpatch%nplant(ico)    = recruit(inew)%nplant
+
+                        cpatch%bleaf              (ico) = recruit(inew)%bleaf
+                        cpatch%bsapwooda          (ico) = recruit(inew)%bsapwooda
+                        cpatch%bsapwoodb          (ico) = recruit(inew)%bsapwoodb
+                        cpatch%bdeada             (ico) = recruit(inew)%bdeada
+                        cpatch%bdeadb             (ico) = recruit(inew)%bdeadb
+                        cpatch%broot              (ico) = recruit(inew)%broot
                         !------------------------------------------------------------------!
 
                         !----- Carry out standard initialization. -------------------------!
@@ -453,16 +455,9 @@ module reproduction
 
 
                         !----- Copy from recruitment table (II). --------------------------!
-                        cpatch%nplant             (ico) = recruit(inew)%nplant 
-                        cpatch%bdeada             (ico) = recruit(inew)%bdeada
-                        cpatch%bdeadb             (ico) = recruit(inew)%bdeadb
                         cpatch%paw_avg            (ico) = recruit(inew)%paw_avg
                         cpatch%elongf             (ico) = recruit(inew)%elongf
                         cpatch%phenology_status   (ico) = recruit(inew)%phenology_status
-                        cpatch%bleaf              (ico) = recruit(inew)%bleaf
-                        cpatch%broot              (ico) = recruit(inew)%broot
-                        cpatch%bsapwooda          (ico) = recruit(inew)%bsapwooda
-                        cpatch%bsapwoodb          (ico) = recruit(inew)%bsapwoodb
                         cpatch%bbarka             (ico) = recruit(inew)%bbarka
                         cpatch%bbarkb             (ico) = recruit(inew)%bbarkb
                         cpatch%balive             (ico) = recruit(inew)%balive
@@ -591,9 +586,11 @@ module reproduction
                         !------------------------------------------------------------------!
                         cpatch%leaf_energy(ico) = 0.0
                         cpatch%wood_energy(ico) = 0.0
-                        call update_veg_energy_cweh(csite,ipa,ico,0.,0.,0.,0.,.false.)
+                        call update_veg_energy_cweh(csite,ipa,ico,0.,0.,0.,0.,0.,0.        &
+                                                   ,.false.,.true.)
                         !----- Update flags for the biophysical integrator. ---------------!
-                        call is_resolvable(csite,ipa,ico)
+                        call is_resolvable(csite,ipa,ico,.false.,.false.                   &
+                                          ,'reproduction_driver (SAS)')
                         !------------------------------------------------------------------!
 
                         !----- Update number of cohorts in this site. ---------------------!
@@ -629,8 +626,8 @@ module reproduction
                      case (1)
                         call new_fuse_cohorts(csite,ipa,cpoly%lsl(isi),.false.)
                      end select
-                     call terminate_cohorts(csite,ipa,cmet,elim_nplant,elim_lai)
-                     call split_cohorts(csite,ipa,cpoly%green_leaf_factor(:,isi))
+                     call terminate_cohorts(csite,ipa,cmet,.false.,elim_nplant,elim_lai)
+                     call split_cohorts(csite,ipa,cpoly%green_leaf_factor(:,isi),.false.)
                   end if
                   !------------------------------------------------------------------------!
 
@@ -829,9 +826,11 @@ module reproduction
                         !------------------------------------------------------------------!
                         cpatch%leaf_energy(ico) = 0.0
                         cpatch%wood_energy(ico) = 0.0
-                        call update_veg_energy_cweh(csite,ipa,ico,0.,0.,0.,0.,.false.)
+                        call update_veg_energy_cweh(csite,ipa,ico,0.,0.,0.,0.,0.,0.        &
+                                                   ,.false.,.true.)
                         !----- Update flags for the biophysical integrator. ---------------!
-                        call is_resolvable(csite,ipa,ico)
+                        call is_resolvable(csite,ipa,ico,.false.,.false.                   &
+                                          ,'reproduction_driver (BLE)')
                         !------------------------------------------------------------------!
                      else
                         !------------------------------------------------------------------!

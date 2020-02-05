@@ -182,7 +182,7 @@ module farq_katul
       real(kind=4)                :: greeness           ! Leaf "Greeness"           [   0 to 1]
       real           ,parameter   :: Jmax_vmhor_coef = 5./7.  ! fraction of Jmax  vmhor to Vcmax vmhor estimated from Kattge et al. 2007
       integer                     :: k
-      logical                     :: is_resolvable
+      logical                     :: flg_resolvable
       logical, parameter          :: debug_flag = .false.
     
 
@@ -422,10 +422,10 @@ module farq_katul
           aero_resistance = 1e10
       endif
 
-      is_resolvable = (Jmax /= 0.) .and. (Vcmax /= 0.) .and. &
-                      (aero_resistance < 1e8) .and.(cuticular_gsc > 1e-8)
+      flg_resolvable = (Jmax /= 0.) .and. (Vcmax /= 0.) .and. &
+                       (aero_resistance < 1e8) .and.(cuticular_gsc > 1e-8)
 
-      if (is_resolvable) then
+      if (flg_resolvable) then
         ! 1. Rubisco-limited photosynthesis
         a1gk = Vcmax
         a2gk = kc * (1. + leaf_o2 / ko)
@@ -620,7 +620,7 @@ module farq_katul
        write (unit=*,fmt='(a)')           'Katul Stomatal Scheme Quality Check:'
        write (unit=*,fmt='(a,1x,i9)')   ' + HOUR:                ',current_time%hour
        write (unit=*,fmt='(a,1x,i9)')   ' + PFT:                 ',ipft
-       write (unit=*,fmt='(a,1x,l9)')   ' + RESOLVABLE:          ',is_resolvable
+       write (unit=*,fmt='(a,1x,l9)')   ' + RESOLVABLE:          ',flg_resolvable
        write (unit=*,fmt='(a,1x,es12.4)')   ' + PSI_LEAF:            ',leaf_psi
        write (unit=*,fmt='(a,1x,es12.4)')   ' + PAR:                 ',par
        write (unit=*,fmt='(a,1x,es12.4)')   ' + Vcmax25:             ',Vcmax25

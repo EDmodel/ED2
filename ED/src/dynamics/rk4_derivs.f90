@@ -28,7 +28,8 @@ module rk4_derivs
       use rk4_coms               , only : rk4patchtype       ! ! structure
       use ed_state_vars          , only : sitetype           & ! structure
                                         , polygontype        ! ! structure
-      use grid_coms              , only : nzg                ! ! intent(in)
+      use grid_coms              , only : nzg                & ! intent(in)
+                                        , nzs                ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(rk4patchtype) , target     :: initp     ! Structure with RK4 intermediate state
@@ -50,7 +51,7 @@ module rk4_derivs
 
 
       !----- Find the derivatives. --------------------------------------------------------!
-      call leaftw_derivs(nzg,initp,dinitp,csite,ipa,ibuff,dt,is_hybrid)
+      call leaftw_derivs(nzg,nzs,initp,dinitp,csite,ipa,ibuff,dt,is_hybrid)
       !------------------------------------------------------------------------------------!
 
       return
@@ -65,7 +66,7 @@ module rk4_derivs
 
    !=======================================================================================!
    !=======================================================================================!
-   subroutine leaftw_derivs(mzg,initp,dinitp,csite,ipa,ibuff,dt,is_hybrid)
+   subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa,ibuff,dt,is_hybrid)
       use ed_max_dims          , only : nzgmax                & ! intent(in)
                                       , nzsmax                ! ! intent(in)
       use consts_coms          , only : cliq8                 & ! intent(in)
@@ -108,6 +109,7 @@ module rk4_derivs
       integer             , intent(in) :: ibuff     ! The shared memory processor index
                                                     ! for the buffer space
       integer             , intent(in) :: mzg       ! Number of ground layers
+      integer             , intent(in) :: mzs       ! Max. number of TSW layers
       real(kind=8)        , intent(in) :: dt        ! Timestep
       logical             , intent(in) :: is_hybrid ! Hybrid solver?
       !----- Local variables --------------------------------------------------------------!
@@ -154,6 +156,9 @@ module rk4_derivs
       real(kind=8)                :: wloss_tot_k2     ! Total water loss (lyr k2)
       real(kind=8)                :: uint_water_k1    ! Intensive Internal Energy (lyr k1)
       real(kind=8)                :: uint_water_k2    ! Intensive Internal Energy (lyr k2)
+      real(kind=8)                :: rshort_c_soil    ! Committed shortwave (top soil lyr)
+      real(kind=8)                :: rshort_c_sfcw    ! Committed shortwave (top TSW lyr)
+      real(kind=8)                :: rlong_c_soil     ! Committed longwave  (top soil lyr)
       !------------------------------------------------------------------------------------!
 
 
@@ -187,6 +192,49 @@ module rk4_derivs
       if (fast_diagnostics .or. print_detailed) then
          dinitp%avg_transloss(:)   = 0.0d0
       end if
+      !------------------------------------------------------------------------------------!
+
+
+
+
+      !------------------------------------------------------------------------------------!
+      !      Find the committed shortwave and longwave radiation.  Temporary surface water !
+      ! (TSW) is dynamic and may disappear in between two thermodynamic steps (dtlsm).     !
+      ! In contrast, radiation is calculated only once every dtlsm.  In this case, we must !
+      ! redirect the radiation (committed radiation) to some other place, to ensure that   !
+      ! energy is conserved.                                                               !
+      !                                                                                    !
+      ! Longwave radiation.  Net absorption is always applied to the TSW top layer.        !
+      !                      Committed radiation is only applied when all TSW layers       !
+      !                      disappear.                                                    !
+      ! Shortwave radiation. Net absorption is applied to all layers.  In case some layers !
+      !                      disappear, we add the net absorption of the extinct layers to !
+      !                      the top TSW layer.  In case all TSW layers disappear, we      !
+      !                      apply the committed radiation to the top soil layer.          !
+      !------------------------------------------------------------------------------------!
+      select case (initp%nlev_sfcwater)
+      case (0)
+         !------ No TSW layers left. Committed radiation goes to soil. --------------------!
+         rlong_c_soil     = dble(csite%rlong_s(ipa))
+         rshort_c_soil    = 0.d0
+         do k = 1,mzs
+            rshort_c_soil = rshort_c_soil + dble(csite%rshort_s(k,ipa))
+         end do
+         rshort_c_sfcw    = 0.d0
+         !---------------------------------------------------------------------------------!
+      case default
+         !---------------------------------------------------------------------------------!
+         !    There is still at least one TSW layer. Committed radiation goes to the top   !
+         ! existing layer.                                                                 !
+         !---------------------------------------------------------------------------------!
+         rlong_c_soil     = 0.d0
+         rshort_c_soil    = 0.d0
+         rshort_c_sfcw    = 0.d0
+         do k = ksn+1,mzs
+            rshort_c_sfcw = rshort_c_sfcw + dble(csite%rshort_s(k,ipa))
+         end do
+         !---------------------------------------------------------------------------------!
+      end select
       !------------------------------------------------------------------------------------!
 
 
@@ -459,11 +507,13 @@ module rk4_derivs
       !------------------------------------------------------------------------------------!
       if (fast_diagnostics .or. print_detailed) then
          dinitp%avg_sensible_gg(mzg)   = hflxgc + qwflxgc - dble(csite%rlong_g(ipa))       &
-                                       - dble(csite%rshort_g(ipa))
+                                       - dble(csite%rshort_g(ipa)) - rshort_c_soil         &
+                                       - rlong_c_soil
       end if
       rk4aux(ibuff)%h_flux_g(mzg+1) = rk4aux(ibuff)%h_flux_g(mzg+1)                        &
                                     + hflxgc + qwflxgc - dble(csite%rlong_g(ipa))          &
-                                    - dble(csite%rshort_g(ipa))
+                                    - dble(csite%rshort_g(ipa)) - rshort_c_soil            &
+                                    - rlong_c_soil
       !------------------------------------------------------------------------------------!
 
 
@@ -502,7 +552,7 @@ module rk4_derivs
       if ( ksn > 0 ) then
          dinitp%sfcwater_mass  (ksn) =  dewgnd +  wshed_tot +  throughfall_tot -  wflxsc
          dinitp%sfcwater_energy(ksn) = dinitp%sfcwater_energy(ksn)                         &
-                                     + dble(csite%rlong_s(ipa))                            &
+                                     + dble(csite%rlong_s(ipa)) + rshort_c_sfcw            &
                                      + qdewgnd + qwshed_tot + qthroughfall_tot - qwflxsc
          dinitp%sfcwater_depth (ksn) = ddewgnd + dwshed_tot + dthroughfall_tot
       else
@@ -942,7 +992,7 @@ module rk4_derivs
                                        , tl2uint8             ! ! function
       use ed_misc_coms          , only : fast_diagnostics     ! ! intent(in)
       use canopy_struct_dynamics, only : vertical_vel_flux8   ! ! function
-      use budget_utils          , only : compute_netrad       ! ! function
+      use budget_utils          , only : compute_netrad8      ! ! function
       use physiology_coms       , only : plant_hydro_scheme   ! ! intent(in)
       use plant_hydro           , only : om_buff_d            ! ! intent(in)
       use pft_coms              , only : leaf_psi_min         & ! intent(in)
@@ -2094,14 +2144,11 @@ module rk4_derivs
       dinitp%can_enthalpy = ( hflxsc      + hflxgc      + hflxlc_tot                       &
                             + hflxwc_tot  + qwflxsc     + qwflxgc                          &
                             - qdewgndflx  + qwflxlc_tot + qwflxwc_tot                      &
-                            + qtransp_tot + eflxac                    )                    &
-                          * rk4aux(ibuff)%hcapcani
+                            + qtransp_tot + eflxac                    ) * initp%hcapcani
       dinitp%can_shv      = ( wflxsc      + wflxgc      - dewgndflx                        &
                             + wflxlc_tot  + wflxwc_tot  + transp_tot                       &
-                            + wflxac                                  )                    &
-                          * rk4aux(ibuff)%wcapcani
-      dinitp%can_co2      = ( nee_tot     + cflxac                    )                    &
-                          * rk4aux(ibuff)%ccapcani
+                            + wflxac                                  ) * initp%wcapcani
+      dinitp%can_co2      = ( nee_tot     + cflxac                    ) * initp%ccapcani
       !------------------------------------------------------------------------------------!
 
       !------------------------------------------------------------------------------------!
@@ -2109,10 +2156,9 @@ module rk4_derivs
       !if (is_hybrid) then
 
          a = ( nee_tot                                                                     &
-             + initp%can_dmol*initp%ggbare*rk4site%atm_co2)                                &
-             * rk4aux(ibuff)%ccapcani
+             + initp%can_dmol*initp%ggbare*rk4site%atm_co2 )* initp%ccapcani
 
-         b  = (initp%can_dmol*initp%ggbare) * rk4aux(ibuff)%ccapcani
+         b  = (initp%can_dmol*initp%ggbare) * initp%ccapcani
          c0 = initp%can_co2
 
          ! Calculate the effective derivative
@@ -2120,11 +2166,11 @@ module rk4_derivs
 
          ! Calculate the effective cflxac term
 
-         cflxac = (initp%can_dmol*initp%ggbare*rk4aux(ibuff)%ccapcani)/dt                  &
+         cflxac = (initp%can_dmol*initp%ggbare*initp%ccapcani)/dt                          &
                 * (rk4site%atm_co2*dt - ((a/b)*dt - c0*exp(-b*dt)/b +                      &
                    c0/b + (a/b)*exp(-b*dt)/b - (a/b)/b  ))
 
-         dinitp%can_co2 = ( nee_tot + cflxac) * rk4aux(ibuff)%ccapcani
+         dinitp%can_co2 = ( nee_tot + cflxac) * initp%ccapcani
 
       end if
       !------------------------------------------------------------------------------------!
@@ -2179,7 +2225,7 @@ module rk4_derivs
          dinitp%ebudget_loss2atm   = - eflxac
          dinitp%wbudget_loss2atm   = - wflxac
          dinitp%co2budget_storage  = dinitp%co2budget_storage + nee_tot + cflxac
-         dinitp%ebudget_netrad     = dble(compute_netrad(csite,ipa))
+         dinitp%ebudget_netrad     = compute_netrad8(csite,ipa)
          dinitp%ebudget_storage    = dinitp%ebudget_storage   + dinitp%ebudget_netrad      &
                                    + rk4site%qpcpg - dinitp%ebudget_loss2atm
          dinitp%wbudget_storage    = dinitp%wbudget_storage + rk4site%pcpg                 &

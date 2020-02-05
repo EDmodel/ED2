@@ -182,8 +182,6 @@ module disturb_coms
    !---------------------------------------------------------------------------------------!
    !----- Only trees above this height create a gap when they fall. -----------------------!
    real                          :: treefall_hite_threshold
-   !----- Cut-off for different fire survivorship. ----------------------------------------!
-   real                          :: fire_hite_threshold
    !---------------------------------------------------------------------------------------!
    !      Minimum age above which we disregard the disturbance type (land use) and assume  !
    ! old growth, thus allowing patch fusion to occur.                                      !

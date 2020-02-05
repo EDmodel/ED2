@@ -810,7 +810,6 @@ subroutine init_disturb_params
    use disturb_coms , only : treefall_disturbance_rate & ! intent(in)
                            , include_fire              & ! intent(in)
                            , treefall_hite_threshold   & ! intent(out)
-                           , fire_hite_threshold       & ! intent(out)
                            , forestry_on               & ! intent(out)
                            , agriculture_on            & ! intent(out)
                            , plantation_year           & ! intent(out)
@@ -838,9 +837,6 @@ subroutine init_disturb_params
 
    !----- Only trees above this height create a gap when they fall. -----------------------!
    treefall_hite_threshold = 10.0
-
-   !----- Cut-off for fire survivorship (bush fires versus canopy fire). ------------------!
-   fire_hite_threshold     = 5.0
 
    !----- Set to 1 if to do forest harvesting. --------------------------------------------!
    forestry_on = 0
@@ -6993,6 +6989,7 @@ subroutine init_dt_thermo_params()
    use ed_misc_coms   , only : dtlsm                  & ! intent(in)
                              , ffilout                & ! intent(in)
                              , nsub_euler             & ! intent(in)
+                             , integration_scheme     & ! intent(in)
                              , dteuler                ! ! intent(out)
    use consts_coms    , only : wdnsi8                 & ! intent(in)
                              , r_tol_trunc            ! ! intent(in)
@@ -7092,10 +7089,23 @@ subroutine init_dt_thermo_params()
    !      Tolerances.  Following Stefan Olin's suggestion on the ED-2.2 model description  !
    ! paper, we use a stricter tolerance, by default the truncation tolerance (about 1e-5). !
    ! For carbon, we use 10 times the the values for the energy and water because the       !
-   ! solver uses single-precision.
+   ! solver uses single-precision.  In case we use hybdrid, we relax tolerance for the     !
+   ! time being.  We should identify the causes of leakage in that scheme in the future.   !
+   !                                                                                       !
+   ! Update: There are a few cases in which the strict tolerance is not working.  Most of  !
+   ! them seem to be associated with the long-term vegetation dynamics, but there are a    !
+   ! few cases that the thermodynamics is also causing crashes (I think still related to   !
+   ! temporary surface water).  This still needs to be addressed.  For the time being, I   !
+   ! am relaxing the tolerance so people can run their simulations.                        !
    !---------------------------------------------------------------------------------------!
-   tol_subday_budget = r_tol_trunc
-   tol_carbon_budget = 10. * r_tol_trunc
+   select case (integration_scheme)
+   case (3)
+      tol_subday_budget = 100. * r_tol_trunc
+      tol_carbon_budget = 100. * r_tol_trunc
+   case default
+      tol_subday_budget = 10   * r_tol_trunc
+      tol_carbon_budget = 100. * r_tol_trunc
+   end select
    !---------------------------------------------------------------------------------------!
 
 
@@ -7400,6 +7410,7 @@ subroutine init_derived_params_after_xml()
    use detailed_coms        , only : idetailed                 ! ! intent(in)
    use ed_misc_coms         , only : ibigleaf                  & ! intent(in)
                                    , iallom                    & ! intent(in)
+                                   , ivegt_dynamics            & ! intent(in)
                                    , lianas_included           ! ! intent(out)
    use ed_max_dims          , only : n_pft                     & ! intent(in)
                                    , str_len                   & ! intent(in)
@@ -7650,6 +7661,7 @@ subroutine init_derived_params_after_xml()
    use decomp_coms          , only : f0_msc                    & ! intent(in)
                                    , f0_psc                    & ! intent(in)
                                    , f0_ssc                    ! ! intent(out)
+   use phenology_coms      , only : repro_scheme                ! ! intent(in)
    use farq_leuning         , only : arrhenius                 & ! function
                                    , collatz                   ! ! function
    use plant_hydro          , only : psi2rwc                   & ! function
@@ -7812,8 +7824,19 @@ subroutine init_derived_params_after_xml()
    end where
    !---------------------------------------------------------------------------------------!
 
-   !------ Repro_min_h cannot be 0.  Make sure that height is at least hgt_min. -----------!
+
+   !---------------------------------------------------------------------------------------!
+   !     Make sure that repro_min_h is bounded between hgt_min and hgt_max.  This will     !
+   ! avoid floating point exceptions, or surprises when the user only partially sets       !
+   ! allometry parameters with XML.                                                        !
+   !---------------------------------------------------------------------------------------!
    repro_min_h(:) = merge(repro_min_h(:),hgt_min(:),repro_min_h(:) >= hgt_min(:))
+   repro_min_h(:) = merge( repro_min_h(:)                                                  &
+                         , merge(hgt_max(:),0.5*(hgt_min(:)+hgt_max(:)),is_grass(:))       &
+                         , repro_min_h(:) <= hgt_max(:)                              )
+   !---------------------------------------------------------------------------------------!
+
+   !------ Repro_min_h cannot exceed hgt_max
    !---------------------------------------------------------------------------------------!
 
    !------ Find corresponding DBH. --------------------------------------------------------!
@@ -7821,6 +7844,17 @@ subroutine init_derived_params_after_xml()
       repro_min_dbh(ipft) = h2dbh(repro_min_h(ipft),ipft)
    end do
    !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !    In case the user does not want reproduction (or in case vegetation dynamics is set !
+   ! to zero, set seedling mortality to one, so nothing will become recruit.               !
+   !---------------------------------------------------------------------------------------!
+   if ( repro_scheme == 0 .or. ivegt_dynamics == 0 ) then
+      seedling_mortality(:) = 1.0
+   end if
+   !---------------------------------------------------------------------------------------!
+
 
 
    !---------------------------------------------------------------------------------------!

@@ -1159,18 +1159,18 @@ for (place in myplaces){
                      comp$n          [d,s] = sum(sel)
                      comp$ks.stat    [d,s] = this.ks$statistic
                      comp$ks.p.value [d,s] = this.ks$p.value
-                     comp$norm.lnlike[d,s] = sum( x     = dnorm( x         = this.obser[sel]
-                                                               , mean      = m.mean
-                                                               , sd        = m.sdev
-                                                               , log       = TRUE
+                     comp$norm.lnlike[d,s] = sum( x     = dnorm( x      = this.obser[sel]
+                                                               , mean   = m.mean
+                                                               , sd     = m.sdev
+                                                               , log    = TRUE
                                                                )#end dnorm
                                                 , na.rm = TRUE
                                                 )#end sum
-                     comp$sn.lnlike  [d,s] = sum( x     =  dsn  ( x        = this.obser[sel]
-                                                                , location = m.location
-                                                                , scale    = m.scale
-                                                                , shape    = m.shape
-                                                                , log      = TRUE
+                     comp$sn.lnlike  [d,s] = sum( x     =  dsn  ( x     = this.obser[sel]
+                                                                , xi    = m.location
+                                                                , omega = m.scale
+                                                                , alpha = m.shape
+                                                                , log    = TRUE
                                                                 )#end dnorm
                                                 , na.rm = TRUE
                                                 )#end sum

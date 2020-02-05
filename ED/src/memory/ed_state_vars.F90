@@ -95,10 +95,10 @@ module ed_state_vars
       !   9 | Early temperate deciduous           |     no |       no |      no |       no !
       !  10 | Mid temperate deciduous             |     no |       no |      no |       no !
       !  11 | Late temperate deciduous            |     no |       no |      no |       no !
-      !  12 | C3 pasture                          |    yes |       no |      no |      yes !
-      !  13 | C3 crop (e.g.,wheat, rice, soybean) |    yes |       no |      no |      yes !
-      !  14 | C4 pasture                          |    yes |      yes |      no |      yes !
-      !  15 | C4 crop (e.g.,corn/maize)           |    yes |      yes |      no |      yes !
+      !  12 | Early savannah                      |     no |      yes |      no |       no !
+      !  13 | Mid savannah                        |     no |      yes |      no |       no !
+      !  14 | Late savannah                       |     no |      yes |      no |       no !
+      !  15 | Araucaria                           |     no |      yes |     yes |       no !
       !  16 | Tropical C3 grass                   |    yes |      yes |      no |      yes !
       !  17 | Liana                               |     no |      yes |      no |       no !
       !------------------------------------------------------------------------------------!
@@ -106,7 +106,7 @@ module ed_state_vars
       !<Plant functional type, refer to ed_params.f90 for default values\n
       !< <table>
       !! <caption id="multi_row">Default Plant Functional Types</caption>
-      !! <tr><th>PFT    <th>Name                    <th>Grass   <th>Tropical    <th>Conifer   <th>Agriculture
+      !! <tr><th>PFT    <th>Name                    <th>Grass   <th>Tropical    <th>Conifer<th>Agriculture
       !! <tr><td>1      <td>C4 grass                <td>yes     <td>yes         <td>no      <td>yes
       !! <tr><td>2      <td>Early Tropical          <td>no      <td>yes         <td>no      <td>no
       !! <tr><td>3      <td>Mid Tropical            <td>no      <td>yes         <td>no      <td>no
@@ -118,10 +118,10 @@ module ed_state_vars
       !! <tr><td>9      <td>Early Temperate Decid.  <td>no      <td>no          <td>no      <td>no 
       !! <tr><td>10     <td>Mid Temperate Decid.    <td>no      <td>no          <td>no      <td>no 
       !! <tr><td>11     <td>Late Temperate Decid.   <td>no      <td>no          <td>no      <td>no 
-      !! <tr><td>12     <td>C3 Pasture              <td>yes     <td>no          <td>no      <td>yes
-      !! <tr><td>13     <td>C3 Crop                 <td>yes     <td>no          <td>no      <td>yes
-      !! <tr><td>14     <td>C4 Pasture              <td>yes     <td>yes         <td>no      <td>yes
-      !! <tr><td>15     <td>C4 Crop                 <td>yes     <td>yes         <td>no      <td>yes
+      !! <tr><td>12     <td>Early Savannah          <td>no      <td>yes         <td>no      <td>no
+      !! <tr><td>13     <td>Mid Savannah            <td>no      <td>yes         <td>no      <td>no
+      !! <tr><td>14     <td>Late Savannah           <td>no      <td>yes         <td>no      <td>no
+      !! <tr><td>15     <td>Araucaria               <td>no      <td>yes         <td>yes     <td>no
       !! <tr><td>16     <td>Tropical C3 Grass       <td>yes     <td>yes         <td>no      <td>yes
       !! <tr><td>17     <td>Tropical Lianas         <td>no      <td>yes         <td>no      <td>no 
       !! </table>
@@ -1098,12 +1098,14 @@ module ed_state_vars
       !  AREA      -- patch area (relative to the total SITE area).                        !
       !  AGE       -- time since last disturbance (years)                                  !
       !  DIST_TYPE -- patch type                                                           !
-      !               1.  Clear cut (cropland and pasture).                                !
+      !               1.  Pasture.                                                         !
       !               2.  Forest plantation.                                               !
       !               3.  Tree fall.                                                       !
       !               4.  Fire.                                                            !
       !               5.  Forest regrowth.                                                 !
-      !               6.  Logged forest.                                                   !
+      !               6.  Logged forest (felling).                                         !
+      !               7.  Logged forest (skid trail + road).                               !
+      !               8.  Cropland.                                                        !
       !------------------------------------------------------------------------------------!
       real   , pointer,dimension(:) :: area 
       !< Patch area relative to the total SITE area (dimensionless)
@@ -1116,9 +1118,9 @@ module ed_state_vars
       !!3.  Tree fall.\n
       !!4.  Fire.\n
       !!5.  Forest regrowth.\n
-      !!6.  Logged forest.\n
-      !!7.  Skid trails and roads.\n
-      !!8.  Croplands.\n
+      !!6.  Logged forest (felling).\n
+      !!7.  Logged forest (skid trail + road).\n
+      !!8.  Cropland.\n
 
       real   , pointer,dimension(:) :: fbeam
       !< Correction term to account for neighbouring shaded (1.0 unless ihrzrad /= 0)
@@ -1346,6 +1348,10 @@ module ed_state_vars
       !<Contribution of CAS depth change on change in the final storage
       !<(kg_H2O/m2/s)
 
+      real , pointer,dimension(:) :: wbudget_pheneffect
+      !<Effect of phenology status (resolvable flag) on change in the final storage
+      !<(kg_H2O/m2/s)
+
       real , pointer,dimension(:) :: wbudget_precipgain
       !<Precipitation [kg_H2O/m2/s]
 
@@ -1384,6 +1390,10 @@ module ed_state_vars
 
       real , pointer,dimension(:) :: ebudget_zcaneffect
       !<Mean change in storage due to CAS depth change
+      !<(J/m2/s)
+
+      real , pointer,dimension(:) :: ebudget_pheneffect
+      !<Effect of phenology status (resolvable flag) on change in the final storage
       !<(J/m2/s)
 
       real , pointer,dimension(:) :: ebudget_loss2runoff
@@ -4964,6 +4974,7 @@ module ed_state_vars
       allocate(csite%wbudget_denseffect            (              npatches))
       allocate(csite%wbudget_wcapeffect            (              npatches))
       allocate(csite%wbudget_zcaneffect            (              npatches))
+      allocate(csite%wbudget_pheneffect            (              npatches))
       allocate(csite%wbudget_precipgain            (              npatches))
       allocate(csite%wbudget_loss2runoff           (              npatches))
       allocate(csite%wbudget_loss2drainage         (              npatches))
@@ -4975,6 +4986,7 @@ module ed_state_vars
       allocate(csite%ebudget_hcapeffect            (              npatches))
       allocate(csite%ebudget_wcapeffect            (              npatches))
       allocate(csite%ebudget_zcaneffect            (              npatches))
+      allocate(csite%ebudget_pheneffect            (              npatches))
       allocate(csite%ebudget_loss2runoff           (              npatches))
       allocate(csite%ebudget_loss2drainage         (              npatches))
       allocate(csite%ebudget_netrad                (              npatches))
@@ -7162,6 +7174,7 @@ module ed_state_vars
       nullify(csite%wbudget_denseffect         )
       nullify(csite%wbudget_wcapeffect         )
       nullify(csite%wbudget_zcaneffect         )
+      nullify(csite%wbudget_pheneffect         )
       nullify(csite%wbudget_precipgain         )
       nullify(csite%wbudget_loss2runoff        )
       nullify(csite%wbudget_loss2drainage      )
@@ -7173,6 +7186,7 @@ module ed_state_vars
       nullify(csite%ebudget_hcapeffect         )
       nullify(csite%ebudget_wcapeffect         )
       nullify(csite%ebudget_zcaneffect         )
+      nullify(csite%ebudget_pheneffect         )
       nullify(csite%ebudget_loss2runoff        )
       nullify(csite%ebudget_loss2drainage      )
       nullify(csite%ebudget_netrad             )
@@ -8310,6 +8324,7 @@ module ed_state_vars
       if(associated(csite%wbudget_denseffect         )) deallocate(csite%wbudget_denseffect         )
       if(associated(csite%wbudget_wcapeffect         )) deallocate(csite%wbudget_wcapeffect         )
       if(associated(csite%wbudget_zcaneffect         )) deallocate(csite%wbudget_zcaneffect         )
+      if(associated(csite%wbudget_pheneffect         )) deallocate(csite%wbudget_pheneffect         )
       if(associated(csite%wbudget_precipgain         )) deallocate(csite%wbudget_precipgain         )
       if(associated(csite%wbudget_loss2runoff        )) deallocate(csite%wbudget_loss2runoff        )
       if(associated(csite%wbudget_loss2drainage      )) deallocate(csite%wbudget_loss2drainage      )
@@ -8321,6 +8336,7 @@ module ed_state_vars
       if(associated(csite%ebudget_hcapeffect         )) deallocate(csite%ebudget_hcapeffect         )
       if(associated(csite%ebudget_wcapeffect         )) deallocate(csite%ebudget_wcapeffect         )
       if(associated(csite%ebudget_zcaneffect         )) deallocate(csite%ebudget_zcaneffect         )
+      if(associated(csite%ebudget_pheneffect         )) deallocate(csite%ebudget_pheneffect         )
       if(associated(csite%ebudget_loss2runoff        )) deallocate(csite%ebudget_loss2runoff        )
       if(associated(csite%ebudget_loss2drainage      )) deallocate(csite%ebudget_loss2drainage      )
       if(associated(csite%ebudget_netrad             )) deallocate(csite%ebudget_netrad             )
@@ -9484,6 +9500,7 @@ module ed_state_vars
          osite%wbudget_denseffect         (opa) = isite%wbudget_denseffect         (ipa)
          osite%wbudget_wcapeffect         (opa) = isite%wbudget_wcapeffect         (ipa)
          osite%wbudget_zcaneffect         (opa) = isite%wbudget_zcaneffect         (ipa)
+         osite%wbudget_pheneffect         (opa) = isite%wbudget_pheneffect         (ipa)
          osite%wbudget_precipgain         (opa) = isite%wbudget_precipgain         (ipa)
          osite%wbudget_loss2runoff        (opa) = isite%wbudget_loss2runoff        (ipa)
          osite%wbudget_loss2drainage      (opa) = isite%wbudget_loss2drainage      (ipa)
@@ -9495,6 +9512,7 @@ module ed_state_vars
          osite%ebudget_hcapeffect         (opa) = isite%ebudget_hcapeffect         (ipa)
          osite%ebudget_wcapeffect         (opa) = isite%ebudget_wcapeffect         (ipa)
          osite%ebudget_zcaneffect         (opa) = isite%ebudget_zcaneffect         (ipa)
+         osite%ebudget_pheneffect         (opa) = isite%ebudget_pheneffect         (ipa)
          osite%ebudget_loss2runoff        (opa) = isite%ebudget_loss2runoff        (ipa)
          osite%ebudget_loss2drainage      (opa) = isite%ebudget_loss2drainage      (ipa)
          osite%ebudget_netrad             (opa) = isite%ebudget_netrad             (ipa)
@@ -9748,7 +9766,7 @@ module ed_state_vars
             osite%dmean_stgc_rh        (opa) = isite%dmean_stgc_rh        (ipa)
             osite%dmean_stsc_rh        (opa) = isite%dmean_stsc_rh        (ipa)
             osite%dmean_msc_rh         (opa) = isite%dmean_msc_rh         (ipa)
-            osite%dmean_msc_rh         (opa) = isite%dmean_msc_rh         (ipa)
+            osite%dmean_ssc_rh         (opa) = isite%dmean_ssc_rh         (ipa)
             osite%dmean_psc_rh         (opa) = isite%dmean_psc_rh         (ipa)
             osite%dmean_nep            (opa) = isite%dmean_nep            (ipa)
             osite%dmean_rk4step        (opa) = isite%dmean_rk4step        (ipa)
@@ -10239,6 +10257,7 @@ module ed_state_vars
       osite%wbudget_denseffect         (1:z) = pack(isite%wbudget_denseffect         ,lmask)
       osite%wbudget_wcapeffect         (1:z) = pack(isite%wbudget_wcapeffect         ,lmask)
       osite%wbudget_zcaneffect         (1:z) = pack(isite%wbudget_zcaneffect         ,lmask)
+      osite%wbudget_pheneffect         (1:z) = pack(isite%wbudget_pheneffect         ,lmask)
       osite%wbudget_precipgain         (1:z) = pack(isite%wbudget_precipgain         ,lmask)
       osite%wbudget_loss2runoff        (1:z) = pack(isite%wbudget_loss2runoff        ,lmask)
       osite%wbudget_loss2drainage      (1:z) = pack(isite%wbudget_loss2drainage      ,lmask)
@@ -10250,6 +10269,7 @@ module ed_state_vars
       osite%ebudget_hcapeffect         (1:z) = pack(isite%ebudget_hcapeffect         ,lmask)
       osite%ebudget_wcapeffect         (1:z) = pack(isite%ebudget_wcapeffect         ,lmask)
       osite%ebudget_zcaneffect         (1:z) = pack(isite%ebudget_zcaneffect         ,lmask)
+      osite%ebudget_pheneffect         (1:z) = pack(isite%ebudget_pheneffect         ,lmask)
       osite%ebudget_loss2runoff        (1:z) = pack(isite%ebudget_loss2runoff        ,lmask)
       osite%ebudget_loss2drainage      (1:z) = pack(isite%ebudget_loss2drainage      ,lmask)
       osite%ebudget_netrad             (1:z) = pack(isite%ebudget_netrad             ,lmask)
@@ -11257,6 +11277,7 @@ module ed_state_vars
 
          !------ Water absorption from each soil layer ------------------------------------!
          do m=1,nzg
+            opatch%wflux_gw_layer        (m,oco) = ipatch%wflux_gw_layer        (m,ico)
             opatch%fmean_wflux_gw_layer  (m,oco) = ipatch%fmean_wflux_gw_layer  (m,ico)
          end do
          !---------------------------------------------------------------------------------!
@@ -12034,11 +12055,11 @@ module ed_state_vars
 
 
 
-      !------ Water absorption from each soil layer ------------------------------------!
+      !------ Water absorption from each soil layer ---------------------------------------!
       do m=1,nzg
          opatch%fmean_wflux_gw_layer(m,1:z) = pack(ipatch%fmean_wflux_gw_layer(m,:),lmask)
       end do
-      !---------------------------------------------------------------------------------!
+      !------------------------------------------------------------------------------------!
 
 
       !------ Radiation profile variables. ------------------------------------------------!
@@ -12488,114 +12509,117 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !      This subroutine is the main driver for filling the variable table (var_table) of !
-   ! ED variables.  On a serial computing environment, this routine should be called near  !
-   ! the end of the initialization process after the hierarchical tree structure has been  !
-   ! trimmed via fusion/splitting/termination.  Similiarly, this routine should be called  !
-   ! after any fusion/splitting/termination process, assuming that the major vtable        !
-   ! structures have been deallocated prior to reallocation.                               !
-   !                                                                                       !
-   !      In a parallel environment, this routine should operate in a similiar fashion on  !
-   ! each of the compute nodes.  It is designed such that the compute nodes will write     !
-   ! hyperslabs of data in parallel to a joining HDF5 dataset as "collective-chunked"      !
-   ! data.  The modifications that must be made after running this subroutine, are that    !
-   ! the indexes should account for the offset of the current compute node.                !
-   !                                                                                       !
-   !    The various state scalars, vectors and arrays are now populate the vtable.  The    !
-   ! vtable indexes the array gives it a name, records its dimensions, when it is to be    !
-   ! used as output and how (averaging and such) and most importantly saves a pointer to   !
-   ! its starting position.  If this routine is being called as a compute node in          !
-   ! parallel, the first position is not necessarily the first position of the whole       !
-   ! datavector, but will only be the first position of that nodes hyperslab chunk         !
-   ! within the given continuous dataset.                                                  !
-   !                                                                                       !
-   ! The first number correspond to the data level:                                        !
-   !    1. Gridtype     (polygon level)                                                    !
-   !    2. Polygontype  (site    level)                                                    !
-   !    3. Sitetype     (patch   level)                                                    !
-   !    4. Patchtype    (cohort  level)                                                    !
-   !    9. Scalar                                                                          !
-   !                                                                                       !
-   ! The other numbers correspond to the kind of dimension and variable.                   !
-   !    0.  Main vector ordinate only, integer.                                            !
-   !    1.  Main vector ordinate only, real.                                               !
-   !    2.  Soil layer                                                                     !
-   !    3.  Surface water layer                                                            !
-   !    4.  PFT                                                                            !
-   !    5.  Disturbance Type                                                               !
-   !    6.  DBH class                                                                      !
-   !    7.  FF_DBH class                                                                   !
-   !    8.  Mortality                                                                      !
-   !    9.  Month                                                                          !
-   !    91. 13 months                                                                      !
-   !                                                                                       !
-   ! The negative sign means that the variable has an extra dimension, for the diurnal     !
-   !    cycle output.                                                                      !
-   !                                                                                       !
-   ! Of these possible dimensions (2-9), they may be used concurrently to partition the    !
-   !    data into multi-dimensional spaces, but all seven will not be used simultaneously. !
-   !    Currently the highest ranks in use is 3, and you should think twice before making  !
-   !    new types with higher dimensionality: these arrays may become huge.                !
-   !                                                                                       !
-   ! Each unique combination will have a call number associated with it.                   !
-   !                                                                                       !
-   !  10    : rank 1 : polygon, integer                                                    !
-   !  11    : rank 1 : polygon                                                             !
-   ! -11    : rank 2 : polygon, diurnal cycle                                              !
-   !  12    : rank 2 : polygon, s-layer                                                    !
-   !  120   : rank 2 : polygon, s-layer, integer                                           !
-   ! -12    : rank 3 : polygon, diurnal cycle, s-layer                                     !
-   !  13    : rank 2 : polygon, w-layer                                                    !
-   !  14    : rank 2 : polygon, pft                                                        !
-   !  146   : rank 3 : polygon, pft, dbh                                                   !
-   !  15    : rank 2 : polygon, disturbance                                                !
-   !  155   : rank 3 : polygon, disturbance, disturbance                                   !
-   !  157   : rank 3 : polygon, disturbance, age                                           !
-   !  16    : rank 2 : polygon, dbh                                                        !
-   !  17    : rank 2 : polygon, age                                                        !
-   !  18    : rank 2 : polygon, mort                                                       !
-   !  19    : rank 2 : polygon, month                                                      !
-   !  191   : rank 2 : polygon, month+1                                                    !
-   !                                                                                       !
-   !  20    : rank 1 : site, integer                                                       !
-   !  21    : rank 1 : site                                                                !
-   !  22    : rank 2 : site, s-layer                                                       !
-   !  23    : rank 2 : site, w-layer                                                       !
-   !  24    : rank 2 : site, pft                                                           !
-   !  246   : rank 3 : site, pft, dbh                                                      !
-   !  25    : rank 2 : site, disturbance                                                   !
-   !  255   : rank 3 : site, disturbance, disturbance                                      !
-   !  26    : rank 2 : site, dbh                                                           !
-   !  27    : rank 2 : site, age                                                           !
-   !  28    : rank 2 : site, mort                                                          !
-   !  29    : rank 2 : site, month                                                         !
-   !  291   : rank 2 : site, month+1                                                       !
-   !                                                                                       !
-   !  30    : rank 1 : patch, integer                                                      !
-   !  31    : rank 1 : patch                                                               !
-   ! -31    : rank 2 : patch, diurnal cycle                                                !
-   !  32    : rank 2 : patch, s-layer                                                      !
-   !  33    : rank 2 : patch, w-layer                                                      !
-   !  34    : rank 2 : patch, pft                                                          !
-   !  346   : rank 3 : patch, pft, ff_dbh                                                  !
-   !  35    : rank 2 : patch, disturbance                                                  !
-   !  36    : rank 2 : patch, dbh                                                          !
-   !  37    : rank 2 : patch, age                                                          !
-   !  38    : rank 2 : patch, mort                                                         !
-   !                                                                                       !
-   !  40    : rank 1 : cohort, integer                                                     !
-   !  41    : rank 1 : cohort                                                              !
-   ! -41    : rank 2 : cohort, diurnal cycle                                               !
-   !  44    : rank 2 : cohort, pft                                                         !
-   !  46    : rank 2 : cohort, dbh                                                         !
-   !  47    : rank 2 : cohort, age                                                         !
-   !  48    : rank 2 : cohort, mort                                                        !
-   !  491   : rank 2 : cohort, month+1                                                     !
-   !  411   : rank 2 : cohort, radiation                                                   !
-   ! -411   : rank 2 : cohort, diurnal cycle , radiation                                   !
-   !                                                                                       !
-   !  90    : rank 0 : integer scalar                                                      !
-   !  92    : rank 1 : s-layer                                                             !
+   !  SUBROUTINE: FILLTAB_ALLTYPES
+   !> \brief    This subroutine is the main driver for filling the variable table 
+   !>           (var_table) of ED variables.  
+   !> \details  On a serial computing environment, this routine should be called near  
+   !>the end of the initialization process after the hierarchical tree structure has been  
+   !>trimmed via fusion/splitting/termination.  Similiarly, this routine should be called  
+   !>after any fusion/splitting/termination process, assuming that the major vtable        
+   !>structures have been deallocated prior to reallocation.                               
+   !>                                                                                      
+   !>     In a parallel environment, this routine should operate in a similiar fashion on  
+   !>each of the compute nodes.  It is designed such that the compute nodes will write     
+   !>hyperslabs of data in parallel to a joining HDF5 dataset as "collective-chunked"      
+   !>data.  The modifications that must be made after running this subroutine, are that    
+   !>the indexes should account for the offset of the current compute node.                
+   !>                                                                                      
+   !>    The various state scalars, vectors and arrays are now populate the vtable.  The   
+   !> vtable indexes the array gives it a name, records its dimensions, when it is to be   
+   !> used as output and how (averaging and such) and most importantly saves a pointer to  
+   !> its starting position.  If this routine is being called as a compute node in         
+   !> parallel, the first position is not necessarily the first position of the whole      
+   !> datavector, but will only be the first position of that nodes hyperslab chunk        
+   !> within the given continuous dataset.                                                 
+   !>                                                                                      
+   !> The first number correspond to the data level:                                       
+   !>    1. Gridtype     (polygon level)                                                   
+   !>    2. Polygontype  (site    level)                                                   
+   !>    3. Sitetype     (patch   level)                                                   
+   !>    4. Patchtype    (cohort  level)                                                   
+   !>    9. Scalar                                                                         
+   !>                                                                                      
+   !> The other numbers correspond to the kind of dimension and variable.                  
+   !>    0.  Main vector ordinate only, integer.                                           
+   !>    1.  Main vector ordinate only, real.                                              
+   !>    2.  Soil layer                                                                    
+   !>    3.  Surface water layer                                                           
+   !>    4.  PFT                                                                           
+   !>    5.  Disturbance Type                                                              
+   !>    6.  DBH class                                                                     
+   !>    7.  FF_DBH class                                                                  
+   !>    8.  Mortality                                                                     
+   !>    9.  Month                                                                         
+   !>    91. 13 months                                                                     
+   !>                                                                                      
+   !> The negative sign means that the variable has an extra dimension, for the diurnal    
+   !>    cycle output.                                                                     
+   !>                                                                                      
+   !> Of these possible dimensions (2-9), they may be used concurrently to partition the   
+   !>    data into multi-dimensional spaces, but all seven will not be used simultaneously.
+   !>    Currently the highest ranks in use is 3, and you should think twice before making 
+   !>    new types with higher dimensionality: these arrays may become huge.               
+   !>                                                                                      
+   !> Each unique combination will have a call number associated with it.                  
+   !>                                                                                      
+   !>  10    : rank 1 : polygon, integer                                                   
+   !>  11    : rank 1 : polygon                                                            
+   !> -11    : rank 2 : polygon, diurnal cycle                                             
+   !>  12    : rank 2 : polygon, s-layer                                                   
+   !>  120   : rank 2 : polygon, s-layer, integer                                          
+   !> -12    : rank 3 : polygon, diurnal cycle, s-layer                                    
+   !>  13    : rank 2 : polygon, w-layer                                                   
+   !>  14    : rank 2 : polygon, pft                                                       
+   !>  146   : rank 3 : polygon, pft, dbh                                                  
+   !>  15    : rank 2 : polygon, disturbance                                               
+   !>  155   : rank 3 : polygon, disturbance, disturbance                                  
+   !>  157   : rank 3 : polygon, disturbance, age                                          
+   !>  16    : rank 2 : polygon, dbh                                                       
+   !>  17    : rank 2 : polygon, age                                                       
+   !>  18    : rank 2 : polygon, mort                                                      
+   !>  19    : rank 2 : polygon, month                                                     
+   !>  191   : rank 2 : polygon, month+1                                                   
+   !>                                                                                      
+   !>  20    : rank 1 : site, integer                                                      
+   !>  21    : rank 1 : site                                                               
+   !>  22    : rank 2 : site, s-layer                                                      
+   !>  23    : rank 2 : site, w-layer                                                      
+   !>  24    : rank 2 : site, pft                                                          
+   !>  246   : rank 3 : site, pft, dbh                                                     
+   !>  25    : rank 2 : site, disturbance                                                  
+   !>  255   : rank 3 : site, disturbance, disturbance                                     
+   !>  26    : rank 2 : site, dbh                                                          
+   !>  27    : rank 2 : site, age                                                          
+   !>  28    : rank 2 : site, mort                                                         
+   !>  29    : rank 2 : site, month                                                        
+   !>  291   : rank 2 : site, month+1                                                      
+   !>                                                                                      
+   !>  30    : rank 1 : patch, integer                                                     
+   !>  31    : rank 1 : patch                                                              
+   !> -31    : rank 2 : patch, diurnal cycle                                               
+   !>  32    : rank 2 : patch, s-layer                                                     
+   !>  33    : rank 2 : patch, w-layer                                                     
+   !>  34    : rank 2 : patch, pft                                                         
+   !>  346   : rank 3 : patch, pft, ff_dbh                                                 
+   !>  35    : rank 2 : patch, disturbance                                                 
+   !>  36    : rank 2 : patch, dbh                                                         
+   !>  37    : rank 2 : patch, age                                                         
+   !>  38    : rank 2 : patch, mort                                                        
+   !>                                                                                      
+   !>  40    : rank 1 : cohort, integer                                                    
+   !>  41    : rank 1 : cohort                                                             
+   !> -41    : rank 2 : cohort, diurnal cycle                                              
+   !>  42    : rank 2 : cohort, s-layer                                                    
+   !>  44    : rank 2 : cohort, pft                                                        
+   !>  46    : rank 2 : cohort, dbh                                                        
+   !>  47    : rank 2 : cohort, age                                                        
+   !>  48    : rank 2 : cohort, mort                                                       
+   !>  491   : rank 2 : cohort, month+1                                                    
+   !>  411   : rank 2 : cohort, radiation                                                  
+   !> -411   : rank 2 : cohort, diurnal cycle , radiation                                  
+   !>                                                                                      
+   !>  90    : rank 0 : integer scalar                                                     
+   !>  92    : rank 1 : s-layer                                                            
    !---------------------------------------------------------------------------------------!
    subroutine filltab_alltypes
 
@@ -13104,8 +13128,9 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This routine will fill the pointer table with the polygon-level variables         !
-   ! (edtype).                                                                             !
+   !  SUBROUTINE: FILLTAB_EDTYPE
+   !> \brief This routine will fill the pointer table with the polygon-level variables  
+   !> (edtype).
    !---------------------------------------------------------------------------------------!
    subroutine filltab_edtype(igr,init)
 
@@ -13160,8 +13185,9 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This routine will fill the pointer table with the polygon-level variables         !
-   ! (edtype) that have one dimension and are integer (type 10).                           !
+   !  SUBROUTINE: FILLTAB_EDTYPE_P10
+   !> \brief  This routine will fill the pointer table with the polygon-level variables 
+   !>(edtype) that have one dimension and are integer (type 10).
    !---------------------------------------------------------------------------------------!
    subroutine filltab_edtype_p10(cgrid,igr,init,var_len,var_len_global,max_ptrs,nvar)
       use ed_var_tables, only : vtable_edio_i  & ! sub-routine
@@ -13241,8 +13267,9 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This routine will fill the pointer table with the polygon-level variables         !
-   ! (edtype) that have one dimension and are real (type 11), and are instantaneous.       !
+   !  SUBROUTINE: FILLTAB_EDTYPE_P11
+   !> \brief This routine will fill the pointer table with the polygon-level variables 
+   !>(edtype) that have one dimension and are real (type 11), and are instantaneous.
    !---------------------------------------------------------------------------------------!
    subroutine filltab_edtype_p11inst(cgrid,igr,init,var_len,var_len_global,max_ptrs,nvar)
       use ed_var_tables, only : vtable_edio_r  & ! sub-routine
@@ -13760,8 +13787,9 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This routine will fill the pointer table with the polygon-level variables         !
-   ! (edtype) that have one dimension and are real (type 11), and are fast mean variables. !
+   !  SUBROUTINE: FILLTAB_EDTYPE_P11FMEAN
+   !> \brief This routine will fill the pointer table with the polygon-level variables 
+   !>(edtype) that have one dimension and are real (type 11), and are fast mean variables.
    !---------------------------------------------------------------------------------------!
    subroutine filltab_edtype_p11fmean(cgrid,igr,init,var_len,var_len_global,max_ptrs,nvar)
       use ed_var_tables, only : vtable_edio_r  & ! sub-routine
@@ -15102,9 +15130,10 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This routine will fill the pointer table with the polygon-level variables         !
-   ! (edtype) that have one dimension and are real (type 11), and are daily mean           !
-   ! variables.                                                                            !
+   !  SUBROUTINE: FILLTAB_EDTYPE_P11DMEAN
+   !> \brief This routine will fill the pointer table with the polygon-level variables
+   !> (edtype) that have one dimension and are real (type 11), and are daily mean
+   !> variables.
    !---------------------------------------------------------------------------------------!
    subroutine filltab_edtype_p11dmean(cgrid,igr,init,var_len,var_len_global,max_ptrs,nvar)
       use ed_var_tables, only : vtable_edio_r  & ! sub-routine
@@ -15392,7 +15421,7 @@ module ed_state_vars
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_sapa_storage_resp                             &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_SAPB_STORAGE_RESP_PY      :11:'//trim(dail_keys)     )
+                           ,'DMEAN_SAPA_STORAGE_RESP_PY      :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Aboveground Sapwood Storage respiration'         &
                            ,'[  kgC/m2/yr]','(ipoly)'            )
@@ -16536,9 +16565,10 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This routine will fill the pointer table with the polygon-level variables         !
-   ! (edtype) that have one dimension and are real (type 11), and are monthly mean         !
-   ! variables.                                                                            !
+   !  SUBROUTINE: FILLTAB_EDTYPE_P11MMEAN
+   !> \brief This routine will fill the pointer table with the polygon-level variables
+   !> (edtype) that have one dimension and are real (type 11), and are monthly mean
+   !> variables.
    !---------------------------------------------------------------------------------------!
    subroutine filltab_edtype_p11mmean(cgrid,igr,init,var_len,var_len_global,max_ptrs,nvar)
       use ed_var_tables, only : vtable_edio_r  & ! sub-routine
@@ -18371,8 +18401,9 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This routine will fill the pointer table with the polygon-level variables         !
-   ! (edtype) that have two dimensions (ndcycle,npolygons) and are real (type -11).        !
+   !  SUBROUTINE: FILLTAB_EDTYPE_M11 
+   !> \brief This routine will fill the pointer table with the polygon-level variables
+   !> (edtype) that have two dimensions (ndcycle,npolygons) and are real (type -11).
    !---------------------------------------------------------------------------------------!
    subroutine filltab_edtype_m11(cgrid,igr,init,var_len,var_len_global,max_ptrs,nvar)
       use ed_var_tables, only : vtable_edio_r  & ! sub-routine
@@ -19956,8 +19987,9 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This routine will fill the pointer table with the polygon-level variables         !
-   ! (edtype) that have two dimensions (ndcycle,npolygons) and are real (type 12).         !
+   !  SUBROUTINE: FILLTAB_EDTYPE_P12
+   !> \brief  This routine will fill the pointer table with the polygon-level variables
+   !> (edtype) that have two dimensions (ndcycle,npolygons) and are real (type 12).
    !---------------------------------------------------------------------------------------!
    subroutine filltab_edtype_p12(cgrid,igr,init,var_len,var_len_global,max_ptrs,nvar)
       use ed_var_tables, only : vtable_edio_r  & ! sub-routine
@@ -20243,8 +20275,9 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This routine will fill the pointer table with the polygon-level variables         !
-   ! (edtype) that have three dimensions (nzg,ndcycle,npolygons) and are real (type -12).  !
+   !  SUBROUTINE: FILLTAB_EDTYPE_<12
+   !> \brief  This routine will fill the pointer table with the polygon-level variables
+   !> (edtype) that have three dimensions (nzg,ndcycle,npolygons) and are real (type -12).
    !---------------------------------------------------------------------------------------!
    subroutine filltab_edtype_m12(cgrid,igr,init,var_len,var_len_global,max_ptrs,nvar)
       use ed_var_tables, only : vtable_edio_r  & ! sub-routine
@@ -20370,8 +20403,9 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This routine will fill the pointer table with the polygon-level variables         !
-   ! (edtype) that have two dimensions (12 months,npolygons) and are real (type 19).       !
+   !  SUBROUTINE: FILLTAB_EDTYPE_P19
+   !> \brief This routine will fill the pointer table with the polygon-level variables
+   !> (edtype) that have two dimensions (12 months,npolygons) and are real (type 19).
    !---------------------------------------------------------------------------------------!
    subroutine filltab_edtype_p19(cgrid,igr,init,var_len,var_len_global,max_ptrs,nvar)
       use ed_var_tables, only : vtable_edio_r  & ! sub-routine
@@ -20420,8 +20454,9 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This routine will fill the pointer table with the polygon-level variables         !
-   ! (edtype) that have two dimensions (13 months,npolygons) and are real (type 19).       !
+   !  SUBROUTINE: FILLTAB_EDTYPE_P191
+   !> \brief This routine will fill the pointer table with the polygon-level variables
+   !> (edtype) that have two dimensions (13 months,npolygons) and are real (type 19).
    !---------------------------------------------------------------------------------------!
    subroutine filltab_edtype_p191(cgrid,igr,init,var_len,var_len_global,max_ptrs,nvar)
       use ed_var_tables, only : vtable_edio_r  & ! sub-routine
@@ -20471,8 +20506,9 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This routine will fill the pointer table with the polygon-level variables         !
-   ! (edtype) that have three dimensions (n_dbh,n_pft,npolygons) and are real (type 146).  !
+   !  SUBROUTINE: FILLTAB_EDTYPE_P146
+   !> \brief  This routine will fill the pointer table with the polygon-level variables
+   !> (edtype) that have three dimensions (n_dbh,n_pft,npolygons) and are real (type 146).
    !---------------------------------------------------------------------------------------!
    subroutine filltab_edtype_p146(cgrid,igr,init,var_len,var_len_global,max_ptrs,nvar)
       use ed_var_tables, only : vtable_edio_r  & ! sub-routine
@@ -20974,8 +21010,9 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This routine will fill the pointer table with the polygon-level variables         !
-   ! (edtype) that have three dimensions (3,4,npolygons) and are real (type 199).          !
+   !  SUBROUTINE: FILLTAB_EDTYPE_P199
+   !> \brief This routine will fill the pointer table with the polygon-level variables
+   !> (edtype) that have three dimensions (3,4,npolygons) and are real (type 199).
    !---------------------------------------------------------------------------------------!
    subroutine filltab_edtype_p199(cgrid,igr,init,var_len,var_len_global,max_ptrs,nvar)
       use ed_var_tables, only : vtable_edio_r  & ! sub-routine
@@ -21028,7 +21065,8 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This sub-routine fills in the variable table with site-level variables.           !
+   !  SUBROUTINE: FILLTAB_POLYGONTYPE
+   !> \brief This sub-routine fills in the variable table with site-level variables.
    !---------------------------------------------------------------------------------------!
    subroutine filltab_polygontype(igr,ipy,init)
       implicit none
@@ -21118,8 +21156,9 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This routine will fill the pointer table with the site-level variables            !
-   ! (polygontype) that have one dimension and are integer (type 20).                      !
+   !  SUBROUTINE: FILLTAB_POLYGONTYPE_P20
+   !> \brief This routine will fill the pointer table with the site-level variables
+   !> (polygontype) that have one dimension and are integer (type 20).
    !---------------------------------------------------------------------------------------!
    subroutine filltab_polygontype_p20(cpoly,igr,init,var_len,var_len_global,max_ptrs,nvar)
       use ed_var_tables, only : vtable_edio_i  & ! sub-routine
@@ -21273,9 +21312,10 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This routine will fill the pointer table with the site-level variables            !
-   ! (polygontype) that have one dimension and are real (type 21), and are not averaged    !
-   ! variable (fmean, dmean, mmean, mmsqu, qmean, qmsqu).                                  !
+   !  SUBROUTINE: FILLTAB_POLYGONTYPE_P21INST
+   !> \brief This routine will fill the pointer table with the site-level variables
+   !> (polygontype) that have one dimension and are real (type 21), and are not averaged
+   !> variable (fmean, dmean, mmean, mmsqu, qmean, qmsqu).
    !---------------------------------------------------------------------------------------!
    subroutine filltab_polygontype_p21inst(cpoly,igr,init,var_len,var_len_global,max_ptrs   &
                                          ,nvar)
@@ -21518,9 +21558,10 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This routine will fill the pointer table with the site-level variables            !
-   ! (polygontype) that have one dimension and are real (type 21), and are sub-daily       !
-   ! averages (fmean).                                                                     !
+   !  SUBROUTINE: FILLTAB_POLYGONTYPE_P21FMEAN
+   !> \brief This routine will fill the pointer table with the site-level variables
+   !> (polygontype) that have one dimension and are real (type 21), and are sub-daily
+   !> averages (fmean).
    !---------------------------------------------------------------------------------------!
    subroutine filltab_polygontype_p21fmean(cpoly,igr,init,var_len,var_len_global,max_ptrs  &
                                          ,nvar)
@@ -21736,9 +21777,10 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This routine will fill the pointer table with the site-level variables            !
-   ! (polygontype) that have one dimension and are real (type 21), and are daily           !
-   ! averages (dmean).                                                                     !
+   !  SUBROUTINE: FILLTAB_POLYGONTYPE_P21DMEAN
+   !> \brief This routine will fill the pointer table with the site-level variables
+   !> (polygontype) that have one dimension and are real (type 21), and are daily
+   !> averages (dmean).
    !---------------------------------------------------------------------------------------!
    subroutine filltab_polygontype_p21dmean(cpoly,igr,init,var_len,var_len_global,max_ptrs  &
                                          ,nvar)
@@ -21925,9 +21967,10 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This routine will fill the pointer table with the site-level variables            !
-   ! (polygontype) that have one dimension and are real (type 21), and are monthly         !
-   ! averages (mmean or mmsqu).                                                            !
+   !  SUBROUTINE: FILLTAB_POLYGONTYPE_P21MMEAN
+   !> \brief This routine will fill the pointer table with the site-level variables
+   !> (polygontype) that have one dimension and are real (type 21), and are monthly
+   !> averages (mmean or mmsqu).
    !---------------------------------------------------------------------------------------!
    subroutine filltab_polygontype_p21mmean(cpoly,igr,init,var_len,var_len_global,max_ptrs  &
                                          ,nvar)
@@ -22144,8 +22187,9 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This routine will fill the pointer table with the site-level variables            !
-   ! (polygontype) that have two dimensions (nzg,nsites) and are integer (type 220).       !
+   !  SUBROUTINE: FILLTAB_POLYGONTYPE_P220
+   !> \brief This routine will fill the pointer table with the site-level variables
+   !> (polygontype) that have two dimensions (nzg,nsites) and are integer (type 220).
    !---------------------------------------------------------------------------------------!
    subroutine filltab_polygontype_p220(cpoly,igr,init,var_len,var_len_global,max_ptrs,nvar)
       use ed_var_tables, only : vtable_edio_i  & ! sub-routine
@@ -22200,8 +22244,9 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This routine will fill the pointer table with the site-level variables            !
-   ! (polygontype) that have two dimensions (n_pft,nsites) and are real (type 24).         !
+   !  SUBROUTINE: FILLTAB_POLYGONTYPE_P24
+   !> \brief This routine will fill the pointer table with the site-level variables
+   !> (polygontype) that have two dimensions (n_pft,nsites) and are real (type 24).
    !---------------------------------------------------------------------------------------!
    subroutine filltab_polygontype_p24(cpoly,igr,init,var_len,var_len_global,max_ptrs,nvar)
       use ed_var_tables, only : vtable_edio_r  & ! sub-routine
@@ -22259,8 +22304,9 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This routine will fill the pointer table with the site-level variables            !
-   ! (polygontype) that have two dimensions (ndcycle,nsites) and are real (type -21).      !
+   !  SUBROUTINE: FILLTAB_POLYGONTYPE_M21
+   !> \brief This routine will fill the pointer table with the site-level variables
+   !> (polygontype) that have two dimensions (ndcycle,nsites) and are real (type -21).
    !---------------------------------------------------------------------------------------!
    subroutine filltab_polygontype_m21(cpoly,igr,init,var_len,var_len_global,max_ptrs,nvar)
       use ed_var_tables, only : vtable_edio_r  & ! sub-routine
@@ -22475,8 +22521,9 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This routine will fill the pointer table with the site-level variables            !
-   ! (polygontype) that have two dimensions (12 months,nsites) and are real (type 29).     !
+   !  SUBROUTINE: FILLTAB_POLYGONTYPE_P29
+   !> \brief This routine will fill the pointer table with the site-level variables
+   !> (polygontype) that have two dimensions (12 months,nsites) and are real (type 29).
    !---------------------------------------------------------------------------------------!
    subroutine filltab_polygontype_p29(cpoly,igr,init,var_len,var_len_global,max_ptrs,nvar)
       use ed_var_tables, only : vtable_edio_r  & ! sub-routine
@@ -22542,8 +22589,9 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This routine will fill the pointer table with the site-level variables            !
-   ! (polygontype) that have three dimensions (n_pft,n_dbh,nsites) and are real (type 246).!
+   !  SUBROUTINE: FILLTAB_POLYGONTYPE_P246
+   !> \brief This routine will fill the pointer table with the site-level variables
+   !> (polygontype) that have three dimensions (n_pft,n_dbh,nsites) and are real (type 246).
    !---------------------------------------------------------------------------------------!
    subroutine filltab_polygontype_p246(cpoly,igr,init,var_len,var_len_global,max_ptrs,nvar)
       use ed_var_tables, only : vtable_edio_r  & ! sub-routine
@@ -22651,9 +22699,10 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This routine will fill the pointer table with the site-level variables            !
-   ! (polygontype) that have three dimensions (n_dist_types,n_dist_types,nsites) and are   !
-   ! real (type 255).                                                                      !
+   !  SUBROUTINE: FILLTAB_POLYGONTYPE_P255
+   !> \brief This routine will fill the pointer table with the site-level variables
+   !> (polygontype) that have three dimensions (n_dist_types,n_dist_types,nsites) and are
+   !> real (type 255).
    !---------------------------------------------------------------------------------------!
    subroutine filltab_polygontype_p255(cpoly,igr,init,var_len,var_len_global,max_ptrs,nvar)
       use ed_var_tables, only : vtable_edio_r  & ! sub-routine
@@ -22714,9 +22763,10 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This sub-routine will fill the variable table with the sitetype variables (patch- !
-   ! -level).  Because of the sheer number of variables, we must split the subroutines     !
-   ! into smaller routines.                                                                !
+   !  SUBROUTINE: FILLTAB_SITETYPE
+   !> \brief This sub-routine will fill the variable table with the sitetype variables
+   !> (patch-level). Because of the sheer number of variables, we must split the subroutines
+   !> into smaller routines.
    !---------------------------------------------------------------------------------------!
    subroutine filltab_sitetype(igr,ipy,isi,init)
 
@@ -22788,8 +22838,9 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This routine will fill the pointer table with the patch-level variables           !
-   !  (sitetype) that have one dimension and are integer (type 30).                        !
+   !  SUBROUTINE: FILLTAB_SITETYPE_P30
+   !> \brief This routine will fill the pointer table with the patch-level variables
+   !> (sitetype) that have one dimension and are integer (type 30).
    !---------------------------------------------------------------------------------------!
    subroutine filltab_sitetype_p30(csite,igr,init,var_len,var_len_global,max_ptrs,nvar)
       use ed_var_tables, only : vtable_edio_i  & ! sub-routine
@@ -22867,10 +22918,11 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This routine will fill the pointer table with the patch-level variables           !
-   !  (sitetype) that have one dimension and are real (type 31).  Because of the sheer     !
-   ! amount of variables with type 31, we do the budget, today, fmean, dmean, mmean, and   !
-   ! mmsqu variables in separate sub-routines.                                             !
+   !  SUBROUTINE: FILLTAB_SITETYPE_P31INST
+   !> \brief This routine will fill the pointer table with the patch-level variables
+   !> (sitetype) that have one dimension and are real (type 31).  Because of the sheer
+   !> amount of variables with type 31, we do the budget, today, fmean, dmean, mmean, and
+   !> mmsqu variables in separate sub-routines.
    !---------------------------------------------------------------------------------------!
    subroutine filltab_sitetype_p31inst(csite,igr,init,var_len,var_len_global,max_ptrs,nvar)
       use ed_var_tables, only : vtable_edio_r  & ! sub-routine
@@ -23734,9 +23786,10 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This routine will fill the pointer table with the patch-level variables           !
-   !  (sitetype) that have one dimension are real (type 31), and are budget variables      !
-   ! (co2budget, cbudget, ebudget, wbudget).                                               !
+   !  SUBROUTINE: FILLTAB_SITETYPE_P31BUDGET
+   !> \brief This routine will fill the pointer table with the patch-level variables
+   !>  (sitetype) that have one dimension are real (type 31), and are budget variables
+   !> (co2budget, cbudget, ebudget, wbudget).
    !---------------------------------------------------------------------------------------!
    subroutine filltab_sitetype_p31budget(csite,igr,init,var_len,var_len_global,max_ptrs    &
                                         ,nvar)
@@ -23803,6 +23856,16 @@ module ed_state_vars
                            ,'WBUDGET_ZCANEFFECT :31:hist') 
          call metadata_edio(nvar,igr                                                       &
                            ,'Water budget: change in storage due to change in CAS depth'   &
+                           ,'[  kgW/m2/s]','NA') 
+      end if
+
+      if (associated(csite%wbudget_pheneffect)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,csite%wbudget_pheneffect                                  &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'WBUDGET_PHENEFFECT :31:hist') 
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Water budget: change in storage due to phenology status'      &
                            ,'[  kgW/m2/s]','NA') 
       end if
 
@@ -23913,6 +23976,16 @@ module ed_state_vars
                            ,'EBUDGET_ZCANEFFECT :31:hist')
          call metadata_edio(nvar,igr                                                       &
                            ,'Enthalpy budget: change in storage due to change in CAS depth'&
+                           ,'[    J/m2/s]','NA') 
+      end if
+
+      if (associated(csite%ebudget_pheneffect)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,csite%ebudget_pheneffect                                  &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'EBUDGET_PHENEFFECT :31:hist')
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Enthalpy budget: change in storage due to phenology status'   &
                            ,'[    J/m2/s]','NA') 
       end if
 
@@ -24148,9 +24221,10 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This routine will fill the pointer table with the patch-level variables           !
-   !  (sitetype) that have one dimension are real (type 31), and are daily integrals       !
-   ! (today).                                                                              !
+   !  SUBROUTINE: FILLTAB_SITETYPE_P31TODAY
+   !> \brief This routine will fill the pointer table with the patch-level variables
+   !> (sitetype) that have one dimension are real (type 31), and are daily integrals
+   !> (today).
    !---------------------------------------------------------------------------------------!
    subroutine filltab_sitetype_p31today(csite,igr,init,var_len,var_len_global,max_ptrs,nvar)
       use ed_var_tables, only : vtable_edio_r  & ! sub-routine
@@ -24373,8 +24447,9 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This routine will fill the pointer table with the patch-level variables           !
-   ! (sitetype) that have one dimension, are real (type 31), and are sub-daily averages.   !
+   !  SUBROUTINE: FILLTAB_SITETYPE_P31FMEAN
+   !> \brief This routine will fill the pointer table with the patch-level variables
+   !> (sitetype) that have one dimension, are real (type 31), and are sub-daily averages.
    !---------------------------------------------------------------------------------------!
    subroutine filltab_sitetype_p31fmean(csite,igr,init,var_len,var_len_global,max_ptrs,nvar)
       use ed_var_tables, only : vtable_edio_r  & ! sub-routine
@@ -24949,8 +25024,9 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This routine will fill the pointer table with the patch-level variables           !
-   ! (sitetype) that have one dimension, are real (type 31), and are daily averages.       !
+   !  SUBROUTINE: FILLTAB_SITETYPE_P31DMEAN
+   !> \brief This routine will fill the pointer table with the patch-level variables
+   !> (sitetype) that have one dimension, are real (type 31), and are daily averages.
    !---------------------------------------------------------------------------------------!
    subroutine filltab_sitetype_p31dmean(csite,igr,init,var_len,var_len_global,max_ptrs,nvar)
       use ed_var_tables, only : vtable_edio_r  & ! sub-routine
@@ -25598,9 +25674,10 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This routine will fill the pointer table with the patch-level variables           !
-   ! (sitetype) that have one dimension, are real (type 31), and are monthly means or mean !
-   ! sum of squares.                                                                       !
+   !  SUBROUTINE: FILLTAB_SITETYPE_P31MMEAN
+   !> \brief This routine will fill the pointer table with the patch-level variables
+   !> (sitetype) that have one dimension, are real (type 31), and are monthly means or mean
+   !> sum of squares.
    !---------------------------------------------------------------------------------------!
    subroutine filltab_sitetype_p31mmean(csite,igr,init,var_len,var_len_global,max_ptrs,nvar)
       use ed_var_tables, only : vtable_edio_r  & ! sub-routine
@@ -26572,9 +26649,10 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This routine will fill the pointer table with the patch-level variables           !
-   ! (sitetype) that have two dimensions (ndcycle,npatches), and are of type -31 (qmean    !
-   ! and qmsqu).                                                                           !
+   !  SUBROUTINE: FILLTAB_SITETYPE_M31
+   !> \brief This routine will fill the pointer table with the patch-level variables
+   !> (sitetype) that have two dimensions (ndcycle,npatches), and are of type -31 (qmean
+   !> and qmsqu).
    !---------------------------------------------------------------------------------------!
    subroutine filltab_sitetype_m31(csite,igr,init,var_len,var_len_global,max_ptrs,nvar)
       use ed_var_tables, only : vtable_edio_r  & ! sub-routine
@@ -27359,8 +27437,9 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This routine will fill the pointer table with the patch-level variables           !
-   ! (sitetype) that have two dimensions (nzg,npatches).                                   !
+   !  SUBROUTINE: FILLTAB_SITETYPE_P32
+   !> \brief This routine will fill the pointer table with the patch-level variables
+   !> (sitetype) that have two dimensions (nzg,npatches).
    !---------------------------------------------------------------------------------------!
    subroutine filltab_sitetype_p32(csite,igr,init,var_len,var_len_global,max_ptrs,nvar)
       use ed_var_tables, only : vtable_edio_r  & ! sub-routine
@@ -27710,8 +27789,9 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This routine will fill the pointer table with the patch-level variables           !
-   ! (sitetype) that have three dimensions (nzg,ndcycle,npatches).                         !
+   !  SUBROUTINE: FILLTAB_SITETYPE_M32
+   !> \brief This routine will fill the pointer table with the patch-level variables
+   !> (sitetype) that have three dimensions (nzg,ndcycle,npatches).
    !---------------------------------------------------------------------------------------!
    subroutine filltab_sitetype_m32(csite,igr,init,var_len,var_len_global,max_ptrs,nvar)
       use ed_var_tables, only : vtable_edio_r  & ! sub-routine
@@ -27846,8 +27926,9 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This routine will fill the pointer table with the patch-level variables           !
-   ! (sitetype) that have two dimensions (nzs,npatches).                                   !
+   !  SUBROUTINE: FILLTAB_SITETYPE_P33
+   !> \brief This routine will fill the pointer table with the patch-level variables
+   !> (sitetype) that have two dimensions (nzs,npatches).
    !---------------------------------------------------------------------------------------!
    subroutine filltab_sitetype_p33(csite,igr,init,var_len,var_len_global,max_ptrs,nvar)
       use ed_var_tables, only : vtable_edio_r  & ! sub-routine
@@ -27970,8 +28051,9 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This routine will fill the pointer table with the patch-level variables           !
-   ! (sitetype) that have two dimensions (n_pft,npatches).                                 !
+   !  SUBROUTINE: FILLTAB_SITETYPE_P34
+   !> \brief This routine will fill the pointer table with the patch-level variables
+   !> (sitetype) that have two dimensions (n_pft,npatches).
    !---------------------------------------------------------------------------------------!
    subroutine filltab_sitetype_p34(csite,igr,init,var_len,var_len_global,max_ptrs,nvar)
       use ed_var_tables, only : vtable_edio_r  & ! sub-routine
@@ -28038,8 +28120,9 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This routine will fill the pointer table with the patch-level variables           !
-   ! (sitetype) that have three dimensions (n_pft,ff_nhgt,npatches).                                 !
+   !  SUBROUTINE: FILLTAB_SITETYPE_P346
+   !> \brief This routine will fill the pointer table with the patch-level variables
+   !> (sitetype) that have three dimensions (n_pft,ff_nhgt,npatches).
    !---------------------------------------------------------------------------------------!
    subroutine filltab_sitetype_p346(csite,igr,init,var_len,var_len_global,max_ptrs,nvar)
       use ed_var_tables, only : vtable_edio_r  & ! sub-routine
@@ -28092,7 +28175,8 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This sub-routine fills in the variable table for cohort-level variables.          !
+   !  SUBROUTINE: FILLTAB_PATCHTYPE
+   !> \brief This sub-routine fills in the variable table for cohort-level variables.
    !---------------------------------------------------------------------------------------!
    subroutine filltab_patchtype(igr,ipy,isi,ipa,init)
 
@@ -28209,8 +28293,9 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This routine will fill the pointer table with the cohort-level variables          !
-   ! (patchtype) that have one dimension and are integer (type 40).                        !
+   !  SUBROUTINE: FILLTAB_PATCHTYPE_P40
+   !> \brief This routine will fill the pointer table with the cohort-level variables
+   !> (patchtype) that have one dimension and are integer (type 40).
    !---------------------------------------------------------------------------------------!
    subroutine filltab_patchtype_p40(cpatch,igr,init,var_len,var_len_global,max_ptrs,nvar)
       use ed_var_tables, only : vtable_edio_i  & ! sub-routine
@@ -28323,9 +28408,10 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This routine will fill the pointer table with the cohort-level variables          !
-   ! (patchtype) that have one dimension and are real (type 41) and not today, fmean,      !
-   ! dmean, mmean, mmsqu, qmean, or qmsqu.                                                 !
+   !  SUBROUTINE: FILLTAB_PATCHTYPE_P41INST
+   !> \brief This routine will fill the pointer table with the cohort-level variables
+   !> (patchtype) that have one dimension and are real (type 41) and not fmean, dmean,
+   !> mmean, mmsqu, qmean, or qmsqu.
    !---------------------------------------------------------------------------------------!
    subroutine filltab_patchtype_p41inst (cpatch,igr,init,var_len,var_len_global,max_ptrs   &
                                         ,nvar)
@@ -29261,9 +29347,10 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This routine will fill the pointer table with the cohort-level variables          !
-   ! (patchtype) that have one dimension and are real (type 41) and daily integrals        !
-   ! (today).                                                                              !
+   !  SUBROUTINE: FILLTAB_PATCHTYPE_P41TODAY
+   !> \brief This routine will fill the pointer table with the cohort-level variables
+   !> (patchtype) that have one dimension and are real (type 41) and daily integrals
+   !> (today).
    !---------------------------------------------------------------------------------------!
    subroutine filltab_patchtype_p41today(cpatch,igr,init,var_len,var_len_global,max_ptrs   &
                                         ,nvar)
@@ -29409,8 +29496,9 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This routine will fill the pointer table with the cohort-level variables          !
-   ! (patchtype) that have one dimension and are real (type 41) and fmean.                 !
+  !  SUBROUTINE: FILLTAB_PATCHTYPE_P41FMEAN
+   !> \brief This routine will fill the pointer table with the cohort-level variables
+   !> (patchtype) that have one dimension and are real (type 41) and fmean.
    !---------------------------------------------------------------------------------------!
    subroutine filltab_patchtype_p41fmean(cpatch,igr,init,var_len,var_len_global,max_ptrs   &
                                         ,nvar)
@@ -30129,8 +30217,9 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This routine will fill the pointer table with the cohort-level variables          !
-   ! (patchtype) that have one dimension and are real (type 41) and dmean.                 !
+   !  SUBROUTINE: FILLTAB_PATCHTYPE_P41DMEAN
+   !> \brief This routine will fill the pointer table with the cohort-level variables
+   !> (patchtype) that have one dimension and are real (type 41) and dmean.
    !---------------------------------------------------------------------------------------!
    subroutine filltab_patchtype_p41dmean(cpatch,igr,init,var_len,var_len_global,max_ptrs   &
                                         ,nvar)
@@ -30949,8 +31038,9 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This routine will fill the pointer table with the cohort-level variables          !
-   ! (patchtype) that have one dimension and are real (type 41) and mmean.                 !
+   !  SUBROUTINE: FILLTAB_PATCHTYPE_P41MMEAN
+   !> \brief This routine will fill the pointer table with the cohort-level variables
+   !> (patchtype) that have one dimension and are real (type 41) and mmean.
    !---------------------------------------------------------------------------------------!
    subroutine filltab_patchtype_p41mmean(cpatch,igr,init,var_len,var_len_global,max_ptrs   &
                                         ,nvar)
@@ -32002,8 +32092,9 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This routine will fill the pointer table with the cohort-level variables          !
-   ! (patchtype) that have two dimensions (ndcycle,ncohorts) and are real (type -41).      !
+   !  SUBROUTINE: FILLTAB_PATCHTYPE_M41
+   !> \brief This routine will fill the pointer table with the cohort-level variables
+   !> (patchtype) that have two dimensions (ndcycle,ncohorts) and are real (type -41).
    !---------------------------------------------------------------------------------------!
    subroutine filltab_patchtype_m41(cpatch,igr,init,var_len,var_len_global,max_ptrs,nvar)
       use ed_var_tables, only : vtable_edio_r  & ! sub-routine
@@ -32822,9 +32913,9 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !  SUBROUTINE: FILLTAB_PATCHTYPE_P32
+   !  SUBROUTINE: FILLTAB_PATCHTYPE_P42
    !> \brief This routine will fill the pointer table with the cohort-level variables
-   !> (patchtype) that have two dimensions (nzg,npatches).
+   !> (patchtype) that have two dimensions (nzg,ncohorts).
    !---------------------------------------------------------------------------------------!
    subroutine filltab_patchtype_p42(cpatch,igr,init,var_len,var_len_global,max_ptrs,nvar)
       use ed_var_tables, only : vtable_edio_r  & ! sub-routine
@@ -32933,8 +33024,9 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This routine will fill the pointer table with the cohort-level variables          !
-   ! (patchtype) that have two dimensions (n_mort,ncohorts) and are real (type 48).        !
+   !  SUBROUTINE: FILLTAB_PATCHTYPE_P48
+   !> \brief This routine will fill the pointer table with the cohort-level variables
+   !> (patchtype) that have two dimensions (n_mort,ncohorts) and are real (type 48).
    !---------------------------------------------------------------------------------------!
    subroutine filltab_patchtype_p48(cpatch,igr,init,var_len,var_len_global,max_ptrs,nvar)
       use ed_var_tables, only : vtable_edio_r  & ! sub-routine
@@ -32970,7 +33062,7 @@ module ed_state_vars
          call vtable_edio_r(npts,cpatch%mort_rate                                          &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
                            ,'MORT_RATE_CO :48:hist:dail') 
-         call metadata_edio(nvar,igr,'Mortality rates','[1/yr]','icohort') 
+         call metadata_edio(nvar,igr,'Mortality rates','[1/yr]','imort,icohort')
       end if
       !------------------------------------------------------------------------------------!
 
@@ -32999,7 +33091,7 @@ module ed_state_vars
          call vtable_edio_r(npts,cpatch%mmean_mort_rate                                    &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
                            ,'MMEAN_MORT_RATE_CO :48:'//trim(eorq_keys))
-         call metadata_edio(nvar,igr,'Monthly mean mortality rate','[1/yr]','icohort')
+         call metadata_edio(nvar,igr,'Monthly mean mortality rate','[1/yr]','imort,icohort')
       end if
       !------------------------------------------------------------------------------------!
       !------------------------------------------------------------------------------------!
@@ -33017,8 +33109,9 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This routine will fill the pointer table with the cohort-level variables          !
-   ! (patchtype) that have two dimensions (13 months,ncohorts) and are real (type 49).     !
+   !  SUBROUTINE: FILLTAB_PATCHTYPE_P491
+   !> \brief This routine will fill the pointer table with the cohort-level variables
+   !> (patchtype) that have two dimensions (13 months,ncohorts) and are real (type 491).
    !---------------------------------------------------------------------------------------!
    subroutine filltab_patchtype_p491(cpatch,igr,init,var_len,var_len_global,max_ptrs,nvar)
       use ed_var_tables, only : vtable_edio_r  & ! sub-routine
@@ -33100,8 +33193,9 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This routine will fill the pointer table with the cohort-level variables          !
-   ! (patchtype) that have two dimensions (n_radprof,ncohorts) and are real (type 411).    !
+   !  SUBROUTINE: FILLTAB_PATCHTYPE_P411
+   !> \brief This routine will fill the pointer table with the cohort-level variables
+   !> (patchtype) that have two dimensions (n_radprof,ncohorts) and are real (type 411).
    !---------------------------------------------------------------------------------------!
    subroutine filltab_patchtype_p411(cpatch,igr,init,var_len,var_len_global,max_ptrs,nvar)
       use ed_var_tables, only : vtable_edio_r  & ! sub-routine
@@ -33228,9 +33322,10 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This routine will fill the pointer table with the cohort-level variables          !
-   ! (patchtype) that have three dimensions (n_radprof,ndcycle,ncohorts) and are real      !
-   ! (type -411).                                                                          !
+   !  SUBROUTINE: FILLTAB_PATCHTYPE_M411
+   !> \brief This routine will fill the pointer table with the cohort-level variables
+   !> (patchtype) that have three dimensions (n_radprof,ndcycle,ncohorts) and are real
+   !> (type -411).
    !---------------------------------------------------------------------------------------!
    subroutine filltab_patchtype_m411(cpatch,igr,init,var_len,var_len_global,max_ptrs,nvar)
       use ed_var_tables, only : vtable_edio_r  & ! sub-routine
@@ -33307,7 +33402,8 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !      This function gets the total number of sites.                                    !
+   !  FUNCTION: GET_NSITES
+   !> \brief This function gets the total number of sites.
    !---------------------------------------------------------------------------------------!
    integer function get_nsites(cgrid)
 
@@ -33340,7 +33436,8 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !      This function gets the total number of patches.                                  !
+   !  FUNCTION: GET_NPATCHES
+   !> \brief This function gets the total number of patches.
    !---------------------------------------------------------------------------------------!
    integer function get_npatches(cgrid)
 
@@ -33378,7 +33475,8 @@ module ed_state_vars
 
    !=======================================================================================!
    !=======================================================================================!
-   !      This function gets the total number of ncohorts.                                 !
+   !  FUNCTION: GET_NCOHORTS
+   !> \brief This function gets the total number of ncohorts.
    !---------------------------------------------------------------------------------------!
    integer function get_ncohorts(cgrid)
 

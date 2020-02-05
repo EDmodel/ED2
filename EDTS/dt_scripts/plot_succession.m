@@ -1,5 +1,5 @@
 function plot_succession(dns,agb_t,agb_c,lai_t,lai_c,...
-    titlestr,pftsucc_pref,visible)
+    titlestr,pftsucc_pref,status_t,status_c,visible)
 
 global fasz;
 global pftshort;
@@ -64,7 +64,7 @@ ylabel('AGB [kgC/m^2]','FontSize',fasz_l)
 set(gca,'XTick',xticks,'XTickLabel',{});
 xlim([min(dns) max(dns)]);
 ylim([0 ymax]);
-title('Test','FontSize',fasz_l);
+title(sprintf('Test (%s)',status_t),'FontSize',fasz_l);
 
 ax2 = axes;
 set(ax2,'Position',[bx+dx+mx by+dy+my dx dy],'FontSize',fasz_l);
@@ -87,7 +87,7 @@ ylim([0 ymax]);
 xlim([min(dns) max(dns)]);
 set(gca,'XTick',xticks,'XTickLabel',{});
 set(gca,'YTickLabel',{});
-title('MainLine','FontSize',fasz_l);
+title(sprintf('MainLine (%s)',status_c),'FontSize',fasz_l);
 
 
 ymax = 1.04 .* max([tot_lai_t;tot_lai_c]);

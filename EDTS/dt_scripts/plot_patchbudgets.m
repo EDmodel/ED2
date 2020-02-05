@@ -5,43 +5,47 @@ function plot_patchbudgets(dnv,cbuds_t,ebuds_t,wbuds_t,...
                                 cbudg_outfile, ...
                                 ebudg_outfile, ...
                                 wbudg_outfile, ...
+                                status_t, ...
+                                status_c, ...
                                 visible);
 global fasz;
 
 
 
-cbud_cols=[ 77    77   77; ...     %Residual
-           230    92   23; ...     %Delta S
-           163   204   82; ...     %NEP
-           241   189   59; ...     %Density
-            59    36  179]./255.;  %Atmosphere
+cbud_cols=[203     0   61;     ... %Residual
+           127   127  127;     ... %Delta S
+           151   228  125;     ... %Density
+            16   124  146;     ... %Veg Dyn
+           248   120   86;     ... %Net Seed
+            27   162  247]./255.;  %Eddy flux
 
-ebud_cols=[ 77    77   77; ...     %Residual
-           230    92   23; ...     %Delta S
-            41   150  204; ...     %Precip
-           153    15   15; ...     %RNet
-           241   189   59; ...     %Density
-           163   204   82; ...     %Pressure
-            59    36  179; ...     %Atmosphere
-           180   158  210; ...     %Drainage
-             0   243  251]./255.;  %Runoff
+ebud_cols=[203     0   61;    ... % Residual
+           127   127  127;    ... % Delta S
+            43   210  219;    ... % Rainfall
+           248   120   86;    ... % Net Rad
+           151   228  125;    ... % Density
+           204   202   61;    ... % Pressure
+            16   124  146;    ... % Veg Dyn
+            27   162  247;    ... % Eddy flux
+           129    31  158]./255.; % Runoff
 
-wbud_cols=[ 77    77   77; ...     %Residual
-           230    92   23; ...     %Delta S
-            41   150  204; ...     %Precip
-           241   189   59; ...     %Density
-            59    36  179; ...     %Atmosphere
-           180   158  210; ...     %Drainage
-             0   243  251]./255.;  %Runoff
 
-ebud_names = {'Residual','\Delta S','Precip','R_{net}','Density','Pressure','Atmosphere','Drainage','Runoff'};
-cbud_names = {'Residual','\Delta S','Nep','Density','Atmosphere'};
-wbud_names = {'Residual','\Delta S','Precip','Density','Atmosphere','Drainage','Runoff'};
+wbud_cols=[203     0   61;    ... % Residual
+           127   127  127;    ... % Delta S
+            43   210  219;    ... % Rainfall
+           151   228  125;    ... % Density
+            16   124  146;    ... % Veg Dyn
+            27   162  247;    ... % Eddy flux
+           129    31  158]./255.; % Runoff
+
+cbud_names = {'Residual','\Delta S','Density','Veg Dyn','Net Seed','Eddy Flux'};
+ebud_names = {'Residual','\Delta S','Rainfall','R_{net}','Density','Pressure','Veg Dyn','Eddy Flux','Runoff'};
+wbud_names = {'Residual','\Delta S','Rainfall','Density','Veg Dyn','Eddy Flux','Runoff'};
 
 error_cols=[230    92   23; ...    % Test
              41   150  204]./255.; % Test
 
-error_names={'Test','Main'};
+error_names={sprintf('Test (%s)',status_t),sprintf('Main (%s)',status_c)};
 
 fasz_l = fasz+1;
 fasz_c = fasz-2;
@@ -180,7 +184,7 @@ hold off;
 datetick;
 grid on;
 box on;
-ylabel(sprintf('Instananeous\n[kg/m2/hr]'),'FontSize',fasz_l);
+ylabel(sprintf('Instantaneous\n[kg/m2/hr]'),'FontSize',fasz_l);
 set(ax2,'XtickLabel',{});
 
 
@@ -216,6 +220,7 @@ set(gcf,'Units',oldscreenunits,...
 % =========================================================================
 % Carbon Budget
 % =========================================================================
+idaysec = 1/86400;
 
 figure('visible',visible);
 set(gcf,'PaperPositionMode','manual','Units','inches','PaperSize',[11 8.5]);
@@ -237,7 +242,7 @@ grid on;
 box on;
 title(sprintf('Carbon Budget Terms\n(dashed lines for mainline)'),...
     'Fontsize',fasz_l);
-ylabel(sprintf('Integrated\n[umol/m2]'),'FontSize',fasz_l);
+ylabel(sprintf('Integrated\n[kgC/m2]'),'FontSize',fasz_l);
 legend(cbud_names,'Location','NorthWest','FontSize',fasz_c);
 set(ax1,'XtickLabel',{});
 
@@ -249,14 +254,14 @@ p_c=plot(dnv,cbuds_c(:,:,1),...
 p_t=plot(dnv,cbuds_t(:,:,1),...
     'LineStyle','-','LineWidth',1.5);
 for ip=1:ncbud
-    set(p_c(ip),'Color',cbud_cols(ip,:));
-    set(p_t(ip),'Color',cbud_cols(ip,:));
+    set(p_c(ip),'Color',1000.*idaysec*cbud_cols(ip,:));
+    set(p_t(ip),'Color',1000.*idaysec*cbud_cols(ip,:));
 end
 hold off;
 datetick;
 grid on;
 box on;
-ylabel(sprintf('Instananeous\n[umol/m2/s]'),'FontSize',fasz_l);
+ylabel(sprintf('Instananeous\n[gC/m2/dy]'),'FontSize',fasz_l);
 set(ax2,'XtickLabel',{});
 
 
@@ -272,7 +277,7 @@ hold off;
 datetick;
 grid on;
 box on;
-ylabel(sprintf('Error \n[umol/m2]'),'FontSize',fasz_l);
+ylabel(sprintf('Error \n[kgC/m2]'),'FontSize',fasz_l);
 legend(error_names,'Location','NorthWest','FontSize',fasz_c);
 
 

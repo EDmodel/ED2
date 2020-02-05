@@ -948,6 +948,7 @@ module ed_type_init
       csite%wbudget_denseffect              (ipaa:ipaz) = 0.0
       csite%wbudget_wcapeffect              (ipaa:ipaz) = 0.0
       csite%wbudget_zcaneffect              (ipaa:ipaz) = 0.0
+      csite%wbudget_pheneffect              (ipaa:ipaz) = 0.0
       csite%wbudget_initialstorage          (ipaa:ipaz) = 0.0
       csite%wbudget_residual                (ipaa:ipaz) = 0.0
       csite%ebudget_precipgain              (ipaa:ipaz) = 0.0
@@ -960,6 +961,7 @@ module ed_type_init
       csite%ebudget_hcapeffect              (ipaa:ipaz) = 0.0
       csite%ebudget_wcapeffect              (ipaa:ipaz) = 0.0
       csite%ebudget_zcaneffect              (ipaa:ipaz) = 0.0
+      csite%ebudget_pheneffect              (ipaa:ipaz) = 0.0
       csite%ebudget_initialstorage          (ipaa:ipaz) = 0.0
       csite%ebudget_residual                (ipaa:ipaz) = 0.0
       csite%commit_storage_resp             (ipaa:ipaz) = 0.0

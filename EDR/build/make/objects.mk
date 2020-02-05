@@ -62,13 +62,13 @@ OBJ_MODEL =                        \
 	euler_driver.o             \
 	events.o                   \
 	farq_leuning.o             \
+	farq_katul.o               \
 	fatal_error.o              \
 	fire.o                     \
 	forestry.o                 \
 	fusion_fission_coms.o      \
 	fuse_fiss_utils.o          \
 	patch_pft_size_profile_mod.o \
-	great_circle.o             \
 	grid_coms.o                \
 	growth_balive.o            \
 	h5_output.o                \
@@ -90,13 +90,13 @@ OBJ_MODEL =                        \
 	multiple_scatter.o         \
 	numutils.o                 \
 	old_twostream_rad.o        \
-	optimiz_coms.o             \
 	phenology_aux.o            \
 	phenology_coms.o           \
 	phenology_driv.o           \
 	phenology_startup.o        \
 	photosyn_driv.o            \
 	physiology_coms.o          \
+	plant_hydro.o              \
 	pft_coms.o                 \
 	radiate_driver.o           \
 	radiate_utils.o            \

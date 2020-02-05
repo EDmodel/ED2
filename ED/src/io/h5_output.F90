@@ -1412,7 +1412,7 @@ subroutine geth5dims(idim_type,varlen,globid,var_len_global,dsetrank,varn,nrec,i
       chnkoffs(2) = int(globid,8)
       cnt(1:2)    = 1_8
       stride(1:2) = 1_8
-
+ 
    case (416) !(16 - ncohorts (stoma data))
       
       dsetrank = 2

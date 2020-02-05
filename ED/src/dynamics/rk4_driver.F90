@@ -22,19 +22,17 @@ module rk4_driver
                                         , polygontype                & ! structure
                                         , sitetype                   ! ! structure
       use met_driver_coms        , only : met_driv_state             ! ! structure
-      use grid_coms              , only : nzg                        & ! intent(in)
-                                        , nzs                        ! ! intent(in)
+      use grid_coms              , only : nzg                        ! ! intent(in)
       use ed_misc_coms           , only : current_time               & ! intent(in)
                                         , dtlsm                      ! ! intent(in)
       use budget_utils           , only : update_cbudget_committed   & ! function
                                         , compute_budget             ! ! function
       use soil_respiration       , only : soil_respiration_driver    ! ! sub-routine
       use photosyn_driv          , only : canopy_photosynthesis      ! ! sub-routine
-      use rk4_misc               , only : sanity_check_veg_energy    & ! sub-routine
-                                        , copy_patch_init            ! ! sub-routine
+      use rk4_misc               , only : sanity_check_veg_energy    ! ! sub-routine
+      use rk4_copy_patch         , only : copy_rk4patch_init         ! ! sub-routine
       use rk4_integ_utils        , only : copy_met_2_rk4site         ! ! sub-routine
-      use update_derived_utils   , only : update_patch_thermo_props  & ! sub-routine
-                                        , update_patch_derived_props ! ! sub-routine
+      use update_derived_utils   , only : update_patch_derived_props ! ! sub-routine
       use plant_hydro            , only : plant_hydro_driver         ! ! sub-routine
       use therm_lib              , only : tq2enthalpy                ! ! function
       !$ use omp_lib
@@ -72,6 +70,10 @@ module rk4_driver
       real                                    :: ecurr_loss2drainage
       real                                    :: wcurr_loss2runoff
       real                                    :: ecurr_loss2runoff
+      real                                    :: co2curr_denseffect
+      real                                    :: ecurr_denseffect
+      real                                    :: wcurr_denseffect
+      real                                    :: ecurr_prsseffect
       real                                    :: old_can_prss
       real                                    :: old_can_enthalpy
       real                                    :: old_can_temp
@@ -79,9 +81,8 @@ module rk4_driver
       real                                    :: old_can_co2
       real                                    :: old_can_rhos
       real                                    :: old_can_dmol
-      real                                    :: mid_can_rhos
-      real                                    :: mid_can_dmol
       real                                    :: patch_vels
+      real                                    :: rshort_tot
       integer                                 :: ibuff
       integer                                 :: npa_thread
       integer                                 :: ita
@@ -136,10 +137,10 @@ module rk4_driver
             !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(                                     &
             !$OMP  ipa,ita,initp,yscal,y,dydx,yerr,ytemp,ak2,ak3,ak4,ak5,ak6,ak7           &
             !$OMP ,patch_vels,old_can_prss,old_can_enthalpy,old_can_temp,old_can_shv       &
-            !$OMP ,old_can_co2,old_can_rhos,old_can_dmol,mid_can_rhos,mid_can_dmol         &
-            !$OMP ,ecurr_netrad,wcurr_loss2atm,ecurr_loss2atm,co2curr_loss2atm             &
-            !$OMP ,wcurr_loss2drainage,ecurr_loss2drainage,wcurr_loss2runoff               &
-            !$OMP ,ecurr_loss2runoff,nsteps)
+            !$OMP ,old_can_co2,old_can_rhos,old_can_dmol,ecurr_netrad,wcurr_loss2atm       &
+            !$OMP ,ecurr_loss2atm,co2curr_loss2atm,wcurr_loss2drainage,ecurr_loss2drainage &
+            !$OMP ,wcurr_loss2runoff,ecurr_loss2runoff,co2curr_denseffect,ecurr_denseffect &
+            !$OMP ,wcurr_denseffect,ecurr_prsseffect,rshort_tot,nsteps)
             threadloop: do ibuff=1,nthreads
                !------ Update pointers. ---------------------------------------------------!
                initp => integration_buff(ibuff)%initp
@@ -223,6 +224,17 @@ module rk4_driver
 
 
 
+                  !----- Find incoming radiation used by the radiation driver. ------------!
+                  if (cpoly%nighttime(isi)) then
+                     rshort_tot = 0.0
+                  else
+                     rshort_tot = cmet%par_beam * csite%fbeam(ipa) + cmet%par_diffuse      &
+                                + cmet%nir_beam * csite%fbeam(ipa) + cmet%nir_diffuse
+                  end if
+                  !------------------------------------------------------------------------!
+
+
+
 
                   !------------------------------------------------------------------------!
                   !      Test whether temperature and energy are reasonable.               !
@@ -262,8 +274,9 @@ module rk4_driver
                   !------------------------------------------------------------------------!
                   !     Set up the integration patch.                                      !
                   !------------------------------------------------------------------------!
-                  call copy_patch_init(csite,ipa,ibuff,initp,patch_vels,mid_can_rhos       &
-                                      ,mid_can_dmol)
+                  call copy_rk4patch_init(csite,ipa,ibuff,initp,patch_vels                 &
+                                         ,old_can_enthalpy,old_can_rhos,old_can_dmol       &
+                                         ,ecurr_prsseffect)
                   !------------------------------------------------------------------------!
 
 
@@ -274,7 +287,9 @@ module rk4_driver
                                           ,cpoly%nighttime(isi),wcurr_loss2atm             &
                                           ,ecurr_netrad,ecurr_loss2atm,co2curr_loss2atm    &
                                           ,wcurr_loss2drainage,ecurr_loss2drainage         &
-                                          ,wcurr_loss2runoff,ecurr_loss2runoff,nsteps)
+                                          ,wcurr_loss2runoff,ecurr_loss2runoff             &
+                                          ,co2curr_denseffect,ecurr_denseffect             &
+                                          ,wcurr_denseffect,nsteps)
                   !------------------------------------------------------------------------!
 
 
@@ -300,8 +315,6 @@ module rk4_driver
                   !    Update roughness and canopy depth.  This should be done after the   !
                   ! integration.                                                           !
                   !------------------------------------------------------------------------!
-                  call update_patch_thermo_props(csite,ipa,ipa,nzg,nzs                     &
-                                                ,cpoly%ntext_soil(:,isi))
                   call update_patch_derived_props(csite,ipa,.false.)
                   !------------------------------------------------------------------------!
 
@@ -309,14 +322,16 @@ module rk4_driver
                   !------------------------------------------------------------------------!
                   !     Compute the residuals.                                             !
                   !------------------------------------------------------------------------!
-                  call compute_budget(csite,cpoly%lsl(isi),cmet%pcpg,cmet%qpcpg,ipa        &
-                                     ,wcurr_loss2atm,ecurr_netrad,ecurr_loss2atm           &
-                                     ,co2curr_loss2atm,wcurr_loss2drainage                 &
-                                     ,ecurr_loss2drainage,wcurr_loss2runoff                &
-                                     ,ecurr_loss2runoff,cpoly%area(isi)                    &
-                                     ,cgrid%cbudget_nep(ipy),old_can_prss,old_can_enthalpy &
-                                     ,old_can_temp,old_can_shv,old_can_co2,old_can_rhos    &
-                                     ,old_can_dmol,mid_can_rhos,mid_can_dmol)
+                  call compute_budget(csite,cpoly%lsl(isi),cmet%pcpg,cmet%qpcpg            &
+                                     ,rshort_tot,cmet%rlong,ipa,wcurr_loss2atm             &
+                                     ,ecurr_netrad,ecurr_loss2atm,co2curr_loss2atm         &
+                                     ,wcurr_loss2drainage,ecurr_loss2drainage              &
+                                     ,wcurr_loss2runoff,ecurr_loss2runoff                  &
+                                     ,co2curr_denseffect,ecurr_denseffect,wcurr_denseffect &
+                                     ,ecurr_prsseffect,cpoly%area(isi)                     &
+                                     ,cgrid%cbudget_nep(ipy),old_can_prss                  &
+                                     ,old_can_enthalpy,old_can_temp,old_can_shv            &
+                                     ,old_can_co2,old_can_rhos,old_can_dmol)
                   !------------------------------------------------------------------------!
 
                end do taskloop
@@ -348,7 +363,8 @@ module rk4_driver
    subroutine integrate_patch_rk4(csite,initp,ipa,isi,ibuff,nighttime,wcurr_loss2atm       &
                                  ,ecurr_netrad,ecurr_loss2atm,co2curr_loss2atm             &
                                  ,wcurr_loss2drainage,ecurr_loss2drainage                  &
-                                 ,wcurr_loss2runoff,ecurr_loss2runoff,nsteps)
+                                 ,wcurr_loss2runoff,ecurr_loss2runoff,co2curr_denseffect   &
+                                 ,ecurr_denseffect,wcurr_denseffect,nsteps)
       use rk4_integ_utils , only : odeint               ! ! sub-routine
       use ed_state_vars   , only : sitetype             & ! structure
                                  , patchtype            ! ! structure
@@ -359,6 +375,7 @@ module rk4_driver
                                  , tbeg                 & ! intent(inout)
                                  , tend                 & ! intent(inout)
                                  , dtrk4i               ! ! intent(inout)
+      use rk4_copy_patch  , only : initp2modelp         ! ! sub-routine
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(sitetype)        , target      :: csite
@@ -375,6 +392,9 @@ module rk4_driver
       real                  , intent(out) :: ecurr_loss2drainage
       real                  , intent(out) :: wcurr_loss2runoff
       real                  , intent(out) :: ecurr_loss2runoff
+      real                  , intent(out) :: co2curr_denseffect
+      real                  , intent(out) :: ecurr_denseffect
+      real                  , intent(out) :: wcurr_denseffect
       integer               , intent(out) :: nsteps
       !------------------------------------------------------------------------------------!
 
@@ -391,6 +411,9 @@ module rk4_driver
 
       !----- Go into the ODE integrator. --------------------------------------------------!
       call odeint(csite,ipa,isi,ibuff,nsteps)
+      !------------------------------------------------------------------------------------!
+
+
 
       !------------------------------------------------------------------------------------!
       !      Normalize canopy-atmosphere flux values.  These values are updated every      !
@@ -408,1290 +431,13 @@ module rk4_driver
       !------------------------------------------------------------------------------------!
       call initp2modelp(tend-tbeg,initp,csite,ipa,nighttime,wcurr_loss2atm,ecurr_netrad    &
                        ,ecurr_loss2atm,co2curr_loss2atm,wcurr_loss2drainage                &
-                       ,ecurr_loss2drainage,wcurr_loss2runoff,ecurr_loss2runoff)
+                       ,ecurr_loss2drainage,wcurr_loss2runoff,ecurr_loss2runoff            &
+                       ,co2curr_denseffect,ecurr_denseffect,wcurr_denseffect)
       !------------------------------------------------------------------------------------!
 
 
       return
    end subroutine integrate_patch_rk4
-   !=======================================================================================!
-   !=======================================================================================!
-
-
-
-
-
-
-   !=======================================================================================!
-   !=======================================================================================!
-   !     This subroutine will copy the variables from the integration buffer to the state  !
-   ! patch and cohorts.                                                                    !
-   !---------------------------------------------------------------------------------------!
-   subroutine initp2modelp(hdid,initp,csite,ipa,nighttime,wbudget_loss2atm,ebudget_netrad  &
-                          ,ebudget_loss2atm,co2budget_loss2atm,wbudget_loss2drainage       &
-                          ,ebudget_loss2drainage,wbudget_loss2runoff,ebudget_loss2runoff)
-      use rk4_coms             , only : rk4patchtype         & ! structure
-                                      , rk4site              & ! intent(in)
-                                      , rk4min_veg_temp      & ! intent(in)
-                                      , rk4max_veg_temp      & ! intent(in)
-                                      , tiny_offset          & ! intent(in)
-                                      , checkbudget          & ! intent(in)
-                                      , ibranch_thermo       ! ! intent(in)
-      use ed_state_vars        , only : sitetype             & ! structure
-                                      , patchtype            ! ! structure
-      use canopy_air_coms      , only : f_bndlyr_init        ! ! intent(in)
-      use consts_coms          , only : day_sec              & ! intent(in)
-                                      , cpdry                & ! intent(in)
-                                      , t3ple                & ! intent(in)
-                                      , t3ple8               & ! intent(in)
-                                      , wdns8                ! ! intent(in)
-      use ed_misc_coms         , only : fast_diagnostics     & ! intent(in)
-                                      , writing_long         & ! intent(in)
-                                      , dtlsm                & ! intent(in)
-                                      , dtlsm_o_frqsum       ! ! intent(in)
-      use soil_coms            , only : soil8                & ! intent(in)
-                                      , dslz8                & ! intent(in)
-                                      , slz8                 & ! intent(in)
-                                      , slzt8                ! ! intent(in)
-      use grid_coms            , only : nzg                  & ! intent(in)
-                                      , nzs                  ! ! intent(in)
-      use therm_lib            , only : thetaeiv             & ! subroutine
-                                      , vpdefil              & ! subroutine
-                                      , uextcm2tl            & ! subroutine
-                                      , cmtl2uext            & ! subroutine
-                                      , qslif                ! ! function
-      use phenology_coms       , only : spot_phen            ! ! intent(in)
-      use physiology_coms      , only : plant_hydro_scheme   & ! intent(in)
-                                      , gbh_2_gbw            ! ! intent(in)
-      use allometry            , only : h2crownbh            ! ! function
-      use disturb_coms         , only : include_fire         & ! intent(in)
-                                      , k_fire_first         ! ! intent(in)
-      use plant_hydro          , only : twe2twi              & ! subroutine
-                                      , tw2rwc               ! ! subroutine
-      use rk4_misc             , only : print_rk4patch       ! ! subroutine
-      implicit none
-      !----- Arguments --------------------------------------------------------------------!
-      type(rk4patchtype), target      :: initp
-      type(sitetype)    , target      :: csite
-      real(kind=8)      , intent(in)  :: hdid
-      integer           , intent(in)  :: ipa
-      logical           , intent(in)  :: nighttime
-      real              , intent(out) :: wbudget_loss2atm
-      real              , intent(out) :: ebudget_netrad
-      real              , intent(out) :: ebudget_loss2atm
-      real              , intent(out) :: co2budget_loss2atm
-      real              , intent(out) :: wbudget_loss2drainage
-      real              , intent(out) :: ebudget_loss2drainage
-      real              , intent(out) :: wbudget_loss2runoff
-      real              , intent(out) :: ebudget_loss2runoff
-      !----- Local variables --------------------------------------------------------------!
-      type(patchtype)   , pointer     :: cpatch
-      integer                         :: ico
-      integer                         :: ipft
-      integer                         :: k
-      integer                         :: ka
-      integer                         :: kroot
-      integer                         :: kclosest
-      integer                         :: nsoil
-      real(kind=8)                    :: tmp_energy
-      real(kind=8)                    :: available_water
-      real(kind=8)                    :: gnd_water
-      real(kind=8)                    :: psiplusz
-      real(kind=8)                    :: mcheight
-      real(kind=4)                    :: step_waterdef
-      real(kind=4)                    :: can_rvap
-      !----- Local contants ---------------------------------------------------------------!
-      real        , parameter         :: tendays_sec    = 10. * day_sec
-      real        , parameter         :: thirtydays_sec = 30. * day_sec
-      !----- External function ------------------------------------------------------------!
-      real        , external          :: sngloff
-      !------------------------------------------------------------------------------------!
-
-
-      !----- Alias for the cohorts. -------------------------------------------------------!
-      cpatch => csite%patch(ipa)
-      !------------------------------------------------------------------------------------!
-
-
-      !------------------------------------------------------------------------------------!
-      !     Most variables require just a simple copy.  More comments will be made next to !
-      ! those in which this is not true.  All floating point variables are converted back  !
-      ! to single precision.                                                               !
-      !------------------------------------------------------------------------------------!
-      csite%can_theta       (ipa) = sngloff(initp%can_theta       ,tiny_offset)
-      csite%can_prss        (ipa) = sngloff(initp%can_prss        ,tiny_offset)
-      csite%can_temp        (ipa) = sngloff(initp%can_temp        ,tiny_offset)
-      csite%can_shv         (ipa) = sngloff(initp%can_shv         ,tiny_offset)
-      csite%can_co2         (ipa) = sngloff(initp%can_co2         ,tiny_offset)
-      csite%can_rhos        (ipa) = sngloff(initp%can_rhos        ,tiny_offset)
-      csite%can_dmol        (ipa) = sngloff(initp%can_dmol        ,tiny_offset)
-      csite%can_depth       (ipa) = sngloff(initp%can_depth       ,tiny_offset)
-      csite%veg_displace    (ipa) = sngloff(initp%veg_displace    ,tiny_offset)
-      csite%rough           (ipa) = sngloff(initp%rough           ,tiny_offset)
-      csite%snowfac         (ipa) = sngloff(initp%snowfac         ,tiny_offset)
-      csite%total_sfcw_depth(ipa) = sngloff(initp%total_sfcw_depth,tiny_offset)
-
-      !------------------------------------------------------------------------------------!
-      !    Find the ice-vapour equivalent potential temperature.  This is done outside the !
-      ! integrator because it is an iterative method and currently we are not using it as  !
-      ! a prognostic variable.                                                             !
-      !------------------------------------------------------------------------------------!
-      can_rvap                    = csite%can_shv(ipa) / ( 1.0 - csite%can_shv(ipa))
-      csite%can_theiv(ipa)        = thetaeiv(csite%can_theta (ipa), csite%can_prss(ipa)    &
-                                            ,csite%can_temp  (ipa), can_rvap               &
-                                            ,can_rvap             )
-      !------------------------------------------------------------------------------------!
-
-      !------------------------------------------------------------------------------------!
-      !    Find the vapour pressure deficit, which is diagnostic only.                     !
-      !------------------------------------------------------------------------------------!
-      csite%can_vpdef(ipa)        = vpdefil(csite%can_prss(ipa),csite%can_temp(ipa)        &
-                                           ,csite%can_shv(ipa) ,.true.)
-      !------------------------------------------------------------------------------------!
-
-
-
-      !------ Copy the ground variables to the output. ------------------------------------!
-      csite%ground_shv (ipa) = sngloff(initp%ground_shv , tiny_offset)
-      csite%ground_ssh (ipa) = sngloff(initp%ground_ssh , tiny_offset)
-      csite%ground_temp(ipa) = sngloff(initp%ground_temp, tiny_offset)
-      csite%ground_fliq(ipa) = sngloff(initp%ground_fliq, tiny_offset)
-      !------------------------------------------------------------------------------------!
-
-
-
-      csite%ggbare(ipa)           = sngloff(initp%ggbare          ,tiny_offset)
-      csite%ggveg (ipa)           = sngloff(initp%ggveg           ,tiny_offset)
-      csite%ggnet (ipa)           = sngloff(initp%ggnet           ,tiny_offset)
-
-      csite%ustar (ipa)           = sngloff(initp%ustar           ,tiny_offset)
-      csite%tstar (ipa)           = sngloff(initp%tstar           ,tiny_offset)
-      csite%qstar (ipa)           = sngloff(initp%qstar           ,tiny_offset)
-      csite%cstar (ipa)           = sngloff(initp%cstar           ,tiny_offset)
-
-      csite%zeta  (ipa)           = sngloff(initp%zeta            ,tiny_offset)
-      csite%ribulk(ipa)           = sngloff(initp%ribulk          ,tiny_offset)
-
-      csite%upwp  (ipa)           = sngloff(initp%upwp            ,tiny_offset)
-      csite%wpwp  (ipa)           = sngloff(initp%wpwp            ,tiny_offset)
-      csite%tpwp  (ipa)           = sngloff(initp%tpwp            ,tiny_offset)
-      csite%qpwp  (ipa)           = sngloff(initp%qpwp            ,tiny_offset)
-      csite%cpwp  (ipa)           = sngloff(initp%cpwp            ,tiny_offset)
-
-      !------------------------------------------------------------------------------------!
-      !    These variables are fast scale fluxes, and they may not be allocated, so just   !
-      ! check this before copying.                                                         !
-      !------------------------------------------------------------------------------------!
-      if (fast_diagnostics) then
-         csite%fmean_vapor_gc        (ipa) = sngloff(initp%avg_vapor_gc       ,tiny_offset)
-         csite%fmean_throughfall     (ipa) = sngloff(initp%avg_throughfall    ,tiny_offset)
-         csite%fmean_vapor_ac        (ipa) = sngloff(initp%avg_vapor_ac       ,tiny_offset)
-         csite%fmean_drainage        (ipa) = sngloff(initp%avg_drainage       ,tiny_offset)
-         csite%fmean_qdrainage       (ipa) = sngloff(initp%avg_qdrainage      ,tiny_offset)
-         csite%fmean_qthroughfall    (ipa) = sngloff(initp%avg_qthroughfall   ,tiny_offset)
-         csite%fmean_sensible_gc     (ipa) = sngloff(initp%avg_sensible_gc    ,tiny_offset)
-         csite%fmean_sensible_ac     (ipa) = sngloff(initp%avg_sensible_ac    ,tiny_offset)
-         csite%fmean_carbon_ac       (ipa) = sngloff(initp%avg_carbon_ac      ,tiny_offset)
-         csite%fmean_carbon_st       (ipa) = sngloff(initp%avg_carbon_st      ,tiny_offset)
-         csite%fmean_ustar           (ipa) = sngloff(initp%avg_ustar          ,tiny_offset)
-         csite%fmean_tstar           (ipa) = sngloff(initp%avg_tstar          ,tiny_offset)
-         csite%fmean_qstar           (ipa) = sngloff(initp%avg_qstar          ,tiny_offset)
-         csite%fmean_cstar           (ipa) = sngloff(initp%avg_cstar          ,tiny_offset)
-         do k = rk4site%lsl, nzg
-            csite%fmean_sensible_gg(k,ipa) = sngloff(initp%avg_sensible_gg(k) ,tiny_offset)
-            csite%fmean_smoist_gg  (k,ipa) = sngloff(initp%avg_smoist_gg  (k) ,tiny_offset)
-            csite%fmean_transloss  (k,ipa) = sngloff(initp%avg_transloss  (k) ,tiny_offset)
-         end do
-         !---------------------------------------------------------------------------------!
-
-
-         !---------------------------------------------------------------------------------!
-         !     Cohort-level variables.                                                     !
-         !---------------------------------------------------------------------------------!
-         do ico=1,cpatch%ncohorts
-            cpatch%fmean_sensible_lc   (ico) = sngloff( initp%avg_sensible_lc   (ico)      &
-                                                      , tiny_offset)
-            cpatch%fmean_sensible_wc   (ico) = sngloff( initp%avg_sensible_wc   (ico)      &
-                                                      , tiny_offset)
-            cpatch%fmean_vapor_lc      (ico) = sngloff( initp%avg_vapor_lc      (ico)      &
-                                                      , tiny_offset)
-            cpatch%fmean_vapor_wc      (ico) = sngloff( initp%avg_vapor_wc      (ico)      &
-                                                      , tiny_offset)
-            cpatch%fmean_transp        (ico) = sngloff( initp%avg_transp        (ico)      &
-                                                      , tiny_offset)
-            cpatch%fmean_intercepted_al(ico) = sngloff( initp%avg_intercepted_al(ico)      &
-                                                      , tiny_offset)
-            cpatch%fmean_intercepted_aw(ico) = sngloff( initp%avg_intercepted_aw(ico)      &
-                                                      , tiny_offset)
-            cpatch%fmean_wshed_lg      (ico) = sngloff( initp%avg_wshed_lg      (ico)      &
-                                                      , tiny_offset)
-            cpatch%fmean_wshed_wg      (ico) = sngloff( initp%avg_wshed_wg      (ico)      &
-                                                      , tiny_offset)
-            !------------------------------------------------------------------------------!
-            !     Plant hydraulic fluxes.  Convert them to kg/pl/s.                        !
-            ! MLO: I kept the original units, although I would prefer to standardise all   !
-            !      the fluxes to kg/m2/s.                                                  !
-            !------------------------------------------------------------------------------!
-            cpatch%fmean_wflux_wl      (ico) = sngloff( initp%avg_wflux_wl      (ico)      &
-                                                      / initp%nplant            (ico)      &
-                                                      , tiny_offset)
-            cpatch%fmean_wflux_gw      (ico) = sngloff( initp%avg_wflux_gw      (ico)      &
-                                                      / initp%nplant            (ico)      &
-                                                      , tiny_offset)
-            do k = rk4site%lsl, nzg
-               cpatch%fmean_wflux_gw_layer(k,ico) =                                        &
-                  sngloff( initp%avg_wflux_gw_layer(k,ico) / initp%nplant(ico)             &
-                         , tiny_offset )
-            end do
-            !------------------------------------------------------------------------------!
-         end do
-         !---------------------------------------------------------------------------------!
-      end if
-      !------------------------------------------------------------------------------------!
-
-      if(checkbudget) then
-         co2budget_loss2atm    = sngloff(initp%co2budget_loss2atm   ,tiny_offset)
-         ebudget_netrad        = sngloff(initp%ebudget_netrad       ,tiny_offset)
-         ebudget_loss2atm      = sngloff(initp%ebudget_loss2atm     ,tiny_offset)
-         ebudget_loss2drainage = sngloff(initp%ebudget_loss2drainage,tiny_offset)
-         ebudget_loss2runoff   = sngloff(initp%ebudget_loss2runoff  ,tiny_offset)
-         wbudget_loss2atm      = sngloff(initp%wbudget_loss2atm     ,tiny_offset)
-         wbudget_loss2drainage = sngloff(initp%wbudget_loss2drainage,tiny_offset)
-         wbudget_loss2runoff   = sngloff(initp%wbudget_loss2runoff  ,tiny_offset)
-      else
-         co2budget_loss2atm    = 0.
-         ebudget_netrad        = 0.
-         ebudget_loss2atm      = 0.
-         ebudget_loss2drainage = 0.
-         ebudget_loss2runoff   = 0.
-         wbudget_loss2atm      = 0.
-         wbudget_loss2drainage = 0.
-         wbudget_loss2runoff   = 0.
-      end if
-      !------------------------------------------------------------------------------------!
-
-
-
-      !------------------------------------------------------------------------------------!
-      !     The following is not a pure diagnostic, it is used for phenology and mortality !
-      ! functions, preserve this variable and its dependencies in all contexts.            !
-      !------------------------------------------------------------------------------------!
-      csite%avg_daily_temp(ipa) = csite%avg_daily_temp(ipa) + csite%can_temp(ipa)
-      !------------------------------------------------------------------------------------!
-
-
-
-      !------------------------------------------------------------------------------------!
-      !     Update the water deficit.  This is done as a 30-day running average.           !
-      !------------------------------------------------------------------------------------!
-      step_waterdef                   = sngloff(initp%water_deficit,tiny_offset)
-      csite%avg_monthly_waterdef(ipa) = csite%avg_monthly_waterdef(ipa) + step_waterdef
-      !------------------------------------------------------------------------------------!
-
-
-
-      !------------------------------------------------------------------------------------!
-      !     This variable is the monthly mean ground water that will be used to control    !
-      ! fire disturbance.                                                                  !
-      !------------------------------------------------------------------------------------!
-      gnd_water = 0.d0
-      !----- Add temporary surface water. -------------------------------------------------!
-      do k=1,initp%nlev_sfcwater
-         gnd_water = gnd_water + initp%sfcwater_mass(k)
-      end do
-      !----- Find the bottommost layer to consider. ---------------------------------------!
-      select case(include_fire)
-      case (1)
-         ka = rk4site%lsl
-      case default
-         ka = k_fire_first
-      end select
-      !----- Add soil moisture. -----------------------------------------------------------!
-      do k=ka,nzg
-         gnd_water = gnd_water + initp%soil_water(k) * dslz8(k) * wdns8
-      end do
-      !----- Add to the monthly mean. -----------------------------------------------------!
-      csite%avg_monthly_gndwater(ipa) = csite%avg_monthly_gndwater(ipa)                    &
-                                      + sngloff(gnd_water,tiny_offset)
-      !------------------------------------------------------------------------------------!
-
-
-
-      !------------------------------------------------------------------------------------!
-      ! paw_avg - 10-day average of relative plant available water.  The relative value    !
-      !           depends on whether the user wants to define phenology based on soil      !
-      !           moisture or soil potential.                                              !
-      !------------------------------------------------------------------------------------!
-      if (spot_phen) then
-         do ico = 1,cpatch%ncohorts
-            ipft  = cpatch%pft(ico)
-            kroot = cpatch%krdepth(ico)
-
-            available_water = 0.d0
-            do k = kroot, nzg
-               nsoil            = rk4site%ntext_soil(k)
-               mcheight         = 5.d-1 * ( dble(cpatch%hite(ico))                         &
-                                          + dble(h2crownbh(cpatch%hite(ico),ipft)) )
-               psiplusz         = slzt8(k) - mcheight                                      &
-                                + soil8(nsoil)%slpots                                      &
-                                / (initp%soil_water(k) / soil8(nsoil)%slmsts)              &
-                                ** soil8(nsoil)%slbs
-               available_water  = available_water                                          &
-                                + max(0.d0,(psiplusz - soil8(nsoil)%slpotwp)) * dslz8(k)   &
-                                / (soil8(nsoil)%slpotld - soil8(nsoil)%slpotwp)
-            end do
-            available_water     = available_water / abs(slz8(kroot))
-            cpatch%paw_avg(ico) = cpatch%paw_avg(ico)*(1.0-sngl(hdid)/tendays_sec)         &
-                                + sngl(available_water)*sngl(hdid)/tendays_sec
-         end do
-      else
-         do ico = 1,cpatch%ncohorts
-            available_water = 0.d0
-            kroot           = cpatch%krdepth(ico)
-            do k = kroot, nzg
-               nsoil            = rk4site%ntext_soil(k)
-               available_water  = available_water                                          &
-                                + max(0.d0,(initp%soil_water(k)   - soil8(nsoil)%soilwp))  &
-                                * dslz8(k) / (soil8(nsoil)%soilld - soil8(nsoil)%soilwp)
-            end do
-            available_water     = available_water / abs(slz8(kroot))
-            cpatch%paw_avg(ico) = cpatch%paw_avg(ico)*(1.0-sngl(hdid)/tendays_sec)         &
-                                + sngl(available_water)*sngl(hdid)/tendays_sec
-         end do
-      end if
-
-      do k = rk4site%lsl, nzg
-         csite%soil_water  (k,ipa) = sngloff(initp%soil_water  (k),tiny_offset)
-         csite%soil_mstpot (k,ipa) = sngloff(initp%soil_mstpot (k),tiny_offset)
-         csite%soil_energy (k,ipa) = sngloff(initp%soil_energy (k),tiny_offset)
-         csite%soil_tempk  (k,ipa) = sngloff(initp%soil_tempk  (k),tiny_offset)
-         csite%soil_fracliq(k,ipa) = sngloff(initp%soil_fracliq(k),tiny_offset)
-      end do
-
-
-      !------------------------------------------------------------------------------------!
-      !    Surface water energy is computed in J/m� inside the integrator. Convert it back !
-      ! to J/kg in the layers that surface water/snow still exists.                        !
-      !------------------------------------------------------------------------------------!
-      csite%nlev_sfcwater(ipa) = initp%nlev_sfcwater
-      do k = 1, csite%nlev_sfcwater(ipa)
-         csite%sfcwater_depth(k,ipa)   = sngloff(initp%sfcwater_depth(k)   ,tiny_offset)
-         csite%sfcwater_mass(k,ipa)    = sngloff(initp%sfcwater_mass(k)    ,tiny_offset)
-         csite%sfcwater_tempk(k,ipa)   = sngloff(initp%sfcwater_tempk(k)   ,tiny_offset)
-         csite%sfcwater_fracliq(k,ipa) = sngloff(initp%sfcwater_fracliq(k) ,tiny_offset)
-         tmp_energy                    = initp%sfcwater_energy(k)/initp%sfcwater_mass(k)
-         csite%sfcwater_energy(k,ipa)  = sngloff(tmp_energy                ,tiny_offset)
-      end do
-      !------------------------------------------------------------------------------------!
-      !    For the layers that no longer exist, assign zeroes for prognostic variables,    !
-      ! and something for temperature and liquid fraction (just to avoid singularities,    !
-      ! and funny numbers in the output, but these values are meaningless and should never !
-      ! be used).                                                                          !
-      !------------------------------------------------------------------------------------!
-      do k = csite%nlev_sfcwater(ipa)+1,nzs
-         csite%sfcwater_energy(k,ipa)  = 0.
-         csite%sfcwater_mass(k,ipa)    = 0.
-         csite%sfcwater_depth(k,ipa)   = 0.
-         if (k == 1) then
-            csite%sfcwater_fracliq(k,ipa) = csite%soil_fracliq(nzg,ipa)
-            csite%sfcwater_tempk  (k,ipa) = csite%soil_tempk  (nzg,ipa)
-         else
-            csite%sfcwater_fracliq(k,ipa) = csite%sfcwater_fracliq(k-1,ipa)
-            csite%sfcwater_tempk  (k,ipa) = csite%sfcwater_tempk  (k-1,ipa)
-         end if
-      end do
-      !------------------------------------------------------------------------------------!
-
-
-
-
-      !------------------------------------------------------------------------------------!
-      !     Cohort variables.  Here we must check whether the cohort was really solved or  !
-      ! it was skipped after being flagged as "unsafe".  In case the cohort was skipped,   !
-      ! we must check whether it was because it was too small or because it was buried in  !
-      ! snow.                                                                              !
-      !------------------------------------------------------------------------------------!
-      do ico = 1,cpatch%ncohorts
-         !---------------------------------------------------------------------------------!
-         !      First, update variables related with plant hydrodynamics because it can    !
-         ! change leaf/wood heat capacity, which will be used later.                       !
-         !---------------------------------------------------------------------------------!
-         select case (plant_hydro_scheme)
-         case (0)
-            continue
-         case default
-            !----- Need to update leaf_water_im2 and wood_water_im2. ----------------------!
-            cpatch%leaf_water_im2(ico) = sngloff(initp%leaf_water_im2(ico),tiny_offset)
-            cpatch%wood_water_im2(ico) = sngloff(initp%wood_water_im2(ico),tiny_offset)
-            !------------------------------------------------------------------------------!
-
-
-
-            !------------------------------------------------------------------------------!
-            !      Update intensive internal water content.                                !
-            !------------------------------------------------------------------------------!
-            call twe2twi(cpatch%leaf_water_im2(ico),cpatch%wood_water_im2(ico)             &
-                        ,cpatch%nplant(ico),cpatch%leaf_water_int(ico)                     &
-                        ,cpatch%wood_water_int(ico))
-            !------------------------------------------------------------------------------!
-
-
-
-            !------------------------------------------------------------------------------!
-            !      Update rwc since it will be used to update leaf/wood heat capacity.     !
-            !------------------------------------------------------------------------------!
-            call tw2rwc(cpatch%leaf_water_int(ico),cpatch%wood_water_int(ico)              &
-                       ,cpatch%is_small(ico),cpatch%bleaf(ico),cpatch%bsapwooda(ico)       &
-                       ,cpatch%bsapwoodb(ico),cpatch%bdeada(ico),cpatch%bdeadb(ico)        &
-                       ,cpatch%broot(ico),cpatch%dbh(ico),cpatch%pft(ico)                  &
-                       ,cpatch%leaf_rwc(ico),cpatch%wood_rwc(ico))
-            !------------------------------------------------------------------------------!
-
-
-
-            !------------------------------------------------------------------------------!
-            !      Leaf and wood psi are updated in plant_hydro_driver of file             !
-            ! ED/src/dynamics/plant_hydro.f90 for consistency reasons.  See that file for  !
-            ! details.                                                                     !
-            !------------------------------------------------------------------------------!
-         end select
-         !---------------------------------------------------------------------------------!
-
-
-         select case (ibranch_thermo)
-         case (1)
-            !------------------------------------------------------------------------------!
-            !  VEGETATION -- Leaf and branchwood were solved together, so they must remain !
-            !                in thermal equilibrium.                                       !
-            !------------------------------------------------------------------------------!
-            if (initp%veg_resolvable(ico)) then
-
-               !---------------------------------------------------------------------------!
-               !     Copy vegetation wind.                                                 !
-               !---------------------------------------------------------------------------!
-               cpatch%veg_wind(ico) = sngloff(initp%veg_wind(ico),tiny_offset)
-               !---------------------------------------------------------------------------!
-
-
-               !---------------------------------------------------------------------------!
-               !    LEAVES.  It is always safe to copy internal energy and standing water, !
-               !             but we must check whether leaves were truly resolved or not   !
-               !             before copying the other variables.                           !
-               !---------------------------------------------------------------------------!
-               cpatch%leaf_water (ico) = sngloff(initp%leaf_water (ico) , tiny_offset)
-               cpatch%leaf_energy(ico) = sngloff(initp%leaf_energy(ico) , tiny_offset)
-               !---------------------------------------------------------------------------!
-
-
-               if (initp%leaf_resolvable(ico)) then
-                  !------------------------------------------------------------------------!
-                  !    Leaves were solved, find the temperature and liquid fraction from   !
-                  ! internal energy.                                                       !
-                  !------------------------------------------------------------------------!
-                  call uextcm2tl(cpatch%leaf_energy(ico)                                   &
-                                ,cpatch%leaf_water(ico) + cpatch%leaf_water_im2(ico)       &
-                                ,cpatch%leaf_hcap(ico),cpatch%leaf_temp(ico)               &
-                                ,cpatch%leaf_fliq(ico))
-                  !------------------------------------------------------------------------!
-
-
-                  !------------------------------------------------------------------------!
-                  !     The intercellular specific humidity is always assumed to be at     !
-                  ! saturation for a given temperature.  Find the saturation mixing ratio, !
-                  ! then convert it to specific humidity.                                  !
-                  !------------------------------------------------------------------------!
-                  cpatch%lint_shv(ico) = qslif(csite%can_prss(ipa),cpatch%leaf_temp(ico))
-                  !------------------------------------------------------------------------!
-
-
-                  !------------------------------------------------------------------------!
-                  !     Find the leaf-level vapour pressure deficit using canopy pressure  !
-                  ! and humitdity, but leaf temperature.                                   !
-                  !------------------------------------------------------------------------!
-                  cpatch%leaf_vpdef(ico) = vpdefil( csite%can_prss  (ipa)                  &
-                                                  , cpatch%leaf_temp(ico)                  &
-                                                  , csite%can_shv   (ipa), .true.)
-                  !------------------------------------------------------------------------!
-
-
-                  !------------------------------------------------------------------------!
-                  !     Copy the conductances.                                             !
-                  !------------------------------------------------------------------------!
-                  cpatch%leaf_gbh(ico) = sngloff(initp%leaf_gbh(ico), tiny_offset)
-                  cpatch%leaf_gbw(ico) = sngloff(initp%leaf_gbw(ico), tiny_offset)
-                  !------------------------------------------------------------------------!
-
-
-
-                  !------------------------------------------------------------------------!
-                  !     Divide the values of water demand by the time step to obtain the   !
-                  ! average value over the past hdid period.                               !
-                  !------------------------------------------------------------------------!
-                  cpatch%psi_open  (ico) = sngloff(initp%psi_open  (ico),tiny_offset)      &
-                                         / sngl(hdid)
-                  cpatch%psi_closed(ico) = sngloff(initp%psi_closed(ico),tiny_offset)      &
-                                         / sngl(hdid)
-                  !------------------------------------------------------------------------!
-               else
-                  !------------------------------------------------------------------------!
-                  !    We solved leaf and branchwood together, the combined pool was re-   !
-                  ! solvable but leaves weren't.  We copy the leaf temperature and liquid  !
-                  ! fraction from the integrator, so they remain in thermal equilibrium    !
-                  ! with branchwood.                                                       !
-                  !------------------------------------------------------------------------!
-                  cpatch%leaf_temp(ico) = sngloff(initp%leaf_temp(ico) , tiny_offset)
-                  cpatch%leaf_fliq(ico) = sngloff(initp%leaf_fliq(ico) , tiny_offset)
-                  !------------------------------------------------------------------------!
-
-
-                  !------------------------------------------------------------------------!
-                  !     The intercellular specific humidity is always assumed to be at     !
-                  ! saturation for a given temperature.  Find the saturation mixing ratio, !
-                  ! then convert it to specific humidity.                                  !
-                  !------------------------------------------------------------------------!
-                  cpatch%lint_shv(ico) = qslif(csite%can_prss(ipa),cpatch%leaf_temp(ico))
-                  !------------------------------------------------------------------------!
-
-
-                  !------------------------------------------------------------------------!
-                  !     Find the leaf-level vapour pressure deficit using canopy pressure  !
-                  ! and humitdity, but leaf temperature.                                   !
-                  !------------------------------------------------------------------------!
-                  cpatch%leaf_vpdef(ico) = vpdefil( csite%can_prss  (ipa)                  &
-                                                  , cpatch%leaf_temp(ico)                  &
-                                                  , csite%can_shv   (ipa), .true.)
-                  !------------------------------------------------------------------------!
-
-
-                  !----- Set water demand to zero. ----------------------------------------!
-                  cpatch%psi_open  (ico) = 0.0
-                  cpatch%psi_closed(ico) = 0.0
-                  !------------------------------------------------------------------------!
-
-
-                  !----- Leaf conductances cannot be zero.  Set to non-zero defaults. -----!
-                  cpatch%leaf_gbw(ico) = f_bndlyr_init * cpatch%leaf_gsw(ico)
-                  cpatch%leaf_gbh(ico) = cpatch%leaf_gbw(ico) / gbh_2_gbw * cpdry
-                  !------------------------------------------------------------------------!
-               end if
-               !---------------------------------------------------------------------------!
-
-
-
-               !---------------------------------------------------------------------------!
-               !    BRANCHES.  It is always safe to copy internal energy and standing      !
-               !               water,  but we must check whether branches were truly       !
-               !               resolved or not before copying the other variables.         !
-               !---------------------------------------------------------------------------!
-               cpatch%wood_water (ico) = sngloff(initp%wood_water (ico) , tiny_offset)
-               cpatch%wood_energy(ico) = sngloff(initp%wood_energy(ico) , tiny_offset)
-               if (initp%wood_resolvable(ico)) then
-                  !------------------------------------------------------------------------!
-                  !    Branches were solved, find the temperature and liquid fraction from !
-                  ! internal energy.                                                       !
-                  !------------------------------------------------------------------------!
-                  call uextcm2tl(cpatch%wood_energy(ico)                                   &
-                                ,cpatch%wood_water(ico) + cpatch%wood_water_im2(ico)       &
-                                ,cpatch%wood_hcap(ico),cpatch%wood_temp(ico)               &
-                                ,cpatch%wood_fliq(ico))
-                  !------------------------------------------------------------------------!
-
-
-                  !------------------------------------------------------------------------!
-                  !     Copy the conductances.                                             !
-                  !------------------------------------------------------------------------!
-                  cpatch%wood_gbh(ico) = sngloff(initp%wood_gbh(ico), tiny_offset)
-                  cpatch%wood_gbw(ico) = sngloff(initp%wood_gbw(ico), tiny_offset)
-                  !------------------------------------------------------------------------!
-               else
-                  !------------------------------------------------------------------------!
-                  !    We solved leaf and branchwood together, the combined pool was re-   !
-                  ! solvable but leaves weren't.  We copy the leaf temperature and liquid  !
-                  ! fraction from the integrator, so they remain in thermal equilibrium    !
-                  ! with branchwood.                                                       !
-                  !------------------------------------------------------------------------!
-                  cpatch%wood_temp(ico) = sngloff(initp%wood_temp(ico) , tiny_offset)
-                  cpatch%wood_fliq(ico) = sngloff(initp%wood_fliq(ico) , tiny_offset)
-                  !------------------------------------------------------------------------!
-
-
-                  !----- Wood conductances cannot be zero.  Set to non-zero defaults. -----!
-                  cpatch%wood_gbw(ico) = f_bndlyr_init * cpatch%leaf_gsw(ico)
-                  cpatch%wood_gbh(ico) = cpatch%wood_gbw(ico) / gbh_2_gbw * cpdry
-                  !------------------------------------------------------------------------!
-               end if
-               !---------------------------------------------------------------------------!
-            elseif (cpatch%hite(ico) <=  csite%total_sfcw_depth(ipa)) then
-               !---------------------------------------------------------------------------!
-               !    For plants buried in snow, fix the leaf and branch temperatures to the !
-               ! snow temperature of the layer that is the closest to the cohort top.      !
-               !---------------------------------------------------------------------------!
-               kclosest = 1
-               do k = csite%nlev_sfcwater(ipa), 1, -1
-                  if (sum(csite%sfcwater_depth(1:k,ipa)) > cpatch%hite(ico)) kclosest = k
-               end do
-               !---------------------------------------------------------------------------!
-
-
-               cpatch%leaf_temp(ico)   = csite%sfcwater_tempk(kclosest,ipa)
-               cpatch%wood_temp(ico)   = cpatch%leaf_temp(ico)
-
-               if (cpatch%leaf_temp(ico) == t3ple) then
-                  cpatch%leaf_fliq(ico)   = 0.5
-                  cpatch%wood_fliq(ico)   = 0.5
-               elseif (cpatch%leaf_temp(ico) > t3ple) then
-                  cpatch%leaf_fliq(ico)   = 1.0
-                  cpatch%wood_fliq(ico)   = 1.0
-               else
-                  cpatch%leaf_fliq(ico)   = 0.0
-                  cpatch%wood_fliq(ico)   = 0.0
-               end if
-               cpatch%leaf_water(ico)  = 0.
-               cpatch%wood_water(ico)  = 0.
-
-               !---------------------------------------------------------------------------!
-               !     Find the internal energy diagnostically...                            !
-               !---------------------------------------------------------------------------!
-               cpatch%leaf_energy(ico) = cmtl2uext( cpatch%leaf_hcap     (ico)             &
-                                                  , cpatch%leaf_water    (ico)             &
-                                                  + cpatch%leaf_water_im2(ico)             &
-                                                  , cpatch%leaf_temp     (ico)             &
-                                                  , cpatch%leaf_fliq     (ico)             )
-               cpatch%wood_energy(ico) = cmtl2uext( cpatch%wood_hcap     (ico)             &
-                                                  , cpatch%wood_water    (ico)             &
-                                                  + cpatch%wood_water_im2(ico)             &
-                                                  , cpatch%wood_temp     (ico)             &
-                                                  , cpatch%wood_fliq     (ico)             )
-               !---------------------------------------------------------------------------!
-
-
-
-               !---------------------------------------------------------------------------!
-               !     The intercellular specific humidity is always assumed to be at        !
-               ! saturation for a given temperature.  Find the saturation mixing ratio,    !
-               ! then convert it to specific humidity.                                     !
-               !---------------------------------------------------------------------------!
-               cpatch%lint_shv(ico) = qslif(csite%can_prss(ipa),cpatch%leaf_temp(ico))
-               !---------------------------------------------------------------------------!
-
-
-               !---------------------------------------------------------------------------!
-               !     Find the leaf-level vapour pressure deficit using canopy pressure     !
-               ! and humitdity, but leaf temperature.                                      !
-               !---------------------------------------------------------------------------!
-               cpatch%leaf_vpdef(ico) = vpdefil( csite%can_prss  (ipa)                     &
-                                               , cpatch%leaf_temp(ico)                     &
-                                               , csite%can_shv   (ipa), .true.)
-               !---------------------------------------------------------------------------!
-
-               !----- Copy the meteorological wind to here. -------------------------------!
-               cpatch%veg_wind(ico) = sngloff(initp%vels, tiny_offset)
-               !---------------------------------------------------------------------------!
-
-
-               !----- Set water demand to zero. -------------------------------------------!
-               cpatch%psi_open  (ico) = 0.0
-               cpatch%psi_closed(ico) = 0.0
-               !---------------------------------------------------------------------------!
-
-
-               !----- Conductances cannot be zero.  Set to non-zero defaults. -------------!
-               cpatch%leaf_gbw(ico) = f_bndlyr_init * cpatch%leaf_gsw(ico)
-               cpatch%leaf_gbh(ico) = cpatch%leaf_gbw(ico) / gbh_2_gbw * cpdry
-               cpatch%wood_gbw(ico) = cpatch%leaf_gbw(ico)
-               cpatch%wood_gbh(ico) = cpatch%leaf_gbh(ico)
-               !---------------------------------------------------------------------------!
-            else
-               !---------------------------------------------------------------------------!
-               !     For plants with minimal foliage or very sparse patches, fix the leaf  !
-               ! and branch temperatures to the canopy air space and force leaf and branch !
-               ! intercepted water to be zero.                                             !
-               !---------------------------------------------------------------------------!
-               cpatch%leaf_temp(ico) = csite%can_temp(ipa)
-               cpatch%wood_temp(ico) = cpatch%leaf_temp(ico)
-
-               if (cpatch%leaf_temp(ico) == t3ple) then
-                  cpatch%leaf_fliq(ico) = 0.5
-                  cpatch%wood_fliq(ico) = 0.5
-               elseif (cpatch%leaf_temp(ico) > t3ple) then
-                  cpatch%leaf_fliq(ico) = 1.0
-                  cpatch%wood_fliq(ico) = 1.0
-               else
-                  cpatch%leaf_fliq(ico) = 0.0
-                  cpatch%wood_fliq(ico) = 0.0
-               end if
-               cpatch%leaf_water(ico)   = 0.
-               cpatch%wood_water(ico)   = 0.
-               !---------------------------------------------------------------------------!
-
-
-               !---------------------------------------------------------------------------!
-               !     Find the internal energy diagnostically...                            !
-               !---------------------------------------------------------------------------!
-               cpatch%leaf_energy(ico) = cmtl2uext( cpatch%leaf_hcap     (ico)             &
-                                                  , cpatch%leaf_water    (ico)             &
-                                                  + cpatch%leaf_water_im2(ico)             &
-                                                  , cpatch%leaf_temp     (ico)             &
-                                                  , cpatch%leaf_fliq     (ico)             )
-               cpatch%wood_energy(ico) = cmtl2uext( cpatch%wood_hcap     (ico)             &
-                                                  , cpatch%wood_water    (ico)             &
-                                                  + cpatch%wood_water_im2(ico)             &
-                                                  , cpatch%wood_temp     (ico)             &
-                                                  , cpatch%wood_fliq     (ico)             )
-               !---------------------------------------------------------------------------!
-
-
-
-               !---------------------------------------------------------------------------!
-               !     The intercellular specific humidity is always assumed to be at        !
-               ! saturation for a given temperature.  Find the saturation mixing ratio,    !
-               ! then convert it to specific humidity.                                     !
-               !---------------------------------------------------------------------------!
-               cpatch%lint_shv(ico) = qslif(csite%can_prss(ipa),cpatch%leaf_temp(ico))
-               !---------------------------------------------------------------------------!
-
-
-               !---------------------------------------------------------------------------!
-               !     Find the leaf-level vapour pressure deficit using canopy pressure     !
-               ! and humitdity, but leaf temperature.                                      !
-               !---------------------------------------------------------------------------!
-               cpatch%leaf_vpdef(ico) = vpdefil( csite%can_prss  (ipa)                     &
-                                               , cpatch%leaf_temp(ico)                     &
-                                               , csite%can_shv   (ipa), .true.)
-               !---------------------------------------------------------------------------!
-
-
-               !----- Copy the meteorological wind to here. -------------------------------!
-               cpatch%veg_wind(ico) = sngloff(initp%vels, tiny_offset)
-               !---------------------------------------------------------------------------!
-
-
-               !----- Set water demand to zero. -------------------------------------------!
-               cpatch%psi_open  (ico) = 0.0
-               cpatch%psi_closed(ico) = 0.0
-               !---------------------------------------------------------------------------!
-
-
-               !----- Conductances cannot be zero.  Set to non-zero defaults. -------------!
-               cpatch%leaf_gbw(ico) = f_bndlyr_init * cpatch%leaf_gsw(ico)
-               cpatch%leaf_gbh(ico) = cpatch%leaf_gbw(ico) / gbh_2_gbw * cpdry
-               cpatch%wood_gbw(ico) = cpatch%leaf_gbw(ico)
-               cpatch%wood_gbh(ico) = cpatch%leaf_gbh(ico)
-               !---------------------------------------------------------------------------!
-            end if
-            !------------------------------------------------------------------------------!
-         case (0,2)
-            !------------------------------------------------------------------------------!
-            !  VEGETATION -- Leaf and branchwood were solved separately, so they are       !
-            !                analysed independently.                                       !
-            !------------------------------------------------------------------------------!
-
-
-
-            !------------------------------------------------------------------------------!
-            !  LEAVES                                                                      !
-            !------------------------------------------------------------------------------!
-            if (initp%leaf_resolvable(ico)) then
-               !---------------------------------------------------------------------------!
-               !     Leaves were solved, update water and internal energy, and re-         !
-               ! calculate the temperature and leaf intercellular specific humidity.  The  !
-               ! vegetation dry heat capacity is constant within one time step, so it      !
-               ! doesn't need to be updated.                                               !
-               !---------------------------------------------------------------------------!
-               cpatch%leaf_water(ico)  = sngloff(initp%leaf_water(ico) , tiny_offset)
-               cpatch%leaf_energy(ico) = sngloff(initp%leaf_energy(ico), tiny_offset)
-               call uextcm2tl(cpatch%leaf_energy(ico)                                      &
-                             ,cpatch%leaf_water(ico) + cpatch%leaf_water_im2(ico)          &
-                             ,cpatch%leaf_hcap(ico),cpatch%leaf_temp(ico)                  &
-                             ,cpatch%leaf_fliq(ico))
-
-               !---------------------------------------------------------------------------!
-               !     The intercellular specific humidity is always assumed to be at        !
-               ! saturation for a given temperature.  Find the saturation mixing ratio,    !
-               ! then convert it to specific humidity.                                     !
-               !---------------------------------------------------------------------------!
-               cpatch%lint_shv(ico) = qslif(csite%can_prss(ipa),cpatch%leaf_temp(ico))
-               !---------------------------------------------------------------------------!
-
-
-               !---------------------------------------------------------------------------!
-               !     Find the leaf-level vapour pressure deficit using canopy pressure     !
-               ! and humitdity, but leaf temperature.                                      !
-               !---------------------------------------------------------------------------!
-               cpatch%leaf_vpdef(ico) = vpdefil( csite%can_prss  (ipa)                     &
-                                               , cpatch%leaf_temp(ico)                     &
-                                               , csite%can_shv   (ipa), .true.)
-               !---------------------------------------------------------------------------!
-
-
-
-               !----- Convert the wind. ---------------------------------------------------!
-               cpatch%veg_wind(ico) = sngloff(initp%veg_wind(ico),tiny_offset)
-               !---------------------------------------------------------------------------!
-
-
-               !---------------------------------------------------------------------------!
-               !     Copy the conductances.                                                !
-               !---------------------------------------------------------------------------!
-               cpatch%leaf_gbh(ico) = sngloff(initp%leaf_gbh(ico), tiny_offset)
-               cpatch%leaf_gbw(ico) = sngloff(initp%leaf_gbw(ico), tiny_offset)
-               !---------------------------------------------------------------------------!
-
-
-
-               !---------------------------------------------------------------------------!
-               !     Divide the values of water demand by the time step to obtain the      !
-               ! average value over the past hdid period.                                  !
-               !---------------------------------------------------------------------------!
-               cpatch%psi_open  (ico) = sngloff(initp%psi_open  (ico),tiny_offset)         &
-                                      / sngl(hdid)
-               cpatch%psi_closed(ico) = sngloff(initp%psi_closed(ico),tiny_offset)         &
-                                      / sngl(hdid)
-               !---------------------------------------------------------------------------!
-
-            elseif (cpatch%hite(ico) <=  csite%total_sfcw_depth(ipa)) then
-               !---------------------------------------------------------------------------!
-               !    For plants buried in snow, fix the leaf temperature to the snow        !
-               ! temperature of the layer that is the closest to the leaves.               !
-               !---------------------------------------------------------------------------!
-               kclosest = 1
-               do k = csite%nlev_sfcwater(ipa), 1, -1
-                  if (sum(csite%sfcwater_depth(1:k,ipa)) > cpatch%hite(ico)) kclosest = k
-               end do
-               cpatch%leaf_temp(ico)   = csite%sfcwater_tempk(kclosest,ipa)
-               if (cpatch%leaf_temp(ico) == t3ple) then
-                  cpatch%leaf_fliq(ico)   = 0.5
-               elseif (cpatch%leaf_temp(ico) > t3ple) then
-                  cpatch%leaf_fliq(ico)   = 1.0
-               else
-                  cpatch%leaf_fliq(ico)   = 0.0
-               end if
-               cpatch%leaf_water(ico)  = 0.
-               cpatch%leaf_energy(ico) = cmtl2uext( cpatch%leaf_hcap     (ico)             &
-                                                  , cpatch%leaf_water    (ico)             &
-                                                  + cpatch%leaf_water_im2(ico)             &
-                                                  , cpatch%leaf_temp     (ico)             &
-                                                  , cpatch%leaf_fliq     (ico)             )
-               !---------------------------------------------------------------------------!
-               !     The intercellular specific humidity is always assumed to be at        !
-               ! saturation for a given temperature.  Find the saturation mixing ratio,    !
-               ! then convert it to specific humidity.                                     !
-               !---------------------------------------------------------------------------!
-               cpatch%lint_shv(ico) = qslif(csite%can_prss(ipa),cpatch%leaf_temp(ico))
-               !---------------------------------------------------------------------------!
-
-
-               !---------------------------------------------------------------------------!
-               !     Find the leaf-level vapour pressure deficit using canopy pressure     !
-               ! and humitdity, but leaf temperature.                                      !
-               !---------------------------------------------------------------------------!
-               cpatch%leaf_vpdef(ico) = vpdefil( csite%can_prss  (ipa)                     &
-                                               , cpatch%leaf_temp(ico)                     &
-                                               , csite%can_shv   (ipa), .true.)
-               !---------------------------------------------------------------------------!
-
-
-               !----- Copy the meteorological wind to here. -------------------------------!
-               cpatch%veg_wind(ico) = sngloff(initp%vels, tiny_offset)
-               !---------------------------------------------------------------------------!
-
-
-               !----- Set water demand to zero. -------------------------------------------!
-               cpatch%psi_open  (ico) = 0.0
-               cpatch%psi_closed(ico) = 0.0
-               !---------------------------------------------------------------------------!
-
-
-               !----- Conductances cannot be zero.  Set to non-zero defaults. -------------!
-               cpatch%leaf_gbw(ico) = f_bndlyr_init * cpatch%leaf_gsw(ico)
-               cpatch%leaf_gbh(ico) = cpatch%leaf_gbw(ico) / gbh_2_gbw * cpdry
-               !---------------------------------------------------------------------------!
-
-            else
-               !---------------------------------------------------------------------------!
-               !     For plants with minimal foliage or very sparse patches, fix the leaf  !
-               ! temperature to the canopy air space and force leaf_water to be zero.      !
-               !---------------------------------------------------------------------------!
-               cpatch%leaf_temp(ico)   = csite%can_temp(ipa)
-               if (cpatch%leaf_temp(ico) == t3ple) then
-                  cpatch%leaf_fliq(ico)   = 0.5
-               elseif (cpatch%leaf_temp(ico) > t3ple) then
-                  cpatch%leaf_fliq(ico)   = 1.0
-               else
-                  cpatch%leaf_fliq(ico)   = 0.0
-               end if
-               cpatch%leaf_water(ico)  = 0.
-               cpatch%leaf_energy(ico) = cmtl2uext( cpatch%leaf_hcap     (ico)             &
-                                                  , cpatch%leaf_water    (ico)             &
-                                                  + cpatch%leaf_water_im2(ico)             &
-                                                  , cpatch%leaf_temp     (ico)             &
-                                                  , cpatch%leaf_fliq     (ico)             )
-               !---------------------------------------------------------------------------!
-               !     The intercellular specific humidity is always assumed to be at        !
-               ! saturation for a given temperature.  Find the saturation mixing ratio,    !
-               ! then convert it to specific humidity.                                     !
-               !---------------------------------------------------------------------------!
-               cpatch%lint_shv  (ico) = qslif(csite%can_prss(ipa),cpatch%leaf_temp(ico))
-               !---------------------------------------------------------------------------!
-
-
-               !---------------------------------------------------------------------------!
-               !     Find the leaf-level vapour pressure deficit using canopy pressure     !
-               ! and humitdity, but leaf temperature.                                      !
-               !---------------------------------------------------------------------------!
-               cpatch%leaf_vpdef(ico) = vpdefil( csite%can_prss  (ipa)                     &
-                                               , cpatch%leaf_temp(ico)                     &
-                                               , csite%can_shv   (ipa), .true.)
-               !---------------------------------------------------------------------------!
-
-
-               !----- Copy the meteorological wind to here. -------------------------------!
-               cpatch%veg_wind  (ico) = sngloff(initp%vels, tiny_offset)
-               !---------------------------------------------------------------------------!
-
-
-               !----- Set water demand to zero. -------------------------------------------!
-               cpatch%psi_open  (ico) = 0.0
-               cpatch%psi_closed(ico) = 0.0
-               !---------------------------------------------------------------------------!
-
-
-               !----- Conductances cannot be zero.  Set to non-zero defaults. -------------!
-               cpatch%leaf_gbw(ico) = f_bndlyr_init * cpatch%leaf_gsw(ico)
-               cpatch%leaf_gbh(ico) = cpatch%leaf_gbw(ico) / gbh_2_gbw * cpdry
-               !---------------------------------------------------------------------------!
-            end if
-            !------------------------------------------------------------------------------!
-
-
-
-
-
-            !------------------------------------------------------------------------------!
-            !  WOOD                                                                        !
-            !------------------------------------------------------------------------------!
-            if (initp%wood_resolvable(ico)) then
-               !---------------------------------------------------------------------------!
-               !     Wood was solved, update water and internal energy, and recalculate    !
-               ! the temperature.  The wood dry heat capacity is constant within one time  !
-               ! step, so it doesn't need to be updated.                                   !
-               !---------------------------------------------------------------------------!
-               cpatch%wood_water(ico)  = sngloff(initp%wood_water(ico) , tiny_offset)
-               cpatch%wood_energy(ico) = sngloff(initp%wood_energy(ico), tiny_offset)
-               call uextcm2tl(cpatch%wood_energy(ico)                                      &
-                             ,cpatch%wood_water(ico) + cpatch%wood_water_im2(ico)          &
-                             ,cpatch%wood_hcap(ico),cpatch%wood_temp(ico)                  &
-                             ,cpatch%wood_fliq(ico))
-
-               !----- Convert the wind. ---------------------------------------------------!
-               cpatch%veg_wind(ico) = sngloff(initp%veg_wind(ico),tiny_offset)
-               !---------------------------------------------------------------------------!
-
-
-               !---------------------------------------------------------------------------!
-               !     Copy the conductances.                                                !
-               !---------------------------------------------------------------------------!
-               cpatch%wood_gbh(ico) = sngloff(initp%wood_gbh(ico), tiny_offset)
-               cpatch%wood_gbw(ico) = sngloff(initp%wood_gbw(ico), tiny_offset)
-               !---------------------------------------------------------------------------!
-
-            elseif (cpatch%hite(ico) <=  csite%total_sfcw_depth(ipa)) then
-               !---------------------------------------------------------------------------!
-               !    For plants buried in snow, fix the wood temperature to the snow        !
-               ! temperature of the layer that is the closest to the branches.             !
-               !---------------------------------------------------------------------------!
-               kclosest = 1
-               do k = csite%nlev_sfcwater(ipa), 1, -1
-                  if (sum(csite%sfcwater_depth(1:k,ipa)) > cpatch%hite(ico)) kclosest = k
-               end do
-               cpatch%wood_temp(ico)   = csite%sfcwater_tempk(kclosest,ipa)
-               if (cpatch%wood_temp(ico) == t3ple) then
-                  cpatch%wood_fliq(ico)   = 0.5
-               elseif (cpatch%wood_temp(ico) > t3ple) then
-                  cpatch%wood_fliq(ico)   = 1.0
-               else
-                  cpatch%wood_fliq(ico)   = 0.0
-               end if
-               cpatch%wood_water(ico)  = 0.
-               cpatch%wood_energy(ico) = cmtl2uext( cpatch%wood_hcap     (ico)             &
-                                                  , cpatch%wood_water    (ico)             &
-                                                  + cpatch%wood_water_im2(ico)             &
-                                                  , cpatch%wood_temp     (ico)             &
-                                                  , cpatch%wood_fliq     (ico)             )
-               !---------------------------------------------------------------------------!
-
-               !----- Copy the meteorological wind to here. -------------------------------!
-               cpatch%veg_wind(ico) = sngloff(initp%vels, tiny_offset)
-               !---------------------------------------------------------------------------!
-
-
-               !----- Conductances cannot be zero.  Set to non-zero defaults. -------------!
-               cpatch%wood_gbw(ico) = f_bndlyr_init * cpatch%leaf_gsw(ico)
-               cpatch%wood_gbh(ico) = cpatch%wood_gbw(ico) / gbh_2_gbw * cpdry
-               !---------------------------------------------------------------------------!
-
-            else
-               !---------------------------------------------------------------------------!
-               !     For very sparse patches of for when wood thermodynamics is off, fix   !
-               ! the wood temperature to the canopy air space and force wood_water to be   !
-               ! zero.                                                                     !
-               !---------------------------------------------------------------------------!
-               cpatch%wood_temp(ico)   = csite%can_temp(ipa)
-               if (cpatch%wood_temp(ico) == t3ple) then
-                  cpatch%wood_fliq(ico)   = 0.5
-               elseif (cpatch%wood_temp(ico) > t3ple) then
-                  cpatch%wood_fliq(ico)   = 1.0
-               else
-                  cpatch%wood_fliq(ico)   = 0.0
-               end if
-               cpatch%wood_water(ico)  = 0.
-               cpatch%wood_energy(ico) = cmtl2uext( cpatch%wood_hcap     (ico)             &
-                                                  , cpatch%wood_water    (ico)             &
-                                                  + cpatch%wood_water_im2(ico)             &
-                                                  , cpatch%wood_temp     (ico)             &
-                                                  , cpatch%wood_fliq     (ico)             )
-               !---------------------------------------------------------------------------!
-
-
-               !----- Conductances cannot be zero.  Set to non-zero defaults. -------------!
-               cpatch%wood_gbw(ico) = f_bndlyr_init * cpatch%leaf_gsw(ico)
-               cpatch%wood_gbh(ico) = cpatch%wood_gbw(ico) / gbh_2_gbw * cpdry
-               !---------------------------------------------------------------------------!
-
-
-               !----- Copy the meteorological wind to here. -------------------------------!
-               if (.not. cpatch%leaf_resolvable(ico)) then
-                  cpatch%veg_wind(ico) = sngloff(initp%vels, tiny_offset)
-               end if
-               !---------------------------------------------------------------------------!
-            end if
-            !------------------------------------------------------------------------------!
-         end select
-         !---------------------------------------------------------------------------------!
-
-
-         !---------------------------------------------------------------------------------!
-         !     Final sanity check.  This should be removed soon, since it should never     !
-         ! happen (well, if this still happens, then it's a bug, and we should remove the  !
-         ! bug first...).                                                                  !
-         !---------------------------------------------------------------------------------!
-         if (cpatch%leaf_temp(ico) < sngl(rk4min_veg_temp) .or.                             &
-             cpatch%leaf_temp(ico) > sngl(rk4max_veg_temp)   ) then
-            write (unit=*,fmt='(80a)')         ('=',k=1,80)
-            write (unit=*,fmt='(a)')           'FINAL LEAF_TEMP IS WRONG IN INITP2MODELP'
-            write (unit=*,fmt='(80a)')         ('-',k=1,80)
-            write (unit=*,fmt='(a,1x,f9.4)')   ' + LONGITUDE:   ',rk4site%lon
-            write (unit=*,fmt='(a,1x,f9.4)')   ' + LATITUDE:    ',rk4site%lat
-            write (unit=*,fmt='(a,1x,i6)')     ' + PATCH:       ',ipa
-            write (unit=*,fmt='(a,1x,i6)')     ' + COHORT:      ',ico
-            write (unit=*,fmt='(a)')           ' + PATCH AGE:   '
-            write (unit=*,fmt='(a,1x,es12.4)') '  - AGE:        ',csite%age(ipa)
-            write (unit=*,fmt='(a,1x,i6)')     '  - DIST_TYPE:  ',csite%dist_type(ipa)
-            write (unit=*,fmt='(a)')           ' + BUFFER_COHORT (initp):'
-            write (unit=*,fmt='(a,1x,es12.4)') '  - ENERGY:     ',initp%leaf_energy(ico)
-            write (unit=*,fmt='(a,1x,es12.4)') '  - WATER:      ',initp%leaf_water(ico)
-            write (unit=*,fmt='(a,1x,es12.4)') '  - WATER_IM2:  ',initp%leaf_water_im2(ico)
-            write (unit=*,fmt='(a,1x,es12.4)') '  - TEMPERATURE:',initp%leaf_temp(ico)
-            write (unit=*,fmt='(a,1x,es12.4)') '  - FRACLIQ:    ',initp%leaf_fliq(ico)
-            write (unit=*,fmt='(a,1x,es12.4)') '  - HEAT_CAP:   ',initp%leaf_hcap(ico)
-            write (unit=*,fmt='(a)')           ' + STATE_COHORT (cpatch):'
-            write (unit=*,fmt='(a,1x,es12.4)') '  - ENERGY:     ',cpatch%leaf_energy(ico)
-            write (unit=*,fmt='(a,1x,es12.4)') '  - WATER:      ',cpatch%leaf_water(ico)
-            write (unit=*,fmt='(a,1x,es12.4)') '  - WATER_IM2:  ',cpatch%leaf_water_im2(ico)
-            write (unit=*,fmt='(a,1x,es12.4)') '  - TEMPERATURE:',cpatch%leaf_temp(ico)
-            write (unit=*,fmt='(a,1x,es12.4)') '  - FRACLIQ:    ',cpatch%leaf_fliq(ico)
-            write (unit=*,fmt='(a,1x,es12.4)') '  - HEAT_CAP:   ',cpatch%leaf_hcap(ico)
-            write (unit=*,fmt='(80a)') ('-',k=1,80)
-            call print_rk4patch(initp, csite,ipa)
-            call fatal_error('extreme vegetation temperature','initp2modelp'               &
-                            &,'rk4_driver.f90')
-         end if
-         if (cpatch%wood_temp(ico) < sngl(rk4min_veg_temp) .or.                             &
-             cpatch%wood_temp(ico) > sngl(rk4max_veg_temp)   ) then
-            write (unit=*,fmt='(80a)')         ('=',k=1,80)
-            write (unit=*,fmt='(a)')           'FINAL WOOD_TEMP IS WRONG IN INITP2MODELP'
-            write (unit=*,fmt='(80a)')         ('-',k=1,80)
-            write (unit=*,fmt='(a,1x,f9.4)')   ' + LONGITUDE:   ',rk4site%lon
-            write (unit=*,fmt='(a,1x,f9.4)')   ' + LATITUDE:    ',rk4site%lat
-            write (unit=*,fmt='(a,1x,i6)')     ' + PATCH:       ',ipa
-            write (unit=*,fmt='(a,1x,i6)')     ' + COHORT:      ',ico
-            write (unit=*,fmt='(a)')           ' + PATCH AGE:   '
-            write (unit=*,fmt='(a,1x,es12.4)') '  - AGE:        ',csite%age(ipa)
-            write (unit=*,fmt='(a,1x,i6)')     '  - DIST_TYPE:  ',csite%dist_type(ipa)
-            write (unit=*,fmt='(a)')           ' + BUFFER_COHORT (initp):'
-            write (unit=*,fmt='(a,1x,es12.4)') '  - ENERGY:     ',initp%wood_energy(ico)
-            write (unit=*,fmt='(a,1x,es12.4)') '  - WATER:      ',initp%wood_water(ico)
-            write (unit=*,fmt='(a,1x,es12.4)') '  - WATER_IM2:  ',initp%wood_water_im2(ico)
-            write (unit=*,fmt='(a,1x,es12.4)') '  - TEMPERATURE:',initp%wood_temp(ico)
-            write (unit=*,fmt='(a,1x,es12.4)') '  - FRACLIQ:    ',initp%wood_fliq(ico)
-            write (unit=*,fmt='(a,1x,es12.4)') '  - HEAT_CAP:   ',initp%wood_hcap(ico)
-            write (unit=*,fmt='(a)')           ' + STATE_COHORT (cpatch):'
-            write (unit=*,fmt='(a,1x,es12.4)') '  - ENERGY:     ',cpatch%wood_energy(ico)
-            write (unit=*,fmt='(a,1x,es12.4)') '  - WATER:      ',cpatch%wood_water(ico)
-            write (unit=*,fmt='(a,1x,es12.4)') '  - WATER_IM2:  ',cpatch%wood_water_im2(ico)
-            write (unit=*,fmt='(a,1x,es12.4)') '  - TEMPERATURE:',cpatch%wood_temp(ico)
-            write (unit=*,fmt='(a,1x,es12.4)') '  - FRACLIQ:    ',cpatch%wood_fliq(ico)
-            write (unit=*,fmt='(a,1x,es12.4)') '  - HEAT_CAP:   ',cpatch%wood_hcap(ico)
-            write (unit=*,fmt='(80a)') ('-',k=1,80)
-            call print_rk4patch(initp, csite,ipa)
-            call fatal_error('extreme vegetation temperature','initp2modelp'               &
-                            &,'rk4_driver.f90')
-         end if
-         !---------------------------------------------------------------------------------!
-      end do
-      !------------------------------------------------------------------------------------!
-
-
-
-      !------------------------------------------------------------------------------------!
-      !      Integrate the average state variables.  Notice that many variables (e.g.,     !
-      ! temperature, density, and soil matric potential) are NOT integrated here: instead, !
-      ! we find the averaged value after we normalise the average of the prognostic        !
-      ! variables.  Same thing for aggregated variables at the patch level.                !
-      !------------------------------------------------------------------------------------!
-      csite%fmean_veg_displace(ipa) = csite%fmean_veg_displace(ipa)                        &
-                                    + csite%veg_displace      (ipa) * dtlsm_o_frqsum
-      csite%fmean_rough       (ipa) = csite%fmean_rough       (ipa)                        &
-                                    + csite%rough             (ipa) * dtlsm_o_frqsum
-      csite%fmean_can_theiv   (ipa) = csite%fmean_can_theiv   (ipa)                        &
-                                    + csite%can_theiv         (ipa) * dtlsm_o_frqsum
-      csite%fmean_can_theta   (ipa) = csite%fmean_can_theta   (ipa)                        &
-                                    + csite%can_theta         (ipa) * dtlsm_o_frqsum
-      csite%fmean_can_vpdef   (ipa) = csite%fmean_can_vpdef   (ipa)                        &
-                                    + csite%can_vpdef         (ipa) * dtlsm_o_frqsum
-      csite%fmean_can_shv     (ipa) = csite%fmean_can_shv     (ipa)                        &
-                                    + csite%can_shv           (ipa) * dtlsm_o_frqsum
-      csite%fmean_can_co2     (ipa) = csite%fmean_can_co2     (ipa)                        &
-                                    + csite%can_co2           (ipa) * dtlsm_o_frqsum
-      csite%fmean_can_prss    (ipa) = csite%fmean_can_prss    (ipa)                        &
-                                    + csite%can_prss          (ipa) * dtlsm_o_frqsum
-      csite%fmean_gnd_temp    (ipa) = csite%fmean_gnd_temp    (ipa)                        &
-                                    + csite%ground_temp       (ipa) * dtlsm_o_frqsum
-      csite%fmean_gnd_shv     (ipa) = csite%fmean_gnd_shv     (ipa)                        &
-                                    + csite%ground_shv        (ipa) * dtlsm_o_frqsum
-      csite%fmean_can_ggnd    (ipa) = csite%fmean_can_ggnd    (ipa)                        &
-                                    + csite%ggnet             (ipa) * dtlsm_o_frqsum
-      !------------------------------------------------------------------------------------!
-      !       Snow/pounding layers.  We keep track of the total, not individual layers.    !
-      ! Energy will be integrated as an extensive variable, we will convert it by the      !
-      ! output time only.                                                                  !
-      !------------------------------------------------------------------------------------!
-      do k=1,csite%nlev_sfcwater(ipa)
-         csite%fmean_sfcw_depth (ipa) = csite%fmean_sfcw_depth   (ipa)                     &
-                                      + csite%sfcwater_depth   (k,ipa) * dtlsm_o_frqsum
-         csite%fmean_sfcw_energy(ipa) = csite%fmean_sfcw_energy  (ipa)                     &
-                                      + csite%sfcwater_energy  (k,ipa)                     &
-                                      * csite%sfcwater_mass    (k,ipa) * dtlsm_o_frqsum
-         csite%fmean_sfcw_mass  (ipa) = csite%fmean_sfcw_mass    (ipa)                     &
-                                      + csite%sfcwater_mass    (k,ipa) * dtlsm_o_frqsum
-      end do
-      !------ Cohort-level variables. -----------------------------------------------------!
-      do ico=1,cpatch%ncohorts
-         cpatch%fmean_leaf_energy   (ico) = cpatch%fmean_leaf_energy   (ico)               &
-                                          + cpatch%leaf_energy         (ico)               &
-                                          * dtlsm_o_frqsum
-         cpatch%fmean_leaf_water    (ico) = cpatch%fmean_leaf_water    (ico)               &
-                                          + cpatch%leaf_water          (ico)               &
-                                          * dtlsm_o_frqsum
-         cpatch%fmean_leaf_water_im2(ico) = cpatch%fmean_leaf_water_im2(ico)               &
-                                          + cpatch%leaf_water_im2      (ico)               &
-                                          * dtlsm_o_frqsum
-         cpatch%fmean_leaf_hcap     (ico) = cpatch%fmean_leaf_hcap     (ico)               &
-                                          + cpatch%leaf_hcap           (ico)               &
-                                          * dtlsm_o_frqsum
-         cpatch%fmean_leaf_vpdef    (ico) = cpatch%fmean_leaf_vpdef    (ico)               &
-                                          + cpatch%leaf_vpdef          (ico)               &
-                                          * dtlsm_o_frqsum
-         cpatch%fmean_wood_energy   (ico) = cpatch%fmean_wood_energy   (ico)               &
-                                          + cpatch%wood_energy         (ico)               &
-                                          * dtlsm_o_frqsum
-         cpatch%fmean_wood_water    (ico) = cpatch%fmean_wood_water    (ico)               &
-                                          + cpatch%wood_water          (ico)               &
-                                          * dtlsm_o_frqsum
-         cpatch%fmean_wood_water_im2(ico) = cpatch%fmean_wood_water_im2(ico)               &
-                                          + cpatch%wood_water_im2      (ico)               &
-                                          * dtlsm_o_frqsum
-         cpatch%fmean_wood_hcap     (ico) = cpatch%fmean_wood_hcap     (ico)               &
-                                          + cpatch%wood_hcap           (ico)               &
-                                          * dtlsm_o_frqsum
-         cpatch%fmean_leaf_gsw      (ico) = cpatch%fmean_leaf_gsw      (ico)               &
-                                          + cpatch%leaf_gsw            (ico)               &
-                                          * dtlsm_o_frqsum
-         cpatch%fmean_leaf_gbw      (ico) = cpatch%fmean_leaf_gbw      (ico)               &
-                                          + cpatch%leaf_gbw            (ico)               &
-                                          * dtlsm_o_frqsum
-         cpatch%fmean_wood_gbw      (ico) = cpatch%fmean_wood_gbw      (ico)               &
-                                          + cpatch%wood_gbw            (ico)               &
-                                          * dtlsm_o_frqsum
-         cpatch%fmean_psi_open      (ico) = cpatch%fmean_psi_open      (ico)               &
-                                          + cpatch%psi_open            (ico)               &
-                                          * dtlsm_o_frqsum
-         cpatch%fmean_psi_closed    (ico) = cpatch%fmean_psi_closed    (ico)               &
-                                          + cpatch%psi_closed          (ico)               &
-                                          * dtlsm_o_frqsum
-         cpatch%fmean_fs_open       (ico) = cpatch%fmean_fs_open       (ico)               &
-                                          + cpatch%fs_open             (ico)               &
-                                          * dtlsm_o_frqsum
-         cpatch%fmean_fsw           (ico) = cpatch%fmean_fsw           (ico)               &
-                                          + cpatch%fsw                 (ico)               &
-                                          * dtlsm_o_frqsum
-         cpatch%fmean_fsn           (ico) = cpatch%fmean_fsn           (ico)               &
-                                          + cpatch%fsn                 (ico)               &
-                                          * dtlsm_o_frqsum
-         cpatch%fmean_A_open        (ico) = cpatch%fmean_A_open        (ico)               &
-                                          + cpatch%A_open              (ico)               &
-                                          * dtlsm_o_frqsum
-         cpatch%fmean_A_closed      (ico) = cpatch%fmean_A_closed      (ico)               &
-                                          + cpatch%A_closed            (ico)               &
-                                          * dtlsm_o_frqsum
-         cpatch%fmean_A_net         (ico) = cpatch%fmean_A_net         (ico)               &
-                                          + ( ( 1. - cpatch%fs_open    (ico) )             &
-                                            * cpatch%A_closed          (ico)               &
-                                            + cpatch%fs_open           (ico)               &
-                                            * cpatch%A_open            (ico) )               &
-                                          * dtlsm_o_frqsum
-         cpatch%fmean_A_light       (ico) = cpatch%fmean_A_light       (ico)               &
-                                          + cpatch%A_light             (ico)               &
-                                          * dtlsm_o_frqsum
-         cpatch%fmean_A_rubp        (ico) = cpatch%fmean_A_rubp        (ico)               &
-                                          + cpatch%A_rubp              (ico)               &
-                                          * dtlsm_o_frqsum
-         cpatch%fmean_A_co2         (ico) = cpatch%fmean_A_co2         (ico)               &
-                                          + cpatch%A_co2               (ico)               &
-                                          * dtlsm_o_frqsum
-         !---------------------------------------------------------------------------------!
-         !     The penalty factor for water and nitrogen are meaningful only during the    !
-         ! day.  For the daily means we must add only when it is daytime, so we integrate  !
-         ! them here too.                                                                  !
-         !---------------------------------------------------------------------------------!
-         if (.not. nighttime .and. writing_long) then
-            cpatch%dmean_fs_open    (ico) = cpatch%dmean_fs_open    (ico)                  &
-                                          + cpatch%fs_open          (ico)                  &
-                                          * dtlsm
-            cpatch%dmean_fsw        (ico) = cpatch%dmean_fsw        (ico)                  &
-                                          + cpatch%fsw              (ico)                  &
-                                          * dtlsm
-            cpatch%dmean_fsn        (ico) = cpatch%dmean_fsn        (ico)                  &
-                                          + cpatch%fsn              (ico)                  &
-                                          * dtlsm
-         end if
-         !---------------------------------------------------------------------------------!
-      end do
-      !------ Soil variables. -------------------------------------------------------------!
-      do k = rk4site%lsl, nzg
-         csite%fmean_soil_energy(k,ipa) = csite%fmean_soil_energy(k,ipa)                   &
-                                        + csite%soil_energy      (k,ipa)                   &
-                                        * dtlsm_o_frqsum
-         csite%fmean_soil_mstpot(k,ipa) = csite%fmean_soil_mstpot(k,ipa)                   &
-                                        + csite%soil_mstpot      (k,ipa)                   &
-                                        * dtlsm_o_frqsum
-         csite%fmean_soil_water (k,ipa) = csite%fmean_soil_water (k,ipa)                   &
-                                        + csite%soil_water       (k,ipa)                   &
-                                        * dtlsm_o_frqsum
-      end do
-      !------------------------------------------------------------------------------------!
-     return
-   end subroutine initp2modelp
    !=======================================================================================!
    !=======================================================================================!
 end module rk4_driver

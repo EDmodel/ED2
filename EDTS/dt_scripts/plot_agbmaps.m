@@ -1,10 +1,12 @@
-function plot_agbmaps(usepft,agb_gt,agb_gc,lon_gc,...
-    lat_gc,npoly,agbmap_pref,visible,grid_name)
+function plot_agbmaps(usepft,agb_gt,agb_gc,lon_gc,lat_gc,npoly,agbmap_pref...
+                     ,status_gt,status_gc,visible,grid_name)
 
 global fasz;
 global pftname;
+global pftshort;
 global actcmap;
 global diffcmap;
+global map_colour;
 
 
 load rywcbmap.mat;
@@ -13,6 +15,7 @@ load wygmap.mat;
 [lonpcrns,latpcrns] = approx_patch_4corners(double(lat_gc),double(lon_gc));
 
 % Match the validation grid to the model grid
+
 
 nupft = sum(usepft);
 
@@ -56,49 +59,49 @@ maxlat = maxlat + 0.15*dlat;
 ax = axes;
 set(ax,'Position',[0 0.95 1 0.05]);
 axis off;
-text(0.5,0.45,sprintf('AGB - %s',grid_name),...
-    'FontSize',fasz,'HorizontalAlignment','center');
+text(0.5,0.45,sprintf('AGB - %s.  Test %s;  Main: %s.',grid_name,status_gt,status_gc) ...
+    ,'FontSize',fasz,'HorizontalAlignment','center');
 
 
-% LEFT - Total AGB
+% LEFT - Total AGB (Test)
 
 patch_agb_dgt = zeros(4,npoly);
-patch_agb_gc = zeros(4,npoly);
+patch_agb_gc  = zeros(4,npoly);
+patch_agb_gt  = zeros(4,npoly);
 for ipy=1:npoly
     tot_agb_gc = sum(agb_gc(ipy,:));
     tot_agb_gt = sum(agb_gt(ipy,:));
     if (tot_agb_gc == 0. && tot_agb_gt == 0.)
        patch_agb_dgt(:,ipy) = 0.;
     else
-       patch_agb_dgt(:,ipy) = 200.*(tot_agb_gc-tot_agb_gt)...
-                              ./(tot_agb_gc+tot_agb_gt);
+       patch_agb_dgt(:,ipy) = tot_agb_gt-tot_agb_gc;
     end
     patch_agb_gc(:,ipy) = sum(agb_gc(ipy,:));
+    patch_agb_gt(:,ipy) = sum(agb_gt(ipy,:));
 end
-minc = 0.0;
-maxc = max(max(patch_agb_gc));
+mint = 0.0;
+maxt = max(max(patch_agb_gt));
+
 
 ax1 = axes;
 set(ax1,'Position',[bx by+dy+my dx dy],'FontSize',fasz);
 hold on;
-patch(lonpcrns,latpcrns,patch_agb_gc);
-colormap(actcmap);
+patch(lonpcrns,latpcrns,patch_agb_gt);
+colormap(gca,actcmap);
 grid on; box on;
-caxis([minc maxc]);
+caxis([mint maxt]);
 shading flat;
-ylabel('Main','Fontsize',12);
+ylabel('Test','Fontsize',12);
 set(gca,'XtickLabel',{});
-cobar=colorbar('South','Position',[bx+0.05*dx by+dy+0.02 0.9*dx 0.03],'FontSize',fasz);
-set(cobar,'XTick',[minc,maxc]);
+cobar=colorbar('South','Position',[bx+0.05*dx by+dy+0.04 0.9*dx 0.02],'FontSize',fasz);
+%set(cobar,'XTick',[mint,maxt]);
 for b=1:nbnds
-plot(geodata(b).lon,geodata(b).lat,'Color',[0.9 0.5 0.5],'LineWidth',1.0);
+   plot(geodata(b).lon,geodata(b).lat,'Color',map_colour,'LineWidth',1.0);
 end
 hold off;
 xlim([minlon maxlon]);
 ylim([minlat maxlat]);
-title('Total AGB [KgC/ha]','FontSize',fasz);
-freezeColors;
-cbfreeze;
+title(sprintf('Total AGB [KgC/m^2]',status_gt),'FontSize',fasz);
 
 
 maxdc = max([1,max(max(abs(patch_agb_dgt)))]);
@@ -109,20 +112,20 @@ ax2 = axes;
 set(ax2,'Position',[bx by dx dy],'FontSize',fasz);
 hold on;
 patch(lonpcrns,latpcrns,patch_agb_dgt);
-colormap(diffcmap);
+colormap(gca,diffcmap);
 grid on; box on;
 caxis([mindc maxdc]);
 shading flat;
-colorbar('South','Position',[bx+0.05*dx 0.05 0.9*dx 0.03],'FontSize',fasz)
+cobar=colorbar('South','Position',[bx+0.05*dx 0.07 0.9*dx 0.02],'FontSize',fasz);
 for b=1:nbnds
-plot(geodata(b).lon,geodata(b).lat,'Color',[0.9 0.5 0.5],'LineWidth',1.0);
+plot(geodata(b).lon,geodata(b).lat,'Color',map_colour,'LineWidth',1.0);
 end
 hold off;
 xlim([minlon maxlon])
 ylim([minlat maxlat]);
-ylabel('200(T-M)/(T+M)','FontSize',fasz);
-freezeColors;
-cbfreeze;
+ylabel('Test-Main','FontSize',fasz);
+
+
 
 ipfts=find(usepft>0);
 
@@ -131,71 +134,65 @@ ipfts=find(usepft>0);
 
 for ip=1:numel(ipfts)
 
-ipft=ipfts(ip);    
+   ipft=ipfts(ip);    
 
-patch_agb_dgt = zeros(4,npoly);
-patch_agb_gc = zeros(4,npoly);
+   patch_agb_dgt = zeros(4,npoly);
+   patch_agb_gc  = zeros(4,npoly);
+   patch_agb_gt  = zeros(4,npoly);
 
-for ipy=1:npoly
-    if (agb_gt(ipy,ipft) == 0. && agb_gc(ipy,ipft) == 0.)
-      patch_agb_dgt(:,ipy) = 0.;
-    else
-      patch_agb_dgt(:,ipy) = 200.*(agb_gt(ipy,ipft)-agb_gc(ipy,ipft))...
-                           ./(agb_gt(ipy,ipft)+agb_gc(ipy,ipft));
-    end
-%    patch_agb_dgt(:,ipy) = agb_gt(ipy,ipft)-agb_gc(ipy,ipft);
-    patch_agb_gc(:,ipy) = agb_gc(ipy,ipft);
-end
-minc = 0.0;
-maxc = max(max(patch_agb_gc));
+   for ipy=1:npoly
+      if (agb_gc(ipy,ipft) == 0.)
+         patch_agb_dgt(:,ipy) = 0.;
+      else
+         patch_agb_dgt(:,ipy) = agb_gt(ipy,ipft)-agb_gc(ipy,ipft);
+      end
+      patch_agb_gc(:,ipy) = agb_gc(ipy,ipft);
+      patch_agb_gt(:,ipy) = agb_gt(ipy,ipft);
+   end
+   mint = 0.0;
+   maxt = max(max(patch_agb_gt));
 
 
-ax = axes; %#ok<LAXES>
-set(ax,'Position',[bx+ip*(dx+mx) by+my+dy dx dy],'FontSize',fasz);
-hold on;
-patch(lonpcrns,latpcrns,patch_agb_gc);
-colormap(actcmap);
-grid on; box on;
-caxis([minc maxc]);
-shading flat;
-title(sprintf('%s',pftname{ipft}),'Fontsize',fasz);
-colorbar('South','Position',[bx+ip*(dx+mx)+0.05*dx by+dy+0.02 0.9*dx 0.03],'FontSize',fasz)
-set(gca,'XtickLabel',{});
-set(gca,'YtickLabel',{});
-freezeColors;
-cbfreeze;
+   ax = axes; %#ok<LAXES>
+   set(ax,'Position',[bx+ip*(dx+mx) by+my+dy dx dy],'FontSize',fasz);
+   hold on;
+   patch(lonpcrns,latpcrns,patch_agb_gt);
+   colormap(gca,actcmap);
+   grid on; box on;
+   caxis([mint maxt]);
+   shading flat;
+   title(pftshort{ipft},'Fontsize',fasz);
+   colorbar('South','Position',[bx+ip*(dx+mx)+0.05*dx by+dy+0.04 0.9*dx 0.02],'FontSize',fasz)
+   set(gca,'XtickLabel',{});
+   set(gca,'YtickLabel',{});
 
-for b=1:nbnds
-plot(geodata(b).lon,geodata(b).lat,'Color',[0.9 0.5 0.5],'LineWidth',1.0);
-end
-hold off;
-xlim([minlon maxlon]);
-ylim([minlat maxlat]);
+   for b=1:nbnds
+      plot(geodata(b).lon,geodata(b).lat,'Color',map_colour,'LineWidth',1.0);
+   end
+   hold off;
+   xlim([minlon maxlon]);
+   ylim([minlat maxlat]);
 
-maxdc = max([1,max(max(abs(patch_agb_dgt)))]);
-mindc = -maxdc;
+   maxdc = max([1,max(max(abs(patch_agb_dgt)))]);
+   mindc = -maxdc;
 
-%maxdc = max([0.001*maxc  ,max(max(abs(patch_agb_dgt)))]);
-%mindc = -maxdc;
 
-ax = axes; %#ok<LAXES>
-set(ax,'Position',[bx+ip*(dx+mx) by dx dy],'FontSize',fasz);
-hold on;
-patch(lonpcrns,latpcrns,patch_agb_dgt);
-colormap(diffcmap);
-grid on; box on;
-caxis([mindc maxdc]);
-shading flat;
-colorbar('South','Position',[bx+ip*(dx+mx)+0.05*dx 0.05 0.9*dx 0.03],'FontSize',fasz)
-set(gca,'YtickLabel',{});
-for b=1:nbnds
-plot(geodata(b).lon,geodata(b).lat,'Color',[0.9 0.5 0.5],'LineWidth',1.0);
-end
-hold off;
-xlim([minlon maxlon]);
-ylim([minlat maxlat]);
-freezeColors;
-cbfreeze;
+   ax = axes; %#ok<LAXES>
+   set(ax,'Position',[bx+ip*(dx+mx) by dx dy],'FontSize',fasz);
+   hold on;
+   patch(lonpcrns,latpcrns,patch_agb_dgt);
+   colormap(gca,diffcmap);
+   grid on; box on;
+   caxis([mindc maxdc]);
+   shading flat;
+   colorbar('South','Position',[bx+ip*(dx+mx)+0.05*dx 0.07 0.9*dx 0.02],'FontSize',fasz)
+   set(gca,'YtickLabel',{});
+   for b=1:nbnds
+   plot(geodata(b).lon,geodata(b).lat,'Color',map_colour,'LineWidth',1.0);
+   end
+   hold off;
+   xlim([minlon maxlon]);
+   ylim([minlat maxlat]);
 
 end
 
@@ -206,14 +203,11 @@ oldpaperpos = get(gcf,'PaperPosition');
 set(gcf,'Units','pixels');
 scrpos = get(gcf,'Position');
 newpos = scrpos/100;
-set(gcf,'PaperUnits','inches',...
-'PaperPosition',newpos)
+set(gcf,'PaperUnits','inches','PaperPosition',newpos)
 print('-depsc', sprintf('%s.eps',agbmap_pref), '-r300');
 print('-dpng', sprintf('%s.png',agbmap_pref), '-r300');
 drawnow
-set(gcf,'Units',oldscreenunits,...
-'PaperUnits',oldpaperunits,...
-'PaperPosition',oldpaperpos)
+set(gcf,'Units',oldscreenunits,'PaperUnits',oldpaperunits,'PaperPosition',oldpaperpos)
 
 
 
