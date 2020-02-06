@@ -276,27 +276,26 @@ $ED_NL
    !---------------------------------------------------------------------------------------!
    !     The following variables control whether site-, patch-, and cohort-level time      !
    ! means and mean sum of squares should be included in the output files or not.          !
+   ! If these options are on, then they provide much more detailed output, but they may    !
+   ! add a lot of disk space (especially if you want the fast output to have the detailed  !
+   ! output).                                                                              !
    !                                                                                       !
-   ! Reasons to add them:                                                                  !
-   ! a. Sub-polygon variables are more comprehensive.                                      !
-   ! b. Explore heterogeneity within a polygon and make interesting analysis.              !
-   ! c. More chances to create cool 3-D plots.                                             !
+   ! IADD_SITE_MEANS   --  Add site-level averages to the output                           !
+   ! IADD_PATCH_MEANS  --  Add patch-level averages to the output                          !
+   ! IADD_COHORT_MEANS --  Add cohort-level averages to the output                         !
    !                                                                                       !
-   ! Reasons to NOT add them:                                                              !
-   ! a. Output files will become much larger!                                              !
-   ! b. In regional/coupled runs, the output files will be ridiculously large.             !
-   ! c. You may fill up the disk.                                                          !
-   ! d. Other people's job may crash due to insufficient disk space.                       !
-   ! e. You will gain a bad reputation amongst your colleagues.                            !
-   ! f. And it will be entirely your fault.                                                !
+   !    The options are additive, and the indices below represent the different types of   !
+   ! output:                                                                               !
    !                                                                                       !
-   !     Either way, polygon-level averages are always included, and so are the instan-    !
-   ! taneous site-, patch-, and cohort-level variables needed for resuming the run.        ! 
+   ! 0  -- No detailed output.                                                             !
+   ! 1  -- Include the level in monthly output (IMOUTPUT and IQOUTPUT)                     !
+   ! 2  -- Include the level in daily output (IDOUTPUT).                                   !
+   ! 4  -- Include the level in sub-daily output (IFOUTPUT and IOOUTPUT).                  !
    !                                                                                       !
-   ! IADD_SITE_MEANS   --  Add site-level averages to the output   (0 = no; 1 = yes)       !
-   ! IADD_PATCH_MEANS  --  Add patch-level averages to the output  (0 = no; 1 = yes)       !
-   ! IADD_COHORT_MEANS --  Add cohort-level averages to the output (0 = no; 1 = yes)       !
-   !                                                                                       !
+   ! For example, in case you don't want any cohort output, set IADD_COHORT_MEANS to zero. !
+   ! In case you want to generate include cohort means to both daily and monthly outputs,  !
+   ! but not the sub-daily means, set IADD_COHORT_MEANS to 3 (1 + 2).  Any combination of  !
+   ! the above outputs is acceptable (i.e., any number from 0 to 7).                       !
    !---------------------------------------------------------------------------------------!
    NL%IADD_SITE_MEANS   = 1
    NL%IADD_PATCH_MEANS  = 1
