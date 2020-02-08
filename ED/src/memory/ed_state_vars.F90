@@ -21585,18 +21585,35 @@ module ed_state_vars
 
 
       !------------------------------------------------------------------------------------!
-      !      Decide whether to write the sub-daily means to the history file.              !
+      !      Decide whether to write the sub-daily means to the history and/or the         !
+      ! analysis files.  This depends on whether we are going to write sub-daily means to  !
+      ! analyses, or whether we are writing daily/monthly averages (in which case we may   !
+      ! need to save sub-daily averages to history files).                                 !
       !------------------------------------------------------------------------------------!
-      select case (iadd_site_means)
-      case (0)
-         return
-      case (1)
+      if (btest(iadd_site_means,2)) then
+         !----- Site averages sought, decide whether or not to write to history. ----------!
          if (history_fast) then
             fast_keys = 'hist:anal'
          else
             fast_keys = 'anal'
          end if
-      end select
+         !---------------------------------------------------------------------------------!
+      elseif (iadd_site_means /= 0) then
+         !---------------------------------------------------------------------------------!
+         !     Site averages not needed.  Write to history only when we are writing        !
+         !  sub-daily history and saving site-level daily and/or monthly averages.         !
+         !---------------------------------------------------------------------------------!
+         if (history_fast) then
+            fast_keys = 'hist'
+         else
+            return
+         end if
+         !---------------------------------------------------------------------------------!
+      else
+         !----- No need to write anything. ------------------------------------------------!
+         return
+         !---------------------------------------------------------------------------------!
+      end if
       !------------------------------------------------------------------------------------!
 
 
@@ -21804,19 +21821,37 @@ module ed_state_vars
 
 
       !------------------------------------------------------------------------------------!
-      !      Decide whether to write the daily means to the history file.                  !
+      !      Decide whether to write the daily means to the history and/or the analysis    !
+      ! files.  This depends on whether we are going to write daily means to analyses, or  !
+      ! whether we are writing monthly averages (in which case we may need to save daily   !
+      ! averages to history files).                                                        !
       !------------------------------------------------------------------------------------!
-      select case (iadd_site_means)
-      case (0)
-         return
-      case (1)
+      if (btest(iadd_site_means,1)) then
+         !----- Site averages sought, decide whether or not to write to history. ----------!
          if (history_dail) then
             dail_keys = 'hist:dail'
          else
             dail_keys = 'dail'
          end if
-      end select
+         !---------------------------------------------------------------------------------!
+      elseif (btest(iadd_site_means,0)) then
+         !---------------------------------------------------------------------------------!
+         !     Site averages not needed.  Write to history only when we are writing        !
+         !  sub-monthly history and saving site-level monthly averages.                    !
+         !---------------------------------------------------------------------------------!
+         if (history_dail) then
+            dail_keys = 'hist'
+         else
+            return
+         end if
+         !---------------------------------------------------------------------------------!
+      else
+         !----- No need to write anything. ------------------------------------------------!
+         return
+         !---------------------------------------------------------------------------------!
+      end if
       !------------------------------------------------------------------------------------!
+
 
 
       !------------------------------------------------------------------------------------!
@@ -21994,18 +22029,22 @@ module ed_state_vars
 
 
       !------------------------------------------------------------------------------------!
-      !      Decide whether to write the monthly means to the history file.                !
+      !      Decide whether to write the monthly means to the history and/or the analysis  !
+      ! files.                                                                             !
       !------------------------------------------------------------------------------------!
-      select case (iadd_site_means)
-      case (0)
-         return
-      case (1)
+      if (btest(iadd_site_means,0)) then
+         !----- Site averages sought, decide whether or not to write to history. ----------!
          if (history_eorq) then
             eorq_keys = 'hist:mont:dcyc'
          else
             eorq_keys = 'mont:dcyc'
          end if
-      end select
+         !---------------------------------------------------------------------------------!
+      else
+         !----- No need to write anything. ------------------------------------------------!
+         return
+         !---------------------------------------------------------------------------------!
+      end if
       !------------------------------------------------------------------------------------!
 
 
@@ -22329,18 +22368,22 @@ module ed_state_vars
 
 
       !------------------------------------------------------------------------------------!
-      !      Decide whether to write the mean diel to the history file.                    !
+      !      Decide whether to write the mean diel to the history and/or the analysis      !
+      ! files.                                                                             !
       !------------------------------------------------------------------------------------!
-      select case (iadd_site_means)
-      case (0)
-         return
-      case (1)
+      if (btest(iadd_site_means,0)) then
+         !----- Site averages sought, decide whether or not to write to history. ----------!
          if (history_eorq) then
             eorq_keys = 'hist:dcyc'
          else
             eorq_keys = 'dcyc'
          end if
-      end select
+         !---------------------------------------------------------------------------------!
+      else
+         !----- No need to write anything. ------------------------------------------------!
+         return
+         !---------------------------------------------------------------------------------!
+      end if
       !------------------------------------------------------------------------------------!
 
 
@@ -24472,18 +24515,35 @@ module ed_state_vars
 
 
       !------------------------------------------------------------------------------------!
-      !      Decide whether to write the sub-daily means to the history file.              !
+      !      Decide whether to write the sub-daily means to the history and/or the         !
+      ! analysis files.  This depends on whether we are going to write sub-daily means to  !
+      ! analyses, or whether we are writing daily/monthly averages (in which case we may   !
+      ! need to save sub-daily averages to history files).                                 !
       !------------------------------------------------------------------------------------!
-      select case (iadd_patch_means)
-      case (0)
-         return
-      case (1)
+      if (btest(iadd_patch_means,2)) then
+         !----- Patch averages sought, decide whether or not to write to history. ---------!
          if (history_fast) then
             fast_keys = 'hist:anal'
          else
             fast_keys = 'anal'
          end if
-      end select
+         !---------------------------------------------------------------------------------!
+      elseif (iadd_patch_means /= 0) then
+         !---------------------------------------------------------------------------------!
+         !     Patch averages not needed.  Write to history only when we are writing       !
+         !  sub-daily history and saving site-level daily and/or monthly averages.         !
+         !---------------------------------------------------------------------------------!
+         if (history_fast) then
+            fast_keys = 'hist'
+         else
+            return
+         end if
+         !---------------------------------------------------------------------------------!
+      else
+         !----- No need to write anything. ------------------------------------------------!
+         return
+         !---------------------------------------------------------------------------------!
+      end if
       !------------------------------------------------------------------------------------!
 
 
@@ -25049,18 +25109,35 @@ module ed_state_vars
 
 
       !------------------------------------------------------------------------------------!
-      !      Decide whether to write the daily means to the history file.                  !
+      !      Decide whether to write the daily means to the history and/or the analysis    !
+      ! files.  This depends on whether we are going to write daily means to analyses, or  !
+      ! whether we are writing monthly averages (in which case we may need to save daily   !
+      ! averages to history files).                                                        !
       !------------------------------------------------------------------------------------!
-      select case (iadd_patch_means)
-      case (0)
-         return
-      case (1)
+      if (btest(iadd_patch_means,1)) then
+         !----- Patch averages sought, decide whether or not to write to history. ---------!
          if (history_dail) then
             dail_keys = 'hist:dail'
          else
             dail_keys = 'dail'
          end if
-      end select
+         !---------------------------------------------------------------------------------!
+      elseif (btest(iadd_patch_means,0)) then
+         !---------------------------------------------------------------------------------!
+         !     Patch averages not needed.  Write to history only when we are writing       !
+         !  sub-monthly history and saving site-level monthly averages.                    !
+         !---------------------------------------------------------------------------------!
+         if (history_dail) then
+            dail_keys = 'hist'
+         else
+            return
+         end if
+         !---------------------------------------------------------------------------------!
+      else
+         !----- No need to write anything. ------------------------------------------------!
+         return
+         !---------------------------------------------------------------------------------!
+      end if
       !------------------------------------------------------------------------------------!
 
 
@@ -25700,18 +25777,22 @@ module ed_state_vars
 
 
       !------------------------------------------------------------------------------------!
-      !      Decide whether to write the monthly means to the history file.                !
+      !      Decide whether to write the monthly means to the history and/or the analysis  !
+      ! files.                                                                             !
       !------------------------------------------------------------------------------------!
-      select case (iadd_patch_means)
-      case (0)
-         return
-      case (1)
+      if (btest(iadd_patch_means,0)) then
+         !----- Patch averages sought, decide whether or not to write to history. ---------!
          if (history_eorq) then
             eorq_keys = 'hist:mont:dcyc'
          else
             eorq_keys = 'mont:dcyc'
          end if
-      end select
+         !---------------------------------------------------------------------------------!
+      else
+         !----- No need to write anything. ------------------------------------------------!
+         return
+         !---------------------------------------------------------------------------------!
+      end if
       !------------------------------------------------------------------------------------!
 
 
@@ -26675,18 +26756,22 @@ module ed_state_vars
 
 
       !------------------------------------------------------------------------------------!
-      !      Decide whether to write the mean diel to the history file.                    !
+      !      Decide whether to write the mean diel to the history and/or the analysis      !
+      ! files.                                                                             !
       !------------------------------------------------------------------------------------!
-      select case (iadd_patch_means)
-      case (0)
-         return
-      case (1)
+      if (btest(iadd_patch_means,0)) then
+         !----- Patch averages sought, decide whether or not to write to history. ---------!
          if (history_eorq) then
             eorq_keys = 'hist:dcyc'
          else
             eorq_keys = 'dcyc'
          end if
-      end select
+         !---------------------------------------------------------------------------------!
+      else
+         !----- No need to write anything. ------------------------------------------------!
+         return
+         !---------------------------------------------------------------------------------!
+      end if
       !------------------------------------------------------------------------------------!
 
 
@@ -27459,6 +27544,9 @@ module ed_state_vars
       character(len=str_len)                :: fast_keys
       character(len=str_len)                :: dail_keys
       character(len=str_len)                :: eorq_keys
+      logical                               :: add_fast
+      logical                               :: add_dail
+      logical                               :: add_eorq
       !------------------------------------------------------------------------------------!
 
 
@@ -27532,249 +27620,375 @@ module ed_state_vars
 
 
       !------------------------------------------------------------------------------------!
-      !      Decide whether to write the fast, daily, and monthly means to the history.    !
+      !      Decide whether to write the fast, daily, and monthly means to the history     !
+      ! and/or analysis files.                                                             !
       !------------------------------------------------------------------------------------!
       select case (iadd_patch_means)
       case (0)
+         !----- Nothing to be written. ----------------------------------------------------!
          return
-      case (1)
-         if (history_fast) then
-            fast_keys = 'hist:anal'
+         !---------------------------------------------------------------------------------!
+      case default
+         !---------------------------------------------------------------------------------!
+         !     Turn on all the averages. We then disable those that are not needed.        !
+         !---------------------------------------------------------------------------------!
+         add_fast = .true.
+         add_dail = .true.
+         add_eorq = .true.
+         !---------------------------------------------------------------------------------!
+
+
+         !---------------------------------------------------------------------------------!
+         !      Decide whether to write the sub-daily means to the history and/or the      !
+         ! analysis files.  This depends on whether we are going to write sub-daily means  !
+         ! to analyses, or whether we are writing daily/monthly averages (in which case we !
+         ! may need to save sub-daily averages to history files).                          !
+         !---------------------------------------------------------------------------------!
+         if (btest(iadd_patch_means,2)) then
+            !----- Patch averages sought, decide whether or not to write to history. ------!
+            if (history_fast) then
+               fast_keys = 'hist:anal'
+            else
+               fast_keys = 'anal'
+            end if
+            !------------------------------------------------------------------------------!
+         elseif (history_fast) then
+            !------------------------------------------------------------------------------!
+            !     Patch averages not needed, but we must add them to history because we    !
+            ! are saving patch-level daily and/or monthly averages.                        !
+            !------------------------------------------------------------------------------!
+            fast_keys = 'hist'
+            !------------------------------------------------------------------------------!
          else
-            fast_keys = 'anal'
+            !----- No need to include sub-daily averages. ---------------------------------!
+            add_fast  = .false.
+            !------------------------------------------------------------------------------!
          end if
-         if (history_dail) then
-            dail_keys = 'hist:dail'
+         !---------------------------------------------------------------------------------!
+
+
+
+
+
+         !---------------------------------------------------------------------------------!
+         !      Decide whether to write the daily means to the history and/or the analysis !
+         ! files.  This depends on whether we are going to write daily means to analyses,  !
+         ! or whether we are writing monthly averages (in which case we may need to save   !
+         ! daily averages to history files).                                               !
+         !---------------------------------------------------------------------------------!
+         if (btest(iadd_patch_means,1)) then
+            !----- Patch averages sought, decide whether or not to write to history. ------!
+            if (history_dail) then
+               dail_keys = 'hist:dail'
+            else
+               dail_keys = 'dail'
+            end if
+            !------------------------------------------------------------------------------!
+         elseif (btest(iadd_patch_means,0) .and. history_dail) then
+            !------------------------------------------------------------------------------!
+            !     Patch averages not needed, but we must add them to history because we    !
+            ! are saving patch-level monthly averages.                                     !
+            !------------------------------------------------------------------------------!
+            dail_keys = 'hist'
+            !------------------------------------------------------------------------------!
          else
-            dail_keys = 'dail'
+            !----- No need to go include daily variables. ---------------------------------!
+            add_dail  = .false.
+            !------------------------------------------------------------------------------!
          end if
-         if (history_eorq) then
-            eorq_keys = 'hist:mont:dcyc'
+         !---------------------------------------------------------------------------------!
+
+
+
+         !---------------------------------------------------------------------------------!
+         !      Decide whether to write the mean diel to the history and/or the analysis   !
+         ! files.                                                                          !
+         !---------------------------------------------------------------------------------!
+         if (btest(iadd_patch_means,0)) then
+            !----- Patch averages sought, decide whether or not to write to history. ------!
+            if (history_eorq) then
+               eorq_keys = 'hist:mont:dcyc'
+            else
+               eorq_keys = 'mont:dcyc'
+            end if
+            !------------------------------------------------------------------------------!
          else
-            eorq_keys = 'mont:dcyc'
+            !----- No need to go include daily variables. ---------------------------------!
+            add_eorq = .false.
+            !------------------------------------------------------------------------------!
          end if
+         !---------------------------------------------------------------------------------!
       end select
       !------------------------------------------------------------------------------------!
 
 
 
-      if (associated(csite%fmean_soil_energy     )) then
-         nvar = nvar+1
-         call vtable_edio_r(npts,csite%fmean_soil_energy                                   &
-                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_SOIL_ENERGY_PA       :32:'//trim(fast_keys)     )
-         call metadata_edio(nvar,igr                                                       &
-                           ,'Sub-daily mean - Soil internal energy'                        &
-                           ,'[       J/m3]','(nzg,ipatch)'        )
-      end if
-      if (associated(csite%fmean_soil_mstpot     )) then
-         nvar = nvar+1
-         call vtable_edio_r(npts,csite%fmean_soil_mstpot                                   &
-                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_SOIL_MSTPOT_PA       :32:'//trim(fast_keys)     )
-         call metadata_edio(nvar,igr                                                       &
-                           ,'Sub-daily mean - Soil matric potential'                       &
-                           ,'[          m]','(nzg,ipatch)'        )
-      end if
-      if (associated(csite%fmean_soil_water      )) then
-         nvar = nvar+1
-         call vtable_edio_r(npts,csite%fmean_soil_water                                    &
-                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_SOIL_WATER_PA        :32:'//trim(fast_keys)     )
-         call metadata_edio(nvar,igr                                                       &
-                           ,'Sub-daily mean - Soil water content'                          &
-                           ,'[      m3/m3]','(nzg,ipatch)'        )
-      end if
-      if (associated(csite%fmean_soil_temp       )) then
-         nvar = nvar+1
-         call vtable_edio_r(npts,csite%fmean_soil_temp                                     &
-                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_SOIL_TEMP_PA         :32:'//trim(fast_keys)     )
-         call metadata_edio(nvar,igr                                                       &
-                           ,'Sub-daily mean - Soil temperature'                            &
-                           ,'[          K]','(nzg,ipatch)'        )
-      end if
-      if (associated(csite%fmean_soil_fliq       )) then
-         nvar = nvar+1
-         call vtable_edio_r(npts,csite%fmean_soil_fliq                                     &
-                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_SOIL_FLIQ_PA         :32:'//trim(fast_keys)     )
-         call metadata_edio(nvar,igr                                                       &
-                           ,'Sub-daily mean - Soil liquid fraction'                        &
-                           ,'[         --]','(nzg,ipatch)'        )
-      end if
-      if (associated(csite%fmean_smoist_gg       )) then
-         nvar = nvar+1
-         call vtable_edio_r(npts,csite%fmean_smoist_gg                                     &
-                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_SMOIST_GG_PA         :32:'//trim(fast_keys)     )
-         call metadata_edio(nvar,igr                                                       &
-                           ,'Sub-daily mean - Soil water flux'                             &
-                           ,'[    kg/m2/s]','(nzg,ipatch)'        )
-      end if
-      if (associated(csite%fmean_transloss       )) then
-         nvar = nvar+1
-         call vtable_edio_r(npts,csite%fmean_transloss                                     &
-                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_TRANSLOSS_PA         :32:'//trim(fast_keys)     )
-         call metadata_edio(nvar,igr                                                       &
-                           ,'Sub-daily mean - Water loss through transpiration'            &
-                           ,'[    kg/m2/s]','(nzg,ipatch)'        )
-      end if
-      if (associated(csite%fmean_sensible_gg     )) then
-         nvar = nvar+1
-         call vtable_edio_r(npts,csite%fmean_sensible_gg                                   &
-                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_SENSIBLE_GG_PA       :32:'//trim(fast_keys)     )
-         call metadata_edio(nvar,igr                                                       &
-                           ,'Sub-daily mean - Soil heat flux'                              &
-                           ,'[       W/m2]','(nzg,ipatch)'        )
-      end if
-      if (associated(csite%dmean_soil_energy     )) then
-         nvar = nvar+1
-         call vtable_edio_r(npts,csite%dmean_soil_energy                                   &
-                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_SOIL_ENERGY_PA       :32:'//trim(dail_keys)     )
-         call metadata_edio(nvar,igr                                                       &
-                           ,'Daily mean - Soil internal energy'                            &
-                           ,'[       J/m3]','(nzg,ipatch)'        )
-      end if
-      if (associated(csite%dmean_soil_mstpot     )) then
-         nvar = nvar+1
-         call vtable_edio_r(npts,csite%dmean_soil_mstpot                                   &
-                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_SOIL_MSTPOT_PA       :32:'//trim(dail_keys)     )
-         call metadata_edio(nvar,igr                                                       &
-                           ,'Daily mean - Soil matric potential'                           &
-                           ,'[          m]','(nzg,ipatch)'        )
-      end if
-      if (associated(csite%dmean_soil_water      )) then
-         nvar = nvar+1
-         call vtable_edio_r(npts,csite%dmean_soil_water                                    &
-                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_SOIL_WATER_PA        :32:'//trim(dail_keys)     )
-         call metadata_edio(nvar,igr                                                       &
-                           ,'Daily mean - Soil water content'                              &
-                           ,'[      m3/m3]','(nzg,ipatch)'        )
-      end if
-      if (associated(csite%dmean_soil_temp       )) then
-         nvar = nvar+1
-         call vtable_edio_r(npts,csite%dmean_soil_temp                                     &
-                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_SOIL_TEMP_PA         :32:'//trim(dail_keys)     )
-         call metadata_edio(nvar,igr                                                       &
-                           ,'Daily mean - Soil temperature'                                &
-                           ,'[          K]','(nzg,ipatch)'        )
-      end if
-      if (associated(csite%dmean_soil_fliq       )) then
-         nvar = nvar+1
-         call vtable_edio_r(npts,csite%dmean_soil_fliq                                     &
-                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_SOIL_FLIQ_PA         :32:'//trim(dail_keys)     )
-         call metadata_edio(nvar,igr                                                       &
-                           ,'Daily mean - Soil liquid fraction'                            &
-                           ,'[         --]','(nzg,ipatch)'        )
-      end if
-      if (associated(csite%dmean_smoist_gg       )) then
-         nvar = nvar+1
-         call vtable_edio_r(npts,csite%dmean_smoist_gg                                     &
-                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_SMOIST_GG_PA         :32:'//trim(dail_keys)     )
-         call metadata_edio(nvar,igr                                                       &
-                           ,'Daily mean - Soil water flux'                                 &
-                           ,'[    kg/m2/s]','(nzg,ipatch)'        )
-      end if
-      if (associated(csite%dmean_transloss       )) then
-         nvar = nvar+1
-         call vtable_edio_r(npts,csite%dmean_transloss                                     &
-                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_TRANSLOSS_PA         :32:'//trim(dail_keys)     )
-         call metadata_edio(nvar,igr                                                       &
-                           ,'Daily mean - Water loss through transpiration'                &
-                           ,'[    kg/m2/s]','(nzg,ipatch)'        )
-      end if
-      if (associated(csite%dmean_sensible_gg     )) then
-         nvar = nvar+1
-         call vtable_edio_r(npts,csite%dmean_sensible_gg                                   &
-                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_SENSIBLE_GG_PA       :32:'//trim(dail_keys)     )
-         call metadata_edio(nvar,igr                                                       &
-                           ,'Daily mean - Soil heat flux'                                  &
-                           ,'[       W/m2]','(nzg,ipatch)'        )
-      end if
-      if (associated(csite%mmean_soil_energy     )) then
-         nvar = nvar+1
-         call vtable_edio_r(npts,csite%mmean_soil_energy                                   &
-                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_SOIL_ENERGY_PA       :32:'//trim(eorq_keys))
-         call metadata_edio(nvar,igr                                                       &
-                           ,'Monthly mean - Soil internal energy'                          &
-                           ,'[       J/m3]','(nzg,ipatch)'        )
-      end if
-      if (associated(csite%mmean_soil_mstpot     )) then
-         nvar = nvar+1
-         call vtable_edio_r(npts,csite%mmean_soil_mstpot                                   &
-                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_SOIL_MSTPOT_PA       :32:'//trim(eorq_keys))
-         call metadata_edio(nvar,igr                                                       &
-                           ,'Monthly mean - Soil matric potential'                         &
-                           ,'[          m]','(nzg,ipatch)'        )
-      end if
-      if (associated(csite%mmean_soil_water      )) then
-         nvar = nvar+1
-         call vtable_edio_r(npts,csite%mmean_soil_water                                    &
-                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_SOIL_WATER_PA        :32:'//trim(eorq_keys))
-         call metadata_edio(nvar,igr                                                       &
-                           ,'Monthly mean - Soil water content'                            &
-                           ,'[      m3/m3]','(nzg,ipatch)'        )
-      end if
-      if (associated(csite%mmean_soil_temp       )) then
-         nvar = nvar+1
-         call vtable_edio_r(npts,csite%mmean_soil_temp                                     &
-                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_SOIL_TEMP_PA         :32:'//trim(eorq_keys))
-         call metadata_edio(nvar,igr                                                       &
-                           ,'Monthly mean - Soil temperature'                              &
-                           ,'[          K]','(nzg,ipatch)'        )
-      end if
-      if (associated(csite%mmean_soil_fliq       )) then
-         nvar = nvar+1
-         call vtable_edio_r(npts,csite%mmean_soil_fliq                                     &
-                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_SOIL_FLIQ_PA         :32:'//trim(eorq_keys))
-         call metadata_edio(nvar,igr                                                       &
-                           ,'Monthly mean - Soil liquid fraction'                          &
-                           ,'[         --]','(nzg,ipatch)'        )
-      end if
-      if (associated(csite%mmean_smoist_gg       )) then
-         nvar = nvar+1
-         call vtable_edio_r(npts,csite%mmean_smoist_gg                                     &
-                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_SMOIST_GG_PA         :32:'//trim(eorq_keys))
-         call metadata_edio(nvar,igr                                                       &
-                           ,'Monthly mean - Soil water flux'                               &
-                           ,'[    kg/m2/s]','(nzg,ipatch)'        )
-      end if
-      if (associated(csite%mmean_transloss       )) then
-         nvar = nvar+1
-         call vtable_edio_r(npts,csite%mmean_transloss                                     &
-                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_TRANSLOSS_PA         :32:'//trim(eorq_keys))
-         call metadata_edio(nvar,igr                                                       &
-                           ,'Monthly mean - Water loss through transpiration'              &
-                           ,'[    kg/m2/s]','(nzg,ipatch)'        )
-      end if
-      if (associated(csite%mmean_sensible_gg     )) then
-         nvar = nvar+1
-         call vtable_edio_r(npts,csite%mmean_sensible_gg                                   &
-                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_SENSIBLE_GG_PA       :32:'//trim(eorq_keys))
-         call metadata_edio(nvar,igr                                                       &
-                           ,'Monthly mean - Soil heat flux'                                &
-                           ,'[       W/m2]','(nzg,ipatch)'        )
+
+      !------------------------------------------------------------------------------------!
+      !   Fast averages block.                                                             !
+      !------------------------------------------------------------------------------------!
+      if (add_fast) then
+         if (associated(csite%fmean_soil_energy     )) then
+            nvar = nvar+1
+            call vtable_edio_r(npts,csite%fmean_soil_energy                                &
+                              ,nvar,igr,init,csite%paglob_id                               &
+                              ,var_len,var_len_global,max_ptrs                             &
+                              ,'FMEAN_SOIL_ENERGY_PA       :32:'//trim(fast_keys)     )
+            call metadata_edio(nvar,igr                                                    &
+                              ,'Sub-daily mean - Soil internal energy'                     &
+                              ,'[       J/m3]','(nzg,ipatch)'        )
+         end if
+         if (associated(csite%fmean_soil_mstpot     )) then
+            nvar = nvar+1
+            call vtable_edio_r(npts,csite%fmean_soil_mstpot                                &
+                              ,nvar,igr,init,csite%paglob_id                               &
+                              ,var_len,var_len_global,max_ptrs                             &
+                              ,'FMEAN_SOIL_MSTPOT_PA       :32:'//trim(fast_keys)     )
+            call metadata_edio(nvar,igr                                                    &
+                              ,'Sub-daily mean - Soil matric potential'                    &
+                              ,'[          m]','(nzg,ipatch)'        )
+         end if
+         if (associated(csite%fmean_soil_water      )) then
+            nvar = nvar+1
+            call vtable_edio_r(npts,csite%fmean_soil_water                                 &
+                              ,nvar,igr,init,csite%paglob_id                               &
+                              ,var_len,var_len_global,max_ptrs                             &
+                              ,'FMEAN_SOIL_WATER_PA        :32:'//trim(fast_keys)     )
+            call metadata_edio(nvar,igr                                                    &
+                              ,'Sub-daily mean - Soil water content'                       &
+                              ,'[      m3/m3]','(nzg,ipatch)'        )
+         end if
+         if (associated(csite%fmean_soil_temp       )) then
+            nvar = nvar+1
+            call vtable_edio_r(npts,csite%fmean_soil_temp                                  &
+                              ,nvar,igr,init,csite%paglob_id                               &
+                              ,var_len,var_len_global,max_ptrs                             &
+                              ,'FMEAN_SOIL_TEMP_PA         :32:'//trim(fast_keys)     )
+            call metadata_edio(nvar,igr                                                    &
+                              ,'Sub-daily mean - Soil temperature'                         &
+                              ,'[          K]','(nzg,ipatch)'        )
+         end if
+         if (associated(csite%fmean_soil_fliq       )) then
+            nvar = nvar+1
+            call vtable_edio_r(npts,csite%fmean_soil_fliq                                  &
+                              ,nvar,igr,init,csite%paglob_id                               &
+                              ,var_len,var_len_global,max_ptrs                             &
+                              ,'FMEAN_SOIL_FLIQ_PA         :32:'//trim(fast_keys)     )
+            call metadata_edio(nvar,igr                                                    &
+                              ,'Sub-daily mean - Soil liquid fraction'                     &
+                              ,'[         --]','(nzg,ipatch)'        )
+         end if
+         if (associated(csite%fmean_smoist_gg       )) then
+            nvar = nvar+1
+            call vtable_edio_r(npts,csite%fmean_smoist_gg                                  &
+                              ,nvar,igr,init,csite%paglob_id                               &
+                              ,var_len,var_len_global,max_ptrs                             &
+                              ,'FMEAN_SMOIST_GG_PA         :32:'//trim(fast_keys)     )
+            call metadata_edio(nvar,igr                                                    &
+                              ,'Sub-daily mean - Soil water flux'                          &
+                              ,'[    kg/m2/s]','(nzg,ipatch)'        )
+         end if
+         if (associated(csite%fmean_transloss       )) then
+            nvar = nvar+1
+            call vtable_edio_r(npts,csite%fmean_transloss                                  &
+                              ,nvar,igr,init,csite%paglob_id                               &
+                              ,var_len,var_len_global,max_ptrs                             &
+                              ,'FMEAN_TRANSLOSS_PA         :32:'//trim(fast_keys)     )
+            call metadata_edio(nvar,igr                                                    &
+                              ,'Sub-daily mean - Water loss through transpiration'         &
+                              ,'[    kg/m2/s]','(nzg,ipatch)'        )
+         end if
+         if (associated(csite%fmean_sensible_gg     )) then
+            nvar = nvar+1
+            call vtable_edio_r(npts,csite%fmean_sensible_gg                                &
+                              ,nvar,igr,init,csite%paglob_id                               &
+                              ,var_len,var_len_global,max_ptrs                             &
+                              ,'FMEAN_SENSIBLE_GG_PA       :32:'//trim(fast_keys)     )
+            call metadata_edio(nvar,igr                                                    &
+                              ,'Sub-daily mean - Soil heat flux'                           &
+                              ,'[       W/m2]','(nzg,ipatch)'        )
+         end if
       end if
       !------------------------------------------------------------------------------------!
+
+
+
+
+      !------------------------------------------------------------------------------------!
+      !   Daily averages block.                                                            !
+      !------------------------------------------------------------------------------------!
+      if (add_dail) then
+         if (associated(csite%dmean_soil_energy     )) then
+            nvar = nvar+1
+            call vtable_edio_r(npts,csite%dmean_soil_energy                                &
+                              ,nvar,igr,init,csite%paglob_id                               &
+                              ,var_len,var_len_global,max_ptrs                             &
+                              ,'DMEAN_SOIL_ENERGY_PA       :32:'//trim(dail_keys)     )
+            call metadata_edio(nvar,igr                                                    &
+                              ,'Daily mean - Soil internal energy'                         &
+                              ,'[       J/m3]','(nzg,ipatch)'        )
+         end if
+         if (associated(csite%dmean_soil_mstpot     )) then
+            nvar = nvar+1
+            call vtable_edio_r(npts,csite%dmean_soil_mstpot                                &
+                              ,nvar,igr,init,csite%paglob_id                               &
+                              ,var_len,var_len_global,max_ptrs                             &
+                              ,'DMEAN_SOIL_MSTPOT_PA       :32:'//trim(dail_keys)     )
+            call metadata_edio(nvar,igr                                                    &
+                              ,'Daily mean - Soil matric potential'                        &
+                              ,'[          m]','(nzg,ipatch)'        )
+         end if
+         if (associated(csite%dmean_soil_water      )) then
+            nvar = nvar+1
+            call vtable_edio_r(npts,csite%dmean_soil_water                                 &
+                              ,nvar,igr,init,csite%paglob_id                               &
+                              ,var_len,var_len_global,max_ptrs                             &
+                              ,'DMEAN_SOIL_WATER_PA        :32:'//trim(dail_keys)     )
+            call metadata_edio(nvar,igr                                                    &
+                              ,'Daily mean - Soil water content'                           &
+                              ,'[      m3/m3]','(nzg,ipatch)'        )
+         end if
+         if (associated(csite%dmean_soil_temp       )) then
+            nvar = nvar+1
+            call vtable_edio_r(npts,csite%dmean_soil_temp                                  &
+                              ,nvar,igr,init,csite%paglob_id                               &
+                              ,var_len,var_len_global,max_ptrs                             &
+                              ,'DMEAN_SOIL_TEMP_PA         :32:'//trim(dail_keys)     )
+            call metadata_edio(nvar,igr                                                    &
+                              ,'Daily mean - Soil temperature'                             &
+                              ,'[          K]','(nzg,ipatch)'        )
+         end if
+         if (associated(csite%dmean_soil_fliq       )) then
+            nvar = nvar+1
+            call vtable_edio_r(npts,csite%dmean_soil_fliq                                  &
+                              ,nvar,igr,init,csite%paglob_id                               &
+                              ,var_len,var_len_global,max_ptrs                             &
+                              ,'DMEAN_SOIL_FLIQ_PA         :32:'//trim(dail_keys)     )
+            call metadata_edio(nvar,igr                                                    &
+                              ,'Daily mean - Soil liquid fraction'                         &
+                              ,'[         --]','(nzg,ipatch)'        )
+         end if
+         if (associated(csite%dmean_smoist_gg       )) then
+            nvar = nvar+1
+            call vtable_edio_r(npts,csite%dmean_smoist_gg                                  &
+                              ,nvar,igr,init,csite%paglob_id                               &
+                              ,var_len,var_len_global,max_ptrs                             &
+                              ,'DMEAN_SMOIST_GG_PA         :32:'//trim(dail_keys)     )
+            call metadata_edio(nvar,igr                                                    &
+                              ,'Daily mean - Soil water flux'                              &
+                              ,'[    kg/m2/s]','(nzg,ipatch)'        )
+         end if
+         if (associated(csite%dmean_transloss       )) then
+            nvar = nvar+1
+            call vtable_edio_r(npts,csite%dmean_transloss                                  &
+                              ,nvar,igr,init,csite%paglob_id                               &
+                              ,var_len,var_len_global,max_ptrs                             &
+                              ,'DMEAN_TRANSLOSS_PA         :32:'//trim(dail_keys)     )
+            call metadata_edio(nvar,igr                                                    &
+                              ,'Daily mean - Water loss through transpiration'             &
+                              ,'[    kg/m2/s]','(nzg,ipatch)'        )
+         end if
+         if (associated(csite%dmean_sensible_gg     )) then
+            nvar = nvar+1
+            call vtable_edio_r(npts,csite%dmean_sensible_gg                                &
+                              ,nvar,igr,init,csite%paglob_id                               &
+                              ,var_len,var_len_global,max_ptrs                             &
+                              ,'DMEAN_SENSIBLE_GG_PA       :32:'//trim(dail_keys)     )
+            call metadata_edio(nvar,igr                                                    &
+                              ,'Daily mean - Soil heat flux'                               &
+                              ,'[       W/m2]','(nzg,ipatch)'        )
+         end if
+      end if
+      !------------------------------------------------------------------------------------!
+
+
+
+
+      !------------------------------------------------------------------------------------!
+      !   Monthly averages block.                                                          !
+      !------------------------------------------------------------------------------------!
+      if (add_eorq) then
+         if (associated(csite%mmean_soil_energy     )) then
+            nvar = nvar+1
+            call vtable_edio_r(npts,csite%mmean_soil_energy                                &
+                              ,nvar,igr,init,csite%paglob_id                               &
+                              ,var_len,var_len_global,max_ptrs                             &
+                              ,'MMEAN_SOIL_ENERGY_PA       :32:'//trim(eorq_keys))
+            call metadata_edio(nvar,igr                                                    &
+                              ,'Monthly mean - Soil internal energy'                       &
+                              ,'[       J/m3]','(nzg,ipatch)'        )
+         end if
+         if (associated(csite%mmean_soil_mstpot     )) then
+            nvar = nvar+1
+            call vtable_edio_r(npts,csite%mmean_soil_mstpot                                &
+                              ,nvar,igr,init,csite%paglob_id                               &
+                              ,var_len,var_len_global,max_ptrs                             &
+                              ,'MMEAN_SOIL_MSTPOT_PA       :32:'//trim(eorq_keys))
+            call metadata_edio(nvar,igr                                                    &
+                              ,'Monthly mean - Soil matric potential'                      &
+                              ,'[          m]','(nzg,ipatch)'        )
+         end if
+         if (associated(csite%mmean_soil_water      )) then
+            nvar = nvar+1
+            call vtable_edio_r(npts,csite%mmean_soil_water                                 &
+                              ,nvar,igr,init,csite%paglob_id                               &
+                              ,var_len,var_len_global,max_ptrs                             &
+                              ,'MMEAN_SOIL_WATER_PA        :32:'//trim(eorq_keys))
+            call metadata_edio(nvar,igr                                                    &
+                              ,'Monthly mean - Soil water content'                         &
+                              ,'[      m3/m3]','(nzg,ipatch)'        )
+         end if
+         if (associated(csite%mmean_soil_temp       )) then
+            nvar = nvar+1
+            call vtable_edio_r(npts,csite%mmean_soil_temp                                  &
+                              ,nvar,igr,init,csite%paglob_id                               &
+                              ,var_len,var_len_global,max_ptrs                             &
+                              ,'MMEAN_SOIL_TEMP_PA         :32:'//trim(eorq_keys))
+            call metadata_edio(nvar,igr                                                    &
+                              ,'Monthly mean - Soil temperature'                           &
+                              ,'[          K]','(nzg,ipatch)'        )
+         end if
+         if (associated(csite%mmean_soil_fliq       )) then
+            nvar = nvar+1
+            call vtable_edio_r(npts,csite%mmean_soil_fliq                                  &
+                              ,nvar,igr,init,csite%paglob_id                               &
+                              ,var_len,var_len_global,max_ptrs                             &
+                              ,'MMEAN_SOIL_FLIQ_PA         :32:'//trim(eorq_keys))
+            call metadata_edio(nvar,igr                                                    &
+                              ,'Monthly mean - Soil liquid fraction'                       &
+                              ,'[         --]','(nzg,ipatch)'        )
+         end if
+         if (associated(csite%mmean_smoist_gg       )) then
+            nvar = nvar+1
+            call vtable_edio_r(npts,csite%mmean_smoist_gg                                  &
+                              ,nvar,igr,init,csite%paglob_id                               &
+                              ,var_len,var_len_global,max_ptrs                             &
+                              ,'MMEAN_SMOIST_GG_PA         :32:'//trim(eorq_keys))
+            call metadata_edio(nvar,igr                                                    &
+                              ,'Monthly mean - Soil water flux'                            &
+                              ,'[    kg/m2/s]','(nzg,ipatch)'        )
+         end if
+         if (associated(csite%mmean_transloss       )) then
+            nvar = nvar+1
+            call vtable_edio_r(npts,csite%mmean_transloss                                  &
+                              ,nvar,igr,init,csite%paglob_id                               &
+                              ,var_len,var_len_global,max_ptrs                             &
+                              ,'MMEAN_TRANSLOSS_PA         :32:'//trim(eorq_keys))
+            call metadata_edio(nvar,igr                                                    &
+                              ,'Monthly mean - Water loss through transpiration'           &
+                              ,'[    kg/m2/s]','(nzg,ipatch)'        )
+         end if
+         if (associated(csite%mmean_sensible_gg     )) then
+            nvar = nvar+1
+            call vtable_edio_r(npts,csite%mmean_sensible_gg                                &
+                              ,nvar,igr,init,csite%paglob_id                               &
+                              ,var_len,var_len_global,max_ptrs                             &
+                              ,'MMEAN_SENSIBLE_GG_PA       :32:'//trim(eorq_keys))
+            call metadata_edio(nvar,igr                                                    &
+                              ,'Monthly mean - Soil heat flux'                             &
+                              ,'[       W/m2]','(nzg,ipatch)'        )
+         end if
+      end if
       !------------------------------------------------------------------------------------!
 
       return
@@ -27813,22 +28027,26 @@ module ed_state_vars
 
 
 
+
+
       !------------------------------------------------------------------------------------!
-      !      Decide whether to write the mean diel to the history file.                    !
+      !      Decide whether to write the mean diel to the history and/or the analysis      !
+      ! files.                                                                             !
       !------------------------------------------------------------------------------------!
-      select case (iadd_patch_means)
-      case (0)
-         return
-      case (1)
+      if (btest(iadd_patch_means,0)) then
+         !----- Patch averages sought, decide whether or not to write to history. ---------!
          if (history_eorq) then
             eorq_keys = 'hist:dcyc'
          else
             eorq_keys = 'dcyc'
          end if
-      end select
+         !---------------------------------------------------------------------------------!
+      else
+         !----- No need to write anything. ------------------------------------------------!
+         return
+         !---------------------------------------------------------------------------------!
+      end if
       !------------------------------------------------------------------------------------!
-
-
 
 
 
@@ -29522,18 +29740,35 @@ module ed_state_vars
 
 
       !------------------------------------------------------------------------------------!
-      !      Decide whether to write the sub-daily means to the history file.              !
+      !      Decide whether to write the sub-daily means to the history and/or the         !
+      ! analysis files.  This depends on whether we are going to write sub-daily means to  !
+      ! analyses, or whether we are writing daily/monthly averages (in which case we may   !
+      ! need to save sub-daily averages to history files).                                 !
       !------------------------------------------------------------------------------------!
-      select case (iadd_cohort_means)
-      case (0)
-         return
-      case (1)
+      if (btest(iadd_cohort_means,2)) then
+         !----- Cohort averages sought, decide whether or not to write to history. --------!
          if (history_fast) then
             fast_keys = 'hist:anal'
          else
             fast_keys = 'anal'
          end if
-      end select
+         !---------------------------------------------------------------------------------!
+      elseif (iadd_cohort_means /= 0) then
+         !---------------------------------------------------------------------------------!
+         !     Cohort averages not needed.  Write to history only when we are writing      !
+         !  sub-daily history and saving site-level daily and/or monthly averages.         !
+         !---------------------------------------------------------------------------------!
+         if (history_fast) then
+            fast_keys = 'hist'
+         else
+            return
+         end if
+         !---------------------------------------------------------------------------------!
+      else
+         !----- No need to write anything. ------------------------------------------------!
+         return
+         !---------------------------------------------------------------------------------!
+      end if
       !------------------------------------------------------------------------------------!
 
 
@@ -30242,24 +30477,38 @@ module ed_state_vars
 
 
 
+
       !------------------------------------------------------------------------------------!
-      !      Decide whether to write the daily means to the history file.                  !
+      !      Decide whether to write the daily means to the history and/or the analysis    !
+      ! files.  This depends on whether we are going to write daily means to analyses, or  !
+      ! whether we are writing monthly averages (in which case we may need to save daily   !
+      ! averages to history files).                                                        !
       !------------------------------------------------------------------------------------!
-      select case (iadd_cohort_means)
-      case (0)
-         return
-      case (1)
+      if (btest(iadd_cohort_means,1)) then
+         !----- Cohort averages sought, decide whether or not to write to history. --------!
          if (history_dail) then
             dail_keys = 'hist:dail'
          else
             dail_keys = 'dail'
          end if
-      end select
+         !---------------------------------------------------------------------------------!
+      elseif (btest(iadd_cohort_means,0)) then
+         !---------------------------------------------------------------------------------!
+         !     Cohort averages not needed.  Write to history only when we are writing      !
+         !  sub-monthly history and saving site-level monthly averages.                    !
+         !---------------------------------------------------------------------------------!
+         if (history_dail) then
+            dail_keys = 'hist'
+         else
+            return
+         end if
+         !---------------------------------------------------------------------------------!
+      else
+         !----- No need to write anything. ------------------------------------------------!
+         return
+         !---------------------------------------------------------------------------------!
+      end if
       !------------------------------------------------------------------------------------!
-
-
-
-
 
 
 
@@ -31063,23 +31312,26 @@ module ed_state_vars
 
 
 
+
+
       !------------------------------------------------------------------------------------!
-      !      Decide whether to write the monthly means to the history file.                !
+      !      Decide whether to write the monthly mean to the history and/or the analysis   !
+      ! files.                                                                             !
       !------------------------------------------------------------------------------------!
-      select case (iadd_cohort_means)
-      case (0)
-         return
-      case (1)
+      if (btest(iadd_cohort_means,0)) then
+         !----- Cohort averages sought, decide whether or not to write to history. --------!
          if (history_eorq) then
             eorq_keys = 'hist:mont:dcyc'
          else
             eorq_keys = 'mont:dcyc'
          end if
-      end select
+         !---------------------------------------------------------------------------------!
+      else
+         !----- No need to write anything. ------------------------------------------------!
+         return
+         !---------------------------------------------------------------------------------!
+      end if
       !------------------------------------------------------------------------------------!
-
-
-
 
 
 
@@ -32116,19 +32368,25 @@ module ed_state_vars
 
 
 
+
+
       !------------------------------------------------------------------------------------!
-      !      Decide whether to write the mean diel to the history file.                    !
+      !      Decide whether to write the monthly mean diel to the history and/or the       !
+      ! analysis files.                                                                    !
       !------------------------------------------------------------------------------------!
-      select case (iadd_cohort_means)
-      case (0)
-         return
-      case (1)
+      if (btest(iadd_cohort_means,0)) then
+         !----- Cohort averages sought, decide whether or not to write to history. --------!
          if (history_eorq) then
             eorq_keys = 'hist:dcyc'
          else
             eorq_keys = 'dcyc'
          end if
-      end select
+         !---------------------------------------------------------------------------------!
+      else
+         !----- No need to write anything. ------------------------------------------------!
+         return
+         !---------------------------------------------------------------------------------!
+      end if
       !------------------------------------------------------------------------------------!
 
 
@@ -32935,7 +33193,11 @@ module ed_state_vars
       character(len=str_len)                :: fast_keys
       character(len=str_len)                :: dail_keys
       character(len=str_len)                :: eorq_keys
+      logical                               :: add_fast
+      logical                               :: add_dail
+      logical                               :: add_eorq
       !------------------------------------------------------------------------------------!
+
 
 
       !------------------------------------------------------------------------------------!
@@ -32955,61 +33217,169 @@ module ed_state_vars
       end if
       !------------------------------------------------------------------------------------!
 
+
+
+
+
+
       !------------------------------------------------------------------------------------!
-      !      Decide whether to write the fast, daily, and monthly means to the history.    !
+      !      Decide whether to write the fast, daily, and monthly means to the history     !
+      ! and/or analysis files.                                                             !
       !------------------------------------------------------------------------------------!
-      select case (iadd_patch_means)
+      select case (iadd_cohort_means)
       case (0)
+         !----- Nothing to be written. ----------------------------------------------------!
          return
-      case (1)
-         if (history_fast) then
-            fast_keys = 'hist:anal'
+         !---------------------------------------------------------------------------------!
+      case default
+         !---------------------------------------------------------------------------------!
+         !     Turn on all the averages. We then disable those that are not needed.        !
+         !---------------------------------------------------------------------------------!
+         add_fast = .true.
+         add_dail = .true.
+         add_eorq = .true.
+         !---------------------------------------------------------------------------------!
+
+
+         !---------------------------------------------------------------------------------!
+         !      Decide whether to write the sub-daily means to the history and/or the      !
+         ! analysis files.  This depends on whether we are going to write sub-daily means  !
+         ! to analyses, or whether we are writing daily/monthly averages (in which case we !
+         ! may need to save sub-daily averages to history files).                          !
+         !---------------------------------------------------------------------------------!
+         if (btest(iadd_cohort_means,2)) then
+            !----- Cohort averages sought, decide whether or not to write to history. -----!
+            if (history_fast) then
+               fast_keys = 'hist:anal'
+            else
+               fast_keys = 'anal'
+            end if
+            !------------------------------------------------------------------------------!
+         elseif (history_fast) then
+            !------------------------------------------------------------------------------!
+            !     Cohort averages not needed, but we must add them to history because we   !
+            ! are saving cohort-level daily and/or monthly averages.                       !
+            !------------------------------------------------------------------------------!
+            fast_keys = 'hist'
+            !------------------------------------------------------------------------------!
          else
-            fast_keys = 'anal'
+            !----- No need to include sub-daily averages. ---------------------------------!
+            add_fast  = .false.
+            !------------------------------------------------------------------------------!
          end if
-         if (history_dail) then
-            dail_keys = 'hist:dail'
+         !---------------------------------------------------------------------------------!
+
+
+
+
+
+         !---------------------------------------------------------------------------------!
+         !      Decide whether to write the daily means to the history and/or the analysis !
+         ! files.  This depends on whether we are going to write daily means to analyses,  !
+         ! or whether we are writing monthly averages (in which case we may need to save   !
+         ! daily averages to history files).                                               !
+         !---------------------------------------------------------------------------------!
+         if (btest(iadd_cohort_means,1)) then
+            !----- Cohort averages sought, decide whether or not to write to history. -----!
+            if (history_dail) then
+               dail_keys = 'hist:dail'
+            else
+               dail_keys = 'dail'
+            end if
+            !------------------------------------------------------------------------------!
+         elseif (btest(iadd_cohort_means,0) .and. history_dail) then
+            !------------------------------------------------------------------------------!
+            !     Cohort averages not needed, but we must add them to history because we   !
+            ! are saving cohort-level monthly averages.                                    !
+            !------------------------------------------------------------------------------!
+            dail_keys = 'hist'
+            !------------------------------------------------------------------------------!
          else
-            dail_keys = 'dail'
+            !----- No need to go include daily variables. ---------------------------------!
+            add_dail  = .false.
+            !------------------------------------------------------------------------------!
          end if
-         if (history_eorq) then
-            eorq_keys = 'hist:mont:dcyc'
+         !---------------------------------------------------------------------------------!
+
+
+
+         !---------------------------------------------------------------------------------!
+         !      Decide whether to write the mean diel to the history and/or the analysis   !
+         ! files.                                                                          !
+         !---------------------------------------------------------------------------------!
+         if (btest(iadd_cohort_means,0)) then
+            !----- Cohort averages sought, decide whether or not to write to history. -----!
+            if (history_eorq) then
+               eorq_keys = 'hist:mont:dcyc'
+            else
+               eorq_keys = 'mont:dcyc'
+            end if
+            !------------------------------------------------------------------------------!
          else
-            eorq_keys = 'mont:dcyc'
+            !----- No need to go include daily variables. ---------------------------------!
+            add_eorq = .false.
+            !------------------------------------------------------------------------------!
          end if
+         !---------------------------------------------------------------------------------!
       end select
       !------------------------------------------------------------------------------------!
 
 
 
-      if (associated(cpatch%fmean_wflux_gw_layer     )) then
-         nvar = nvar+1
-         call vtable_edio_r(npts,cpatch%fmean_wflux_gw_layer                               &
-                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'FMEAN_WFLUX_GW_LAYER_CO       :42:'//trim(fast_keys)     )
-         call metadata_edio(nvar,igr                                                       &
-                           ,'Sub-daily mean - Water flux from ground to wood'              &
-                           ,'[       kg/s]','(nzg,icohort)'        )
-      end if
-      if (associated(cpatch%dmean_wflux_gw_layer     )) then
-         nvar = nvar+1
-         call vtable_edio_r(npts,cpatch%dmean_wflux_gw_layer                               &
-                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'DMEAN_WFLUX_GW_LAYER_CO       :42:'//trim(dail_keys)     )
-         call metadata_edio(nvar,igr                                                       &
-                           ,'Daily mean - Water flux from ground to wood'                  &
-                           ,'[       kg/s]','(nzg,icohort)'        )
-      end if
-      if (associated(cpatch%mmean_wflux_gw_layer     )) then
-         nvar = nvar+1
-         call vtable_edio_r(npts,cpatch%mmean_wflux_gw_layer                               &
-                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'MMEAN_WFLUX_GW_LAYER_CO       :42:'//trim(eorq_keys)     )
-         call metadata_edio(nvar,igr                                                       &
-                           ,'Monthly mean - Water flux from ground to wood'                &
-                           ,'[       kg/s]','(nzg,icohort)'        )
+
+      !------------------------------------------------------------------------------------!
+      !   Fast averages block.                                                             !
+      !------------------------------------------------------------------------------------!
+      if (add_fast) then
+         if (associated(cpatch%fmean_wflux_gw_layer     )) then
+            nvar = nvar+1
+            call vtable_edio_r(npts,cpatch%fmean_wflux_gw_layer                            &
+                              ,nvar,igr,init,cpatch%coglob_id                              &
+                              ,var_len,var_len_global,max_ptrs                             &
+                              ,'FMEAN_WFLUX_GW_LAYER_CO       :42:'//trim(fast_keys)     )
+            call metadata_edio(nvar,igr                                                    &
+                              ,'Sub-daily mean - Water flux from ground to wood'           &
+                              ,'[       kg/s]','(nzg,icohort)'        )
+         end if
       end if
       !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !   Daily averages block.                                                            !
+      !------------------------------------------------------------------------------------!
+      if (add_dail) then
+         if (associated(cpatch%dmean_wflux_gw_layer     )) then
+            nvar = nvar+1
+            call vtable_edio_r(npts,cpatch%dmean_wflux_gw_layer                            &
+                              ,nvar,igr,init,cpatch%coglob_id                              &
+                              ,var_len,var_len_global,max_ptrs                             &
+                              ,'DMEAN_WFLUX_GW_LAYER_CO       :42:'//trim(dail_keys)     )
+            call metadata_edio(nvar,igr                                                    &
+                              ,'Daily mean - Water flux from ground to wood'               &
+                              ,'[       kg/s]','(nzg,icohort)'        )
+         end if
+      end if
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !   Monthly averages block.                                                          !
+      !------------------------------------------------------------------------------------!
+      if (add_eorq) then
+         if (associated(cpatch%mmean_wflux_gw_layer     )) then
+            nvar = nvar+1
+            call vtable_edio_r(npts,cpatch%mmean_wflux_gw_layer                            &
+                              ,nvar,igr,init,cpatch%coglob_id                              &
+                              ,var_len,var_len_global,max_ptrs                             &
+                              ,'MMEAN_WFLUX_GW_LAYER_CO       :42:'//trim(eorq_keys)     )
+            call metadata_edio(nvar,igr                                                    &
+                              ,'Monthly mean - Water flux from ground to wood'             &
+                              ,'[       kg/s]','(nzg,icohort)'        )
+         end if
+      end if
       !------------------------------------------------------------------------------------!
 
       return
@@ -33069,19 +33439,24 @@ module ed_state_vars
 
 
 
+
       !------------------------------------------------------------------------------------!
-      !      Decide whether to write the monthly means to the history file.                !
+      !      Decide whether to write the monthly mean to the history and/or the analysis   !
+      ! files.                                                                             !
       !------------------------------------------------------------------------------------!
-      select case (iadd_cohort_means)
-      case (0)
-         return
-      case (1)
+      if (btest(iadd_cohort_means,0)) then
+         !----- Cohort averages sought, decide whether or not to write to history. --------!
          if (history_eorq) then
             eorq_keys = 'hist:mont:dcyc'
          else
             eorq_keys = 'mont:dcyc'
          end if
-      end select
+         !---------------------------------------------------------------------------------!
+      else
+         !----- No need to write anything. ------------------------------------------------!
+         return
+         !---------------------------------------------------------------------------------!
+      end if
       !------------------------------------------------------------------------------------!
 
 
@@ -33215,6 +33590,9 @@ module ed_state_vars
       character(len=str_len)                :: fast_keys
       character(len=str_len)                :: dail_keys
       character(len=str_len)                :: eorq_keys
+      logical                               :: add_fast
+      logical                               :: add_dail
+      logical                               :: add_eorq
       !------------------------------------------------------------------------------------!
 
 
@@ -33240,71 +33618,171 @@ module ed_state_vars
 
 
 
+
+
       !------------------------------------------------------------------------------------!
-      !      Decide whether to write the monthly means to the history file.                !
+      !      Decide whether to write the fast, daily, and monthly means to the history     !
+      ! and/or analysis files.                                                             !
       !------------------------------------------------------------------------------------!
       select case (iadd_cohort_means)
       case (0)
+         !----- Nothing to be written. ----------------------------------------------------!
          return
-      case (1)
-         if (history_fast) then
-            fast_keys = 'hist:anal'
+         !---------------------------------------------------------------------------------!
+      case default
+         !---------------------------------------------------------------------------------!
+         !     Turn on all the averages. We then disable those that are not needed.        !
+         !---------------------------------------------------------------------------------!
+         add_fast = .true.
+         add_dail = .true.
+         add_eorq = .true.
+         !---------------------------------------------------------------------------------!
+
+
+         !---------------------------------------------------------------------------------!
+         !      Decide whether to write the sub-daily means to the history and/or the      !
+         ! analysis files.  This depends on whether we are going to write sub-daily means  !
+         ! to analyses, or whether we are writing daily/monthly averages (in which case we !
+         ! may need to save sub-daily averages to history files).                          !
+         !---------------------------------------------------------------------------------!
+         if (btest(iadd_cohort_means,2)) then
+            !----- Cohort averages sought, decide whether or not to write to history. -----!
+            if (history_fast) then
+               fast_keys = 'hist:anal'
+            else
+               fast_keys = 'anal'
+            end if
+            !------------------------------------------------------------------------------!
+         elseif (history_fast) then
+            !------------------------------------------------------------------------------!
+            !     Cohort averages not needed, but we must add them to history because we   !
+            ! are saving cohort-level daily and/or monthly averages.                       !
+            !------------------------------------------------------------------------------!
+            fast_keys = 'hist'
+            !------------------------------------------------------------------------------!
          else
-            fast_keys = 'anal'
+            !----- No need to include sub-daily averages. ---------------------------------!
+            add_fast  = .false.
+            !------------------------------------------------------------------------------!
          end if
-         if (history_dail) then
-            dail_keys = 'hist:dail'
+         !---------------------------------------------------------------------------------!
+
+
+
+
+
+         !---------------------------------------------------------------------------------!
+         !      Decide whether to write the daily means to the history and/or the analysis !
+         ! files.  This depends on whether we are going to write daily means to analyses,  !
+         ! or whether we are writing monthly averages (in which case we may need to save   !
+         ! daily averages to history files).                                               !
+         !---------------------------------------------------------------------------------!
+         if (btest(iadd_cohort_means,1)) then
+            !----- Cohort averages sought, decide whether or not to write to history. -----!
+            if (history_dail) then
+               dail_keys = 'hist:dail'
+            else
+               dail_keys = 'dail'
+            end if
+            !------------------------------------------------------------------------------!
+         elseif (btest(iadd_cohort_means,0) .and. history_dail) then
+            !------------------------------------------------------------------------------!
+            !     Cohort averages not needed, but we must add them to history because we   !
+            ! are saving cohort-level monthly averages.                                    !
+            !------------------------------------------------------------------------------!
+            dail_keys = 'hist'
+            !------------------------------------------------------------------------------!
          else
-            dail_keys = 'dail'
+            !----- No need to go include daily variables. ---------------------------------!
+            add_dail  = .false.
+            !------------------------------------------------------------------------------!
          end if
-         if (history_eorq) then
-            eorq_keys = 'hist:mont:dcyc'
+         !---------------------------------------------------------------------------------!
+
+
+
+         !---------------------------------------------------------------------------------!
+         !      Decide whether to write the mean diel to the history and/or the analysis   !
+         ! files.                                                                          !
+         !---------------------------------------------------------------------------------!
+         if (btest(iadd_cohort_means,0)) then
+            !----- Cohort averages sought, decide whether or not to write to history. -----!
+            if (history_eorq) then
+               eorq_keys = 'hist:mont:dcyc'
+            else
+               eorq_keys = 'mont:dcyc'
+            end if
+            !------------------------------------------------------------------------------!
          else
-            eorq_keys = 'mont:dcyc'
+            !----- No need to go include daily variables. ---------------------------------!
+            add_eorq = .false.
+            !------------------------------------------------------------------------------!
          end if
+         !---------------------------------------------------------------------------------!
       end select
       !------------------------------------------------------------------------------------!
 
 
+
+
       !------------------------------------------------------------------------------------!
-      if (associated(cpatch%fmean_rad_profile)) then
-         nvar=nvar+1
-         call vtable_edio_r(npts,cpatch%fmean_rad_profile                                  &
-                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'FMEAN_RAD_PROFILE_CO :411:'//trim(fast_keys))
-         call metadata_edio(nvar,igr                                                       &
-                           ,'Sub-daily mean - Radiation profile','[W/m2]'                  &
-                           ,'(iradprof,icohort)')
+      !    Fast analysis block.                                                            !
+      !------------------------------------------------------------------------------------!
+      if (add_fast) then
+         if (associated(cpatch%fmean_rad_profile)) then
+            nvar=nvar+1
+            call vtable_edio_r(npts,cpatch%fmean_rad_profile                               &
+                              ,nvar,igr,init,cpatch%coglob_id                              &
+                              ,var_len,var_len_global,max_ptrs                             &
+                              ,'FMEAN_RAD_PROFILE_CO :411:'//trim(fast_keys))
+            call metadata_edio(nvar,igr                                                    &
+                              ,'Sub-daily mean - Radiation profile','[W/m2]'               &
+                              ,'(iradprof,icohort)')
+         end if
       end if
       !------------------------------------------------------------------------------------!
       !------------------------------------------------------------------------------------!
       !------------------------------------------------------------------------------------!
 
 
+
+
       !------------------------------------------------------------------------------------!
-      if (associated(cpatch%dmean_rad_profile)) then
-         nvar=nvar+1
-         call vtable_edio_r(npts,cpatch%dmean_rad_profile                                  &
-                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'DMEAN_RAD_PROFILE_CO :411:'//trim(dail_keys))
-         call metadata_edio(nvar,igr                                                       &
-                           ,'Daily mean - Radiation profile','[W/m2]'                      &
-                           ,'(iradprof,icohort)')
+      !    Daily analysis block.                                                           !
+      !------------------------------------------------------------------------------------!
+      if (add_dail) then
+         if (associated(cpatch%dmean_rad_profile)) then
+            nvar=nvar+1
+            call vtable_edio_r(npts,cpatch%dmean_rad_profile                               &
+                              ,nvar,igr,init,cpatch%coglob_id                              &
+                              ,var_len,var_len_global,max_ptrs                             &
+                              ,'DMEAN_RAD_PROFILE_CO :411:'//trim(dail_keys))
+            call metadata_edio(nvar,igr                                                    &
+                              ,'Daily mean - Radiation profile','[W/m2]'                   &
+                              ,'(iradprof,icohort)')
+         end if
       end if
       !------------------------------------------------------------------------------------!
       !------------------------------------------------------------------------------------!
       !------------------------------------------------------------------------------------!
 
 
+
+
       !------------------------------------------------------------------------------------!
-      if (associated(cpatch%mmean_rad_profile)) then
-         nvar=nvar+1
-         call vtable_edio_r(npts,cpatch%mmean_rad_profile                                  &
-                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'MMEAN_RAD_PROFILE_CO :411:'//trim(eorq_keys))
-         call metadata_edio(nvar,igr                                                       &
-                           ,'Monthly mean - Radiation profile','[W/m2]'                    &
-                           ,'(iradprof,icohort)')
+      !    Monthly analysis block.                                                         !
+      !------------------------------------------------------------------------------------!
+      if (add_eorq) then
+         if (associated(cpatch%mmean_rad_profile)) then
+            nvar=nvar+1
+            call vtable_edio_r(npts,cpatch%mmean_rad_profile                               &
+                              ,nvar,igr,init,cpatch%coglob_id                              &
+                              ,var_len,var_len_global,max_ptrs                             &
+                              ,'MMEAN_RAD_PROFILE_CO :411:'//trim(eorq_keys))
+            call metadata_edio(nvar,igr                                                    &
+                              ,'Monthly mean - Radiation profile','[W/m2]'                 &
+                              ,'(iradprof,icohort)')
+         end if
       end if
       !------------------------------------------------------------------------------------!
       !------------------------------------------------------------------------------------!
@@ -33348,19 +33826,24 @@ module ed_state_vars
 
 
 
+
       !------------------------------------------------------------------------------------!
-      !      Decide whether to write the monthly means to the history file.                !
+      !      Decide whether to write the monthly mean to the history and/or the analysis   !
+      ! files.                                                                             !
       !------------------------------------------------------------------------------------!
-      select case (iadd_cohort_means)
-      case (0)
-         return
-      case (1)
+      if (btest(iadd_cohort_means,0)) then
+         !----- Cohort averages sought, decide whether or not to write to history. --------!
          if (history_eorq) then
             eorq_keys = 'hist:dcyc'
          else
             eorq_keys = 'dcyc'
          end if
-      end select
+         !---------------------------------------------------------------------------------!
+      else
+         !----- No need to write anything. ------------------------------------------------!
+         return
+         !---------------------------------------------------------------------------------!
+      end if
       !------------------------------------------------------------------------------------!
 
 

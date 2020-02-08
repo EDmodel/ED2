@@ -1396,23 +1396,23 @@ subroutine ed_opspec_misc
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if
-   if (iadd_site_means < 0 .or. iadd_site_means > 1) then
+   if (iadd_site_means < 0 .or. iadd_site_means > 7) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
-        'Invalid IADD_SITE_MEANS, it must be 0 (no) or 1 (yes).  Yours is set to'          &
+        'Invalid IADD_SITE_MEANS, it must be between 0 and 7.  Yours is set to'            &
        ,iadd_site_means,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if
-   if (iadd_patch_means < 0 .or. iadd_patch_means > 1) then
+   if (iadd_patch_means < 0 .or. iadd_patch_means > 7) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
-        'Invalid IADD_PATCH_MEANS, it must be 0 (no) or 1 (yes).  Yours is set to'         &
+        'Invalid IADD_PATCH_MEANS, it must be between 0 and 7.  Yours is set to'           &
        ,iadd_patch_means,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if
-   if (iadd_cohort_means < 0 .or. iadd_cohort_means > 1) then
+   if (iadd_cohort_means < 0 .or. iadd_cohort_means > 7) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
-        'Invalid IADD_COHORT_MEANS, it must be 0 (no) or 1 (yes).  Yours is set to'        &
+        'Invalid IADD_COHORT_MEANS, it must be between 0 and 7.  Yours is set to'          &
        ,iadd_cohort_means,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
