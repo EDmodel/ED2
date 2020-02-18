@@ -247,6 +247,7 @@ subroutine met_sanity_check(cgrid,ipy)
          write (unit=*,fmt=fmti) ' - Site           :',isi
          write (unit=*,fmt=fmtt) ' - Date           :',now_date
          write (unit=*,fmt=fmtt) ' - Time           :',now_time
+         write (unit=*,fmt=fmtf) ' - cos zen        :',cgrid%cosz(ipy)
          write (unit=*,fmt=fmtf) ' - Longitude      :',cgrid%lon(ipy)
          write (unit=*,fmt=fmtf) ' - Latitude       :',cgrid%lat(ipy)
          write (unit=*,fmt=fmtf) ' - Site height    :',cpoly%met(isi)%geoht
@@ -407,6 +408,7 @@ subroutine met_sanity_check(cgrid,ipy)
          write (unit=*,fmt=fmti) ' - Site             :',isi
          write (unit=*,fmt=fmtt) ' - Date             :',now_date
          write (unit=*,fmt=fmtt) ' - Time             :',now_time
+         write (unit=*,fmt=fmtf) ' - cos zen          :',cgrid%cosz(ipy)
          write (unit=*,fmt=fmtf) ' - Longitude        :',cgrid%lon(ipy)
          write (unit=*,fmt=fmtf) ' - Latitude         :',cgrid%lat(ipy)
          write (unit=*,fmt=fmtf) ' - Site Longwave    :',cpoly%met(isi)%rlong
@@ -429,6 +431,7 @@ subroutine met_sanity_check(cgrid,ipy)
          write (unit=*,fmt=fmti) ' - Site           :',isi
          write (unit=*,fmt=fmtt) ' - Date           :',now_date
          write (unit=*,fmt=fmtt) ' - Time           :',now_time
+         write (unit=*,fmt=fmtf) ' - cos zen        :',cgrid%cosz(ipy)
          write (unit=*,fmt=fmtf) ' - Longitude      :',cgrid%lon(ipy)
          write (unit=*,fmt=fmtf) ' - Latitude       :',cgrid%lat(ipy)
          write (unit=*,fmt=fmtf) ' - Site rshort    :',cpoly%met(isi)%par_diffuse
@@ -451,6 +454,7 @@ subroutine met_sanity_check(cgrid,ipy)
          write (unit=*,fmt=fmti) ' - Site           :',isi
          write (unit=*,fmt=fmtt) ' - Date           :',now_date
          write (unit=*,fmt=fmtt) ' - Time           :',now_time
+         write (unit=*,fmt=fmtf) ' - cos zen        :',cgrid%cosz(ipy)
          write (unit=*,fmt=fmtf) ' - Longitude      :',cgrid%lon(ipy)
          write (unit=*,fmt=fmtf) ' - Latitude       :',cgrid%lat(ipy)
          write (unit=*,fmt=fmtf) ' - Site PAR       :',cpoly%met(isi)%par_beam
@@ -473,6 +477,7 @@ subroutine met_sanity_check(cgrid,ipy)
          write (unit=*,fmt=fmti) ' - Site           :',isi
          write (unit=*,fmt=fmtt) ' - Date           :',now_date
          write (unit=*,fmt=fmtt) ' - Time           :',now_time
+         write (unit=*,fmt=fmtf) ' - cos zen        :',cgrid%cosz(ipy)
          write (unit=*,fmt=fmtf) ' - Longitude      :',cgrid%lon(ipy)
          write (unit=*,fmt=fmtf) ' - Latitude       :',cgrid%lat(ipy)
          write (unit=*,fmt=fmtf) ' - Site radNIR    :',cpoly%met(isi)%nir_diffuse
@@ -495,6 +500,7 @@ subroutine met_sanity_check(cgrid,ipy)
          write (unit=*,fmt=fmti) ' - Site           :',isi
          write (unit=*,fmt=fmtt) ' - Date           :',now_date
          write (unit=*,fmt=fmtt) ' - Time           :',now_time
+         write (unit=*,fmt=fmtf) ' - cos zen        :',cgrid%cosz(ipy)
          write (unit=*,fmt=fmtf) ' - Longitude      :',cgrid%lon(ipy)
          write (unit=*,fmt=fmtf) ' - Latitude       :',cgrid%lat(ipy)
          write (unit=*,fmt=fmtf) ' - Site radNIR    :',cpoly%met(isi)%nir_beam
@@ -529,6 +535,7 @@ subroutine met_sanity_check(cgrid,ipy)
          write (unit=*,fmt=fmti) ' - Site           :',isi
          write (unit=*,fmt=fmtt) ' - Date           :',now_date
          write (unit=*,fmt=fmtt) ' - Time           :',now_time
+         write (unit=*,fmt=fmtf) ' - cos zen        :',cgrid%cosz(ipy)
          write (unit=*,fmt=fmtf) ' - Longitude      :',cgrid%lon(ipy)
          write (unit=*,fmt=fmtf) ' - Latitude       :',cgrid%lat(ipy)
          write (unit=*,fmt=fmtf) ' - PAR diffuse    :',cpoly%met(isi)%par_diffuse
@@ -550,6 +557,7 @@ subroutine met_sanity_check(cgrid,ipy)
          write (unit=*,fmt=fmti) ' - Site           :',isi
          write (unit=*,fmt=fmtt) ' - Date           :',now_date
          write (unit=*,fmt=fmtt) ' - Time           :',now_time
+         write (unit=*,fmt=fmtf) ' - cos zen        :',cgrid%cosz(ipy)
          write (unit=*,fmt=fmtf) ' - Longitude      :',cgrid%lon(ipy)
          write (unit=*,fmt=fmtf) ' - Latitude       :',cgrid%lat(ipy)
          write (unit=*,fmt=fmtf) ' - PAR direct     :',cpoly%met(isi)%par_beam

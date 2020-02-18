@@ -190,7 +190,7 @@ end subroutine radiate_driver
 !==========================================================================================!
 !==========================================================================================!
 !     This subroutine will drive the distribution of radiation among crowns, snow layers,  !
-! and soil.   !EJL added litter                                                            !
+! and soil.                                                            !
 !------------------------------------------------------------------------------------------!
 subroutine sfcrad_ed(cosaoi,csite,mzg,mzs,mzl,ntext_soil,ncol_soil,tuco,rlong,twilight)
 
@@ -263,7 +263,6 @@ subroutine sfcrad_ed(cosaoi,csite,mzg,mzs,mzl,ntext_soil,ncol_soil,tuco,rlong,tw
    integer                                       :: colour
    integer                                       :: k
    integer                                       :: ksn
-   integer                                       :: klit !vert litter layer
    integer                                       :: tuco_leaf
    real                                          :: fcpct
    real                                          :: albedo_soil_par
@@ -673,9 +672,10 @@ subroutine sfcrad_ed(cosaoi,csite,mzg,mzs,mzl,ntext_soil,ncol_soil,tuco,rlong,tw
          albedo_damp_par = albedo_soil_par
          albedo_damp_nir = albedo_damp_nir
       case (12)
-         !----- Peat, follow McCumber and Pielke (1981). ----------------------------------!
+         !----- Peat, follow McCumber and Pielke (1981). EJL - increased soil albedo for   !
+         !-----peat due to overheating top layer of soil in nbg runs            -----------!
          fcpct = csite%soil_water(mzg,ipa) / soil(nsoil)%slmsts
-         albedo_soil_par = max (0.07, 0.14 * (1.0 - fcpct))
+         albedo_soil_par = max (0.14, 0.14 * (1.0 - fcpct))
          albedo_soil_nir = albedo_soil_par
          !----- Damp soil, for temporary surface water albedo. ----------------------------!
          albedo_damp_par = 0.14
@@ -716,18 +716,6 @@ subroutine sfcrad_ed(cosaoi,csite,mzg,mzs,mzl,ntext_soil,ncol_soil,tuco,rlong,tw
       end select
       !------------------------------------------------------------------------------------!
 
-      !EJL IF peat/litter is present, then set soil albedo to peat values
-      klit           = 0!csite%nlev_litter(ipa)
-      if (klit /= 0) then
-        !----- Peat, follow McCumber and Pielke (1981). ----------------------------------!
-        fcpct = csite%soil_water(mzg,ipa) / soil(nsoil)%slmsts
-        albedo_soil_par = max (0.07, 0.14 * (1.0 - fcpct))
-        albedo_soil_nir = albedo_soil_par
-        !----- Damp soil, for temporary surface water albedo. ----------------------------!
-        albedo_damp_par = 0.14
-        albedo_damp_nir = 0.14
-      endif ! litter present?
-
       !------------------------------------------------------------------------------------!
       !     Decide what is our surface temperature.  When the soil is exposed, then that   !
       ! is the surface temperature.  Otherwise, we pick the temporary surface water or     !
@@ -741,15 +729,8 @@ subroutine sfcrad_ed(cosaoi,csite,mzg,mzs,mzl,ntext_soil,ncol_soil,tuco,rlong,tw
       abs_sfcw_nir      = 0.0
       ksn               = csite%nlev_sfcwater(ipa)
       if (ksn == 0) then
-         !EJL Check for litter layer. If litter is present, use peat values
-         !instead of soil
-         klit           = 0!csite%nlev_litter(ipa)
-         if (klit == 0) then
             emissivity = soilcol(colour)%emiss_tir
             T_surface  = csite%soil_tempk(mzg,ipa)
-         else ! litter present, no surface water
-            emissivity = soilcol(colour)%emiss_tir 
-            T_surface = csite%litter_tempk(mzl,ipa)
          endif
       else  !surface water present
          !---------------------------------------------------------------------------------!
@@ -816,10 +797,9 @@ subroutine sfcrad_ed(cosaoi,csite,mzg,mzs,mzl,ntext_soil,ncol_soil,tuco,rlong,tw
          !---------------------------------------------------------------------------------!
 
 
-         !----- Long wave parameter if sfcwater exists. EJL-I should adjust emissivity     !
+         !----- Long wave parameter if sfcwater exists. Emissivity                         !
          ! below, but currently it is the same for all soils, so it doesnt                 !
          ! matter.
-         if (klit ==0) then ! if litter is not present 
             emissivity = snow_emiss_tir            *        csite%snowfac(ipa)             &
                     + soilcol(colour)%emiss_tir * ( 1. - csite%snowfac(ipa) )
             T_surface  = sqrt(sqrt( ( csite%sfcwater_tempk (ksn,ipa)** 4                   &
@@ -827,15 +807,6 @@ subroutine sfcrad_ed(cosaoi,csite,mzg,mzs,mzl,ntext_soil,ncol_soil,tuco,rlong,tw
                                  + csite%soil_tempk     (mzg,ipa)** 4                      &
                                  * soilcol(colour)%emiss_tir * ( 1. - csite%snowfac(ipa))) &
                                / emissivity ) )
-         else  ! litter is present
-            emissivity = snow_emiss_tir            *        csite%snowfac(ipa)             &
-                    + soilcol(colour)%emiss_tir * ( 1. - csite%snowfac(ipa) )
-            T_surface  = sqrt(sqrt( ( csite%sfcwater_tempk (ksn,ipa)** 4                   &
-                                 * snow_emiss_tir            *        csite%snowfac(ipa)   &
-                                 + csite%litter_tempk     (mzl,ipa)** 4                      &
-                                 * soilcol(colour)%emiss_tir * ( 1. - csite%snowfac(ipa))) &
-                               / emissivity ) )
-         endif
          !---------------------------------------------------------------------------------!
       end if
       !------------------------------------------------------------------------------------!

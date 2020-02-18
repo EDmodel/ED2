@@ -815,7 +815,7 @@ subroutine init_can_rad_params()
    ! day time hours only.                                                                  !
    !---------------------------------------------------------------------------------------!
    rshort_twilight_min = 0.5
-   cosz_min            = cos(87.5*pio180) !cos(89.5*pio180)
+   cosz_min            = cos(89.5*pio180) !cos(89.5*pio180)
    cosz_min8           = dble(cosz_min)
    !---------------------------------------------------------------------------------------!
 
@@ -4745,6 +4745,15 @@ subroutine init_soil_coms
       ,soilcol_class   (    0.10,   0.21,   0.05,   0.10,   0.98 )  & ! 19
       ,soilcol_class   (    0.08,   0.16,   0.04,   0.08,   0.98 )  & ! 20 - Darkest
       ,soilcol_class   (    0.00,   0.00,   0.00,   0.00,   0.98 )  & ! 21 - ED-2.1, unused
+      ,soilcol_class   (    0.28,   0.47,   0.17,   0.36,   0.98 )  & ! 22 -organic10%
+      ,soilcol_class   (    0.26,   0.44,   0.15,   0.34,   0.98 )  & ! 23 -organic
+      ,soilcol_class   (    0.24,   0.41,   0.13,   0.31,   0.98 )  & ! 24 -organic
+      ,soilcol_class   (    0.22,   0.38,   0.11,   0.28,   0.98 )  & ! 25 -organic
+      ,soilcol_class   (    0.20,   0.35,   0.10,   0.25,   0.98 )  & ! 26 -organic
+      ,soilcol_class   (    0.18,   0.33,   0.09,   0.22,   0.98 )  & ! 27 -organic
+      ,soilcol_class   (    0.16,   0.30,   0.08,   0.19,   0.98 )  & ! 28 -organic
+      ,soilcol_class   (    0.14,   0.27,   0.07,   0.16,   0.98 )  & ! 29 -organic
+      ,soilcol_class   (    0.12,   0.24,   0.06,   0.13,   0.98 )  & ! 30 -organic90%
       /)
    !---------------------------------------------------------------------------------------!
 

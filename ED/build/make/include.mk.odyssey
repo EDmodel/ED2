@@ -128,10 +128,10 @@ ifeq ($(KIND_COMP),D)
 endif
 ifeq ($(KIND_COMP),E)
    USE_INTERF=1
-   F_OPTS= -FR -O3 -recursive -traceback -assume byterecl -static -openmp
+   F_OPTS= -FR -O3 -recursive -traceback -assume byterecl -static -qopenmp
    C_OPTS= -O3 -DLITTLE -traceback -static
    F_LOWO_OPTS=-FR -O2 -recursive -traceback -assume byterecl -static
-   LOADER_OPTS=-FR -O3 -recursive -traceback -assume byterecl -openmp
+   LOADER_OPTS=-FR -O3 -recursive -traceback -assume byterecl -qopenmp
    #---------------------------------------------------------------------------------------#
 endif
 #------------------------------------------------------------------------------------------#

@@ -32,7 +32,7 @@ module soil_coms
    integer, parameter :: ed_nvtyp = nvtyp+nvtyp_teb
 #else
    integer, parameter :: ed_nstyp = 26             ! total # of soil textural classes
-   integer, parameter :: ed_nscol = 21             ! total # of soil colour classes
+   integer, parameter :: ed_nscol = 30             ! total # of soil colour classes
    integer, parameter :: ed_nvtyp = 21
 #endif
 
@@ -104,6 +104,7 @@ module soil_coms
    !   4 -- silt loam           |  10 -- silty clay          |  16 -- clayey sand          !
    !   5 -- loam                |  11 -- clay                |  17 -- clayey silt          !
    !   6 -- sandy clay loam     |  12 -- peat                                              !
+   !   28-26 - organic soil layers that transition loam to peat used for peatlands         ! 
    !---------------------------------------------------------------------------------------!
    integer, dimension(nzgmax)                :: nslcon
    !---------------------------------------------------------------------------------------!
@@ -133,7 +134,7 @@ module soil_coms
    !       |     9 | 0.26 | 0.41 | 0.15 | 0.30 |    19 | 0.10 | 0.21 | 0.05 | 0.10 |       !
    !       |    10 | 0.25 | 0.39 | 0.14 | 0.28 |    20 | 0.08 | 0.16 | 0.04 | 0.08 |       !
    !       |-----------------------------------------------------------------------|       !
-   !                                                                                       !
+   !       ! 22-30 peatlands transition                                                                                !
    !   Soil type 21 is a special case in which we use the albedo method that used to be    !
    ! the default in ED-2.1.                                                                !
    !---------------------------------------------------------------------------------------!

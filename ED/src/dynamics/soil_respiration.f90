@@ -118,8 +118,6 @@ subroutine soil_respiration(csite,ipa,mzg,ntext_soil)
    end do
    !---------------------------------------------------------------------------------------!
  
-   !EJL printing some debugging info
-   print*, 'nzl ',nzl, '    mzg ',mzg,'   k_rh_active ', k_rh_active
    !---------------------------------------------------------------------------------------!
    !     Integrate the soil extensive properties, plus the minimum and maximum possible    !
    ! soil water content of the active layer.                                               !

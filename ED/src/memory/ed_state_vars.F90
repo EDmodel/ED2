@@ -1837,6 +1837,7 @@ module ed_state_vars
       !                                                                                    !
       !   Soil type 21 is a special case in which we use the albedo method that used to be !
       ! the default in ED-2.1.                                                             !
+      !   22-30 - organic transition layers for soil colour
       !                                                                                    !
       !                                                                                    !
       ! NTEXT_SOIL -- Index of the soil texture class, similar to the USDA classification  !
@@ -1848,6 +1849,7 @@ module ed_state_vars
       !   4 -- silt loam           |  10 -- silty clay          |  16 -- clayey sand       !
       !   5 -- loam                |  11 -- clay                |  17 -- clayey silt       !
       !   6 -- sandy clay loam     |  12 -- peat                                           !
+      !   18-26 -- organic layer transition from loam to peat, used for peatlands          !
       !------------------------------------------------------------------------------------!
       integer,pointer,dimension(:)   :: lsl
       !<Index of the lowest soil layer (simulation dependent)
