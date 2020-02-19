@@ -676,10 +676,10 @@ subroutine sfcrad_ed(cosaoi,csite,mzg,mzs,mzl,ntext_soil,ncol_soil,tuco,rlong,tw
          !-----peat due to overheating top layer of soil in nbg runs            -----------!
          fcpct = csite%soil_water(mzg,ipa) / soil(nsoil)%slmsts
          albedo_soil_par = max (0.14, 0.14 * (1.0 - fcpct))
-         albedo_soil_nir = albedo_soil_par
+         albedo_soil_nir = albedo_soil_par * 2
          !----- Damp soil, for temporary surface water albedo. ----------------------------!
          albedo_damp_par = 0.14
-         albedo_damp_nir = 0.14
+         albedo_damp_nir = 0.28
       case default
          select case (colour)
          case (21)
