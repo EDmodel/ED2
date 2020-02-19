@@ -731,7 +731,6 @@ subroutine sfcrad_ed(cosaoi,csite,mzg,mzs,mzl,ntext_soil,ncol_soil,tuco,rlong,tw
       if (ksn == 0) then
             emissivity = soilcol(colour)%emiss_tir
             T_surface  = csite%soil_tempk(mzg,ipa)
-         endif
       else  !surface water present
          !---------------------------------------------------------------------------------!
          !      Sfcwater albedo ALS ranges from wet-soil value for all-liquid to typical   !
