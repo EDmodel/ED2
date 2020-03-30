@@ -295,7 +295,8 @@ subroutine init_decomp_params()
                           , N_immobil_supply_scale      & ! intent(out)
                           , e_lignin                    & ! intent(out)
                           , r_fsc                       & ! intent(out)
-                          , r_stsc                      & ! intent(out)
+                          , r_stsc_l                    & ! intent(out)
+                          , r_stsc_o                    & ! intent(out)
                           , r_msc_int                   & ! intent(out)
                           , r_msc_slp                   & ! intent(out)
                           , r_ssc                       & ! intent(out)
@@ -324,7 +325,10 @@ subroutine init_decomp_params()
                           , rh_moyano12_a0              & ! intent(out)
                           , rh_moyano12_a1              & ! intent(out)
                           , rh_moyano12_a2              & ! intent(out)
-                          , k_rh_active                 & ! intent(out)
+                          , rh0                         & ! intent(out)
+                          , rh_q10                      & ! intent(out)
+                          , rh_p_smoist                 & ! intent(out)
+                          , rh_p_oxygen                 & ! intent(out)
                           , agf_fsc                     & ! intent(out)
                           , agf_stsc                    & ! intent(out)
                           , f0_msc                      & ! intent(out)
@@ -355,14 +359,16 @@ subroutine init_decomp_params()
    select case (decomp_scheme)
    case (5)
       r_fsc           = 0.55
-      r_stsc          = 0.50
+      r_stsc_l        = 0.10
+      r_stsc_o        = 0.50
       r_msc_int       = 0.60
       r_msc_slp       = 0.17
       r_ssc           = 0.55
       r_psc           = 0.55
    case default
       r_fsc           = 1.0
-      r_stsc          = 0.3
+      r_stsc_l        = 0.3
+      r_stsc_o        = 0.3
       r_msc_int       = 0.0
       r_msc_slp       = 0.0
       r_ssc           = 1.0
@@ -442,11 +448,11 @@ subroutine init_decomp_params()
       !    Accessed on 9 Aug 2018 (M96).                                                   !
       !                                                                                    !
       !------------------------------------------------------------------------------------!
-      decay_rate_fsc  =  10.0         / yr_day ! 16.7 / yr_day
-      decay_rate_stsc =  4.4          / yr_day
-      decay_rate_msc  =  0.85 * 6.65  / yr_day
-      decay_rate_ssc  =  0.85 * 0.2   / yr_day
-      decay_rate_psc  =  0.014        / yr_day 
+      decay_rate_fsc  =  12.0  / yr_day ! 16.7 / yr_day
+      decay_rate_stsc =  2.0   / yr_day
+      decay_rate_msc  =  6.0   / yr_day
+      decay_rate_ssc  =  0.15  / yr_day
+      decay_rate_psc  =  0.012 / yr_day 
       !------------------------------------------------------------------------------------!
    end select
    !---------------------------------------------------------------------------------------!
@@ -492,59 +498,58 @@ subroutine init_decomp_params()
 
    !---------------------------------------------------------------------------------------!
    !      Parameters used for the ED-1.0/CENTURY based functions of temperature and soil   !
-   ! moisture.                                                                             !
+   ! moisture (DECOMP_SCHEME =2).                                                          !
    !---------------------------------------------------------------------------------------!
-   select case (decomp_scheme)
-   case (5)
-      rh_decay_low   = 0.24
-      rh_decay_high  = 0.60
-      rh_low_temp    = 18.0 + t00
-      rh_high_temp   = 45.0 + t00
-      rh_decay_dry   = 12.0 ! 18.0
-      rh_decay_wet   = 12.0 ! 36.0
-      rh_dry_smoist  = 0.30 ! 0.36
-      rh_wet_smoist  = 0.90 ! 0.96
-   case default ! For back-compatibility with ED-2.2.
-      rh_decay_low   = 0.24
-      rh_decay_high  = 0.60
-      rh_low_temp    = 18.0 + t00
-      rh_high_temp   = 45.0 + t00
-      rh_decay_dry   = 12.0 ! 18.0
-      rh_decay_wet   = 36.0 ! 36.0
-      rh_dry_smoist  = 0.48 ! 0.36
-      rh_wet_smoist  = 0.98 ! 0.96
-   end select
+   rh_decay_low   = 0.24
+   rh_decay_high  = 0.60
+   rh_low_temp    = 18.0 + t00
+   rh_high_temp   = 45.0 + t00
+   rh_decay_dry   = 12.0 ! 18.0
+   rh_decay_wet   = 36.0 ! 36.0
+   rh_dry_smoist  = 0.48 ! 0.36
+   rh_wet_smoist  = 0.98 ! 0.96
    !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Parameters used for the new temperature scaling of , based on CLM (K13), but     !
+   ! with a power factor for water limitation, and a simplified approach for anoxic        !
+   ! environment (used when DECOMP_SCHEME=5).                                              !
+   !                                                                                       !
+   !  Koven CD, Riley WJ, Subin ZM, Tang JY, Torn MS, Collins WD, Bonan GB, Lawrence DM,   !
+   !     Swenson SC. 2013. The effect of vertically resolved soil biogeochemistry and      !
+   !     alternate soil C and N models on C dynamics of CLM4. Biogeosciences, 10:          !
+   !     7109-7131. doi:10.5194/bg-10-7109-2013 (K13).                                     !
+   !---------------------------------------------------------------------------------------!
+   rh0          = 0.630
+   rh_q10       = 1.500
+   rh_p_smoist  = 0.300
+   rh_p_oxygen  = 0.210
+   !---------------------------------------------------------------------------------------!
+
+
 
 
    !----- Determine the top layer to consider for heterotrophic respiration. --------------!
    select case (decomp_scheme)
-   case (2,5)
-      !---- Use the shallowest between the intended soil carbon and the total soil depth. -!
-      select case (decomp_scheme)
-      case (2)
-         !---- Use 20cm for back-compatibility with ED-2.2. -------------------------------!
-         rh_active_depth = -0.20
-         !---------------------------------------------------------------------------------!
-      case (5)
-         !---------------------------------------------------------------------------------!
-         !     To be consistent with most measurements, we set the active soil layer to    !
-         ! the top 30 cm.  This is somewhat deeper than the implicit depth in the CENTURY  !
-         ! model (20 cm), but the decay rates have been adjusted to account for deeper     !
-         ! soil.  Most data in the tropics are provided for the top 30 cm, hence our       !
-         ! choice.                                                                         !
-         !---------------------------------------------------------------------------------!
-         rh_active_depth = -0.30
-         !---------------------------------------------------------------------------------!
-      end select
-      k_rh_loop: do k_rh_active=nzg-1,1,-1
-         if (slz(k_rh_active) < rh_active_depth) exit k_rh_loop
-      end do k_rh_loop
-      k_rh_active = k_rh_active + 1
+   case (2)
+      !---- Use 20cm for back-compatibility with ED-2.2. ----------------------------------!
+      rh_active_depth = -0.20
+      !------------------------------------------------------------------------------------!
+   case (5)
+      !------------------------------------------------------------------------------------!
+      !     To be consistent with most measurements, we set the active soil layer to the   !
+      ! top 30 cm.  This is somewhat deeper than the implicit depth in the CENTURY model   !
+      ! (20 cm), but the decay rates have been adjusted to account for deeper soil.  Most  !
+      ! data in the tropics are provided for the top 30 cm, hence our choice.              !
+      !------------------------------------------------------------------------------------!
+      rh_active_depth = -0.30
       !------------------------------------------------------------------------------------!
    case default
+      !----- Use the top soil layer (back-compatibility with ED-1). -----------------------!
       rh_active_depth = slz(nzg)
-      k_rh_active     = nzg
+      !------------------------------------------------------------------------------------!
    end select
    !---------------------------------------------------------------------------------------!
 
@@ -1588,7 +1593,7 @@ subroutine init_soil_coms
    real(kind=4)            :: slxsilt                ! Silt fraction
    !----- Local constants. ----------------------------------------------------------------!
    real(kind=4), parameter :: fieldcp_K   =  0.1     ! hydr. cond. at field cap.   [mm/day]
-   real(kind=4), parameter :: residual_K  =  1.e-5   ! minimum hydr. cond.         [mm/day]
+   real(kind=4), parameter :: residual_K  =  1.e-8   ! minimum hydr. cond.         [mm/day]
    real(kind=4), parameter :: soilcp_MPa  = -3.1     ! Matric pot. - air dry soil  [   MPa]
    real(kind=4), parameter :: soilwp_MPa  = -1.5     ! Matric pot. - wilting point [   MPa]
    real(kind=4), parameter :: sand_hcapv  =  2.128e6 ! Sand vol. heat capacity     [J/m3/K]
@@ -1660,8 +1665,8 @@ subroutine init_soil_coms
    ! (1st line)          slpots        slmsts          slbs      slcpd        soilcp       !
    ! (2nd line)          soilwp        slcons       slcons0    thcond0       thcond1       !
    ! (3rd line)         thcond2       thcond3       sfldcap      xsand         xclay       !
-   ! (4th line)           xsilt       xrobulk      slden        soilld        soilfr       !
-   ! (5th line)         slpotwp       slpotfc    slpotld       slpotfr                     !
+   ! (4th line)           xsilt       xrobulk         slden     soilld        soilfr       !
+   ! (5th line)         slpotcp       slpotwp       slpotfc    slpotld       slpotfr       !
    !---------------------------------------------------------------------------------------!
    soil = (/                                                                               &
       !----- 1. Sand. ---------------------------------------------------------------------!
@@ -1669,103 +1674,103 @@ subroutine init_soil_coms
                 ,   0.032636854,  2.446421e-5,  0.000500000, 0.9546011,    0.5333047       &
                 ,     0.6626306,   -0.4678112,  0.132130936,     0.920,        0.030       &
                 ,         0.050,        1200.,        1600.,     0.000,        0.000       &
-                ,         0.000,        0.000,        0.000,     0.000              )      &
+                ,         0.000,        0.000,        0.000,     0.000,        0.000)      &
       !----- 2. Loamy sand. ---------------------------------------------------------------!
       ,soil_class( -0.067406224,     0.385630,     3.794500,  1326165.,  0.041560499       &
                  ,  0.050323046,  1.776770e-5,  0.000600000, 0.9279457,    0.5333047       &
                  ,    0.6860126,   -0.4678112,  0.155181959,     0.825,        0.060       &
                  ,        0.115,        1250.,        1600.,     0.000,        0.000       &
-                 ,        0.000,        0.000,     0.000,        0.000              )      &
+                ,         0.000,        0.000,        0.000,     0.000,        0.000)      &
       !----- 3. Sandy loam. ---------------------------------------------------------------!
       ,soil_class( -0.114261521,     0.407210,     4.629000,  1295982.,  0.073495043       &
                  ,  0.085973722,  1.022660e-5,  0.000769000, 0.8826064,    0.5333047       &
                  ,    0.7257838,   -0.4678112,  0.194037750,     0.660,        0.110       &
                  ,        0.230,        1300.,        1600.,     0.000,        0.000       &
-                 ,        0.000,        0.000,     0.000,        0.000              )      &
+                ,         0.000,        0.000,        0.000,     0.000,        0.000)      &
       !----- 4. Silt loam. ----------------------------------------------------------------!
       ,soil_class( -0.566500112,     0.470680,     5.552000,  1191975.,  0.150665475       &
                  ,  0.171711257,  2.501101e-6,  0.000010600, 0.7666418,    0.5333047       &
                  ,    0.8275072,   -0.4678112,  0.273082063,     0.200,        0.160       &
                  ,        0.640,        1400.,        1600.,     0.000,        0.000       &
-                 ,        0.000,        0.000,     0.000,        0.000              )      &
+                ,         0.000,        0.000,        0.000,     0.000,        0.000)      &
       !----- 5. Loam. ---------------------------------------------------------------------!
       ,soil_class( -0.260075834,     0.440490,     5.646000,  1245546.,  0.125192234       &
                  ,  0.142369513,  4.532431e-6,  0.002200000, 0.8168244,    0.5333047       &
                  ,    0.7834874,   -0.4678112,  0.246915025,     0.410,        0.170       &
                  ,        0.420,        1350.,        1600.,     0.000,        0.000       &
-                 ,        0.000,        0.000,     0.000,        0.000              )      &
+                ,         0.000,        0.000,        0.000,     0.000,        0.000)      &
       !----- 6. Sandy clay loam. ----------------------------------------------------------!
       ,soil_class( -0.116869181,     0.411230,     7.162000,  1304598.,  0.136417267       &
                  ,  0.150969505,  6.593731e-6,  0.001500000, 0.8544779,    0.5333047       &
                  ,    0.7504579,   -0.4678112,  0.249629687,     0.590,        0.270       &
                  ,        0.140,        1350.,        1600.,     0.000,        0.000       &
-                 ,        0.000,        0.000,        0.000,     0.000              )      &
+                ,         0.000,        0.000,        0.000,     0.000,        0.000)      &
       !----- 7. Silty clay loam. ----------------------------------------------------------!
       ,soil_class( -0.627769194,     0.478220,     8.408000,  1193778.,  0.228171947       &
                  ,  0.248747504,  1.435262e-6,  0.000107000, 0.7330059,    0.5333047       &
                  ,    0.8570124,   -0.4678112,  0.333825332,     0.100,        0.340       &
                  ,        0.560,        1500.,        1600.,     0.000,        0.000       &
-                 ,        0.000,        0.000,     0.000,        0.000              )      &
+                ,         0.000,        0.000,        0.000,     0.000,        0.000)      &
       !----- 8. Clayey loam. --------------------------------------------------------------!
       ,soil_class( -0.281968114,     0.446980,     8.342000,  1249582.,  0.192624431       &
                  ,  0.210137962,  2.717260e-6,  0.002200000, 0.7847168,    0.5333047       &
                  ,    0.8116520,   -0.4678112,  0.301335491,     0.320,        0.340       &
                  ,        0.340,        1450.,        1600.,     0.000,        0.000       &
-                 ,        0.000,        0.000,        0.000,     0.000              )      &
+                ,         0.000,        0.000,        0.000,     0.000,        0.000)      &
       !----- 9. Sandy clay. ---------------------------------------------------------------!
       ,soil_class( -0.121283019,     0.415620,     9.538000,  1311396.,  0.182198910       &
                  ,  0.196607427,  4.314507e-6,  0.000002167, 0.8273339,    0.5333047       &
                  ,    0.7742686,   -0.4678112,  0.286363001,     0.520,        0.420       &
                  ,        0.060,        1450.,        1600.,     0.000,        0.000       &
-                 ,        0.000,        0.000,        0.000,     0.000              )      &
+                ,         0.000,        0.000,        0.000,     0.000,        0.000)      &
       !----- 10. Silty clay. --------------------------------------------------------------!
       ,soil_class( -0.601312179,     0.479090,    10.461000,  1203168.,  0.263228486       &
                  ,  0.282143846,  1.055191e-6,  0.000001033, 0.7164724,    0.5333047       &
                  ,    0.8715154,   -0.4678112,  0.360319788,     0.060,        0.470       &
                  ,        0.470,        1650.,        1600.,     0.000,        0.000       &
-                 ,        0.000,        0.000,     0.000,        0.000              )      &
+                ,         0.000,        0.000,        0.000,     0.000,        0.000)      &
       !----- 11. Clay. --------------------------------------------------------------------!
       ,soil_class( -0.299226464,     0.454400,    12.460000,  1259466.,  0.259868987       &
                  ,  0.275459057,  1.307770e-6,  0.000001283, 0.7406805,    0.5333047       &
                  ,    0.8502802,   -0.4678112,  0.353255209,     0.200,        0.600       &
                  ,        0.200,        1700.,     1600.,        0.000,        0.000       &
-                 ,        0.000,        0.000,     0.000,        0.000              )      &
+                ,         0.000,        0.000,        0.000,     0.000,        0.000)      &
       !----- 12. Peat. --------------------------------------------------------------------!
       ,soil_class( -0.534564359,     0.469200,     6.180000,   874000.,  0.167047523       &
                  ,  0.187868805,  2.357930e-6,  0.000008000, 0.7644011,    0.5333047       &
                  ,    0.8294728,   -0.4678112,  0.285709966,    0.2000,       0.2000       &
                  ,       0.6000,         500.,         300.,     0.000,        0.000       &
-                 ,        0.000,        0.000,        0.000,     0.000              )      &
+                ,         0.000,        0.000,        0.000,     0.000,        0.000)      &
       !----- 13. Bedrock. -----------------------------------------------------------------!
       ,soil_class(    0.0000000,     0.000000,     0.000000,  2130000.,  0.000000000       &
                  ,  0.000000000,  0.000000e+0,  0.000000000, 1.3917897,    0.5333047       &
                  ,    0.2791318,   -0.4678112,  0.000000001,    0.0000,       0.0000       &
                  ,       0.0000,       0.0000,           0.,        0.,        0.000       &
-                 ,        0.000,        0.000,        0.000,     0.000              )      &
+                ,         0.000,        0.000,        0.000,     0.000,        0.000)      &
       !----- 14. Silt. --------------------------------------------------------------------!
       ,soil_class( -1.047128548,     0.492500,     3.862500,  1143842.,  0.112299080       &
                  ,  0.135518820,  2.046592e-6,  0.000010600, 0.7425839,    0.5333047       &
                  ,    0.8486106,   -0.4678112,  0.245247642,     0.075,        0.050       &
                  ,        0.875,        1400.,        1600.,     0.000,        0.000       &
-                 ,        0.000,        0.000,        0.000,     0.000              )      &
+                ,         0.000,        0.000,        0.000,     0.000,        0.000)      &
       !----- 15. Heavy clay. --------------------------------------------------------------!
       ,soil_class( -0.322106879,     0.461200,    15.630000,  1264547.,  0.296806035       &
                  ,  0.310916364,  7.286705e-7,  0.000001283, 0.7057374,    0.5333047       &
                  ,    0.8809321,   -0.4678112,  0.382110712,     0.100,        0.800       &
                  ,        0.100,        1700.,        1600.,     0.000,        0.000       &
-                 ,        0.000,        0.000,        0.000,     0.000              )      &
+                ,         0.000,        0.000,        0.000,     0.000,        0.000)      &
       !----- 16. Clayey sand. -------------------------------------------------------------!
       ,soil_class( -0.176502150,     0.432325,    11.230000,  1292163.,  0.221886929       &
                  ,  0.236704039,  2.426785e-6,  0.000001283, 0.7859325,    0.5333047       &
                  ,    0.8105855,   -0.4678112,  0.320146708,     0.375,        0.525       &
                  ,        0.100,        1700.,        1600.,     0.000,        0.000       &
-                 ,        0.000,        0.000,        0.000,     0.000              )      &
+                ,         0.000,        0.000,        0.000,     0.000,        0.000)      &
       !----- 17. Clayey silt. -------------------------------------------------------------!
       ,soil_class( -0.438278332,     0.467825,    11.305000,  1228490.,  0.261376708       &
                  ,  0.278711303,  1.174982e-6,  0.000001283, 0.7281197,    0.5333047       &
                  ,    0.8612985,   -0.4678112,  0.357014719,     0.125,        0.525       &
                  ,        0.350,        1700.,        1600.,     0.000,        0.000       &
-                 ,        0.000,        0.000,        0.000,     0.000              )      &
+                ,         0.000,        0.000,        0.000,     0.000,        0.000)      &
       /)
    !---------------------------------------------------------------------------------------!
 
@@ -1880,6 +1885,7 @@ subroutine init_soil_coms
    !           bedrock because it doesn't make sense.                                      !
    !                                                                                       !
    !     And find these two remaining properties:                                          !
+   ! SLPOTCP -- Soil potential at dry soil                                                 !
    ! SLPOTWP -- Soil potential at wilting point                                            !
    ! SLPOTFC -- Soil potential at field capacity                                           !
    ! SLPOTLD -- Soil potential at leaf drop critical soil moisture                         !
@@ -1889,6 +1895,7 @@ subroutine init_soil_coms
          case (13)
             soil(nsoil)%soilld  = 0.0
             soil(nsoil)%soilfr  = 0.0
+            soil(nsoil)%slpotcp = 0.0
             soil(nsoil)%slpotwp = 0.0
             soil(nsoil)%slpotfc = 0.0
             soil(nsoil)%slpotfr = 0.0
@@ -1928,8 +1935,11 @@ subroutine init_soil_coms
 
 
             !------------------------------------------------------------------------------!
-            !  Soil potential at wilting point and field capacity.                         !
+            !  Soil potential at several levels.                                           !
             !------------------------------------------------------------------------------!
+            soil(nsoil)%slpotcp = soil(nsoil)%slpots                                       &
+                                / (soil(nsoil)%soilcp  / soil(nsoil)%slmsts)               &
+                                ** soil(nsoil)%slbs
             soil(nsoil)%slpotwp = soil(nsoil)%slpots                                       &
                                 / (soil(nsoil)%soilwp  / soil(nsoil)%slmsts)               &
                                 ** soil(nsoil)%slbs
@@ -2007,6 +2017,7 @@ subroutine init_soil_coms
       soil8(nsoil)%slden     = dble(soil(nsoil)%slden    )
       soil8(nsoil)%soilld    = dble(soil(nsoil)%soilld   )
       soil8(nsoil)%soilfr    = dble(soil(nsoil)%soilfr   )
+      soil8(nsoil)%slpotcp   = dble(soil(nsoil)%slpotcp  )
       soil8(nsoil)%slpotwp   = dble(soil(nsoil)%slpotwp  )
       soil8(nsoil)%slpotfc   = dble(soil(nsoil)%slpotfc  )
       soil8(nsoil)%slpotld   = dble(soil(nsoil)%slpotld  )
@@ -7408,6 +7419,8 @@ end subroutine overwrite_with_xml_config
 !------------------------------------------------------------------------------------------!
 subroutine init_derived_params_after_xml()
    use detailed_coms        , only : idetailed                 ! ! intent(in)
+   use soil_coms            , only : slz                       ! ! intent(in)
+   use grid_coms            , only : nzg                       ! ! intent(in)
    use ed_misc_coms         , only : ibigleaf                  & ! intent(in)
                                    , iallom                    & ! intent(in)
                                    , ivegt_dynamics            & ! intent(in)
@@ -7660,8 +7673,14 @@ subroutine init_derived_params_after_xml()
                                    , effarea_transp            ! ! intent(in)
    use decomp_coms          , only : f0_msc                    & ! intent(in)
                                    , f0_psc                    & ! intent(in)
-                                   , f0_ssc                    ! ! intent(out)
-   use phenology_coms      , only : repro_scheme                ! ! intent(in)
+                                   , rh_active_depth           & ! intent(in)
+                                   , rh0                       & ! intent(in)
+                                   , rh_q10                    & ! intent(in)
+                                   , f0_ssc                    & ! intent(out)
+                                   , k_rh_active               & ! intent(out)
+                                   , rh08                      & ! intent(out)
+                                   , rh_q108                   ! ! intent(out)
+   use phenology_coms       , only : repro_scheme              ! ! intent(in)
    use farq_leuning         , only : arrhenius                 & ! function
                                    , collatz                   ! ! function
    use plant_hydro          , only : psi2rwc                   & ! function
@@ -7771,6 +7790,31 @@ subroutine init_derived_params_after_xml()
    !---------------------------------------------------------------------------------------!
 
 
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Determine the bottomost layer to consider for environmental regulation of hetero- !
+   ! trophic respiration.                                                                  !
+   !---------------------------------------------------------------------------------------!
+   k_rh_loop: do k_rh_active=nzg-1,1,-1
+      if (slz(k_rh_active) < rh_active_depth) exit k_rh_loop
+   end do k_rh_loop
+   k_rh_active = k_rh_active + 1
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Double precision of heterotrophic respiration parameters.                         !
+   !---------------------------------------------------------------------------------------!
+   rh08    = dble(rh0)
+   rh_q108 = dble(rh_q10)
+   !---------------------------------------------------------------------------------------!
+
+
+
+
    !---------------------------------------------------------------------------------------!
    !     Find net specific heat for leaves, sapwood, heartwood, and bark.  Here we modify  !
    ! the calculation from earlier versions of ED-2.2.  We now separate oven-dry biomass    !
@@ -7836,8 +7880,8 @@ subroutine init_derived_params_after_xml()
                          , repro_min_h(:) <= hgt_max(:)                              )
    !---------------------------------------------------------------------------------------!
 
-   !------ Repro_min_h cannot exceed hgt_max
-   !---------------------------------------------------------------------------------------!
+
+
 
    !------ Find corresponding DBH. --------------------------------------------------------!
    do ipft=1,n_pft

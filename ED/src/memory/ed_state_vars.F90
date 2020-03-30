@@ -1919,6 +1919,10 @@ module ed_state_vars
       real,pointer,dimension(:) :: mmean_struct_grnd_n  !<Struct. grnd carbon   [   kgN/m2]
       real,pointer,dimension(:) :: mmean_struct_soil_n  !<Struct. soil carbon   [   kgN/m2]
       real,pointer,dimension(:) :: mmean_mineral_soil_n !<Mineralised soil N    [   kgN/m2]
+      real,pointer,dimension(:) :: mmean_fgc_in         !<Input to AG litter    [kgC/m2/yr]
+      real,pointer,dimension(:) :: mmean_fsc_in         !<Input to BG litter    [kgC/m2/yr]
+      real,pointer,dimension(:) :: mmean_stgc_in        !<Input to AG woody deb [kgC/m2/yr]
+      real,pointer,dimension(:) :: mmean_stsc_in        !<Input to BG woody deb [kgC/m2/yr]
       !----- Daily means.  Units are the same as the "avg" variables. ---------------------!
       real,pointer,dimension(:)     :: dmean_rh
       real,pointer,dimension(:)     :: dmean_fgc_rh
@@ -3072,6 +3076,10 @@ module ed_state_vars
       real,pointer,dimension(:)     :: mmean_struct_grnd_n     !<Struct. grnd N  [   kgN/m2]
       real,pointer,dimension(:)     :: mmean_struct_soil_n     !<Struct. soil N  [   kgN/m2]
       real,pointer,dimension(:)     :: mmean_mineral_soil_n    !<Mineral. soil N [   kgN/m2]
+      real,pointer,dimension(:)     :: mmean_fgc_in            !<AG litter Input [kgC/m2/yr]
+      real,pointer,dimension(:)     :: mmean_fsc_in            !<BG litter Input [kgC/m2/yr]
+      real,pointer,dimension(:)     :: mmean_stgc_in           !<AG F+CWD Input  [kgC/m2/yr]
+      real,pointer,dimension(:)     :: mmean_stsc_in           !<BG F+CWD Input  [kgC/m2/yr]
       !----- Daily mean (same units as fast mean). ----------------------------------------!
       real,pointer,dimension(:)     :: dmean_gpp
       real,pointer,dimension(:)     :: dmean_npp
@@ -4261,6 +4269,10 @@ module ed_state_vars
          allocate(cgrid%mmean_struct_grnd_n     (                     npolygons)) 
          allocate(cgrid%mmean_struct_soil_n     (                     npolygons)) 
          allocate(cgrid%mmean_mineral_soil_n    (                     npolygons)) 
+         allocate(cgrid%mmean_fgc_in            (                     npolygons)) 
+         allocate(cgrid%mmean_fsc_in            (                     npolygons)) 
+         allocate(cgrid%mmean_stgc_in           (                     npolygons)) 
+         allocate(cgrid%mmean_stsc_in           (                     npolygons)) 
          allocate(cgrid%mmean_gpp               (                     npolygons)) 
          allocate(cgrid%mmean_npp               (                     npolygons)) 
          allocate(cgrid%mmean_leaf_resp         (                     npolygons)) 
@@ -5266,6 +5278,10 @@ module ed_state_vars
          allocate(csite%mmean_struct_grnd_n        (              npatches))
          allocate(csite%mmean_struct_soil_n        (              npatches))
          allocate(csite%mmean_mineral_soil_n       (              npatches))
+         allocate(csite%mmean_fgc_in               (              npatches))
+         allocate(csite%mmean_fsc_in               (              npatches))
+         allocate(csite%mmean_stgc_in              (              npatches))
+         allocate(csite%mmean_stsc_in              (              npatches))
          allocate(csite%mmean_co2_residual         (              npatches))
          allocate(csite%mmean_energy_residual      (              npatches))
          allocate(csite%mmean_water_residual       (              npatches))
@@ -6545,6 +6561,10 @@ module ed_state_vars
       nullify(cgrid%mmean_struct_grnd_n     )
       nullify(cgrid%mmean_struct_soil_n     )
       nullify(cgrid%mmean_mineral_soil_n    )
+      nullify(cgrid%mmean_fgc_in            )
+      nullify(cgrid%mmean_fsc_in            )
+      nullify(cgrid%mmean_stgc_in           )
+      nullify(cgrid%mmean_stsc_in           )
       nullify(cgrid%mmean_gpp               )
       nullify(cgrid%mmean_npp               )
       nullify(cgrid%mmean_leaf_resp         )
@@ -7462,6 +7482,10 @@ module ed_state_vars
       nullify(csite%mmean_struct_grnd_n        )
       nullify(csite%mmean_struct_soil_n        )
       nullify(csite%mmean_mineral_soil_n       )
+      nullify(csite%mmean_fgc_in               )
+      nullify(csite%mmean_fsc_in               )
+      nullify(csite%mmean_stgc_in              )
+      nullify(csite%mmean_stsc_in              )
       nullify(csite%mmean_co2_residual         )
       nullify(csite%mmean_energy_residual      )
       nullify(csite%mmean_water_residual       )
@@ -8613,6 +8637,10 @@ module ed_state_vars
       if(associated(csite%mmean_struct_grnd_n        )) deallocate(csite%mmean_struct_grnd_n        )
       if(associated(csite%mmean_struct_soil_n        )) deallocate(csite%mmean_struct_soil_n        )
       if(associated(csite%mmean_mineral_soil_n       )) deallocate(csite%mmean_mineral_soil_n       )
+      if(associated(csite%mmean_fgc_in               )) deallocate(csite%mmean_fgc_in               )
+      if(associated(csite%mmean_fsc_in               )) deallocate(csite%mmean_fsc_in               )
+      if(associated(csite%mmean_stgc_in              )) deallocate(csite%mmean_stgc_in              )
+      if(associated(csite%mmean_stsc_in              )) deallocate(csite%mmean_stsc_in              )
       if(associated(csite%mmean_co2_residual         )) deallocate(csite%mmean_co2_residual         )
       if(associated(csite%mmean_energy_residual      )) deallocate(csite%mmean_energy_residual      )
       if(associated(csite%mmean_water_residual       )) deallocate(csite%mmean_water_residual       )
@@ -9857,6 +9885,10 @@ module ed_state_vars
             osite%mmean_struct_grnd_n  (opa) = isite%mmean_struct_grnd_n  (ipa)
             osite%mmean_struct_soil_n  (opa) = isite%mmean_struct_soil_n  (ipa)
             osite%mmean_mineral_soil_n (opa) = isite%mmean_mineral_soil_n (ipa)
+            osite%mmean_fgc_in         (opa) = isite%mmean_fgc_in         (ipa)
+            osite%mmean_fsc_in         (opa) = isite%mmean_fsc_in         (ipa)
+            osite%mmean_stgc_in        (opa) = isite%mmean_stgc_in        (ipa)
+            osite%mmean_stsc_in        (opa) = isite%mmean_stsc_in        (ipa)
             osite%mmean_co2_residual   (opa) = isite%mmean_co2_residual   (ipa)
             osite%mmean_energy_residual(opa) = isite%mmean_energy_residual(ipa)
             osite%mmean_water_residual (opa) = isite%mmean_water_residual (ipa)
@@ -10709,6 +10741,10 @@ module ed_state_vars
       osite%mmean_struct_grnd_n  (1:z) = pack(isite%mmean_struct_grnd_n  (:),lmask)
       osite%mmean_struct_soil_n  (1:z) = pack(isite%mmean_struct_soil_n  (:),lmask)
       osite%mmean_mineral_soil_n (1:z) = pack(isite%mmean_mineral_soil_n (:),lmask)
+      osite%mmean_fgc_in         (1:z) = pack(isite%mmean_fgc_in         (:),lmask)
+      osite%mmean_fsc_in         (1:z) = pack(isite%mmean_fsc_in         (:),lmask)
+      osite%mmean_stgc_in        (1:z) = pack(isite%mmean_stgc_in        (:),lmask)
+      osite%mmean_stsc_in        (1:z) = pack(isite%mmean_stsc_in        (:),lmask)
       osite%mmean_co2_residual   (1:z) = pack(isite%mmean_co2_residual   (:),lmask)
       osite%mmean_energy_residual(1:z) = pack(isite%mmean_energy_residual(:),lmask)
       osite%mmean_water_residual (1:z) = pack(isite%mmean_water_residual (:),lmask)
@@ -18098,6 +18134,39 @@ module ed_state_vars
          call metadata_edio(nvar,igr,'Monthly mean - Soil Nitrogen (Mineralised pool)'     &
                            ,'[kgN/m2]','(ipoly)')
       end if
+      if(associated(cgrid%mmean_fgc_in         )) then
+         nvar = nvar + 1
+         call vtable_edio_r(npts,cgrid%mmean_fgc_in                                        &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'MMEAN_FGC_IN_PY  :11:'//trim(eorq_keys))
+         call metadata_edio(nvar,igr,'Monthly mean - Aboveground metabolic litter input'   &
+                           ,'[kgC/m2/yr]','(ipoly)')
+      end if
+      if(associated(cgrid%mmean_fsc_in         )) then
+         nvar = nvar + 1
+         call vtable_edio_r(npts,cgrid%mmean_fsc_in                                        &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'MMEAN_FSC_IN_PY  :11:'//trim(eorq_keys))
+         call metadata_edio(nvar,igr,'Monthly mean - Belowground metabolic litter input'   &
+                           ,'[kgC/m2/yr]','(ipoly)')
+      end if
+      if(associated(cgrid%mmean_stgc_in         )) then
+         nvar = nvar + 1
+         call vtable_edio_r(npts,cgrid%mmean_stgc_in                                       &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'MMEAN_STGC_IN_PY  :11:'//trim(eorq_keys))
+         call metadata_edio(nvar,igr,'Monthly mean - Belowground structural litter input'  &
+                           ,'[kgC/m2/yr]','(ipoly)')
+      end if
+      if(associated(cgrid%mmean_stsc_in         )) then
+         nvar = nvar + 1
+         call vtable_edio_r(npts,cgrid%mmean_stsc_in                                        &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'MMEAN_STSC_IN_PY  :11:'//trim(eorq_keys))
+         call metadata_edio(nvar,igr,'Monthly mean - Belowground structural litter input'  &
+                           ,'[kgC/m2/yr]','(ipoly)')
+      end if
+
       if (associated(cgrid%mmsqu_gpp             )) then
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmsqu_gpp                                           &
@@ -26452,6 +26521,42 @@ module ed_state_vars
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Soil Nitrogen (Mineralised pool)'              &
                            ,'[     kgN/m2]','(ipatch)'            )
+      end if
+      if (associated(csite%mmean_fgc_in          )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,csite%mmean_fgc_in                                        &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'MMEAN_FGC_IN_PA    :31:'//trim(eorq_keys))
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly mean - Aboveground metabolic litter input'            &
+                           ,'[  kgC/m2/yr]','(ipatch)'            )
+      end if
+      if (associated(csite%mmean_fsc_in          )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,csite%mmean_fsc_in                                         &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'MMEAN_FSC_IN_PA    :31:'//trim(eorq_keys))
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly mean - Belowground metabolic litter input'            &
+                           ,'[  kgC/m2/yr]','(ipatch)'            )
+      end if
+      if (associated(csite%mmean_stgc_in         )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,csite%mmean_stgc_in                                       &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'MMEAN_STGC_IN_PA    :31:'//trim(eorq_keys))
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly mean - Aboveground structural litter input'           &
+                           ,'[  kgC/m2/yr]','(ipatch)'            )
+      end if
+      if (associated(csite%mmean_stsc_in          )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,csite%mmean_stsc_in                                       &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'MMEAN_STSC_IN_PA    :31:'//trim(eorq_keys))
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly mean - Belowground structural litter input'           &
+                           ,'[  kgC/m2/yr]','(ipatch)'            )
       end if
       if (associated(csite%mmean_A_decomp        )) then
          nvar = nvar+1

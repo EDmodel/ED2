@@ -92,6 +92,7 @@ subroutine ed_model()
    use budget_utils        , only : ed_init_budget              ! ! intent(in)
    use vegetation_dynamics , only : veg_dynamics_driver         ! ! sub-routine
    use ed_type_init        , only : ed_init_viable              ! ! sub-routine
+   use soil_respiration    , only : zero_litter_inputs          ! ! sub-routine
    implicit none
    !----- Common blocks. ------------------------------------------------------------------!
 #if defined(RAMS_MPI)
@@ -534,6 +535,18 @@ subroutine ed_model()
       if (reset_time) then
          do ifm=1,ngrids
             call zero_ed_fmean_vars(edgrid_g(ifm))
+         end do
+      end if
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !      Reset inputs to soil carbon.                                                  !
+      !------------------------------------------------------------------------------------!
+      if (new_day) then
+         do ifm=1,ngrids
+            call zero_litter_inputs(edgrid_g(ifm))
          end do
       end if
       !------------------------------------------------------------------------------------!

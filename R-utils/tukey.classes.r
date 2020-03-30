@@ -32,8 +32,8 @@ tukey.classes <<- function(x,f,group=TRUE,alpha=0.05,...){
 
 
    #----- Map classes onto the original levels. -------------------------------------------#
-   trt.out  = as.character(posthoc$group$trt)
-   lett.out = as.character(posthoc$group$M  )
+   trt.out  = rownames(posthoc$group)
+   lett.out = as.character(posthoc$group$groups)
    fout     = match(trt.out,levels(f))
    #---------------------------------------------------------------------------------------#
 
@@ -44,7 +44,6 @@ tukey.classes <<- function(x,f,group=TRUE,alpha=0.05,...){
    ans[fout]  = lett.out
    names(ans) = levels(f)
    #---------------------------------------------------------------------------------------#
-
    return(ans)
 }#end tukey.classes
 #==========================================================================================#

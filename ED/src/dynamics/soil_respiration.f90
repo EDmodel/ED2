@@ -12,7 +12,8 @@ module soil_respiration
       use soil_coms    , only : soil                     & ! intent(in)
                               , dslz                     & ! intent(in)
                               , slz                      ! ! intent(in)
-      use decomp_coms  , only : k_rh_active              ! ! intent(in)
+      use decomp_coms  , only : decomp_scheme            & ! intent(in)
+                              , k_rh_active              ! ! intent(in)
       use consts_coms  , only : wdns                     & ! intent(in)
                               , umols_2_kgCyr            ! ! intent(in)
       use therm_lib    , only : uextcm2tl                ! ! function
@@ -31,6 +32,9 @@ module soil_respiration
       integer                                    :: k
       integer                                    :: kroot
       integer                                    :: nsoil
+      real                                       :: lyr_soil_oxygen
+      real                                       :: lyr_soil_moist
+      real                                       :: rel_soil_oxygen
       real                                       :: rel_soil_moist
       real                                       :: sum_soil_energy
       real                                       :: sum_soil_water
@@ -97,17 +101,81 @@ module soil_respiration
 
 
 
-      !------------------------------------------------------------------------------------!
+      !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~!
+      !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~!
+      !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~!
+      !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~!
       !     Find the scaling factor for decomposition of surface materials, using the top  !
       ! soil layer to define their temperature and moisture.                               !
       !------------------------------------------------------------------------------------!
       k                   = mzg
       nsoil               = ntext_soil(k)
-      rel_soil_moist      = min(1.0, max(0.0                                               &
-                                        , (csite%soil_water(k,ipa) - soil(nsoil)%soilcp)   &
-                                        / (soil(nsoil)%slmsts      - soil(nsoil)%soilcp) ) )
-      csite%A_decomp(ipa) = het_resp_weight(csite%soil_tempk(k,ipa),rel_soil_moist)
+
       !------------------------------------------------------------------------------------!
+      !   Relative moisture may be defined in terms of moisture or potential, depending on !
+      ! the decomposition module.                                                          !
+      !------------------------------------------------------------------------------------!
+      select case (decomp_scheme)
+      case (5)
+         !---------------------------------------------------------------------------------!
+         !    Use (logarithmic) matric potential to define relative moisture, following    !
+         ! K13.                                                                            !
+         !                                                                                 !
+         !   Koven CD, Riley WJ, Subin ZM, Tang JY, Torn MS, Collins WD, Bonan GB,         !
+         !      Lawrence DM, Swenson SC. 2013. The effect of vertically resolved soil      !
+         !      biogeochemistry and alternate soil C and N models on C dynamics of CLM4.   !
+         !      Biogeosciences, 10:7109-7131. doi:10.5194/bg-10-7109-2013.                 !
+         !---------------------------------------------------------------------------------!
+         rel_soil_moist = min(1.0, max( 0.0                                                &
+                                      , log(csite%soil_mstpot(k,ipa)/soil(nsoil)%slpotcp)  &
+                                      / log(soil(nsoil)%slpotfc     /soil(nsoil)%slpotcp) ))
+         !---------------------------------------------------------------------------------!
+      case default
+         !------ Use soil moisture. -------------------------------------------------------!
+         rel_soil_moist = min(1.0, max( 0.0                                                &
+                                      , (csite%soil_water(k,ipa) - soil(nsoil)%soilcp)     &
+                                      / (soil(nsoil)%slmsts      - soil(nsoil)%soilcp) ) )
+         !---------------------------------------------------------------------------------!
+      end select
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !      When soil moisture is excessively high (i.e., above field capacity), oxygen   !
+      ! may become a limiting factor for decomposition.  Most approaches account for this  !
+      ! as a single term in the the moisture function, but decomp_scheme=5 treats these    !
+      ! as separate limitations.                                                           !
+      !------------------------------------------------------------------------------------!
+      select case (decomp_scheme)
+      case (5)
+         !---------------------------------------------------------------------------------!
+         !    Use (logarithmic) matric potential to define relative moisture, following    !
+         ! K13.                                                                            !
+         !                                                                                 !
+         !   Koven CD, Riley WJ, Subin ZM, Tang JY, Torn MS, Collins WD, Bonan GB,         !
+         !      Lawrence DM, Swenson SC. 2013. The effect of vertically resolved soil      !
+         !      biogeochemistry and alternate soil C and N models on C dynamics of CLM4.   !
+         !      Biogeosciences, 10:7109-7131. doi:10.5194/bg-10-7109-2013.                 !
+         !---------------------------------------------------------------------------------!
+         rel_soil_oxygen = min(1.0, max( 0.0                                               &
+                                       , log(csite%soil_mstpot(k,ipa)/soil(nsoil)%slpots)  &
+                                       / log(soil(nsoil)%slpotfc     /soil(nsoil)%slpots) ))
+         !---------------------------------------------------------------------------------!
+      case default
+         !------ Set as the complement of rel_soil_moist. ---------------------------------!
+         rel_soil_oxygen = 1.0 - rel_soil_moist
+         !---------------------------------------------------------------------------------!
+      end select
+      csite%A_decomp(ipa) = het_resp_weight(csite%soil_tempk(k,ipa),rel_soil_moist         &
+                                           ,rel_soil_oxygen)
+      !------------------------------------------------------------------------------------!
+      !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~!
+      !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~!
+      !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~!
+      !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~!
+
+
 
 
       !------------------------------------------------------------------------------------!
@@ -119,6 +187,8 @@ module soil_respiration
       sum_soil_water  = 0.0
       sum_soil_slmsts = 0.0
       sum_soil_soilcp = 0.0
+      rel_soil_moist  = 0.0
+      rel_soil_oxygen = 0.0
       do k = k_rh_active,mzg
          nsoil = ntext_soil(k)
 
@@ -132,6 +202,24 @@ module soil_respiration
          sum_soil_slmsts = sum_soil_slmsts + soil(nsoil)%slmsts       * wdns * dslz(k)
          sum_soil_soilcp = sum_soil_soilcp + soil(nsoil)%soilcp       * wdns * dslz(k)
          !---------------------------------------------------------------------------------!
+
+
+
+         !----- Find the relative soil moisture and soil "oxygen". ------------------------!
+         select case (decomp_scheme)
+         case (5)
+            !------ Compute relative value for layer. -------------------------------------!
+            lyr_soil_moist  = log(csite%soil_mstpot(k,ipa)/soil(nsoil)%slpotcp)            &
+                            / log(soil(nsoil)%slpotfc     /soil(nsoil)%slpotcp)
+            lyr_soil_oxygen = log(csite%soil_mstpot(k,ipa)/soil(nsoil)%slpots )            &
+                            / log(soil(nsoil)%slpotfc     /soil(nsoil)%slpots )
+            lyr_soil_moist  = max(0.,min(1.,lyr_soil_moist ))
+            lyr_soil_oxygen = max(0.,min(1.,lyr_soil_oxygen))
+            rel_soil_moist  = rel_soil_moist  + lyr_soil_moist  * dslz(k)
+            rel_soil_oxygen = rel_soil_oxygen + lyr_soil_oxygen * dslz(k)
+            !------------------------------------------------------------------------------!
+         end select
+         !---------------------------------------------------------------------------------!
       end do
       !------------------------------------------------------------------------------------!
 
@@ -140,14 +228,25 @@ module soil_respiration
       !----- Find the average temperature and the relative soil moisture. -----------------!
       call uextcm2tl(sum_soil_energy,sum_soil_water,sum_soil_hcap                          &
                     ,avg_soil_temp,avg_soil_fliq)
-      rel_soil_moist = min( 1.0, max(0.0, ( sum_soil_water  - sum_soil_soilcp )            &
-                                        / ( sum_soil_slmsts - sum_soil_soilcp ) ) )
+      select case (decomp_scheme)
+      case (5)
+         !------ Normalise relative soil moisture. ----------------------------------------!
+         rel_soil_moist  = - rel_soil_moist  / slz(k_rh_active)
+         rel_soil_oxygen = - rel_soil_oxygen / slz(k_rh_active)
+         !---------------------------------------------------------------------------------!
+      case default
+         !------ Relative soil moisture based on total water content. ---------------------!
+         rel_soil_moist  = min( 1.0, max(0.0, ( sum_soil_water  - sum_soil_soilcp )        &
+                                            / ( sum_soil_slmsts - sum_soil_soilcp ) ) )
+         rel_soil_oxygen = 1.0 - rel_soil_moist
+         !---------------------------------------------------------------------------------!
+      end select
       !------------------------------------------------------------------------------------!
 
 
 
       !----- Compute soil/temperature modulation of soil heterotrophic respiration. -------!
-      csite%B_decomp(ipa) = het_resp_weight(avg_soil_temp,rel_soil_moist)
+      csite%B_decomp(ipa) = het_resp_weight(avg_soil_temp,rel_soil_moist,rel_soil_oxygen)
       !------------------------------------------------------------------------------------!
 
 
@@ -202,8 +301,10 @@ module soil_respiration
    subroutine resp_f_decomp(csite,ipa)
 
       use ed_state_vars, only : sitetype               ! ! structure
-      use decomp_coms  , only : e_lignin               & ! intent(in)
-                              , r_stsc                 & ! intent(in)
+      use decomp_coms  , only : decomp_scheme          & ! intent(in)
+                              , e_lignin               & ! intent(in)
+                              , r_stsc_o               & ! intent(in)
+                              , r_stsc_l               & ! intent(in)
                               , N_immobil_supply_scale & ! intent(in)
                               , decay_rate_stsc        & ! intent(in)
                               , n_decomp_lim           & ! intent(in)
@@ -219,27 +320,39 @@ module soil_respiration
       !----- Local variables. -------------------------------------------------------------!
       real                        :: N_immobilization_demand
       real                        :: ln_Lc
-      real                        :: f_lignin
+      real                        :: fg_lignin
+      real                        :: fs_lignin
+      real                        :: er_stgc
+      real                        :: er_stsc
       !------------------------------------------------------------------------------------!
+
 
 
       !------------------------------------------------------------------------------------!
       !      Find the penalty factor for structural composition due to lignin content.     !
       !------------------------------------------------------------------------------------!
       if (csite%structural_grnd_C(ipa) > 0.0) then
-         f_lignin = csite%structural_grnd_L(ipa) / csite%structural_grnd_C(ipa)
+         fg_lignin = csite%structural_grnd_L(ipa) / csite%structural_grnd_C(ipa)
       else
-         f_lignin = 1.0
+         fg_lignin = 1.0
       end if
-      ln_Lc = max(lnexp_min,min(lnexp_max,-e_lignin * f_lignin))
+      ln_Lc = max(lnexp_min,min(lnexp_max,-e_lignin * fg_lignin))
       csite%Lg_decomp(ipa) = exp(ln_Lc)
       if (csite%structural_soil_C(ipa) > 0.0) then
-         f_lignin = csite%structural_soil_L(ipa) / csite%structural_soil_C(ipa)
+         fs_lignin = csite%structural_soil_L(ipa) / csite%structural_soil_C(ipa)
       else
-         f_lignin = 1.0
+         fs_lignin = 1.0
       end if
-      ln_Lc = max(lnexp_min,min(lnexp_max,-e_lignin * f_lignin))
+      ln_Lc = max(lnexp_min,min(lnexp_max,-e_lignin * fs_lignin))
       csite%Ls_decomp(ipa) = exp(ln_Lc)
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !      Find the respiration rate (this may be double counting the penalty).          !
+      !------------------------------------------------------------------------------------!
+      er_stgc = (1. - fg_lignin) * r_stsc_o + fg_lignin * r_stsc_l
+      er_stsc = (1. - fs_lignin) * r_stsc_o + fs_lignin * r_stsc_l
       !------------------------------------------------------------------------------------!
 
 
@@ -250,9 +363,11 @@ module soil_respiration
       select case (n_decomp_lim)
       case (1)
          N_immobilization_demand = csite%A_decomp(ipa) * decay_rate_stsc                   &
-                                 * ((1.0 - r_stsc) / c2n_slow - 1.0 / c2n_structural)      &
-                                 * ( csite%Lg_decomp(ipa) * csite%structural_grnd_C(ipa)   &
-                                   + csite%Ls_decomp(ipa) * csite%structural_soil_C(ipa) )
+                                 * ( (1.0 - er_stgc) / c2n_slow - 1.0 / c2n_structural   ) &
+                                 * ( csite%Lg_decomp(ipa) * csite%structural_grnd_C(ipa) ) &
+                                 + csite%B_decomp(ipa) * decay_rate_stsc                   &
+                                 * ( (1.0 - er_stsc) / c2n_slow - 1.0 / c2n_structural   ) &
+                                 * ( csite%Ls_decomp(ipa) * csite%structural_soil_C(ipa) )
          csite%f_decomp(ipa)     = N_immobil_supply_scale * csite%mineralized_soil_N(ipa)  &
                                  / ( N_immobilization_demand                               &
                                    + N_immobil_supply_scale                                &
@@ -304,7 +419,8 @@ module soil_respiration
                               , decay_rate_ssc  & ! intent(in)
                               , decay_rate_psc  & ! intent(in)
                               , r_fsc           & ! intent(in)
-                              , r_stsc          & ! intent(in)
+                              , r_stsc_l        & ! intent(in)
+                              , r_stsc_o        & ! intent(in)
                               , r_msc_int       & ! intent(in)
                               , r_msc_slp       & ! intent(in)
                               , r_ssc           & ! intent(in)
@@ -338,10 +454,13 @@ module soil_respiration
       real                          :: ps_C_resp
       real                          :: tot_C_resp
       real                          :: er_fsc
+      real                          :: er_stgc
       real                          :: er_stsc
       real                          :: er_msc
       real                          :: er_ssc
       real                          :: er_psc
+      real                          :: fg_lignin
+      real                          :: fs_lignin
       real                          :: AfL_decomp
       real                          :: BfL_decomp
       !----- Local constants. -------------------------------------------------------------!
@@ -358,13 +477,14 @@ module soil_respiration
          !----- Make the header. ----------------------------------------------------------!
          if (print_debug) then
             open (unit=84,file=rhetfile,status='replace',action='write')
-            write (unit=84,fmt='(29(a,1x))')                                               &
+            write (unit=84,fmt='(31(a,1x))')                                               &
                      '  YEAR',      ' MONTH',      '   DAY',      '  HOUR',      '   MIN'  &
               ,      '   IPA','       C_FGC','       C_FSC','      C_STGC','      C_STSC'  &
-              ,'       C_MSC','       C_SSC','      F_FAST','    F_STRUCT','   F_MICROBE'  &
-              ,'      F_SLOW','      RH_FGC','      RH_FSC','     RH_STGC','     RH_STSC'  &
-              ,'      RH_MSC','      RH_SSC','      RH_PSC','    RH_TOTAL','    A_DECOMP'  &
-              ,'    B_DECOMP','    F_DECOMP','   LG_DECOMP','   LS_DECOMP'
+              ,'       C_MSC','       C_SSC','       C_PSC','      F_FAST','   FG_STRUCT'  &
+              ,'   FS_STRUCT','   F_MICROBE','      F_SLOW','      RH_FGC','      RH_FSC'  &
+              ,'     RH_STGC','     RH_STSC','      RH_MSC','      RH_SSC','      RH_PSC'  &
+              ,'    RH_TOTAL','    A_DECOMP','    B_DECOMP','    F_DECOMP','   LG_DECOMP'  &
+              ,'   LS_DECOMP'
             close (unit=84,status='keep')
          end if
          !---------------------------------------------------------------------------------!
@@ -399,6 +519,31 @@ module soil_respiration
 
 
       !------------------------------------------------------------------------------------!
+      !      Find the penalty factor for structural composition due to lignin content.     !
+      !------------------------------------------------------------------------------------!
+      if (csite%structural_grnd_C(ipa) > 0.0) then
+         fg_lignin = csite%structural_grnd_L(ipa) / csite%structural_grnd_C(ipa)
+      else
+         fg_lignin = 1.0
+      end if
+      if (csite%structural_soil_C(ipa) > 0.0) then
+         fs_lignin = csite%structural_soil_L(ipa) / csite%structural_soil_C(ipa)
+      else
+         fs_lignin = 1.0
+      end if
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !      Find the respiration rate (this may be double counting the penalty).          !
+      !------------------------------------------------------------------------------------!
+      er_stgc = (1. - fg_lignin) * r_stsc_o + fg_lignin * r_stsc_l
+      er_stsc = (1. - fs_lignin) * r_stsc_o + fs_lignin * r_stsc_l
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
       !      Decide the respiration factors based on the method.                           !
       !------------------------------------------------------------------------------------!
       select case (decomp_scheme)
@@ -409,7 +554,6 @@ module soil_respiration
          !---------------------------------------------------------------------------------!
          er_fsc  = r_fsc
          er_msc  = r_msc_int + r_msc_slp * soil(ntext)%xsand
-         er_stsc = r_stsc
          er_ssc  = r_ssc
          er_psc  = r_psc
          !---------------------------------------------------------------------------------!
@@ -420,7 +564,6 @@ module soil_respiration
          ! decomposition.                                                                  !
          !---------------------------------------------------------------------------------!
          er_fsc  = r_fsc
-         er_stsc = r_stsc
          er_msc  = 1.0    ! Dummy value as microbial pool doesn't exist in this scheme.
          er_ssc  = 1.0    ! This has to be 1.0 because it is the only outlet for SSC.
          er_psc  = 1.0    ! Dummy value as passive pool doesn't exist in this scheme.
@@ -433,7 +576,7 @@ module soil_respiration
       !----- Find the heterotrophic respiration (total and components). -------------------!
       csite%fgc_rh (ipa) = er_fsc  * kgCday_2_umols * fg_C_loss
       csite%fsc_rh (ipa) = er_fsc  * kgCday_2_umols * fs_C_loss
-      csite%stgc_rh(ipa) = er_stsc * kgCday_2_umols * stg_C_loss
+      csite%stgc_rh(ipa) = er_stgc * kgCday_2_umols * stg_C_loss
       csite%stsc_rh(ipa) = er_stsc * kgCday_2_umols * sts_C_loss
       csite%msc_rh (ipa) = er_msc  * kgCday_2_umols * ms_C_loss
       csite%ssc_rh (ipa) = er_ssc  * kgCday_2_umols * ss_C_loss
@@ -486,16 +629,16 @@ module soil_respiration
 
          !----- Append step to the output file. -------------------------------------------!
          open (unit=84,file=rhetfile,status='old',position='append',action='write')
-         write(unit=84,fmt='(6(i6,1x),23(f12.6,1x))')                                      &
+         write(unit=84,fmt='(6(i6,1x),25(f12.6,1x))')                                      &
                         current_time%year,current_time%month,current_time%date             &
                        ,current_time%hour,current_time%min,ipa                             &
                        ,csite%fast_grnd_C(ipa),csite%fast_soil_C(ipa)                      &
                        ,csite%structural_grnd_C(ipa),csite%structural_soil_C(ipa)          &
                        ,csite%microbial_soil_C(ipa),csite%slow_soil_C(ipa)                 &
-                       ,er_fsc,er_stsc,er_msc,er_ssc,fg_C_resp,fs_C_resp,stg_C_resp        &
-                       ,sts_C_resp,ms_C_resp,ss_C_resp,ps_C_resp,tot_C_resp                &
-                       ,csite%A_decomp(ipa),csite%B_decomp(ipa),csite%f_decomp(ipa)        &
-                       ,csite%Lg_decomp(ipa),csite%Ls_decomp(ipa)
+                       ,csite%passive_soil_C(ipa),er_fsc,er_stgc,er_stsc,er_msc,er_ssc     &
+                       ,fg_C_resp,fs_C_resp,stg_C_resp,sts_C_resp,ms_C_resp,ss_C_resp      &
+                       ,ps_C_resp,tot_C_resp,csite%A_decomp(ipa),csite%B_decomp(ipa)       &
+                       ,csite%f_decomp(ipa),csite%Lg_decomp(ipa),csite%Ls_decomp(ipa)
          close (unit=84,status='keep')
          !---------------------------------------------------------------------------------!
       end if
@@ -523,7 +666,8 @@ module soil_respiration
       use soil_coms    , only : soil            ! ! look-up table
       use decomp_coms  , only : decomp_scheme   & ! intent(in)
                               , r_fsc           & ! intent(in)
-                              , r_stsc          & ! intent(in)
+                              , r_stsc_o        & ! intent(in)
+                              , r_stsc_l        & ! intent(in)
                               , r_msc_int       & ! intent(in)
                               , r_msc_slp       & ! intent(in)
                               , r_ssc           & ! intent(in)
@@ -565,10 +709,13 @@ module soil_respiration
       real                        :: ps_C_input
       real                        :: ps_C_loss
       real                        :: er_fsc
+      real                        :: er_stgc
       real                        :: er_stsc
       real                        :: er_msc
       real                        :: er_ssc
       real                        :: er_psc
+      real                        :: fg_lignin
+      real                        :: fs_lignin
       real                        :: fl_stg
       real                        :: fl_sts
       real                        :: ex_fgc_msc
@@ -600,14 +747,39 @@ module soil_respiration
 
       polygonloop: do ipy = 1,cgrid%npolygons
          cpoly => cgrid%polygon(ipy)
+         nsoil = cpoly%ntext_soil(nzg,isi)
 
          siteloop: do isi = 1,cpoly%nsites
             csite => cpoly%site(isi)
 
             !------------------------------------------------------------------------------!
+            !      Find the penalty factor for structural composition due to lignin        !
+            ! content.                                                                     !
+            !------------------------------------------------------------------------------!
+            if (csite%structural_grnd_C(ipa) > 0.0) then
+               fg_lignin = csite%structural_grnd_L(ipa) / csite%structural_grnd_C(ipa)
+            else
+               fg_lignin = 1.0
+            end if
+            if (csite%structural_soil_C(ipa) > 0.0) then
+               fs_lignin = csite%structural_soil_L(ipa) / csite%structural_soil_C(ipa)
+            else
+               fs_lignin = 1.0
+            end if
+            !------------------------------------------------------------------------------!
+
+
+            !------------------------------------------------------------------------------!
+            !      Find the respiration rate (this may be double counting the penalty).    !
+            !------------------------------------------------------------------------------!
+            er_stgc = (1. - fg_lignin) * r_stsc_o + fg_lignin * r_stsc_l
+            er_stsc = (1. - fs_lignin) * r_stsc_o + fs_lignin * r_stsc_l
+            !------------------------------------------------------------------------------!
+
+
+            !------------------------------------------------------------------------------!
             !      Decide the respiration factors based on the method.                     !
             !------------------------------------------------------------------------------!
-            nsoil = cpoly%ntext_soil(nzg,isi)
             select case (decomp_scheme)
             case (5)
                !---------------------------------------------------------------------------!
@@ -617,7 +789,6 @@ module soil_respiration
                !---------------------------------------------------------------------------!
                er_fsc  = r_fsc
                er_msc  = r_msc_int + r_msc_slp * soil(nsoil)%xsand
-               er_stsc = r_stsc
                er_ssc  = r_ssc
                er_psc  = r_psc
                !---------------------------------------------------------------------------!
@@ -653,7 +824,6 @@ module soil_respiration
                ! of the decomposition.                                                     !
                !---------------------------------------------------------------------------!
                er_fsc  = r_fsc
-               er_stsc = r_stsc
                er_msc  = 1.0    ! Microbial pool doesn't exist in this scheme.
                er_ssc  = 1.0    ! Respiration is the only outlet for SSC
                er_psc  = 1.0    ! Passive pool doesn't exist in this scheme.
@@ -674,7 +844,7 @@ module soil_respiration
                ex_fsc_psc  = 0.0
 
                ex_stgc_msc = 0.0
-               ex_stgc_ssc = (1.0 - er_stsc)
+               ex_stgc_ssc = (1.0 - er_stgc)
                ex_stgc_psc = 0.0
 
                ex_stsc_msc = 0.0
@@ -732,7 +902,7 @@ module soil_respiration
                sts_N_loss   = csite%today_sts_N_loss(ipa)
                !----- Demand to maintain stoichiometry (see Moorcroft et al. 2001). -------!
                stg_N_demand = stg_C_loss                                                   &
-                            * ( (1.0 - er_stsc) * (1./c2n_slow) - (1./c2n_structural) )
+                            * ( (1.0 - er_stgc) * (1./c2n_slow) - (1./c2n_structural) )
                sts_N_demand = sts_C_loss                                                   &
                             * ( (1.0 - er_stsc) * (1./c2n_slow) - (1./c2n_structural) )
                !---------------------------------------------------------------------------!
@@ -783,7 +953,7 @@ module soil_respiration
                   else
                      fl_sts = 1.0
                   end if
-                  ex_stgc_msc = (1.0 - er_stsc) * (1.0 - fl_stg)
+                  ex_stgc_msc = (1.0 - er_stgc) * (1.0 - fl_stg)
                   ex_stgc_ssc = (1.0 - er_stsc) *        fl_stg
                   ex_stgc_psc = 0.0
 
@@ -895,8 +1065,8 @@ module soil_respiration
                call check_budget_soilc(csite,ipa,fast_grnd_C_in,fast_soil_C_in             &
                                       ,structural_grnd_C_in,structural_soil_C_in           &
                                       ,microbial_soil_C_in,slow_soil_C_in                  &
-                                      ,passive_soil_C_in,er_fsc,er_stsc,er_msc,er_ssc      &
-                                      ,er_psc,ex_fgc_msc,ex_fgc_ssc,ex_fgc_psc             &
+                                      ,passive_soil_C_in,er_fsc,er_stgc,er_stsc,er_msc     &
+                                      ,er_ssc,er_psc,ex_fgc_msc,ex_fgc_ssc,ex_fgc_psc      &
                                       ,ex_fsc_msc,ex_fsc_ssc,ex_fsc_psc,ex_stgc_msc        &
                                       ,ex_stgc_ssc,ex_stgc_psc,ex_stsc_msc,ex_stsc_ssc     &
                                       ,ex_stsc_psc,ex_msc_ssc,ex_msc_psc,ex_ssc_msc        &
@@ -905,8 +1075,53 @@ module soil_respiration
                                       ,ms_C_loss,ss_C_input,ss_C_loss,ps_C_input,ps_C_loss)
                !---------------------------------------------------------------------------!
 
+            end do patchloop
+            !------------------------------------------------------------------------------!
+         end do siteloop
+         !---------------------------------------------------------------------------------!
+      end do polygonloop
+      !------------------------------------------------------------------------------------!
+
+      return
+   end subroutine update_C_and_N_pools
+   !=======================================================================================!
+   !=======================================================================================!
 
 
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This subroutine resets the necromass inputs.                                      !
+   !---------------------------------------------------------------------------------------!
+   subroutine zero_litter_inputs(cgrid)
+      use ed_state_vars, only : edtype          & ! structure
+                              , polygontype     & ! structure
+                              , sitetype        ! ! structure
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      type(edtype)     , target   :: cgrid
+      !----- Local variables. -------------------------------------------------------------!
+      type(polygontype), pointer  :: cpoly
+      type(sitetype)   , pointer  :: csite
+      integer                     :: ipy
+      integer                     :: isi
+      integer                     :: ipa
+      !------------------------------------------------------------------------------------!
+
+      polygonloop: do ipy = 1,cgrid%npolygons
+         cpoly => cgrid%polygon(ipy)
+
+         siteloop: do isi = 1,cpoly%nsites
+            csite => cpoly%site(isi)
+
+
+            !------------------------------------------------------------------------------!
+            !       Find the transition rates between all pools.                           !
+            !------------------------------------------------------------------------------!
+            patchloop: do ipa = 1,csite%npatches
                !---------------------------------------------------------------------------!
                !     This used to be reset in phenology, however, patch and cohort fusion  !
                ! and termination may occur in between the calls and carbon may go          !
@@ -933,7 +1148,7 @@ module soil_respiration
       !------------------------------------------------------------------------------------!
 
       return
-   end subroutine update_C_and_N_pools
+   end subroutine zero_litter_inputs
    !=======================================================================================!
    !=======================================================================================!
 
@@ -982,7 +1197,7 @@ module soil_respiration
       real(kind=8)             :: thigh_fun
       real(kind=8)             :: rrf8
       !----- External functions. ----------------------------------------------------------!
-      real(kind=4)             :: sngloff
+      real(kind=4), external   :: sngloff
       !------------------------------------------------------------------------------------!
 
       !----- Copy some variables to double precision temporaries. -------------------------!
@@ -1051,37 +1266,47 @@ module soil_respiration
    !     This function computes the heterotrophic respiration limitation factor, which     !
    ! includes limitations due to temperature and soil moisture.                            !
    !---------------------------------------------------------------------------------------!
-   real function het_resp_weight(soil_tempk,rel_soil_moist)
+   real function het_resp_weight(soil_tempk,rel_soil_moist,rel_soil_oxygen)
 
-      use decomp_coms, only : resp_temperature_increase  & ! intent(in)
-                            , resp_opt_water             & ! intent(in)
-                            , resp_water_below_opt       & ! intent(in)
-                            , resp_water_above_opt       & ! intent(in)
-                            , decomp_scheme              & ! intent(in)
-                            , rh_lloyd_1                 & ! intent(in)
-                            , rh_lloyd_2                 & ! intent(in)
-                            , rh_lloyd_3                 & ! intent(in)
-                            , rh_decay_low               & ! intent(in)
-                            , rh_decay_high              & ! intent(in)
-                            , rh_low_temp                & ! intent(in)
-                            , rh_high_temp               & ! intent(in)
-                            , rh_decay_dry               & ! intent(in)
-                            , rh_decay_wet               & ! intent(in)
-                            , rh_dry_smoist              & ! intent(in)
-                            , rh_wet_smoist              & ! intent(in)
-                            , rh_moyano12_a0             & ! intent(in)
-                            , rh_moyano12_a1             & ! intent(in)
-                            , rh_moyano12_a2             ! ! intent(in)
-      use consts_coms, only : lnexp_min                  & ! intent(in)
-                            , lnexp_max                  ! ! intent(in)
+      use decomp_coms , only : resp_temperature_increase  & ! intent(in)
+                             , resp_opt_water             & ! intent(in)
+                             , resp_water_below_opt       & ! intent(in)
+                             , resp_water_above_opt       & ! intent(in)
+                             , decomp_scheme              & ! intent(in)
+                             , rh_lloyd_1                 & ! intent(in)
+                             , rh_lloyd_2                 & ! intent(in)
+                             , rh_lloyd_3                 & ! intent(in)
+                             , rh_decay_low               & ! intent(in)
+                             , rh_decay_high              & ! intent(in)
+                             , rh_low_temp                & ! intent(in)
+                             , rh_high_temp               & ! intent(in)
+                             , rh_decay_dry               & ! intent(in)
+                             , rh_decay_wet               & ! intent(in)
+                             , rh_dry_smoist              & ! intent(in)
+                             , rh_wet_smoist              & ! intent(in)
+                             , rh_moyano12_a0             & ! intent(in)
+                             , rh_moyano12_a1             & ! intent(in)
+                             , rh_moyano12_a2             & ! intent(in)
+                             , rh08                       & ! intent(in)
+                             , rh_q108                    & ! intent(in)
+                             , rh_p_smoist                & ! intent(in)
+                             , rh_p_oxygen                ! ! intent(in)
+      use farq_leuning, only : collatz                    ! ! function
+      use consts_coms , only : lnexp_min                  & ! intent(in)
+                             , lnexp_max                  & ! intent(in)
+                             , almost_zero                & ! intent(in)
+                             , almost_one                 ! ! intent(in)
+      use rk4_coms    , only : tiny_offset                ! ! intent(in)
 
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       real(kind=4), intent(in) :: soil_tempk
       real(kind=4), intent(in) :: rel_soil_moist
+      real(kind=4), intent(in) :: rel_soil_oxygen
       !----- Local variables. -------------------------------------------------------------!
-      real(kind=4)             :: temperature_limitation
+      real(kind=4)             :: temperature_scale
       real(kind=4)             :: water_limitation
+      real(kind=4)             :: oxygen_limitation
       real(kind=4)             :: lnexplloyd
       real(kind=4)             :: lnexplow
       real(kind=4)             :: lnexphigh
@@ -1091,7 +1316,37 @@ module soil_respiration
       real(kind=4)             :: lnexpwet
       real(kind=4)             :: smdry_fun
       real(kind=4)             :: smwet_fun
+      real(kind=4)             :: rel_smoist_bnd
+      real(kind=4)             :: rel_oxygen_bnd
+      real(kind=8)             :: soil_tempk8
+      real(kind=8)             :: temperature_scale8
+      !----- External functions. ----------------------------------------------------------!
+      real(kind=4), external   :: sngloff
       !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !     In case moisture and oxygen functions are close to zero or one, simplify the   !
+      ! values to avoid degenerate floating point operations.                              !
+      !------------------------------------------------------------------------------------!
+      !----- Soil moisture. ---------------------------------------------------------------!
+      if (rel_soil_moist < almost_zero) then
+         rel_smoist_bnd = 0.0
+      else if (rel_soil_moist > almost_one) then
+         rel_smoist_bnd = 1.0
+      else
+         rel_smoist_bnd = rel_soil_moist
+      end if
+      !----- Soil oxygen. -----------------------------------------------------------------!
+      if (rel_soil_oxygen < almost_zero) then
+         rel_oxygen_bnd = 0.0
+      else if (rel_soil_oxygen > almost_one) then
+         rel_oxygen_bnd = 1.0
+      else
+         rel_oxygen_bnd = rel_soil_oxygen
+      end if
+      !------------------------------------------------------------------------------------!
+
 
 
       !------------------------------------------------------------------------------------!
@@ -1100,59 +1355,67 @@ module soil_respiration
       select case(decomp_scheme)
       case (0,3)
          !----- Use original ED-2.1 exponential temperature dependence. -------------------!
-         temperature_limitation = min( 1.0                                                 &
-                                     , exp(resp_temperature_increase * (soil_tempk-318.15)))
+         temperature_scale = min( 1.0                                                      &
+                                , exp(resp_temperature_increase * (soil_tempk-318.15)))
          !---------------------------------------------------------------------------------!
       case (1,4)
          !----- Use Lloyd and Taylor (1994) temperature dependence. -----------------------!
-         lnexplloyd             = rh_lloyd_1 * ( rh_lloyd_2 - 1./(soil_tempk - rh_lloyd_3))
-         lnexplloyd             = max(lnexp_min,min(lnexp_max,lnexplloyd))
-         temperature_limitation = min( 1.0, resp_temperature_increase * exp(lnexplloyd) )
+         lnexplloyd        = rh_lloyd_1 * ( rh_lloyd_2 - 1./(soil_tempk - rh_lloyd_3))
+         lnexplloyd        = max(lnexp_min,min(lnexp_max,lnexplloyd))
+         temperature_scale = min( 1.0, resp_temperature_increase * exp(lnexplloyd) )
          !---------------------------------------------------------------------------------!
-      case (2,5)
+      case (2)
          !---------------------------------------------------------------------------------!
          !      Similar to the original ED-1.0 formulation, which is based on the CENTURY  !
          ! model.  The change in the functional form is to avoid power of negative         !
          ! numbers, but the coefficients were tuned to give a similar curve.               !
          !---------------------------------------------------------------------------------!
          !----- Low temperature limitation. -----------------------------------------------!
-         lnexplow               = rh_decay_low * (rh_low_temp - soil_tempk)
-         lnexplow               = max(lnexp_min,min(lnexp_max,lnexplow))
-         tlow_fun               = 1.0 + exp(lnexplow)
+         lnexplow          = rh_decay_low * (rh_low_temp - soil_tempk)
+         lnexplow          = max(lnexp_min,min(lnexp_max,lnexplow))
+         tlow_fun          = 1.0 + exp(lnexplow)
          !----- High temperature limitation. ----------------------------------------------!
-         lnexphigh              = rh_decay_high * (soil_tempk - rh_high_temp)
-         lnexphigh              = max(lnexp_min,min(lnexp_max,lnexphigh))
-         thigh_fun              = 1.0 + exp(lnexphigh)
-         !----- Temperature limitation is a combination of both. --------------------------!
-         temperature_limitation = 1.0 / (tlow_fun * thigh_fun )
+         lnexphigh         = rh_decay_high * (soil_tempk - rh_high_temp)
+         lnexphigh         = max(lnexp_min,min(lnexp_max,lnexphigh))
+         thigh_fun         = 1.0 + exp(lnexphigh)
+         !----- Temperature scale is a combination of both. -------------------------------!
+         temperature_scale = 1.0 / (tlow_fun * thigh_fun )
+         !---------------------------------------------------------------------------------!
+      case (5)
+         !---------------------------------------------------------------------------------!
+         !     Heterotrophic respiration is modulated by a Q10 function, based on K13.     !
+         !                                                                                 !
+         !  Koven CD, Riley WJ, Subin ZM, Tang JY, Torn MS, Collins WD, Bonan GB, Lawrence !
+         !     DM, Swenson SC. 2013. The effect of vertically resolved soil biogeo-        !
+         !     chemistry and alternate soil C and N models on C dynamics of CLM4.          !
+         !     Biogeosciences, 10: 7109-7131. doi:10.5194/bg-10-7109-2013.                 !
+         !---------------------------------------------------------------------------------!
+         soil_tempk8        = dble(soil_tempk)
+         temperature_scale8 = collatz(soil_tempk8,rh08,rh_q108)
+         temperature_scale  = sngloff(temperature_scale8,tiny_offset)
          !---------------------------------------------------------------------------------!
       end select
       !------------------------------------------------------------------------------------!
 
 
       !------------------------------------------------------------------------------------!
-      !     Find the limitation due to soil moisture.                                      !
+      !     Find the limitation due to (low) soil moisture.                                !
       !------------------------------------------------------------------------------------!
       select case (decomp_scheme)
       case (0,1)
          !----- ED-2.1 default, also used when decomp_scheme is 1. ------------------------!
          if (rel_soil_moist <= resp_opt_water)then
-            water_limitation = exp((rel_soil_moist - resp_opt_water) * resp_water_below_opt)
+            water_limitation = exp((rel_smoist_bnd - resp_opt_water) * resp_water_below_opt)
          else
-            water_limitation = exp((resp_opt_water - rel_soil_moist) * resp_water_above_opt)
+            water_limitation = 1.0
          end if
          !---------------------------------------------------------------------------------!
-      case (2,5)
+      case (2)
          !----- Dry soil limitation. ------------------------------------------------------!
-         lnexpdry         = rh_decay_dry * (rh_dry_smoist - rel_soil_moist)
+         lnexpdry         = rh_decay_dry * (rh_dry_smoist - rel_smoist_bnd)
          lnexpdry         = max(lnexp_min,min(lnexp_max,lnexpdry))
          smdry_fun        = 1.0 + exp(lnexpdry)
-         !----- Wet soil limitation. ------------------------------------------------------!
-         lnexpwet         = rh_decay_wet * (rel_soil_moist - rh_wet_smoist)
-         lnexpwet         = max(lnexp_min,min(lnexp_max,lnexpwet))
-         smwet_fun        = 1.0 + exp(lnexpwet)
-         !----- Soil moisture limitation is a combination of both. ------------------------!
-         water_limitation = 1.0 / (smdry_fun * smwet_fun)
+         water_limitation = 1.0 / smdry_fun
          !---------------------------------------------------------------------------------!
       case (3,4)
          !---------------------------------------------------------------------------------!
@@ -1163,8 +1426,58 @@ module soil_respiration
          !     soil heterotrophic respiration: interaction with soil properties.           !
          !     Biogeosciences, 9: 1173-1182. doi:10.5194/bg-9-1173-2012 (M12).             !
          !---------------------------------------------------------------------------------!
-         water_limitation = rh_moyano12_a0 + rh_moyano12_a1 * rel_soil_moist               &
-                          + rh_moyano12_a2 + rel_soil_moist * rel_soil_moist
+         water_limitation = rh_moyano12_a0 + rh_moyano12_a1 * rel_smoist_bnd               &
+                          + rh_moyano12_a2 + rel_smoist_bnd * rel_smoist_bnd
+         !---------------------------------------------------------------------------------!
+      case (5)
+         !---------------------------------------------------------------------------------!
+         !     Moisture function based on K13, but with extra power factor based on some   !
+         ! local optimisation.                                                             !
+         !                                                                                 !
+         !  Koven CD, Riley WJ, Subin ZM, Tang JY, Torn MS, Collins WD, Bonan GB, Lawrence !
+         !     DM, Swenson SC. 2013. The effect of vertically resolved soil biogeo-        !
+         !     chemistry and alternate soil C and N models on C dynamics of CLM4.          !
+         !     Biogeosciences, 10: 7109-7131. doi:10.5194/bg-10-7109-2013 (K13).           !
+         !---------------------------------------------------------------------------------!
+         water_limitation = rel_smoist_bnd ** rh_p_smoist
+         !---------------------------------------------------------------------------------!
+      end select
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Find the limitation due to low oxygen (aka too much moisture).                 !
+      !------------------------------------------------------------------------------------!
+      select case (decomp_scheme)
+      case (0,1)
+         !----- ED-2.1 default, also used when decomp_scheme is 1. ------------------------!
+         if (rel_soil_moist <= resp_opt_water)then
+            oxygen_limitation = 1.0
+         else
+            lnexpwet          = (resp_opt_water - rel_smoist_bnd) * resp_water_above_opt
+            lnexpwet          = max(lnexp_min,min(lnexp_max,lnexpwet))
+            oxygen_limitation = exp(lnexpwet)
+         end if
+         !---------------------------------------------------------------------------------!
+      case (2)
+         !----- Wet soil limitation. ------------------------------------------------------!
+         lnexpwet          = rh_decay_wet * (rel_smoist_bnd - rh_wet_smoist)
+         lnexpwet          = max(lnexp_min,min(lnexp_max,lnexpwet))
+         smwet_fun         = 1.0 + exp(lnexpwet)
+         oxygen_limitation = 1.0 / smwet_fun
+         !---------------------------------------------------------------------------------!
+      case (3,4)
+         !------ Not needed, set to one. --------------------------------------------------!
+         water_limitation = rh_moyano12_a0 + rh_moyano12_a1 * rel_smoist_bnd               &
+                          + rh_moyano12_a2 + rel_soil_moist * rel_smoist_bnd
+         !---------------------------------------------------------------------------------!
+      case (5)
+         !---------------------------------------------------------------------------------!
+         !     Oxygen function is similar to the dry limitation (decaying as oxygen        !
+         ! becomes limiting as soils become saturated.                                     !
+         !---------------------------------------------------------------------------------!
+         oxygen_limitation = rel_oxygen_bnd ** rh_p_oxygen
          !---------------------------------------------------------------------------------!
       end select
       !------------------------------------------------------------------------------------!
@@ -1172,7 +1485,7 @@ module soil_respiration
 
 
       !----- Compute the weight, which is just the combination of both. -------------------!
-      het_resp_weight = temperature_limitation * water_limitation
+      het_resp_weight = temperature_scale * water_limitation * oxygen_limitation
       !------------------------------------------------------------------------------------!
 
       return
@@ -1194,13 +1507,13 @@ module soil_respiration
    subroutine check_budget_soilc(csite,ipa,fast_grnd_C_in,fast_soil_C_in                   &
                                 ,structural_grnd_C_in,structural_soil_C_in                 &
                                 ,microbial_soil_C_in,slow_soil_C_in,passive_soil_C_in      &
-                                ,er_fsc,er_stsc,er_msc,er_ssc,er_psc,ex_fgc_msc,ex_fgc_ssc &
-                                ,ex_fgc_psc,ex_fsc_msc,ex_fsc_ssc,ex_fsc_psc,ex_stgc_msc   &
-                                ,ex_stgc_ssc,ex_stgc_psc,ex_stsc_msc,ex_stsc_ssc           &
-                                ,ex_stsc_psc,ex_msc_ssc,ex_msc_psc,ex_ssc_msc,ex_ssc_psc   &
-                                ,ex_psc_msc,ex_psc_ssc,fg_C_loss,fs_C_loss,stg_C_loss      &
-                                ,sts_C_loss,ms_C_input,ms_C_loss,ss_C_input,ss_C_loss      &
-                                ,ps_C_input,ps_C_loss)
+                                ,er_fsc,er_stgc,er_stsc,er_msc,er_ssc,er_psc,ex_fgc_msc    &
+                                ,ex_fgc_ssc,ex_fgc_psc,ex_fsc_msc,ex_fsc_ssc,ex_fsc_psc    &
+                                ,ex_stgc_msc,ex_stgc_ssc,ex_stgc_psc,ex_stsc_msc           &
+                                ,ex_stsc_ssc,ex_stsc_psc,ex_msc_ssc,ex_msc_psc,ex_ssc_msc  &
+                                ,ex_ssc_psc,ex_psc_msc,ex_psc_ssc,fg_C_loss,fs_C_loss      &
+                                ,stg_C_loss,sts_C_loss,ms_C_input,ms_C_loss,ss_C_input     &
+                                ,ss_C_loss,ps_C_input,ps_C_loss)
 
       use ed_state_vars, only : sitetype          ! ! structure
       use ed_misc_coms , only : current_time      ! ! intent(in)
@@ -1220,6 +1533,7 @@ module soil_respiration
       real             , intent(in) :: slow_soil_C_in
       real             , intent(in) :: passive_soil_C_in
       real             , intent(in) :: er_fsc
+      real             , intent(in) :: er_stgc
       real             , intent(in) :: er_stsc
       real             , intent(in) :: er_msc
       real             , intent(in) :: er_ssc
@@ -1378,7 +1692,8 @@ module soil_respiration
       !------------------------------------------------------------------------------------!
       today_rh        = csite%today_rh(ipa) * umol_2_kgC * day_sec
       fracloss_rh     = er_fsc  * ( fg_C_loss  + fs_C_loss  )                              &
-                      + er_stsc * ( stg_C_loss + sts_C_loss )                              &
+                      + er_stgc * stg_C_loss                                               &
+                      + er_stsc * sts_C_loss                                               &
                       + er_msc  * ms_C_loss                                                &
                       + er_ssc  * ss_C_loss                                                &
                       + er_psc  * ps_C_loss
@@ -1460,7 +1775,7 @@ module soil_respiration
          write(unit=*,fmt=fmtf )  ' FRAC_FSC_SSC          : ',ex_fsc_ssc
          write(unit=*,fmt=fmtf )  ' FRAC_FSC_PSC          : ',ex_fsc_psc
          write(unit=*,fmt='(a)')  ' '
-         write(unit=*,fmt=fmtf )  ' FRAC_STGC_CO2         : ',er_stsc
+         write(unit=*,fmt=fmtf )  ' FRAC_STGC_CO2         : ',er_stgc
          write(unit=*,fmt=fmtf )  ' FRAC_STGC_MSC         : ',ex_stgc_msc
          write(unit=*,fmt=fmtf )  ' FRAC_STGC_SSC         : ',ex_stgc_ssc
          write(unit=*,fmt=fmtf )  ' FRAC_STGC_PSC         : ',ex_stgc_psc

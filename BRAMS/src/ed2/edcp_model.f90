@@ -200,6 +200,7 @@ subroutine ed_coup_model(ifm)
    use stable_cohorts      , only : flag_stable_cohorts         ! ! sub-routine
    use update_derived_utils, only : update_model_time_dm        ! ! sub-routine
    use vegetation_dynamics , only : veg_dynamics_driver         ! ! sub-routine
+   use soil_respiration    , only : zero_litter_inputs          ! ! sub-routine
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    integer, intent(in)                   :: ifm
@@ -492,6 +493,18 @@ subroutine ed_coup_model(ifm)
       if (reset_time) then
          do jfm=1,ngrids
             call zero_ed_fmean_vars(edgrid_g(jfm))
+         end do
+      end if
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !      Reset inputs to soil carbon.                                                  !
+      !------------------------------------------------------------------------------------!
+      if (new_day) then
+         do ifm=1,ngrids
+            call zero_litter_inputs(edgrid_g(ifm))
          end do
       end if
       !------------------------------------------------------------------------------------!

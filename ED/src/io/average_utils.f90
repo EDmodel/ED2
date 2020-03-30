@@ -4831,6 +4831,18 @@ module average_utils
                csite%mmean_mineral_soil_n   (ipa) = csite%mmean_mineral_soil_n   (ipa)     &
                                                   + csite%mineralized_soil_n     (ipa)     &
                                                   * ndaysi
+               csite%mmean_fgc_in           (ipa) = csite%mmean_fgc_in           (ipa)     &
+                                                  + csite%fgc_in                 (ipa)     &
+                                                  * ndaysi * yr_day
+               csite%mmean_fsc_in           (ipa) = csite%mmean_fsc_in           (ipa)     &
+                                                  + csite%fsc_in                 (ipa)     &
+                                                  * ndaysi * yr_day
+               csite%mmean_stgc_in          (ipa) = csite%mmean_stgc_in          (ipa)     &
+                                                  + csite%stgc_in                (ipa)     &
+                                                  * ndaysi * yr_day
+               csite%mmean_stsc_in          (ipa) = csite%mmean_stsc_in          (ipa)     &
+                                                  + csite%stsc_in                (ipa)     &
+                                                  * ndaysi * yr_day
                !---------------------------------------------------------------------------!
 
 
@@ -5740,6 +5752,28 @@ module average_utils
                   !------------------------------------------------------------------------!
                end do cohortloop
                !---------------------------------------------------------------------------!
+
+
+
+
+
+               !---------------------------------------------------------------------------!
+               !      Litter inputs.  Find polygon-level averages from the patch-level     !
+               ! averages.                                                                 !
+               !---------------------------------------------------------------------------!
+               cgrid%mmean_fgc_in  (ipy) = cgrid%mmean_fgc_in (ipy)                        &
+                                         + csite%mmean_fgc_in (ipa)                        &
+                                         * patch_wgt
+               cgrid%mmean_fsc_in  (ipy) = cgrid%mmean_fsc_in (ipy)                        &
+                                         + csite%mmean_fsc_in (ipa)                        &
+                                         * patch_wgt
+               cgrid%mmean_stgc_in (ipy) = cgrid%mmean_stgc_in(ipy)                        &
+                                         + csite%mmean_stgc_in(ipa)                        &
+                                         * patch_wgt
+               cgrid%mmean_stsc_in (ipy) = cgrid%mmean_stsc_in(ipy)                        &
+                                         + csite%mmean_stsc_in(ipa)                        &
+                                         * patch_wgt
+               !---------------------------------------------------------------------------------!
             end do patchloop
             !------------------------------------------------------------------------------!
          end do siteloop
@@ -5934,6 +5968,10 @@ module average_utils
          cgrid%mmean_struct_grnd_n        (ipy) = 0.0
          cgrid%mmean_struct_soil_n        (ipy) = 0.0
          cgrid%mmean_mineral_soil_n       (ipy) = 0.0
+         cgrid%mmean_fgc_in               (ipy) = 0.0
+         cgrid%mmean_fsc_in               (ipy) = 0.0
+         cgrid%mmean_stgc_in              (ipy) = 0.0
+         cgrid%mmean_stsc_in              (ipy) = 0.0
          cgrid%mmean_gpp                  (ipy) = 0.0
          cgrid%mmean_npp                  (ipy) = 0.0
          cgrid%mmean_leaf_resp            (ipy) = 0.0
@@ -6182,6 +6220,10 @@ module average_utils
                csite%mmean_struct_grnd_n    (ipa) = 0.0
                csite%mmean_struct_soil_n    (ipa) = 0.0
                csite%mmean_mineral_soil_n   (ipa) = 0.0
+               csite%mmean_fgc_in           (ipa) = 0.0
+               csite%mmean_fsc_in           (ipa) = 0.0
+               csite%mmean_stgc_in          (ipa) = 0.0
+               csite%mmean_stsc_in          (ipa) = 0.0
                csite%mmean_co2_residual     (ipa) = 0.0
                csite%mmean_energy_residual  (ipa) = 0.0
                csite%mmean_water_residual   (ipa) = 0.0

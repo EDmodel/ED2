@@ -1271,6 +1271,10 @@ module ed_type_init
          csite%mmean_struct_grnd_n          (ipaa:ipaz) = 0.0
          csite%mmean_struct_soil_n          (ipaa:ipaz) = 0.0
          csite%mmean_mineral_soil_n         (ipaa:ipaz) = 0.0
+         csite%mmean_fgc_in                 (ipaa:ipaz) = 0.0
+         csite%mmean_fsc_in                 (ipaa:ipaz) = 0.0
+         csite%mmean_stgc_in                (ipaa:ipaz) = 0.0
+         csite%mmean_stsc_in                (ipaa:ipaz) = 0.0
          csite%mmean_A_decomp               (ipaa:ipaz) = 0.0
          csite%mmean_B_decomp               (ipaa:ipaz) = 0.0
          csite%mmean_Af_decomp              (ipaa:ipaz) = 0.0
@@ -2319,6 +2323,10 @@ module ed_type_init
             cgrid%mmean_struct_grnd_n        (ipy) = 0.0
             cgrid%mmean_struct_soil_n        (ipy) = 0.0
             cgrid%mmean_mineral_soil_n       (ipy) = 0.0
+            cgrid%mmean_fgc_in               (ipy) = 0.0
+            cgrid%mmean_fsc_in               (ipy) = 0.0
+            cgrid%mmean_stgc_in              (ipy) = 0.0
+            cgrid%mmean_stsc_in              (ipy) = 0.0
             cgrid%mmean_nppleaf              (ipy) = 0.0
             cgrid%mmean_nppfroot             (ipy) = 0.0
             cgrid%mmean_nppsapwood           (ipy) = 0.0

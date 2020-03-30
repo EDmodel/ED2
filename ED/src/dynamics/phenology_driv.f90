@@ -849,7 +849,7 @@ module phenology_driv
 
 
                   !----- Adjust plant carbon pools and elongation factor. -----------------!
-                  cpatch%bleaf     (ico) = cpatch%bleaf(ico) - delta_broot
+                  cpatch%broot     (ico) = cpatch%broot(ico) - delta_broot
                   cpatch%bstorage  (ico) = cpatch%bstorage(ico)                            &
                                          + retained_carbon_fraction * delta_broot
                   !------------------------------------------------------------------------!

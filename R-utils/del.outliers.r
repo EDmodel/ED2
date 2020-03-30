@@ -63,15 +63,17 @@ del.outliers <<- function( x                  # Vector to be evaluated
 
 
          #----- Find the mean diurnal cycle and the mean variability of the diel. ---------#
-         location.dcycle = tapply(X=thisvar,INDEX=hhmm,FUN=sn.location ,na.rm=TRUE)
-         scale.dcycle    = tapply(X=thisvar,INDEX=hhmm,FUN=sn.scale    ,na.rm=TRUE)
-         shape.dcycle    = tapply(X=thisvar,INDEX=hhmm,FUN=sn.shape    ,na.rm=TRUE)
+         snstats.dcycle  = tapply(X=thisvar,INDEX=hhmm,FUN=sn.stats    ,na.rm=TRUE)
+         snstats.dcycle  = as.data.frame(do.call(what=rbind,args=snstats.dcycle))
+         location.dcycle = snstats.dcycle$location
+         scale.dcycle    = snstats.dcycle$scale
+         shape.dcycle    = snstats.dcycle$shape
          #---------------------------------------------------------------------------------#
 
 
 
          #----- Match the full time series with the average hour. -------------------------#
-         unique.hhmm = names(location.dcycle)
+         unique.hhmm = rownames(snstats.dcycle)
          idx         = match(hhmm,unique.hhmm)
          #---------------------------------------------------------------------------------#
 
@@ -160,9 +162,10 @@ del.outliers <<- function( x                  # Vector to be evaluated
 
 
          #----- Find the mean diurnal cycle and the mean variability of the diel. ---------#
-         location.all = sn.location (x=thisvar,na.rm=TRUE)
-         scale.all    = sn.scale    (x=thisvar,na.rm=TRUE)
-         shape.all    = sn.shape    (x=thisvar,na.rm=TRUE)
+         snstats.all  = sn.stats(x=thisvar,na.rm=TRUE)
+         location.all = snstats.all["location"]
+         scale.all    = snstats.all["scale"   ]
+         shape.all    = snstats.all["shape"   ]
          #---------------------------------------------------------------------------------#
 
 

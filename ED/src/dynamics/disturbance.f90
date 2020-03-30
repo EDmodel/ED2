@@ -2645,6 +2645,18 @@ module disturbance
          csite%mmean_mineral_soil_n (    np) = csite%mmean_mineral_soil_n (    np)         &
                                              + csite%mmean_mineral_soil_n (    cp)         &
                                              * area_fac
+         csite%mmean_fgc_in         (    np) = csite%mmean_fgc_in         (    np)         &
+                                             + csite%mmean_fgc_in         (    cp)         &
+                                             * area_fac
+         csite%mmean_fsc_in         (    np) = csite%mmean_fsc_in         (    np)         &
+                                             + csite%mmean_fsc_in         (    cp)         &
+                                             * area_fac
+         csite%mmean_stgc_in        (    np) = csite%mmean_stgc_in         (    np)         &
+                                             + csite%mmean_stgc_in         (    cp)         &
+                                             * area_fac
+         csite%mmean_stsc_in        (    np) = csite%mmean_stsc_in         (    np)         &
+                                             + csite%mmean_stsc_in         (    cp)         &
+                                             * area_fac
          csite%mmean_co2_residual   (    np) = csite%mmean_co2_residual   (    np)         &
                                              + csite%mmean_co2_residual   (    cp)         &
                                              * area_fac

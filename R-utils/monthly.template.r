@@ -143,8 +143,12 @@ create.monthly <<- function(ntimes,montha,yeara,inpref,slz.min){
    emean$struct.grnd.c           = rep(NA_real_,times=ntimes)
    emean$struct.soil.c           = rep(NA_real_,times=ntimes)
    emean$microbe.soil.c          = rep(NA_real_,times=ntimes)
-   emean$passive.soil.c          = rep(NA_real_,times=ntimes)
    emean$slow.soil.c             = rep(NA_real_,times=ntimes)
+   emean$passive.soil.c          = rep(NA_real_,times=ntimes)
+   emean$fgc.in                  = rep(NA_real_,times=ntimes)
+   emean$fsc.in                  = rep(NA_real_,times=ntimes)
+   emean$stgc.in                 = rep(NA_real_,times=ntimes)
+   emean$stsc.in                 = rep(NA_real_,times=ntimes)
    emean$crop.yield              = rep(NA_real_,times=ntimes)
    emean$crop.harvest            = rep(NA_real_,times=ntimes)
    emean$logging.harvest         = rep(NA_real_,times=ntimes)
@@ -743,6 +747,9 @@ create.monthly <<- function(ntimes,montha,yeara,inpref,slz.min){
    qmean$leaf.gbw       = matrix(data=NA,nrow=ntimes,ncol=ndcycle)
    qmean$wood.gbw       = matrix(data=NA,nrow=ntimes,ncol=ndcycle)
    qmean$rk4step        = matrix(data=NA,nrow=ntimes,ncol=ndcycle)
+   qmean$soil.water     = array(data=NA,dim=c(ntimes,ndcycle,nzg))
+   qmean$soil.temp      = array(data=NA,dim=c(ntimes,ndcycle,nzg))
+   qmean$soil.mstpot    = array(data=NA,dim=c(ntimes,ndcycle,nzg))
    #---------------------------------------------------------------------------------------#
 
 
@@ -890,8 +897,12 @@ create.monthly <<- function(ntimes,montha,yeara,inpref,slz.min){
    patch$struct.grnd.c  = list()
    patch$struct.soil.c  = list()
    patch$microbe.soil.c = list()
-   patch$passive.soil.c = list()
    patch$slow.soil.c    = list()
+   patch$passive.soil.c = list()
+   patch$fgc.in         = list()
+   patch$fsc.in         = list()
+   patch$stgc.in        = list()
+   patch$stsc.in        = list()
    patch$soil.temp      = list()
    patch$soil.water     = list()
    patch$soil.mstpot    = list()
@@ -1129,8 +1140,12 @@ update.monthly <<- function(new.ntimes,old.datum,montha,yeara,inpref,slz.min){
    new.datum$emean$struct.grnd.c     [idx ] = old.datum$emean$struct.grnd.c       [sel ]
    new.datum$emean$struct.soil.c     [idx ] = old.datum$emean$struct.soil.c       [sel ]
    new.datum$emean$microbe.soil.c    [idx ] = old.datum$emean$microbe.soil.c      [sel ]
-   new.datum$emean$passive.soil.c    [idx ] = old.datum$emean$passive.soil.c      [sel ]
    new.datum$emean$slow.soil.c       [idx ] = old.datum$emean$slow.soil.c         [sel ]
+   new.datum$emean$passive.soil.c    [idx ] = old.datum$emean$passive.soil.c      [sel ]
+   new.datum$emean$fgc.in            [idx ] = old.datum$emean$fgc.in              [sel ]
+   new.datum$emean$fsc.in            [idx ] = old.datum$emean$fsc.in              [sel ]
+   new.datum$emean$stgc.in           [idx ] = old.datum$emean$stgc.in             [sel ]
+   new.datum$emean$stsc.in           [idx ] = old.datum$emean$stsc.in             [sel ]
    new.datum$emean$crop.yield        [idx ] = old.datum$emean$crop.yield          [sel ]
    new.datum$emean$crop.harvest      [idx ] = old.datum$emean$crop.harvest        [sel ]
    new.datum$emean$logging.harvest   [idx ] = old.datum$emean$logging.harvest     [sel ]
@@ -1695,9 +1710,12 @@ update.monthly <<- function(new.ntimes,old.datum,montha,yeara,inpref,slz.min){
    new.datum$qmean$albedo.nir    [idx,] = old.datum$qmean$albedo.nir     [sel,]
    new.datum$qmean$rlong.albedo  [idx,] = old.datum$qmean$rlong.albedo   [sel,]
    new.datum$qmean$leaf.gsw      [idx,] = old.datum$qmean$leaf.gsw       [sel,]
-   new.datum$qmean$leaf.gbw      [idx,] = old.datum$qmean$leaf.gbw       [sel,]
-   new.datum$qmean$wood.gbw      [idx,] = old.datum$qmean$wood.gbw       [sel,]
-   new.datum$qmean$rk4step       [idx,] = old.datum$qmean$rk4step        [sel,]
+   new.datum$qmean$leaf.gbw      [idx,] = old.datum$qmean$leaf.gbw       [,]
+   new.datum$qmean$wood.gbw      [idx,] = old.datum$qmean$wood.gbw       [,]
+   new.datum$qmean$rk4step       [idx,] = old.datum$qmean$rk4step        [,]
+   new.datum$qmean$soil.water   [idx,,] = old.datum$qmean$soil.water    [sel,,]
+   new.datum$qmean$soil.temp    [idx,,] = old.datum$qmean$soil.temp     [sel,,]
+   new.datum$qmean$soil.mstpot  [idx,,] = old.datum$qmean$soil.mstpot   [sel,,]
    #---------------------------------------------------------------------------------------#
 
 
@@ -1843,8 +1861,12 @@ update.monthly <<- function(new.ntimes,old.datum,montha,yeara,inpref,slz.min){
    new.datum$patch$struct.grnd.c  = old.datum$patch$struct.grnd.c
    new.datum$patch$struct.soil.c  = old.datum$patch$struct.soil.c
    new.datum$patch$microbe.soil.c = old.datum$patch$microbe.soil.c
-   new.datum$patch$passive.soil.c = old.datum$patch$passive.soil.c
    new.datum$patch$slow.soil.c    = old.datum$patch$slow.soil.c
+   new.datum$patch$passive.soil.c = old.datum$patch$passive.soil.c
+   new.datum$patch$fgc.in         = old.datum$patch$fgc.in
+   new.datum$patch$fsc.in         = old.datum$patch$fsc.in
+   new.datum$patch$stgc.in        = old.datum$patch$stgc.in
+   new.datum$patch$stsc.in        = old.datum$patch$stsc.in
    new.datum$patch$soil.temp      = old.datum$patch$soil.temp
    new.datum$patch$soil.water     = old.datum$patch$soil.water
    new.datum$patch$soil.mstpot    = old.datum$patch$soil.mstpot

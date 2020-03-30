@@ -275,6 +275,14 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
          mymont$MMEAN.STRUCT.SOIL.L.PA  = (1. - agf.struct) * mymont$MMEAN.STRUCT.SOIL.L.PA
          mymont$MMEAN.MICROBE.SOIL.C.PA = 0. * mymont$MMEAN.FAST.SOIL.C.PA 
          mymont$MMEAN.PASSIVE.SOIL.C.PA = 0. * mymont$MMEAN.FAST.SOIL.C.PA 
+         #---------------------------------------------------------------------------------#
+
+         #----- Create dummy soil carbon inputs. ------------------------------------------#
+         mymont$MMEAN.FGC.IN.PA         = 0. * mymont$MMEAN.FAST.SOIL.C.PA
+         mymont$MMEAN.FSC.IN.PA         = 0. * mymont$MMEAN.FAST.SOIL.C.PA
+         mymont$MMEAN.STGC.IN.PA        = 0. * mymont$MMEAN.FAST.SOIL.C.PA
+         mymont$MMEAN.STSC.IN.PA        = 0. * mymont$MMEAN.FAST.SOIL.C.PA
+         #---------------------------------------------------------------------------------#
       }#end if (! "MMEAN.FAST.SOIL.C.PA" %in% names(mymont))
       #------------------------------------------------------------------------------------#
       #    Ground pools and microbial soil were added at the same time the above- and      #
@@ -293,6 +301,13 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
          mymont$MMEAN.STRUCT.SOIL.L.PY  = (1. - agf.struct) * mymont$MMEAN.STRUCT.SOIL.L.PY
          mymont$MMEAN.MICROBE.SOIL.C.PY = 0. * mymont$MMEAN.FAST.SOIL.C.PY 
          mymont$MMEAN.PASSIVE.SOIL.C.PY = 0. * mymont$MMEAN.FAST.SOIL.C.PY 
+
+         #----- Create dummy soil carbon inputs. ------------------------------------------#
+         mymont$MMEAN.FGC.IN.PY         = 0. * mymont$MMEAN.FAST.SOIL.C.PY
+         mymont$MMEAN.FSC.IN.PY         = 0. * mymont$MMEAN.FAST.SOIL.C.PY
+         mymont$MMEAN.STGC.IN.PY        = 0. * mymont$MMEAN.FAST.SOIL.C.PY
+         mymont$MMEAN.STSC.IN.PY        = 0. * mymont$MMEAN.FAST.SOIL.C.PY
+         #---------------------------------------------------------------------------------#
       }#end if (! "COMBUSTED.FUEL.PY" %in% names(mymont))
       #------------------------------------------------------------------------------------#
       #    Populate SLA with PFT default in case SLA is not in the output.                 #
@@ -343,8 +358,12 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
       emean$struct.grnd.c   [m] =   mymont$MMEAN.STRUCT.GRND.C.PY
       emean$struct.soil.c   [m] =   mymont$MMEAN.STRUCT.SOIL.C.PY
       emean$microbe.soil.c  [m] =   mymont$MMEAN.MICROBE.SOIL.C.PY
-      emean$passive.soil.c  [m] =   mymont$MMEAN.PASSIVE.SOIL.C.PY
       emean$slow.soil.c     [m] =   mymont$MMEAN.SLOW.SOIL.C.PY
+      emean$passive.soil.c  [m] =   mymont$MMEAN.PASSIVE.SOIL.C.PY
+      emean$fgc.in          [m] =   mymont$MMEAN.FGC.IN.PY
+      emean$fsc.in          [m] =   mymont$MMEAN.FSC.IN.PY
+      emean$stgc.in         [m] =   mymont$MMEAN.STGC.IN.PY
+      emean$stsc.in         [m] =   mymont$MMEAN.STSC.IN.PY
       emean$crop.yield      [m] =   mymont$CROP.YIELD.PY[thismonth]
       emean$crop.harvest    [m] =   mymont$CROP.HARVEST.PY
       emean$logging.harvest [m] =   mymont$LOGGING.HARVEST.PY
@@ -640,6 +659,9 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
       qmean$leaf.gsw     [m,] =   mymont$QMEAN.LEAF.GSW.PY       * day.sec
       qmean$wood.gbw     [m,] =   mymont$QMEAN.WOOD.GBW.PY       * day.sec
       qmean$rk4step      [m,] =   mymont$QMEAN.RK4STEP.PY
+      qmean$soil.water  [m,,] =   mymont$QMEAN.SOIL.WATER.PY
+      qmean$soil.temp   [m,,] =   mymont$QMEAN.SOIL.TEMP.PY      - t00
+      qmean$soil.mstpot [m,,] = - mymont$QMEAN.SOIL.MSTPOT.PY    * grav * wdnsi
       #------------------------------------------------------------------------------------#
 
 
@@ -1736,8 +1758,12 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
       patch$struct.grnd.c [[plab]] = mymont$MMEAN.STRUCT.GRND.C.PA
       patch$struct.soil.c [[plab]] = mymont$MMEAN.STRUCT.SOIL.C.PA
       patch$microbe.soil.c[[plab]] = mymont$MMEAN.MICROBE.SOIL.C.PA
-      patch$passive.soil.c[[plab]] = mymont$MMEAN.PASSIVE.SOIL.C.PA
       patch$slow.soil.c   [[plab]] = mymont$MMEAN.SLOW.SOIL.C.PA
+      patch$passive.soil.c[[plab]] = mymont$MMEAN.PASSIVE.SOIL.C.PA
+      patch$fgc.in        [[plab]] = mymont$MMEAN.FGC.IN.PA
+      patch$fsc.in        [[plab]] = mymont$MMEAN.FSC.IN.PA
+      patch$stgc.in       [[plab]] = mymont$MMEAN.STGC.IN.PA
+      patch$stsc.in       [[plab]] = mymont$MMEAN.STSC.IN.PA
       patch$soil.temp     [[plab]] = mymont$MMEAN.SOIL.TEMP.PA - t00
       patch$soil.water    [[plab]] = mymont$MMEAN.SOIL.WATER.PA
       patch$soil.mstpot   [[plab]] = - mymont$MMEAN.SOIL.MSTPOT.PA * grav * wdnsi

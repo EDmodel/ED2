@@ -68,6 +68,8 @@ module rk4_misc
                                        , mmdry8                & ! intent(in)
                                        , mmdryi8               & ! intent(in)
                                        , toodry8               ! ! intent(in)
+      use plant_hydro           , only : om_buff_d             & ! intent(in)
+                                       , op_buff_d             ! ! intent(in)
       use canopy_struct_dynamics, only : canopy_turbulence8    ! ! subroutine
       use ed_therm_lib          , only : ed_grndvap8           ! ! subroutine
       implicit none
@@ -435,14 +437,10 @@ module rk4_misc
 
                !----- Find the minimum vegetation water for this cohort. ------------------!
                rk4min_veg_water      = rk4min_veg_lwater * initp%tai(ico)
-               rk4min_leaf_water_im2 = rk4aux(ibuff)%rk4min_leaf_water_im2(ico)            &
-                                     * (1.d0-rk4eps)
-               rk4max_leaf_water_im2 = rk4aux(ibuff)%rk4max_leaf_water_im2(ico)            &
-                                     * (1.d0+rk4eps)
-               rk4min_wood_water_im2 = rk4aux(ibuff)%rk4min_wood_water_im2(ico)            &
-                                     * (1.d0-rk4eps)
-               rk4max_wood_water_im2 = rk4aux(ibuff)%rk4max_wood_water_im2(ico)            &
-                                     * (1.d0+rk4eps)
+               rk4min_leaf_water_im2 = rk4aux(ibuff)%rk4min_leaf_water_im2(ico)
+               rk4max_leaf_water_im2 = rk4aux(ibuff)%rk4max_leaf_water_im2(ico)
+               rk4min_wood_water_im2 = rk4aux(ibuff)%rk4min_wood_water_im2(ico)
+               rk4max_wood_water_im2 = rk4aux(ibuff)%rk4max_wood_water_im2(ico)
                !---------------------------------------------------------------------------!
 
 
@@ -608,10 +606,8 @@ module rk4_misc
 
                !----- Find the minimum leaf water for this cohort. ------------------------!
                rk4min_leaf_water     = rk4min_veg_lwater * initp%lai(ico)
-               rk4min_leaf_water_im2 = rk4aux(ibuff)%rk4min_leaf_water_im2(ico)            &
-                                     * (1.d0-rk4eps)
-               rk4max_leaf_water_im2 = rk4aux(ibuff)%rk4max_leaf_water_im2(ico)            &
-                                     * (1.d0+rk4eps)
+               rk4min_leaf_water_im2 = rk4aux(ibuff)%rk4min_leaf_water_im2(ico) * om_buff_d
+               rk4max_leaf_water_im2 = rk4aux(ibuff)%rk4max_leaf_water_im2(ico) * op_buff_d
                !---------------------------------------------------------------------------!
 
 
@@ -4807,12 +4803,12 @@ module rk4_misc
                                 , reducedpress8      ! ! function
       use soil_coms      , only : soil8              ! ! intent(in)
       use ed_misc_coms   , only : current_time       ! ! intent(in)
-      use pft_coms       , only : leaf_rwc_min       & ! intent(in)
-                                , wood_rwc_min       & ! intent(in)
-                                , small_rwc_min      ! ! intent(in)
+      use pft_coms       , only : leaf_psi_min       & ! intent(in)
+                                , wood_psi_min       & ! intent(in)
+                                , small_psi_min      ! ! intent(in)
       use physiology_coms, only : plant_hydro_scheme ! ! intent(in)
-      use plant_hydro    , only : rwc2tw             & ! subroutine
-                                , twi2twe            ! ! subroutine
+      use plant_hydro    , only : om_buff            & ! intent(in)
+                                , psi2twe            ! ! subroutine
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       type(patchtype)             , target     :: cpatch
@@ -4826,9 +4822,7 @@ module rk4_misc
       real(kind=8)                             :: can_exner_try
       real(kind=8)                             :: can_theta_try
       real(kind=8)                             :: can_enthalpy_try
-      real(kind=4)                             :: leaf_water_int_4
       real(kind=4)                             :: leaf_water_im2_4
-      real(kind=4)                             :: wood_water_int_4
       real(kind=4)                             :: wood_water_im2_4
       integer                                  :: k
       integer                                  :: hour
@@ -4979,21 +4973,21 @@ module rk4_misc
                !----- Find the lower limits. ----------------------------------------------!
                if (cpatch%is_small(ico)) then
                   !----- Small plant.  Use the small-cohort limits. -----------------------!
-                  call rwc2tw(small_rwc_min(ipft),small_rwc_min(ipft),cpatch%bleaf(ico)    &
-                             ,cpatch%bsapwooda(ico),cpatch%bsapwoodb(ico)                  &
-                             ,cpatch%bdeada(ico),cpatch%bdeadb(ico),cpatch%broot(ico)      &
-                             ,cpatch%dbh(ico),ipft,leaf_water_int_4,wood_water_int_4)
+                  call psi2twe(small_psi_min(ipft),small_psi_min(ipft),ipft                &
+                              ,cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%bsapwooda(ico)  &
+                              ,cpatch%bsapwoodb(ico),cpatch%bdeada(ico),cpatch%bdeadb(ico) &
+                              ,cpatch%broot(ico),cpatch%dbh(ico),leaf_water_im2_4          &
+                              ,wood_water_im2_4)
                   !------------------------------------------------------------------------!
                else
                   !----- Large plant.  Use the leaf and wood limits. ----------------------!
-                  call rwc2tw(leaf_rwc_min(ipft),wood_rwc_min(ipft),cpatch%bleaf(ico)      &
-                             ,cpatch%bsapwooda(ico),cpatch%bsapwoodb(ico)                  &
-                             ,cpatch%bdeada(ico),cpatch%bdeadb(ico),cpatch%broot(ico)      &
-                             ,cpatch%dbh(ico),ipft,leaf_water_int_4,wood_water_int_4)
+                  call psi2twe(leaf_psi_min(ipft),wood_psi_min(ipft),ipft                  &
+                              ,cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%bsapwooda(ico)  &
+                              ,cpatch%bsapwoodb(ico),cpatch%bdeada(ico),cpatch%bdeadb(ico) &
+                              ,cpatch%broot(ico),cpatch%dbh(ico),leaf_water_im2_4          &
+                              ,wood_water_im2_4)
                   !------------------------------------------------------------------------!
                end if
-               call twi2twe(leaf_water_int_4,wood_water_int_4,cpatch%nplant(ico)           &
-                           ,leaf_water_im2_4,wood_water_im2_4)
                rk4aux(ibuff)%rk4min_leaf_water_im2(ico) = dble(leaf_water_im2_4)
                rk4aux(ibuff)%rk4min_wood_water_im2(ico) = dble(wood_water_im2_4)
                rk4aux(ibuff)%rk4min_veg_water_im2 (ico) =                                  &
@@ -5004,11 +4998,9 @@ module rk4_misc
 
 
                !----- Find the upper limits. ----------------------------------------------!
-               call rwc2tw(1.0,1.0,cpatch%bleaf(ico),cpatch%bsapwooda(ico)                 &
-                          ,cpatch%bsapwoodb(ico),cpatch%bdeada(ico),cpatch%bdeadb(ico)     &
-                          ,cpatch%broot(ico),cpatch%dbh(ico),ipft,leaf_water_int_4         &
-                          ,wood_water_int_4)
-               call twi2twe(leaf_water_int_4,wood_water_int_4,cpatch%nplant(ico)           &
+               call psi2twe(0.0,0.0,ipft,cpatch%nplant(ico),cpatch%bleaf(ico)              &
+                           ,cpatch%bsapwooda(ico),cpatch%bsapwoodb(ico),cpatch%bdeada(ico) &
+                           ,cpatch%bdeadb(ico),cpatch%broot(ico),cpatch%dbh(ico)           &
                            ,leaf_water_im2_4,wood_water_im2_4)
                rk4aux(ibuff)%rk4max_leaf_water_im2(ico) = dble(leaf_water_im2_4)
                rk4aux(ibuff)%rk4max_wood_water_im2(ico) = dble(wood_water_im2_4)

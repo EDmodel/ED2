@@ -111,6 +111,23 @@ Module decomp_coms
    real    :: rh_active_depth  !  Maximum depth for avg. temperature and moisture   [    m]
    integer :: k_rh_active      !  Index of the bottommost layer                     [   --]
    !---------------------------------------------------------------------------------------!
+   !      Parameters used for the new temperature scaling of heterotrophic respiration,    !
+   ! based on CLM (K13), but with a simplified approach for anoxic environment (used when  !
+   ! DECOMP_SCHEME=5).                                                                     !
+   !                                                                                       !
+   !  Koven CD, Riley WJ, Subin ZM, Tang JY, Torn MS, Collins WD, Bonan GB, Lawrence DM,   !
+   !     Swenson SC. 2013. The effect of vertically resolved soil biogeochemistry and      !
+   !     alternate soil C and N models on C dynamics of CLM4. Biogeosciences, 10:          !
+   !     7109-7131. doi:10.5194/bg-10-7109-2013 (K13).                                     !
+   !---------------------------------------------------------------------------------------!
+   real         :: rh0         !  Reference scaling for RH at 15C                   [   --]
+   real         :: rh_q10      !  Q10 factor for heterotrophic respiration          [   --]
+   real(kind=8) :: rh08        !  Reference scaling for RH at 15C                   [   --]
+   real(kind=8) :: rh_q108     !  Q10 factor for heterotrophic respiration          [   --]
+   real         :: rh_p_smoist !  Power factor for moisture limitation factor       [   --]
+   real         :: rh_p_oxygen !  Power factor for oxygen limitation factor         [   --]
+   !---------------------------------------------------------------------------------------!
+   !---------------------------------------------------------------------------------------!
    !     Supply coefficient for nitrogen immobilization (1/day).                           !
    !---------------------------------------------------------------------------------------!
    real :: N_immobil_supply_scale
@@ -120,8 +137,11 @@ Module decomp_coms
    real :: r_fsc
    !---------------------------------------------------------------------------------------!
    !     Fraction of structural pool decomposition going to heterotrophic respiration.     !
+   !  Two values correspond to the fraction for lignin (r_stsc_l) and other materials      !
+   ! (r_stsc_o).                                                                           !
    !---------------------------------------------------------------------------------------!
-   real :: r_stsc
+   real :: r_stsc_l
+   real :: r_stsc_o
    !---------------------------------------------------------------------------------------!
    !     Fraction of microbial soil decomposition going to heterotrophic respiration.      !
    ! Two values are provided because the actual value depends on the sand content.         !

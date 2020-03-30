@@ -956,6 +956,7 @@ module rk4_derivs
       use rk4_coms              , only : rk4patchtype         & ! Structure
                                        , rk4site              & ! intent(in)
                                        , rk4aux               & ! intent(inout)
+                                       , rk4eps               & ! intent(in)
                                        , effarea_heat         & ! intent(in)
                                        , effarea_evap         & ! intent(in)
                                        , effarea_transp       & ! intent(in)
@@ -994,9 +995,6 @@ module rk4_derivs
       use canopy_struct_dynamics, only : vertical_vel_flux8   ! ! function
       use budget_utils          , only : compute_netrad8      ! ! function
       use physiology_coms       , only : plant_hydro_scheme   ! ! intent(in)
-      use plant_hydro           , only : om_buff_d            ! ! intent(in)
-      use pft_coms              , only : leaf_psi_min         & ! intent(in)
-                                       , small_psi_min        ! ! intent(in)
 
       implicit none
       !----- Arguments --------------------------------------------------------------------!
@@ -1027,13 +1025,15 @@ module rk4_derivs
       type(patchtype), pointer     :: cpatch            ! Current patch
       logical                      :: is_dew_cp         ! Test whether to add dew to TSW
       logical                      :: is_dew_cs         ! Test whether to add dew to soil
+      logical                      :: lwater_fine       ! Enough leaf water for transpir.
+      logical                      :: wwater_fine       ! Enough wood water for transpir.
       logical                      :: transp_fine       ! Test whether to allow transpir.
       integer                      :: ico               ! Current cohort ID
       integer                      :: ksn               ! Number of TSW layers
       integer                      :: ipft              ! Shortcut for PFT type
       integer                      :: kroot             ! Level of the bottom of root is
-      real(kind=8)                 :: leaf_psi_lwr      ! Lowest psi at which transp > 0
-      real(kind=8)                 :: small_psi_lwr     ! Lowest psi at which transp > 0
+      real(kind=8)                 :: lwater_im2_lwr    ! Minimum leaf water content
+      logical                      :: wwater_im2_lwr    ! Minimum wood water content
       real(kind=8)                 :: closedcan_frac    ! total fractional canopy coverage
       real(kind=8)                 :: transp            ! Cohort transpiration
       real(kind=8)                 :: wflux_wl          ! Wood-leaf water flow (sapflow)
@@ -1093,6 +1093,7 @@ module rk4_derivs
       real(kind=8)                 :: a,b,c0            ! Temporary variables for solving
                                                         ! the CO2 ODE
       real(kind=8)                 :: max_dwdt          ! Used for capping leaf evap
+      real(kind=8)                 :: op_rk4eps         ! Buffer for internal water 
       !----- Functions --------------------------------------------------------------------!
       real(kind=4), external           :: sngloff           ! Safe dble 2 single precision
       !------------------------------------------------------------------------------------!
@@ -1449,6 +1450,9 @@ module rk4_derivs
             !------------------------------------------------------------------------------!
             min_leaf_water = rk4leaf_drywhc * initp%lai(ico)
             max_leaf_water = rk4leaf_maxwhc * initp%lai(ico)
+            !------------------------------------------------------------------------------!
+
+
 
             !------ Calculate fraction of leaves covered with water. ----------------------!
             if (initp%leaf_water(ico) > min_leaf_water) then
@@ -1456,6 +1460,9 @@ module rk4_derivs
             else
                sigmaw = 0.d0
             end if
+            !------------------------------------------------------------------------------!
+
+
 
             !------------------------------------------------------------------------------!
             !    Here we must compute two different areas.  For transpiration, we want the !
@@ -1535,12 +1542,13 @@ module rk4_derivs
                      !---------------------------------------------------------------------!
                   case default
                      !----- Dynamic plant hydraulics. Check leaf water potential. ---------!
-                     small_psi_lwr = om_buff_d * dble(small_psi_min(ipft))
-                     leaf_psi_lwr  = om_buff_d * dble(leaf_psi_min (ipft))
-                     transp_fine   = merge( cpatch%leaf_psi(ico) > small_psi_lwr .and.     &
-                                            cpatch%wood_psi(ico) > small_psi_lwr           &
-                                          , cpatch%leaf_psi(ico) > leaf_psi_lwr            &
-                                          , cpatch%is_small(ico)                       )
+                     op_rk4eps      = 1.d0 + rk4eps
+                     lwater_im2_lwr = op_rk4eps * rk4aux(ibuff)%rk4min_leaf_water_im2(ico)
+                     wwater_im2_lwr = op_rk4eps * rk4aux(ibuff)%rk4min_wood_water_im2(ico)
+                     lwater_fine    = initp%leaf_water_im2(ico) >= lwater_im2_lwr
+                     wwater_fine    = initp%wood_water_im2(ico) >= wwater_im2_lwr
+                     transp_fine    = lwater_fine .and.                                    &
+                                      ( wwater_fine .or. ( .not. cpatch%is_small(ico) ) )
                      !---------------------------------------------------------------------!
                   end select
                   !------------------------------------------------------------------------!
@@ -1573,7 +1581,7 @@ module rk4_derivs
                      !---------------------------------------------------------------------!
                      !     Too dry for transpiration, shut down transpiration completely.  !
                      !---------------------------------------------------------------------!
-                     dinitp%psi_open(ico)   = 0.d0
+                     dinitp%psi_open  (ico) = 0.d0
                      dinitp%psi_closed(ico) = 0.d0
                      transp                 = 0.d0
                      !---------------------------------------------------------------------!

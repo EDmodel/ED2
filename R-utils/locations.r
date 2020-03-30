@@ -725,7 +725,7 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
                                                    ,"Rates and storage"
                                                    )#end names
                                        )#end list
-   #----- Density-dependent mortality. ----------------------------------------------------#
+   #----- Respiration scheme mortality. ---------------------------------------------------#
    flagvar[["resp.scheme"]]     = list( descr  = "Respiration method"
                                        , numeric = TRUE
                                        , values = c(0,1)
@@ -889,12 +889,30 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
                                        , values = c(0,1,2)
                                        , names  = c("OFF","ON","Logging")
                                        )#end list
+   flagvar[["decomp.scheme"]]    = list( descr  = "Decomposition"
+                                       , numeric = TRUE
+                                       , values = c(0,1,2,3,4,5)
+                                       , names  = c( "Moorcroft et al. (2001)"
+                                                   , "Lloyd and Taylor (1994)"
+                                                   , "Longo et al. (2019)"
+                                                   , "Moorcroft+Moyano"
+                                                   , "Lloyd_Taylor+Moyano"
+                                                   , "Bolker et al. (1998)"
+                                                   )#end c
+                                       )#end list
    flagvar[["ihydro"       ]]    = list( descr  = "Plant hydraulics"
                                        , numeric = TRUE
                                        , values = c(0,1,2)
                                        , names  = c( "Static"
                                                    , "Xu/Christoffersen"
                                                    , "Xu et al (2016)"
+                                                   )#end c
+                                       )#end list
+   flagvar[["hydrodyn.set" ]]    = list( descr  = "Plant hydrodynamics set"
+                                       , numeric = TRUE
+                                       , values = c(0,1)
+                                       , names  = c( "Off"
+                                                   , "Xu/Christoffersen"
                                                    )#end c
                                        )#end list
    flagvar[["ianth.dataset"]]    = list( descr  = "LULCC dataset"
@@ -1275,6 +1293,11 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
                                      , fmt   = "%.3f"
                                      , off   = 0.0
                                      , mult  = 0.001)
+   numvar[["simul"   ]]        = list( descr = "Simulation"
+                                     , unit  = ""
+                                     , fmt   = "%4.4i"
+                                     , off   = 0.0
+                                     , mult  = 1.0)
    #---------------------------------------------------------------------------------------#
 
 
@@ -1300,6 +1323,11 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
          nparms = 1
          param  = c("version")
          na     = c(      6)
+         nz     = c(      9)
+      }else if (lenici == 9){
+         nparms = 1
+         param  = c("simul")
+         na     = c(      7)
          nz     = c(      9)
       }else if (lenici == 10){
          nparms = 1
@@ -1546,6 +1574,11 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
          param  = c("include.fire","ianth.disturb","ianth.dataset","isoil.text")
          na     = c(            11,             19,             22,          34)
          nz     = c(            12,             20,             28,          35)
+      }else if (lenici == 36 && grepl(pattern="idecomp",x=ici)){
+         nparms = 3
+         param  = c("ivegt.dynamics","decomp.scheme","hydrodyn.set")
+         na     = c(              14,             24,            35)
+         nz     = c(              15,             25,            36)
       }else if (lenici == 36){
          nparms = 3
          param  = c("iustar","icanturb","topsoil")
@@ -3299,6 +3332,27 @@ poitmp[[u]] = list( short           = "las_gaviotas"
                   , lat             =   4.550
                   , alt             = 167
                   , wmo             = 80241
+                  , isoilflg        = 1
+                  , ntext           = 1
+                  , sand            = -1.000
+                  , clay            = -1.000
+                  , depth           = "F"
+                  , isoilbc         = 1
+                  , sldrain         = 90.
+                  , scolour         = 14
+                  , met.driver      = "MERRA2_MSWEP2"
+                  , yeara           = 1974
+                  , yearz           = 2017
+                  , iphen           = -1
+                  )#end list
+u           = u + 1
+poitmp[[u]] = list( short           = "laegern"
+                  , longname        = "Laegern, CHE"
+                  , iata            = "lae"
+                  , lon             = 8.397
+                  , lat             = 47.482
+                  , alt             = 853
+                  , wmo             = NA
                   , isoilflg        = 1
                   , ntext           = 1
                   , sand            = -1.000
