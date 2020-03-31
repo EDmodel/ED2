@@ -715,8 +715,6 @@ module soil_respiration
       real                        :: er_psc
       real                        :: fg_lignin
       real                        :: fs_lignin
-      real                        :: fl_stg
-      real                        :: fl_sts
       real                        :: ex_fgc_msc
       real                        :: ex_fgc_ssc
       real                        :: ex_fgc_psc
@@ -751,33 +749,11 @@ module soil_respiration
             csite => cpoly%site(isi)
             nsoil = cpoly%ntext_soil(nzg,isi)
 
-            !------------------------------------------------------------------------------!
-            !      Find the penalty factor for structural composition due to lignin        !
-            ! content.                                                                     !
-            !------------------------------------------------------------------------------!
-            if (csite%structural_grnd_C(ipa) > 0.0) then
-               fg_lignin = csite%structural_grnd_L(ipa) / csite%structural_grnd_C(ipa)
-            else
-               fg_lignin = 1.0
-            end if
-            if (csite%structural_soil_C(ipa) > 0.0) then
-               fs_lignin = csite%structural_soil_L(ipa) / csite%structural_soil_C(ipa)
-            else
-               fs_lignin = 1.0
-            end if
-            !------------------------------------------------------------------------------!
-
 
             !------------------------------------------------------------------------------!
-            !      Find the respiration rate (this may be double counting the penalty).    !
-            !------------------------------------------------------------------------------!
-            er_stgc = (1. - fg_lignin) * r_stsc_o + fg_lignin * r_stsc_l
-            er_stsc = (1. - fs_lignin) * r_stsc_o + fs_lignin * r_stsc_l
-            !------------------------------------------------------------------------------!
-
-
-            !------------------------------------------------------------------------------!
-            !      Decide the respiration factors based on the method.                     !
+            !      Decide the respiration factors based on the method.  The only exception !
+            ! is the structural carbon, which depends on lignin content and is done inside !
+            ! the patch loop.                                                              !
             !------------------------------------------------------------------------------!
             select case (decomp_scheme)
             case (5)
@@ -842,14 +818,6 @@ module soil_respiration
                ex_fsc_ssc  = (1.0 - er_fsc )
                ex_fsc_psc  = 0.0
 
-               ex_stgc_msc = 0.0
-               ex_stgc_ssc = (1.0 - er_stgc)
-               ex_stgc_psc = 0.0
-
-               ex_stsc_msc = 0.0
-               ex_stsc_ssc = (1.0 - er_stsc)
-               ex_stsc_psc = 0.0
-
                ex_msc_ssc  = 0.0
                ex_msc_psc  = 0.0
 
@@ -868,6 +836,31 @@ module soil_respiration
             !       Find the transition rates between all pools.                           !
             !------------------------------------------------------------------------------!
             patchloop: do ipa = 1,csite%npatches
+
+               !---------------------------------------------------------------------------!
+               !      Find the fraction of lignin (above- and below-ground).   This is     !
+               ! used for partitioning the fraction of structural carbon loss that goes    !
+               ! to respiration and to soil pools.                                         !
+               !---------------------------------------------------------------------------!
+               if (csite%structural_grnd_C(ipa) > 0.0) then
+                  fg_lignin = csite%structural_grnd_L(ipa) / csite%structural_grnd_C(ipa)
+               else
+                  fg_lignin = 1.0
+               end if
+               if (csite%structural_soil_C(ipa) > 0.0) then
+                  fs_lignin = csite%structural_soil_L(ipa) / csite%structural_soil_C(ipa)
+               else
+                  fs_lignin = 1.0
+               end if
+               !---------------------------------------------------------------------------!
+
+
+               !---------------------------------------------------------------------------!
+               !      Find the respiration rate (this may be double counting the penalty). !
+               !---------------------------------------------------------------------------!
+               er_stgc = (1. - fg_lignin) * r_stsc_o + fg_lignin * r_stsc_l
+               er_stsc = (1. - fs_lignin) * r_stsc_o + fs_lignin * r_stsc_l
+               !---------------------------------------------------------------------------!
 
 
 
@@ -932,36 +925,42 @@ module soil_respiration
                !---------------------------------------------------------------------------!
 
 
+
+
                !---------------------------------------------------------------------------!
-               !    Inputs for the microbial and humified (slow) soil pools depend on the  !
-               ! decomposition scheme.                                                     !
+               !    Inputs from structual carbon to the microbial and humified (slow) soil !
+               ! pools depend on the decomposition scheme.                                 !
                !---------------------------------------------------------------------------!
                select case (decomp_scheme)
                case (5)
                   !------------------------------------------------------------------------!
-                  !    Find ratio of decayed structural carbon that goes to microbial and  !
-                  ! humified (slow) carbon.                                                !
+                  !     CENTURY-based model.  Partition non-respired losses between        !
+                  ! microbial and humified pools.                                          !
                   !------------------------------------------------------------------------!
-                  if (csite%structural_grnd_C(ipa) > 0.0) then
-                     fl_stg = csite%structural_grnd_L(ipa) / csite%structural_grnd_C(ipa)
-                  else
-                     fl_stg = 1.0
-                  end if
-                  if (csite%structural_soil_C(ipa) > 0.0) then
-                     fl_sts = csite%structural_soil_L(ipa) / csite%structural_soil_C(ipa)
-                  else
-                     fl_sts = 1.0
-                  end if
-                  ex_stgc_msc = (1.0 - er_stgc) * (1.0 - fl_stg)
-                  ex_stgc_ssc = (1.0 - er_stsc) *        fl_stg
+                  ex_stgc_msc = (1.0 - er_stgc) * (1.0 - fg_lignin)
+                  ex_stgc_ssc = (1.0 - er_stsc) *        fs_lignin
                   ex_stgc_psc = 0.0
 
-                  ex_stsc_msc = (1.0 - er_stsc) * (1.0 - fl_sts)
-                  ex_stsc_ssc = (1.0 - er_stsc) *        fl_sts
+                  ex_stsc_msc = (1.0 - er_stsc) * (1.0 - fg_lignin)
+                  ex_stsc_ssc = (1.0 - er_stsc) *        fs_lignin
+                  ex_stsc_psc = 0.0
+                  !------------------------------------------------------------------------!
+               case default
+                  !------------------------------------------------------------------------!
+                  !      Original model. Everything that is not respired goes to slow.     !
+                  !------------------------------------------------------------------------!
+                  ex_stgc_msc = 0.0
+                  ex_stgc_ssc = (1.0 - er_stgc)
+                  ex_stgc_psc = 0.0
+
+                  ex_stsc_msc = 0.0
+                  ex_stsc_ssc = (1.0 - er_stsc)
                   ex_stsc_psc = 0.0
                   !------------------------------------------------------------------------!
                end select
                !---------------------------------------------------------------------------!
+
+
 
 
                !---------------------------------------------------------------------------!
