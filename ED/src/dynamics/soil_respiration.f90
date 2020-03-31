@@ -301,8 +301,7 @@ module soil_respiration
    subroutine resp_f_decomp(csite,ipa)
 
       use ed_state_vars, only : sitetype               ! ! structure
-      use decomp_coms  , only : decomp_scheme          & ! intent(in)
-                              , e_lignin               & ! intent(in)
+      use decomp_coms  , only : e_lignin               & ! intent(in)
                               , r_stsc_o               & ! intent(in)
                               , r_stsc_l               & ! intent(in)
                               , N_immobil_supply_scale & ! intent(in)
