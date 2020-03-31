@@ -746,10 +746,10 @@ module soil_respiration
 
       polygonloop: do ipy = 1,cgrid%npolygons
          cpoly => cgrid%polygon(ipy)
-         nsoil = cpoly%ntext_soil(nzg,isi)
 
          siteloop: do isi = 1,cpoly%nsites
             csite => cpoly%site(isi)
+            nsoil = cpoly%ntext_soil(nzg,isi)
 
             !------------------------------------------------------------------------------!
             !      Find the penalty factor for structural composition due to lignin        !
