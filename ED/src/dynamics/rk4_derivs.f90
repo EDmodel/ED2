@@ -1033,7 +1033,7 @@ module rk4_derivs
       integer                      :: ipft              ! Shortcut for PFT type
       integer                      :: kroot             ! Level of the bottom of root is
       real(kind=8)                 :: lwater_im2_lwr    ! Minimum leaf water content
-      logical                      :: wwater_im2_lwr    ! Minimum wood water content
+      real(kind=8)                 :: wwater_im2_lwr    ! Minimum wood water content
       real(kind=8)                 :: closedcan_frac    ! total fractional canopy coverage
       real(kind=8)                 :: transp            ! Cohort transpiration
       real(kind=8)                 :: wflux_wl          ! Wood-leaf water flow (sapflow)
