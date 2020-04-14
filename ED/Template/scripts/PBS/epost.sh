@@ -618,7 +618,7 @@ do
       ;;
    tb0|tbx)
       eftyeara=2014
-      eftyearz=2017
+      eftyearz=2018
       ;;
    hvd)
       eftyeara=1992
@@ -706,6 +706,10 @@ do
          Sheffield|WFDEI*|ERAINT*|MERRA2*|PGMF3*)
             thisyeara=${metcyca}
             thisyearz=${metcycz}
+            ;;
+         Tanguro_*)
+            thisyeara=2014
+            thisyearz=2018
             ;;
          *)
             thisyeara=${metcyca}

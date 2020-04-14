@@ -347,8 +347,15 @@ module ed_init_history
                            !---------------------------------------------------------------!
                         else
                            cpatch%ncohorts = 0
-                        endif
+                        end if
+                        !------------------------------------------------------------------!
+
+
+                        !----- Update the cohort count (may be redundant as well...) ------!
+                        csite%cohort_count(ipa) = cpatch%ncohorts
+                        !------------------------------------------------------------------!
                      end do patchloop
+                     !---------------------------------------------------------------------!
                   else
                      write (unit=*,fmt='(a)'          ) '---------------------------------'
                      write (unit=*,fmt='(a)'          ) ' Found a site with no patches.'
@@ -3791,9 +3798,9 @@ module ed_init_history
       call hdf_getslab_r(csite%cbudget_initialstorage                                      &
                      ,'CBUDGET_INITIALSTORAGE      ',dsetrank,iparallel,.true. ,foundvar)
       call hdf_getslab_r(csite%cbudget_residual                                            &
-                     ,'CBUDGET_COMMITTED           ',dsetrank,iparallel,.true. ,foundvar)
-      call hdf_getslab_r(csite%cbudget_committed                                           &
                      ,'CBUDGET_RESIDUAL            ',dsetrank,iparallel,.true. ,foundvar)
+      call hdf_getslab_r(csite%cbudget_committed                                           &
+                     ,'CBUDGET_COMMITTED           ',dsetrank,iparallel,.true. ,foundvar)
       call hdf_getslab_r(csite%commit_storage_resp                                         &
                      ,'COMMIT_STORAGE_RESP         ',dsetrank,iparallel,.true. ,foundvar)
       call hdf_getslab_r(csite%commit_growth_resp                                          &

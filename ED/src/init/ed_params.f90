@@ -359,7 +359,7 @@ subroutine init_decomp_params()
    select case (decomp_scheme)
    case (5)
       r_fsc           = 0.55
-      r_stsc_l        = 0.10
+      r_stsc_l        = 0.20
       r_stsc_o        = 0.50
       r_msc_int       = 0.60
       r_msc_slp       = 0.17
@@ -449,7 +449,7 @@ subroutine init_decomp_params()
       !                                                                                    !
       !------------------------------------------------------------------------------------!
       decay_rate_fsc  =  12.0  / yr_day ! 16.7 / yr_day
-      decay_rate_stsc =  2.0   / yr_day
+      decay_rate_stsc =  1.5   / yr_day
       decay_rate_msc  =  6.0   / yr_day
       decay_rate_ssc  =  0.15  / yr_day
       decay_rate_psc  =  0.012 / yr_day 
@@ -522,10 +522,10 @@ subroutine init_decomp_params()
    !     alternate soil C and N models on C dynamics of CLM4. Biogeosciences, 10:          !
    !     7109-7131. doi:10.5194/bg-10-7109-2013 (K13).                                     !
    !---------------------------------------------------------------------------------------!
-   rh0          = 0.630
-   rh_q10       = 1.500
-   rh_p_smoist  = 0.300
-   rh_p_oxygen  = 0.210
+   rh0          = 0.425 ! 0.630
+   rh_q10       = 1.893 ! 1.500
+   rh_p_smoist  = 0.606 ! 0.600 ! 0.300
+   rh_p_oxygen  = 0.164 ! 0.100 ! 0.210
    !---------------------------------------------------------------------------------------!
 
 
@@ -1593,7 +1593,7 @@ subroutine init_soil_coms
    real(kind=4)            :: slxsilt                ! Silt fraction
    !----- Local constants. ----------------------------------------------------------------!
    real(kind=4), parameter :: fieldcp_K   =  0.1     ! hydr. cond. at field cap.   [mm/day]
-   real(kind=4), parameter :: residual_K  =  1.e-8   ! minimum hydr. cond.         [mm/day]
+   real(kind=4), parameter :: residual_K  =  1.e-5   ! minimum hydr. cond.         [mm/day]
    real(kind=4), parameter :: soilcp_MPa  = -3.1     ! Matric pot. - air dry soil  [   MPa]
    real(kind=4), parameter :: soilwp_MPa  = -1.5     ! Matric pot. - wilting point [   MPa]
    real(kind=4), parameter :: sand_hcapv  =  2.128e6 ! Sand vol. heat capacity     [J/m3/K]

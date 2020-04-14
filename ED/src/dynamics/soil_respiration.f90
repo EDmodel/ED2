@@ -11,13 +11,16 @@ module soil_respiration
                               , patchtype                ! ! structure
       use soil_coms    , only : soil                     & ! intent(in)
                               , dslz                     & ! intent(in)
-                              , slz                      ! ! intent(in)
+                              , slz                      & ! intent(in)
+                              , matric_potential         ! ! function
       use decomp_coms  , only : decomp_scheme            & ! intent(in)
                               , k_rh_active              ! ! intent(in)
       use consts_coms  , only : wdns                     & ! intent(in)
-                              , umols_2_kgCyr            ! ! intent(in)
+                              , umols_2_kgCyr            & ! intent(in)
+                              , yr_day                   ! ! intent(in)
       use therm_lib    , only : uextcm2tl                ! ! function
-      use ed_misc_coms , only : dtlsm                    & ! intent(in)
+      use ed_misc_coms , only : current_time             & ! intent(in)
+                              , dtlsm                    & ! intent(in)
                               , dtlsm_o_frqsum           ! ! intent(in)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
@@ -34,15 +37,58 @@ module soil_respiration
       integer                                    :: nsoil
       real                                       :: lyr_soil_oxygen
       real                                       :: lyr_soil_moist
-      real                                       :: rel_soil_oxygen
-      real                                       :: rel_soil_moist
+      real                                       :: arl_soil_oxygen
+      real                                       :: arl_soil_moist
+      real                                       :: brl_soil_oxygen
+      real                                       :: brl_soil_moist
       real                                       :: sum_soil_energy
       real                                       :: sum_soil_water
       real                                       :: sum_soil_hcap
       real                                       :: sum_soil_slmsts
       real                                       :: sum_soil_soilcp
+      real                                       :: avg_soil_water
+      real                                       :: avg_soil_mstpot
       real                                       :: avg_soil_temp
       real                                       :: avg_soil_fliq
+      real                                       :: af_temperature
+      real                                       :: af_moisture
+      real                                       :: af_oxygen
+      real                                       :: bf_temperature
+      real                                       :: bf_moisture
+      real                                       :: bf_oxygen
+      real                                       :: ahet_C_resp
+      real                                       :: bhet_C_resp
+      real                                       :: thet_C_resp
+      real                                       :: auto_C_resp
+      !----- Local constants. -------------------------------------------------------------!
+      logical                       , parameter  :: print_debug = .false.
+      character(len=14)             , parameter  :: downregfile = 'rh_downreg.txt'
+      !----- Locally saved variables. -----------------------------------------------------!
+      logical                       , save       :: first_time = .true.
+      !------------------------------------------------------------------------------------!
+
+
+
+
+      !----- Write debugging information. -------------------------------------------------!
+      if (first_time) then
+         if (print_debug) then
+            !----- Append step to the output file. ----------------------------------------!
+            open (unit=83,file=downregfile,status='replace',action='write')
+            write (unit=83,fmt='(29(a,1x))')                                               &
+                     '  YEAR',      ' MONTH',      '   DAY',      '  HOUR',      '   MIN'  &
+              ,      '   IPA','        AREA','    SFC_TEMP','   SFC_WATER','  SFC_MSTPOT'  &
+              ,'  SFC_MSTREL','  SFC_OXYREL','     AF_TEMP','    AF_MOIST','   AF_OXYGEN'  &
+              ,'    A_DECOMP','   SOIL_TEMP','  SOIL_WATER',' SOIL_MSTPOT',' SOIL_MSTREL'  &
+              ,' SOIL_OXYREL','     BF_TEMP','    BF_MOIST','   BF_OXYGEN','    B_DECOMP'  &
+              ,'   AHET_RESP','   BHET_RESP','   THET_RESP','   AUTO_RESP'
+            close (unit=83,status='keep')
+            !------------------------------------------------------------------------------!
+         end if
+         !---------------------------------------------------------------------------------!
+
+         first_time = .false.
+      end if
       !------------------------------------------------------------------------------------!
 
 
@@ -53,6 +99,7 @@ module soil_respiration
       ! a different temperature.                                                           !
       !------------------------------------------------------------------------------------!
       cpatch => csite%patch(ipa)
+      auto_C_resp = 0.
       do ico = 1,cpatch%ncohorts
          ipft  = cpatch%pft(ico)
          kroot = cpatch%krdepth(ico)
@@ -95,6 +142,29 @@ module soil_respiration
                                        * umols_2_kgCyr * dtlsm_o_frqsum                    &
                                        / cpatch%nplant          (ico)
          !---------------------------------------------------------------------------------!
+
+
+         !---------------------------------------------------------------------------------!
+         !      Integrate patch respiration in kgC/m2/yr.                                  !
+         !---------------------------------------------------------------------------------!
+         if (print_debug) then
+            auto_C_resp = auto_C_resp                                                      &
+                        + umols_2_kgCyr  * ( cpatch%leaf_respiration(ico)                  &
+                                           + cpatch%root_respiration(ico) )                &
+                        + cpatch%nplant(ico) * yr_day * ( cpatch%leaf_growth_resp  (ico)   &
+                                                        + cpatch%root_growth_resp  (ico)   &
+                                                        + cpatch%sapa_growth_resp  (ico)   &
+                                                        + cpatch%sapb_growth_resp  (ico)   &
+                                                        + cpatch%barka_growth_resp (ico)   &
+                                                        + cpatch%barkb_growth_resp (ico)   &
+                                                        + cpatch%leaf_storage_resp (ico)   &
+                                                        + cpatch%root_storage_resp (ico)   &
+                                                        + cpatch%sapa_storage_resp (ico)   &
+                                                        + cpatch%sapb_storage_resp (ico)   &
+                                                        + cpatch%barka_storage_resp(ico)   &
+                                                        + cpatch%barkb_storage_resp(ico)   )
+         end if
+         !---------------------------------------------------------------------------------!
       end do
       !------------------------------------------------------------------------------------!
 
@@ -126,13 +196,13 @@ module soil_respiration
          !      biogeochemistry and alternate soil C and N models on C dynamics of CLM4.   !
          !      Biogeosciences, 10:7109-7131. doi:10.5194/bg-10-7109-2013.                 !
          !---------------------------------------------------------------------------------!
-         rel_soil_moist = min(1.0, max( 0.0                                                &
+         arl_soil_moist = min(1.0, max( 0.0                                                &
                                       , log(csite%soil_mstpot(k,ipa)/soil(nsoil)%slpotcp)  &
                                       / log(soil(nsoil)%slpotfc     /soil(nsoil)%slpotcp) ))
          !---------------------------------------------------------------------------------!
       case default
          !------ Use soil moisture. -------------------------------------------------------!
-         rel_soil_moist = min(1.0, max( 0.0                                                &
+         arl_soil_moist = min(1.0, max( 0.0                                                &
                                       , (csite%soil_water(k,ipa) - soil(nsoil)%soilcp)     &
                                       / (soil(nsoil)%slmsts      - soil(nsoil)%soilcp) ) )
          !---------------------------------------------------------------------------------!
@@ -158,17 +228,21 @@ module soil_respiration
          !      biogeochemistry and alternate soil C and N models on C dynamics of CLM4.   !
          !      Biogeosciences, 10:7109-7131. doi:10.5194/bg-10-7109-2013.                 !
          !---------------------------------------------------------------------------------!
-         rel_soil_oxygen = min(1.0, max( 0.0                                               &
+         arl_soil_oxygen = min(1.0, max( 0.0                                               &
                                        , log(csite%soil_mstpot(k,ipa)/soil(nsoil)%slpots)  &
                                        / log(soil(nsoil)%slpotfc     /soil(nsoil)%slpots) ))
          !---------------------------------------------------------------------------------!
       case default
          !------ Set as the complement of rel_soil_moist. ---------------------------------!
-         rel_soil_oxygen = 1.0 - rel_soil_moist
+         arl_soil_oxygen = 1.0 - arl_soil_moist
          !---------------------------------------------------------------------------------!
       end select
-      csite%A_decomp(ipa) = het_resp_weight(csite%soil_tempk(k,ipa),rel_soil_moist         &
-                                           ,rel_soil_oxygen)
+      !------------------------------------------------------------------------------------!
+
+
+      !------- Surface decomposition rate. ------------------------------------------------!
+      call het_resp_weight(csite%soil_tempk(k,ipa),arl_soil_moist,arl_soil_oxygen          &
+                          ,af_temperature,af_moisture,af_oxygen,csite%A_decomp(ipa))
       !------------------------------------------------------------------------------------!
       !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~!
       !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~!
@@ -187,8 +261,8 @@ module soil_respiration
       sum_soil_water  = 0.0
       sum_soil_slmsts = 0.0
       sum_soil_soilcp = 0.0
-      rel_soil_moist  = 0.0
-      rel_soil_oxygen = 0.0
+      brl_soil_moist  = 0.0
+      brl_soil_oxygen = 0.0
       do k = k_rh_active,mzg
          nsoil = ntext_soil(k)
 
@@ -215,8 +289,8 @@ module soil_respiration
                             / log(soil(nsoil)%slpotfc     /soil(nsoil)%slpots )
             lyr_soil_moist  = max(0.,min(1.,lyr_soil_moist ))
             lyr_soil_oxygen = max(0.,min(1.,lyr_soil_oxygen))
-            rel_soil_moist  = rel_soil_moist  + lyr_soil_moist  * dslz(k)
-            rel_soil_oxygen = rel_soil_oxygen + lyr_soil_oxygen * dslz(k)
+            brl_soil_moist  = brl_soil_moist  + lyr_soil_moist  * dslz(k)
+            brl_soil_oxygen = brl_soil_oxygen + lyr_soil_oxygen * dslz(k)
             !------------------------------------------------------------------------------!
          end select
          !---------------------------------------------------------------------------------!
@@ -231,14 +305,14 @@ module soil_respiration
       select case (decomp_scheme)
       case (5)
          !------ Normalise relative soil moisture. ----------------------------------------!
-         rel_soil_moist  = - rel_soil_moist  / slz(k_rh_active)
-         rel_soil_oxygen = - rel_soil_oxygen / slz(k_rh_active)
+         brl_soil_moist  = - brl_soil_moist  / slz(k_rh_active)
+         brl_soil_oxygen = - brl_soil_oxygen / slz(k_rh_active)
          !---------------------------------------------------------------------------------!
       case default
          !------ Relative soil moisture based on total water content. ---------------------!
-         rel_soil_moist  = min( 1.0, max(0.0, ( sum_soil_water  - sum_soil_soilcp )        &
+         brl_soil_moist  = min( 1.0, max(0.0, ( sum_soil_water  - sum_soil_soilcp )        &
                                             / ( sum_soil_slmsts - sum_soil_soilcp ) ) )
-         rel_soil_oxygen = 1.0 - rel_soil_moist
+         brl_soil_oxygen = 1.0 - brl_soil_moist
          !---------------------------------------------------------------------------------!
       end select
       !------------------------------------------------------------------------------------!
@@ -246,7 +320,8 @@ module soil_respiration
 
 
       !----- Compute soil/temperature modulation of soil heterotrophic respiration. -------!
-      csite%B_decomp(ipa) = het_resp_weight(avg_soil_temp,rel_soil_moist,rel_soil_oxygen)
+      call het_resp_weight(avg_soil_temp,brl_soil_moist,brl_soil_oxygen,bf_temperature     &
+                          ,bf_moisture,bf_oxygen,csite%B_decomp(ipa))
       !------------------------------------------------------------------------------------!
 
 
@@ -282,6 +357,54 @@ module soil_respiration
       csite%fmean_psc_rh (ipa) = csite%fmean_psc_rh (ipa)                                  &
                                + csite%psc_rh       (ipa) * umols_2_kgCyr * dtlsm_o_frqsum
       !------------------------------------------------------------------------------------!
+
+
+
+
+      !----- Write debugging information. -------------------------------------------------!
+      if (print_debug) then
+         !----- Find average soil water and matric potential. -----------------------------!
+         avg_soil_water  = - sum_soil_water / (wdns * slz(k_rh_active))
+         nsoil           = ntext_soil(mzg)
+         select case (decomp_scheme)
+         case (5)
+            avg_soil_mstpot = soil(nsoil)%slpotcp                                          &
+                            * (soil(nsoil)%slpotfc/soil(nsoil)%slpotcp) ** brl_soil_moist
+         case default
+            avg_soil_mstpot = matric_potential(nsoil,avg_soil_water)
+         end select
+         !---------------------------------------------------------------------------------!
+
+
+
+         !----- Convert units for output. -------------------------------------------------!
+         ahet_C_resp = umols_2_kgCyr * ( csite%fgc_rh (ipa) + csite%stgc_rh(ipa) )
+         bhet_C_resp = umols_2_kgCyr * ( csite%fsc_rh (ipa) + csite%stsc_rh(ipa)           &
+                                       + csite%msc_rh (ipa) + csite%ssc_rh (ipa)           &
+                                       + csite%psc_rh (ipa) )
+         thet_C_resp = umols_2_kgCyr * csite%rh     (ipa)
+         !---------------------------------------------------------------------------------!
+
+
+
+         !----- Append step to the output file. -------------------------------------------!
+         open (unit=83,file=downregfile,status='old',position='append',action='write')
+         write(unit=83,fmt='(6(i6,1x),23(f12.6,1x))')                                      &
+                        current_time%year,current_time%month,current_time%date             &
+                       ,current_time%hour,current_time%min,ipa,csite%area(ipa)             &
+                       ,csite%soil_tempk (mzg,ipa),csite%soil_water(mzg,ipa)               &
+                       ,csite%soil_mstpot(mzg,ipa),arl_soil_moist,arl_soil_oxygen          &
+                       ,af_temperature,af_moisture,af_oxygen,csite%A_decomp(ipa)           &
+                       ,avg_soil_temp,avg_soil_water,avg_soil_mstpot,brl_soil_moist        &
+                       ,brl_soil_oxygen,bf_temperature,bf_moisture,bf_oxygen               &
+                       ,csite%B_decomp(ipa),ahet_C_resp,bhet_C_resp,thet_C_resp,auto_C_resp
+         close (unit=83,status='keep')
+         !---------------------------------------------------------------------------------!
+
+
+      end if
+      !------------------------------------------------------------------------------------!
+
 
       return
    end subroutine soil_respiration_driver
@@ -1264,7 +1387,8 @@ module soil_respiration
    !     This function computes the heterotrophic respiration limitation factor, which     !
    ! includes limitations due to temperature and soil moisture.                            !
    !---------------------------------------------------------------------------------------!
-   real function het_resp_weight(soil_tempk,rel_soil_moist,rel_soil_oxygen)
+   subroutine het_resp_weight(soil_tempk,rel_soil_moist,rel_soil_oxygen,temperature_scale  &
+                             ,water_limitation,oxygen_limitation,rh_weight)
 
       use decomp_coms , only : resp_temperature_increase  & ! intent(in)
                              , resp_opt_water             & ! intent(in)
@@ -1298,28 +1422,29 @@ module soil_respiration
 
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
-      real(kind=4), intent(in) :: soil_tempk
-      real(kind=4), intent(in) :: rel_soil_moist
-      real(kind=4), intent(in) :: rel_soil_oxygen
+      real(kind=4), intent(in)  :: soil_tempk
+      real(kind=4), intent(in)  :: rel_soil_moist
+      real(kind=4), intent(in)  :: rel_soil_oxygen
+      real(kind=4), intent(out) :: temperature_scale
+      real(kind=4), intent(out) :: water_limitation
+      real(kind=4), intent(out) :: oxygen_limitation
+      real(kind=4), intent(out) :: rh_weight
       !----- Local variables. -------------------------------------------------------------!
-      real(kind=4)             :: temperature_scale
-      real(kind=4)             :: water_limitation
-      real(kind=4)             :: oxygen_limitation
-      real(kind=4)             :: lnexplloyd
-      real(kind=4)             :: lnexplow
-      real(kind=4)             :: lnexphigh
-      real(kind=4)             :: tlow_fun
-      real(kind=4)             :: thigh_fun
-      real(kind=4)             :: lnexpdry
-      real(kind=4)             :: lnexpwet
-      real(kind=4)             :: smdry_fun
-      real(kind=4)             :: smwet_fun
-      real(kind=4)             :: rel_smoist_bnd
-      real(kind=4)             :: rel_oxygen_bnd
-      real(kind=8)             :: soil_tempk8
-      real(kind=8)             :: temperature_scale8
+      real(kind=4)              :: lnexplloyd
+      real(kind=4)              :: lnexplow
+      real(kind=4)              :: lnexphigh
+      real(kind=4)              :: tlow_fun
+      real(kind=4)              :: thigh_fun
+      real(kind=4)              :: lnexpdry
+      real(kind=4)              :: lnexpwet
+      real(kind=4)              :: smdry_fun
+      real(kind=4)              :: smwet_fun
+      real(kind=4)              :: rel_smoist_bnd
+      real(kind=4)              :: rel_oxygen_bnd
+      real(kind=8)              :: soil_tempk8
+      real(kind=8)              :: temperature_scale8
       !----- External functions. ----------------------------------------------------------!
-      real(kind=4), external   :: sngloff
+      real(kind=4), external    :: sngloff
       !------------------------------------------------------------------------------------!
 
 
@@ -1483,11 +1608,11 @@ module soil_respiration
 
 
       !----- Compute the weight, which is just the combination of both. -------------------!
-      het_resp_weight = temperature_scale * water_limitation * oxygen_limitation
+      rh_weight = temperature_scale * water_limitation * oxygen_limitation
       !------------------------------------------------------------------------------------!
 
       return
-   end function het_resp_weight
+   end subroutine het_resp_weight
    !=======================================================================================!
    !=======================================================================================!
 
