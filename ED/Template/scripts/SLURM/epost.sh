@@ -885,6 +885,10 @@ do
       eftyeara=1999
       eftyearz=2003
       ;;
+   l[0-5][0-3])
+      eftyeara=2006
+      eftyearz=2016
+      ;;
    m34)
       eftyeara=1999
       eftyearz=2006

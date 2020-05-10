@@ -6,15 +6,16 @@
 colour.stock <<- function(n,alt=FALSE,shf=alt,pvf=3){
    #----- Build the colour stock.  Add pale and dark versions of the default colours. -----#
    if (alt){
-      cstock = c("#332288","#6699CC","#88CCEE","#44AA99"
-                ,"#117733","#999933","#DDCC77","#661100"
-                ,"#CC6677","#AA4466","#882255","#AA4499"
-                )#end c
-   }else{
       cstock = c("#811F9E","#2BD2DB","#F87856"
                 ,"#CB003D","#107C92","#1BA2F7"
                 ,"#CCCA3D","#9ECC8F","#F9E5C0"
                 ,"#74B236","#B2CCFF","#A67DB2"
+                )#end c
+   }else{
+      cstock = c("#332288","#56B4E9","#E69F00"
+                ,"#882255","#009E73","#0072B2"
+                ,"#F0E442","#CC79A7","#D55E00"
+                ,"#060606","#DDCC77","#785EF0"
                 )#end c
    }#end if (alt)
    nstock.base = length(cstock)

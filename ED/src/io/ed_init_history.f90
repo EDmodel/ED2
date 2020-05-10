@@ -2993,6 +2993,8 @@ module ed_init_history
                       ,'IGNITION_RATE              ' ,dsetrank,iparallel,.true. ,foundvar)
       call hdf_getslab_r(cpoly%rad_avg                                                     &
                       ,'RAD_AVG                    ' ,dsetrank,iparallel,.true. ,foundvar)
+      call hdf_getslab_r(cpoly%turnover_amp                                                &
+                        ,'TURNOVER_AMP             ' ,dsetrank,iparallel,.true. ,foundvar)
       call hdf_getslab_r(cpoly%daylight                                                    &
                       ,'DAYLIGHT                   ' ,dsetrank,iparallel,.true. ,foundvar)
       call hdf_getslab_r(cpoly%cosaoi                                                      &
@@ -3173,6 +3175,12 @@ module ed_init_history
                         ,'GREEN_LEAF_FACTOR  ',dsetrank,iparallel,.true. ,foundvar)
       call hdf_getslab_r(cpoly%leaf_aging_factor                                           &
                         ,'LEAF_AGING_FACTOR  ',dsetrank,iparallel,.true. ,foundvar)
+      call hdf_getslab_r(cpoly%vm_bar_toc                                                  &
+                        ,'VM_BAR_TOC         ',dsetrank,iparallel,.true. ,foundvar)
+      call hdf_getslab_r(cpoly%llspan_toc                                                  &
+                        ,'LLSPAN_TOC         ',dsetrank,iparallel,.true. ,foundvar)
+      call hdf_getslab_r(cpoly%sla_toc                                                     &
+                        ,'SLA_TOC            ',dsetrank,iparallel,.true. ,foundvar)
       !------------------------------------------------------------------------------------!
       !------------------------------------------------------------------------------------!
       !------------------------------------------------------------------------------------!
@@ -5213,8 +5221,6 @@ module ed_init_history
                         ,'PAW_AVG                   ',dsetrank,iparallel,.true. ,foundvar)
       call hdf_getslab_r(cpatch%elongf                                                     &
                         ,'ELONGF                    ',dsetrank,iparallel,.true. ,foundvar)
-      call hdf_getslab_r(cpatch%turnover_amp                                               &
-                        ,'TURNOVER_AMP              ',dsetrank,iparallel,.true. ,foundvar)
       call hdf_getslab_r(cpatch%llspan                                                     &
                         ,'LLSPAN                    ',dsetrank,iparallel,.true. ,foundvar)
       call hdf_getslab_r(cpatch%vm_bar                                                     &
@@ -5421,6 +5427,12 @@ module ed_init_history
       if (writing_eorq) then
          call hdf_getslab_r(cpatch%mmean_thbark                                            &
                         ,'MMEAN_THBARK_CO           ',dsetrank,iparallel,.false.,foundvar)
+         call hdf_getslab_r(cpatch%mmean_vm_bar                                            &
+                        ,'MMEAN_VM_BAR_CO           ',dsetrank,iparallel,.false.,foundvar)
+         call hdf_getslab_r(cpatch%mmean_sla                                               &
+                        ,'MMEAN_SLA_CO              ',dsetrank,iparallel,.false.,foundvar)
+         call hdf_getslab_r(cpatch%mmean_llspan                                            &
+                        ,'MMEAN_LLSPAN_CO           ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cpatch%mmean_lai                                               &
                         ,'MMEAN_LAI_CO              ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cpatch%mmean_bleaf                                             &

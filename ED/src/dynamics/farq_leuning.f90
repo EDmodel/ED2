@@ -77,7 +77,7 @@ module farq_leuning
    !      This is the main driver for the photosynthesis model.                            !
    !---------------------------------------------------------------------------------------!
    subroutine lphysiol_full(ib,can_prss,can_rhos,can_shv,can_co2,ipft,leaf_par,leaf_temp   &
-                           ,lint_shv,green_leaf_factor,leaf_aging_factor,llspan,vm_bar     &
+                           ,lint_shv,green_leaf_factor,leaf_aging_factor,vm_bar            &
                            ,leaf_gbw,leaf_D0,A_open,A_closed,A_light,A_rubp,A_co2,gsw_open &
                            ,gsw_closed,lsfc_shv_open,lsfc_shv_closed,lsfc_co2_open         &
                            ,lsfc_co2_closed,lint_co2_open,lint_co2_closed,leaf_resp,vmout  &
@@ -93,7 +93,6 @@ module farq_leuning
                                 , rubpsatlim               & ! intent(inout)
                                 , thirdlim                 ! ! intent(inout)
       use pft_coms       , only : photosyn_pathway         & ! intent(in)
-                                , phenology                & ! intent(in)
                                 , Vm0                      & ! intent(in)
                                 , vm_low_temp              & ! intent(in)
                                 , vm_high_temp             & ! intent(in)
@@ -121,10 +120,6 @@ module farq_leuning
                                 , quantum_efficiency       & ! intent(in)
                                 , curvpar_electron         & ! intent(in)
                                 , qyield_psII              ! ! intent(in)
-      use phenology_coms , only : vm0_tran                 & ! intent(in)
-                                , vm0_slope                & ! intent(in)
-                                , vm0_amp                  & ! intent(in)
-                                , vm0_min                  ! ! intent(in)
       use physiology_coms, only : gbw_2_gbc8               & ! intent(in)
                                 , o2_ref8                  & ! intent(in)
                                 , trait_plasticity_scheme  ! ! intent(in)
@@ -151,7 +146,6 @@ module farq_leuning
       real(kind=4), intent(in)    :: lint_shv          ! Leaf interc. sp. hum.  [    kg/kg]
       real(kind=4), intent(in)    :: green_leaf_factor ! Frac. of on-allom. gr. [      ---]
       real(kind=4), intent(in)    :: leaf_aging_factor ! Ageing parameter       [      ---]
-      real(kind=4), intent(in)    :: llspan            ! Leaf life span         [     mnth]
       real(kind=4), intent(in)    :: vm_bar            ! Average Vm function    [umol/m2/s]
       real(kind=4), intent(in)    :: leaf_gbw          ! B.lyr. cnd. of H2O     [  kg/m2/s]
       real(kind=4), intent(in)    :: leaf_D0           ! VPD factor for closure [  mol/mol]
@@ -257,42 +251,28 @@ module farq_leuning
 
 
       !------------------------------------------------------------------------------------!
-      !     Find Vm0 for photosynthesis and respiration, depending on whether this PFT     !
-      ! has a light-controlled phenology or not.  Convert the resulting Vm into mol/m2/s.  !
+      !     Set Vm0 and find terms that typically depend upon Vm0 (Rd0, Jm0, TPm0).        !
+      ! This may be the default parameters, but in case trait plasticity is enabled, they  !
+      ! must be down-regulated.  Convert the resulting terms to mol/m2/s.                  !
       !------------------------------------------------------------------------------------!
-      select case(phenology(ipft))
-      case (3)
-         !------ Light-controlled phenology. ----------------------------------------------!
-         thispft(ib)%vm0  = dble(vm0_amp / (1.0 + (llspan/vm0_tran)**vm0_slope) + vm0_min) &
-                          * umol_2_mol8
+      select case (trait_plasticity_scheme)
+      case (-2,-1,1,2)
+         !---------------------------------------------------------------------------------!
+         !      Within-canopy trait plasticity.  In this case, the input vm_bar is the     !
+         ! realized Vm0.  Rd0, Jm0, and TPm0 are all scaled with the vm_bar:Vm0 ratio.     !
+         !---------------------------------------------------------------------------------!
+         thispft(ib)%vm0  = dble(vm_bar) * umol_2_mol8
          f_plastic8       = dble(vm_bar) / dble(vm0(ipft))
          thispft(ib)%rd0  = f_plastic8 * dble(rd0 (ipft)) * umol_2_mol8
          thispft(ib)%jm0  = f_plastic8 * dble(jm0 (ipft)) * umol_2_mol8
          thispft(ib)%TPm0 = f_plastic8 * dble(TPm0(ipft)) * umol_2_mol8
+         !---------------------------------------------------------------------------------!
       case default
-         !---------------------------------------------------------------------------------!
-         !     Consider trait plasticity                                                   !
-         !---------------------------------------------------------------------------------!
-         select case (trait_plasticity_scheme)
-         case (-2,-1,1,2)
-            !------------------------------------------------------------------------------!
-            !      Within-canopy trait plasticity.  In this case, the input vm_bar is the  !
-            ! realized Vm0.  Rd0, Jm0, and TPm0 are all scaled with the vm_bar:Vm0 ratio.  !
-            !------------------------------------------------------------------------------!
-            thispft(ib)%vm0  = dble(vm_bar) * umol_2_mol8
-            f_plastic8       = dble(vm_bar) / dble(vm0(ipft))
-            thispft(ib)%rd0  = f_plastic8 * dble(rd0 (ipft)) * umol_2_mol8
-            thispft(ib)%jm0  = f_plastic8 * dble(jm0 (ipft)) * umol_2_mol8
-            thispft(ib)%TPm0 = f_plastic8 * dble(TPm0(ipft)) * umol_2_mol8
-            !------------------------------------------------------------------------------!
-         case default
-            !------ Other phenologies, no plasticity: use default Vm0. --------------------!
-            thispft(ib)%vm0  = dble(vm0 (ipft)) * umol_2_mol8
-            thispft(ib)%rd0  = dble(rd0 (ipft)) * umol_2_mol8
-            thispft(ib)%jm0  = dble(jm0 (ipft)) * umol_2_mol8
-            thispft(ib)%TPm0 = dble(TPm0(ipft)) * umol_2_mol8
-            !------------------------------------------------------------------------------!
-         end select
+         !------ No plasticity: use default parameters. -----------------------------------!
+         thispft(ib)%vm0  = dble(vm0 (ipft)) * umol_2_mol8
+         thispft(ib)%rd0  = dble(rd0 (ipft)) * umol_2_mol8
+         thispft(ib)%jm0  = dble(jm0 (ipft)) * umol_2_mol8
+         thispft(ib)%TPm0 = dble(TPm0(ipft)) * umol_2_mol8
          !---------------------------------------------------------------------------------!
       end select
       !------------------------------------------------------------------------------------!

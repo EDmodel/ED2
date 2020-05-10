@@ -522,10 +522,10 @@ subroutine init_decomp_params()
    !     alternate soil C and N models on C dynamics of CLM4. Biogeosciences, 10:          !
    !     7109-7131. doi:10.5194/bg-10-7109-2013 (K13).                                     !
    !---------------------------------------------------------------------------------------!
-   rh0          = 0.425 ! 0.630
-   rh_q10       = 1.893 ! 1.500
-   rh_p_smoist  = 0.606 ! 0.600 ! 0.300
-   rh_p_oxygen  = 0.164 ! 0.100 ! 0.210
+   rh0          = 0.701 ! 0.425
+   rh_q10       = 1.500 ! 1.893
+   rh_p_smoist  = 0.836 ! 0.606
+   rh_p_oxygen  = 0.404 ! 0.164
    !---------------------------------------------------------------------------------------!
 
 
@@ -2054,9 +2054,7 @@ end subroutine init_soil_coms
 subroutine init_phen_coms
    use consts_coms   , only : erad                     & ! intent(in)
                             , pio180                   ! ! intent(in)
-   use phenology_coms, only : radint                   & ! intent(in)
-                            , radslp                   & ! intent(in)
-                            , thetacrit                & ! intent(in)
+   use phenology_coms, only : thetacrit                & ! intent(in)
                             , retained_carbon_fraction & ! intent(out)
                             , root_phen_factor         & ! intent(out)
                             , elongf_min               & ! intent(out)
@@ -2069,24 +2067,21 @@ subroutine init_phen_coms
                             , phen_b                   & ! intent(out)
                             , phen_c                   & ! intent(out)
                             , max_phenology_dist       & ! intent(out)
+                            , radavg_window            & ! intent(out)
                             , turnamp_window           & ! intent(out)
-                            , turnamp_wgt              & ! intent(out)
                             , turnamp_min              & ! intent(out)
                             , turnamp_max              & ! intent(out)
-                            , radto_min                & ! intent(out)
-                            , radto_max                & ! intent(out)
                             , llspan_window            & ! intent(out)
-                            , llspan_wgt               & ! intent(out)
                             , llspan_min               & ! intent(out)
                             , llspan_max               & ! intent(out)
                             , llspan_inf               & ! intent(out)
                             , vm0_window               & ! intent(out)
-                            , vm0_wgt                  & ! intent(out)
                             , vm0_tran                 & ! intent(out)
                             , vm0_slope                & ! intent(out)
                             , vm0_amp                  & ! intent(out)
-                            , vm0_min                  ! ! intent(out)
-
+                            , vm0_min                  & ! intent(out)
+                            , sla_window               ! ! intent(out)
+   use ed_misc_coms  , only : economics_scheme         ! ! intent(out)
    implicit none
 
    !---------------------------------------------------------------------------------------!
@@ -2175,35 +2170,61 @@ subroutine init_phen_coms
 
 
    !---------------------------------------------------------------------------------------!
-   !      Variables controlling the light phenology as in Kim et al. (20??)                !
+   !      Variables controlling the light phenology.                                       !
    !---------------------------------------------------------------------------------------!
-   !----- Turnover window for running average [days] --------------------------------------!
-   turnamp_window = 10.
-   !----- Turnover weight, the inverse of the window. -------------------------------------!
-   turnamp_wgt    = 1. / turnamp_window
-   !----- Minimum instantaneous turnover rate amplitude [n/d]. ----------------------------!
-   turnamp_min    = 0.01
-   !----- Maximum instantaneous turnover rate amplitude [n/d]. ----------------------------!
-   turnamp_max    = 100.
-   !----- Minimum radiation [W/m2], below which the turnover no longer responds. ----------!
-   radto_min       = (turnamp_min - radint) / radslp
-   !----- Maximum radiation [W/m2], above which the turnover no longer responds. ----------!
-   radto_max       = (turnamp_max - radint) / radslp
-   !----- Lifespan window for running average [days]. -------------------------------------!
-   llspan_window   = 60.
-   !----- Lifespan weight, the inverse of the window. -------------------------------------!
-   llspan_wgt      = 1. / llspan_window
-   !----- Minimum instantaneous life span [months]. ---------------------------------------!
-   llspan_min      = 2.0
-   !----- Maximum instantaneous life span [months]. ---------------------------------------!
-   llspan_max      = 60.
-   !----- Instantaneous life span in case the turnover rate is 0. -------------------------!
-   llspan_inf      = 9999.
-   !----- Vm0 window for running average [days]. ------------------------------------------!
-   vm0_window      = 60.
-   !----- Vm0 weight, the inverse of the window. ------------------------------------------!
-   vm0_wgt         = 1. / vm0_window
-   !----- Parameters that define the instantaneous Vm0 as a function of leaf life span. ---!
+   select case (economics_scheme)
+   case (1)
+      !----- Radiation window for running average [days] ----------------------------------!
+      radavg_window  = 14.
+      !----- Turnover window for running average [days] -----------------------------------!
+      turnamp_window = radavg_window
+      !----- Minimum instantaneous turnover rate amplitude [n/d]. -------------------------!
+      turnamp_min    = 0.01
+      !----- Maximum instantaneous turnover rate amplitude [n/d]. -------------------------!
+      turnamp_max    = 100.
+      !----- Lifespan window for running average [days]. ----------------------------------!
+      llspan_window   = 14.
+      !----- Minimum instantaneous life span [months]. ------------------------------------!
+      llspan_min      = 2.0
+      !----- Maximum instantaneous life span [months]. ------------------------------------!
+      llspan_max      = 60.
+      !----- Instantaneous life span in case the turnover rate is 0. ----------------------!
+      llspan_inf      = 9999.
+      !----- Vm0 window for running average [days]. ---------------------------------------!
+      vm0_window      = llspan_window
+      !----- SLA window for running average [days]. ---------------------------------------!
+      sla_window      = llspan_window
+      !------------------------------------------------------------------------------------!
+   case default
+      !----- Radiation window for running average [days] ----------------------------------!
+      radavg_window  = 10.
+      !----- Turnover window for running average [days] -----------------------------------!
+      turnamp_window = radavg_window
+      !----- Minimum instantaneous turnover rate amplitude [n/d]. -------------------------!
+      turnamp_min    = 0.01
+      !----- Maximum instantaneous turnover rate amplitude [n/d]. -------------------------!
+      turnamp_max    = 100.
+      !----- Lifespan window for running average [days]. ----------------------------------!
+      llspan_window   = 60.
+      !----- Minimum instantaneous life span [months]. ------------------------------------!
+      llspan_min      = 2.0
+      !----- Maximum instantaneous life span [months]. ------------------------------------!
+      llspan_max      = 60.
+      !----- Instantaneous life span in case the turnover rate is 0. ----------------------!
+      llspan_inf      = 9999.
+      !----- Vm0 window for running average [days]. ---------------------------------------!
+      vm0_window      = llspan_window
+      !----- SLA window for running average [days]. ---------------------------------------!
+      sla_window      = llspan_window
+      !------------------------------------------------------------------------------------!
+   end select
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Parameters to define the instantaneous Vm0 as a function of leaf life span.      !
+   ! These parameters are only used when economics_scheme is zero.                         !
+   !---------------------------------------------------------------------------------------!
    vm0_tran        = 1.98   ! 8.5
    vm0_slope       = 6.53   ! 7.0
    vm0_amp         = 57.2   ! 42.0
@@ -4250,10 +4271,10 @@ subroutine init_pft_photo_params()
    !---------------------------------------------------------------------------------------!
    !----- Find the additional factor to multiply Vm0. -------------------------------------!
    select case (ibigleaf)
-      case (0) ! SAS, use only the modification from the namelist. 
-         ssfact = 1.0
-      case (1)
-         ssfact = 3.0
+   case (0) ! SAS, use only the modification from the namelist. 
+      ssfact = 1.0
+   case (1)
+      ssfact = 3.0
    end select
    !---- Define Vm0 (case by case). -------------------------------------------------------!
    do ipft=1,n_pft
@@ -7424,6 +7445,8 @@ subroutine init_derived_params_after_xml()
    use ed_misc_coms         , only : ibigleaf                  & ! intent(in)
                                    , iallom                    & ! intent(in)
                                    , ivegt_dynamics            & ! intent(in)
+                                   , radfrq                    & ! intent(in)
+                                   , economics_scheme          & ! intent(in)
                                    , lianas_included           ! ! intent(out)
    use ed_max_dims          , only : n_pft                     & ! intent(in)
                                    , str_len                   & ! intent(in)
@@ -7432,6 +7455,7 @@ subroutine init_derived_params_after_xml()
                                    , twothirds                 & ! intent(in)
                                    , t008                      & ! intent(in)
                                    , cliq                      & ! intent(in)
+                                   , day_sec                   & ! intent(in)
                                    , yr_sec                    & ! intent(in)
                                    , almost_zero               & ! intent(in)
                                    , lnexp_min8                & ! intent(in)
@@ -7680,7 +7704,23 @@ subroutine init_derived_params_after_xml()
                                    , k_rh_active               & ! intent(out)
                                    , rh08                      & ! intent(out)
                                    , rh_q108                   ! ! intent(out)
-   use phenology_coms       , only : repro_scheme              ! ! intent(in)
+   use phenology_coms       , only : repro_scheme              & ! intent(in)
+                                   , radint                    & ! intent(in)
+                                   , radslp                    & ! intent(in)
+                                   , radavg_window             & ! intent(in)
+                                   , turnamp_window            & ! intent(in)
+                                   , turnamp_min               & ! intent(in)
+                                   , turnamp_max               & ! intent(in)
+                                   , llspan_window             & ! intent(in)
+                                   , vm0_window                & ! intent(in)
+                                   , sla_window                & ! intent(in)
+                                   , radavg_wgt                & ! intent(out)
+                                   , turnamp_wgt               & ! intent(out)
+                                   , llspan_wgt                & ! intent(out)
+                                   , radto_min                 & ! intent(out)
+                                   , radto_max                 & ! intent(out)
+                                   , vm0_wgt                   & ! intent(out)
+                                   , sla_wgt                   ! ! intent(out)
    use farq_leuning         , only : arrhenius                 & ! function
                                    , collatz                   ! ! function
    use plant_hydro          , only : psi2rwc                   & ! function
@@ -7810,6 +7850,47 @@ subroutine init_derived_params_after_xml()
    !---------------------------------------------------------------------------------------!
    rh08    = dble(rh0)
    rh_q108 = dble(rh_q10)
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Set derived parameters for light-controlled phenology (Kim et al., 2012).        !
+   !---------------------------------------------------------------------------------------!
+   !----- Radiation weight, the inverse of the window, corrected by radfrq. ---------------!
+   radavg_wgt     = radfrq / ( radavg_window * day_sec )
+   !----- Turnover weight, the inverse of the window. -------------------------------------!
+   turnamp_wgt    = 1. / turnamp_window
+   !----- Lifespan weight, the inverse of the window. -------------------------------------!
+   llspan_wgt      = 1. / llspan_window
+   !----- Vm0 weight, the inverse of the window. ------------------------------------------!
+   vm0_wgt         = 1. / vm0_window
+   !----- SLA weight, the inverse of the window. ------------------------------------------!
+   sla_wgt         = 1. / sla_window
+   !---------------------------------------------------------------------------------------!
+
+   !---------------------------------------------------------------------------------------!
+   !      Minimum and maximum radiation should be defined according to the                 !
+   ! economics_scheme, as the model formulation is different.                              !
+   !---------------------------------------------------------------------------------------!
+   select case (economics_scheme)
+   case (1)
+      !------------------------------------------------------------------------------------!
+      !      Turnover amplitude is a log-linear function of radiation, based on litter     !
+      ! fall data directly related to radiation.                                           !
+      !------------------------------------------------------------------------------------!
+      radto_min = (turnamp_min / radint) ** (1./radslp)
+      radto_max = (turnamp_max / radint) ** (1./radslp)
+      !------------------------------------------------------------------------------------!
+   case default
+      !------------------------------------------------------------------------------------!
+      !      Turnover amplitude is a linear function of radiation, like the original       !
+      ! approach.                                                                          !
+      !------------------------------------------------------------------------------------!
+      radto_min       = (turnamp_min - radint) / radslp
+      radto_max       = (turnamp_max - radint) / radslp
+      !------------------------------------------------------------------------------------!
+   end select
    !---------------------------------------------------------------------------------------!
 
 

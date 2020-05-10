@@ -22,7 +22,10 @@ subroutine read_ed21_history_file
                                   , pft_1st_check               & ! intent(in)
                                   , agf_bs                      & ! intent(in)
                                   , f_bstorage_init             & ! intent(in)
-                                  , include_these_pft           ! ! intent(in)
+                                  , include_these_pft           & ! intent(in)
+                                  , leaf_turnover_rate          & ! intent(in)
+                                  , vm0                         & ! intent(in)
+                                  , sla                         ! ! intent(in)
    use ed_misc_coms        , only : sfilin                      & ! intent(in)
                                   , imonthh                     & ! intent(in)
                                   , iyearh                      & ! intent(in)
@@ -67,6 +70,7 @@ subroutine read_ed21_history_file
    use decomp_coms         , only : agf_fsc                     & ! intent(in)
                                   , agf_stsc                    & ! intent(in)
                                   , c2n_structural              ! ! intent(in)
+   use phenology_coms      , only : llspan_inf                  ! ! intent(in)
    use physiology_coms     , only : iddmort_scheme              & ! intent(in)
                                   , trait_plasticity_scheme     ! ! intent(in)
    use update_derived_utils, only : update_cohort_plastic_trait ! ! subroutine
@@ -120,6 +124,7 @@ subroutine read_ed21_history_file
    logical                             :: exists
    real, dimension(:)    , allocatable :: file_lats
    real, dimension(:)    , allocatable :: file_lons
+   real, dimension(n_pft)              :: leaf_lifespan
    real                                :: minrad
    real                                :: currad
    real                                :: elim_nplant
@@ -128,6 +133,16 @@ subroutine read_ed21_history_file
    logical                             :: foundvar
    !----- External function. --------------------------------------------------------------!
    real                  , external    :: dist_gc
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Define PFT-dependent leaf life span, used for initialisation.                     !
+   !---------------------------------------------------------------------------------------!
+   leaf_lifespan(:) = merge( 12.0 / leaf_turnover_rate(:)                                  &
+                           , llspan_inf                                                    &
+                           , leaf_turnover_rate(:) > 0.0  )
    !---------------------------------------------------------------------------------------!
 
 
@@ -909,7 +924,10 @@ subroutine read_ed21_history_file
                            case (0)
                               continue
                            case default
-                              call update_cohort_plastic_trait(cpatch,ico)
+                              call update_cohort_plastic_trait(cpatch,ico                  &
+                                                        ,leaf_lifespan(cpatch%pft(ico))    &
+                                                        ,vm0(cpatch%pft(ico))              &
+                                                        ,sla(cpatch%pft(ico)) )
                            end select
                            !---------------------------------------------------------------!
 
@@ -1038,9 +1056,12 @@ subroutine read_ed21_history_unstruct
                                   , include_pft                 & ! intent(in)
                                   , include_pft_ag              & ! intent(in)
                                   , pft_1st_check               & ! intent(in)
-                                  , include_these_pft           & ! intent(in)
                                   , agf_bs                      & ! intent(in)
-                                  , f_bstorage_init             ! ! intent(in)
+                                  , f_bstorage_init             & ! intent(in)
+                                  , include_these_pft           & ! intent(in)
+                                  , leaf_turnover_rate          & ! intent(in)
+                                  , vm0                         & ! intent(in)
+                                  , sla                         ! ! intent(in)
    use ed_misc_coms        , only : sfilin                      & ! intent(in)
                                   , ied_init_mode               & ! intent(in)
                                   , igrass                      & ! intent(in)
@@ -1086,6 +1107,7 @@ subroutine read_ed21_history_unstruct
    use decomp_coms         , only : agf_fsc                     & ! intent(in)
                                   , agf_stsc                    & ! intent(in)
                                   , c2n_structural              ! ! intent(in)
+   use phenology_coms      , only : llspan_inf                  ! ! intent(in)
    use physiology_coms     , only : iddmort_scheme              & ! intent(in)
                                   , trait_plasticity_scheme     ! ! intent(in)
    use update_derived_utils, only : update_cohort_plastic_trait ! ! subroutine
@@ -1182,6 +1204,7 @@ subroutine read_ed21_history_unstruct
    real                  , dimension(huge_polygon)              :: nlat_rscl
    real                  , dimension(n_dist_types,huge_polygon) :: newarea
    real                  , dimension(n_dist_types)              :: oldarea
+   real                  , dimension(n_pft)                     :: leaf_lifespan
    real                                                         :: textdist_try
    real                                                         :: textdist_min
    real                                                         :: dummy
@@ -1191,6 +1214,16 @@ subroutine read_ed21_history_unstruct
    logical                                                      :: foundvar
    !----- External functions. -------------------------------------------------------------!
    real                                           , external    :: dist_gc
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Define PFT-dependent leaf life span, used for initialisation.                     !
+   !---------------------------------------------------------------------------------------!
+   leaf_lifespan(:) = merge( 12.0 / leaf_turnover_rate(:)                                  &
+                           , llspan_inf                                                    &
+                           , leaf_turnover_rate(:) > 0.0  )
    !---------------------------------------------------------------------------------------!
 
 
@@ -2276,7 +2309,10 @@ subroutine read_ed21_history_unstruct
                            case (0)
                               continue
                            case default
-                              call update_cohort_plastic_trait(cpatch,ico)
+                              call update_cohort_plastic_trait(cpatch,ico                  &
+                                                        ,leaf_lifespan(cpatch%pft(ico))    &
+                                                        ,vm0(cpatch%pft(ico))              &
+                                                        ,sla(cpatch%pft(ico)) )
                            end select
                            !---------------------------------------------------------------!
 
@@ -2413,10 +2449,13 @@ subroutine read_ed21_polyclone
                                   , include_pft                 & ! intent(in)
                                   , include_pft_ag              & ! intent(in)
                                   , pft_1st_check               & ! intent(in)
-                                  , include_these_pft           & ! intent(in)
                                   , agf_bs                      & ! intent(in)
                                   , f_bstorage_init             & ! intent(in)
-                                  , agf_bs                      ! ! intent(in)
+                                  , agf_bs                      & ! intent(in)
+                                  , include_these_pft           & ! intent(in)
+                                  , leaf_turnover_rate          & ! intent(in)
+                                  , vm0                         & ! intent(in)
+                                  , sla                         ! ! intent(in)
    use ed_misc_coms        , only : sfilin                      & ! intent(in)
                                   , iallom                      & ! intent(in)
                                   , igrass                      ! ! intent(in)
@@ -2462,6 +2501,7 @@ subroutine read_ed21_polyclone
    use decomp_coms         , only : agf_fsc                     & ! intent(in)
                                   , agf_stsc                    & ! intent(in)
                                   , c2n_structural              ! ! intent(in)
+   use phenology_coms      , only : llspan_inf                  ! ! intent(in)
    use physiology_coms     , only : iddmort_scheme              & ! intent(in)
                                   , trait_plasticity_scheme     ! ! intent(in)
    use update_derived_utils, only : update_cohort_plastic_trait ! ! subroutine
@@ -2549,6 +2589,7 @@ subroutine read_ed21_polyclone
    real                  , dimension(huge_polygon)              :: nlat_rscl
    real                  , dimension(n_dist_types,huge_polygon) :: newarea
    real                  , dimension(n_dist_types)              :: oldarea
+   real                  , dimension(n_pft)                     :: leaf_lifespan
    real                                                         :: dummy
    real                                                         :: elim_nplant
    real                                                         :: elim_lai
@@ -2561,6 +2602,18 @@ subroutine read_ed21_polyclone
    !----- External functions. -------------------------------------------------------------!
    real                                           , external    :: dist_gc
    !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Define PFT-dependent leaf life span, used for initialisation.                     !
+   !---------------------------------------------------------------------------------------!
+   leaf_lifespan(:) = merge( 12.0 / leaf_turnover_rate(:)                                  &
+                           , llspan_inf                                                    &
+                           , leaf_turnover_rate(:) > 0.0  )
+   !---------------------------------------------------------------------------------------!
+
+
 
    !----- Open the HDF environment. -------------------------------------------------------!
    call h5open_f(hdferr)
@@ -3622,7 +3675,10 @@ subroutine read_ed21_polyclone
                            case (0)
                               continue
                            case default
-                              call update_cohort_plastic_trait(cpatch,ico)
+                              call update_cohort_plastic_trait(cpatch,ico                  &
+                                                        ,leaf_lifespan(cpatch%pft(ico))    &
+                                                        ,vm0(cpatch%pft(ico))              &
+                                                        ,sla(cpatch%pft(ico)) )
                            end select
                            !---------------------------------------------------------------!
 

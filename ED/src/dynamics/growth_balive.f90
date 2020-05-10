@@ -639,6 +639,7 @@ module growth_balive
       real                          :: maintenance_temp_dep
       real                          :: fp_turnover
       real                          :: stor_mco_o_balive
+      logical                       :: dynamic_trait
       !------------------------------------------------------------------------------------!
 
       !------ Alias for plant functional type. --------------------------------------------!
@@ -658,19 +659,20 @@ module growth_balive
       !     In case this simulation allows trait plasticity, compute the correction factor !
       ! for turnover.                                                                      !
       !------------------------------------------------------------------------------------!
-      select case (trait_plasticity_scheme)
-      case (0) ! No plasticity
-         fp_turnover = 1.
-      case default ! Plasticity on.  Use the ratio between expected and actual lifespan.
-         !----- Cold deciduous do not have turnover.  Set fp_turnover to 1. ---------------!
-         if (leaf_turnover_rate(ipft) > 0.) then
-            fp_turnover = 12. / (cpatch%llspan(ico) * leaf_turnover_rate(ipft))
-         else
-            fp_turnover = 1.
-         end if
+      dynamic_trait =       ( trait_plasticity_scheme == 1  .or. phenology(ipft) == 3)     &
+                      .and. ( leaf_turnover_rate(ipft) > 0. )
+      if (dynamic_trait) then
+         !----- Trait plasticity, or light-controlled phenology. --------------------------!
+         fp_turnover = 12. / (cpatch%llspan(ico) * leaf_turnover_rate(ipft))
          !---------------------------------------------------------------------------------!
-      end select
+      else
+         !----- No dynamic trait, set fp_turnover to 1 and use default values. ------------!
+         fp_turnover = 1.0
+         !---------------------------------------------------------------------------------!
+      end if
       !------------------------------------------------------------------------------------!
+
+
 
       !------------------------------------------------------------------------------------!
       !      Find the maintenance costs.  This will depend on the type of phenology that   !
@@ -700,15 +702,9 @@ module growth_balive
          cpatch%barka_maintenance(ico) = cpatch%barka_maintenance(ico)*maintenance_temp_dep
          cpatch%barkb_maintenance(ico) = cpatch%barkb_maintenance(ico)*maintenance_temp_dep
          !---------------------------------------------------------------------------------!
-
-      case (3)
-         !---------------------------------------------------------------------------------!
-         !      Light phenology.  Leaf turnover rate will be adjusted according to the     !
-         ! amplitude that comes from the dependence on the radiation (running average).    !
-         ! Roots are the same as the other plants that don't depend on temperature.        !
-         !---------------------------------------------------------------------------------!
-         cpatch%leaf_maintenance(ico) = cpatch%leaf_maintenance(ico)                       &
-                                      * cpatch%turnover_amp(ico)
+      case default
+         !----- Do nothing. ---------------------------------------------------------------!
+         continue
          !---------------------------------------------------------------------------------!
       end select
       !------------------------------------------------------------------------------------!

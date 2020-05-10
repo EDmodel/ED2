@@ -39,7 +39,7 @@ module farq_katul
    !---------------------------------------------------------------------------------------!
 
   subroutine katul_lphys(can_prss,can_shv,can_co2,ipft,leaf_par,leaf_temp                 &
-                        ,lint_shv,green_leaf_factor,leaf_aging_factor,llspan,vm0in        &
+                        ,lint_shv,green_leaf_factor,leaf_aging_factor,Vcmax15             &
                         ,leaf_gbw,leaf_psi,last_gV,last_gJ,A_open,A_closed,A_light        &
                         ,A_rubp,A_co2,gsw_open,gsw_closed,lsfc_shv_open,lsfc_shv_closed   &
                         ,lsfc_co2_open,lsfc_co2_closed,lint_co2_open,lint_co2_closed      &
@@ -48,7 +48,6 @@ module farq_katul
     use rk4_coms       , only : tiny_offset              & ! intent(in)
                               , effarea_transp           ! ! intent(in)
     use pft_coms       , only : photosyn_pathway         & ! intent(in)
-                              , phenology                & ! intent(in)
                               , vm_hor                   & ! intent(in)
                               , vm_low_temp              & ! intent(in)
                               , vm_high_temp             & ! intent(in)
@@ -92,10 +91,6 @@ module farq_katul
                               , compp_refval             & ! intent(in)
                               , compp_q10                & ! intent(in)
                               , compp_hor               
-    use phenology_coms , only : vm0_tran                 & ! intent(in)
-                              , vm0_slope                & ! intent(in)
-                              , vm0_amp                  & ! intent(in)
-                              , vm0_min                  ! ! intent(in)
 
     implicit none
 
@@ -109,8 +104,7 @@ module farq_katul
       real(kind=4), intent(in)    :: lint_shv          ! Leaf interc. sp. hum.  [    kg/kg]
       real(kind=4), intent(in)    :: green_leaf_factor ! Frac. of on-allom. gr. [      ---]
       real(kind=4), intent(in)    :: leaf_aging_factor ! Ageing parameter       [      ---]
-      real(kind=4), intent(in)    :: llspan            ! Leaf life span         [     mnth]
-      real(kind=4), intent(in)    :: vm0in             ! Input Vm0              [umol/m2/s]
+      real(kind=4), intent(in)    :: Vcmax15             ! Input Vm0              [umol/m2/s]
       real(kind=4), intent(in)    :: leaf_gbw          ! B.lyr. cnd. of H2O     [  kg/m2/s]
       real(kind=4), intent(in)    :: leaf_psi          ! leaf water potential   [        m]
       real(kind=4), intent(inout) :: last_gV           ! gs for last timestep   [  kg/m2/s]
@@ -145,7 +139,6 @@ module farq_katul
       real(kind=4)                :: can_vpr_prss       ! canopy vapor pressure in kPa
       real(kind=4)                :: Vcmax              ! current Vcmax  umol/m2/s
       real(kind=4)                :: Vcmax25            ! current Vcmax at 25 degC umol/m2/s
-      real(kind=4)                :: Vcmax15            ! current Vcmax at 15 degC umol/m2/s
       real(kind=4)                :: Jmax               ! current Jmax  umol/m2/s
       real(kind=4)                :: Jmax25             ! current Jmax at 25 degC umol/m2/s
       real(kind=4)                :: Jmax15             ! current Jmax at 15 degC umol/m2/s
@@ -192,19 +185,6 @@ module farq_katul
       leaf_temp_degC    = leaf_temp - t00                            ! convert to degC
       leaf_vpr_prss     = eslf(leaf_temp) * 0.001                    ! in kPa
       can_vpr_prss      = can_shv * can_prss * 0.001                 ! in kPa
-  
-    
-      !------------------------------------------------------------------------------------!
-      ! correcting for light-phenology
-      !------------------------------------------------------------------------------------!
-      select case(phenology(ipft))
-      case (3)
-         !------ Light-controlled phenology. ----------------------------------------------!
-         Vcmax15    = vm0_amp / (1.0 + (llspan/vm0_tran)**vm0_slope) + vm0_min
-      case default
-         !------ Other phenologies, no distinction on Vm0. --------------------------------!
-         Vcmax15    = vm0in
-      end select
       !------------------------------------------------------------------------------------!
 
 

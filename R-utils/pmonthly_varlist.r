@@ -1229,6 +1229,45 @@ tspftdbh[[n]]     = list( vnam     = "assim.ratio"
                         , stack    = FALSE
                         , scsout   = TRUE
                         )#end list
+n                 = n + 1
+tspftdbh[[n]]     = list( vnam     = "vm0"
+                        , desc     = "Maximum carboxylation rate (15C)"
+                        , e.unit   = untab$umolom2los
+                        , i.unit   = untab$umolom2los
+                        , plog     = FALSE
+                        , pft      = TRUE
+                        , pftdbh   = TRUE
+                        , sas      = FALSE
+                        , bar.plot = FALSE
+                        , stack    = FALSE
+                        , scsout   = TRUE
+                        )#end list
+n                 = n + 1
+tspftdbh[[n]]     = list( vnam     = "llspan"
+                        , desc     = "Leaf longevity"
+                        , e.unit   = untab$mo
+                        , i.unit   = untab$mo
+                        , plog     = FALSE
+                        , pft      = TRUE
+                        , pftdbh   = TRUE
+                        , sas      = FALSE
+                        , bar.plot = FALSE
+                        , stack    = FALSE
+                        , scsout   = TRUE
+                        )#end list
+n                 = n + 1
+tspftdbh[[n]]     = list( vnam     = "sla"
+                        , desc     = "Specific leaf area"
+                        , e.unit   = untab$m2lokgc
+                        , i.unit   = untab$m2lokgc
+                        , plog     = FALSE
+                        , pft      = TRUE
+                        , pftdbh   = TRUE
+                        , sas      = FALSE
+                        , bar.plot = FALSE
+                        , stack    = FALSE
+                        , scsout   = TRUE
+                        )#end list
 #------------------------------------------------------------------------------------------#
 
 
@@ -2481,6 +2520,66 @@ theme[[n]] = list( vnam      = c(       "leaf.gsw",        "leaf.gbw",        "w
                  , prefix    = "conduct"
                  , title     = "Conductance"
                  , unit      = untab$kgwom2oday
+                 , legpos    = "topleft"
+                 , emean     = TRUE
+                 , mmean     = TRUE
+                 , qmean     = TRUE
+                 , ymean     = TRUE
+                 , emean.lim = c(NA,NA)
+                 , mmean.lim = c(NA,NA)
+                 , qmean.lim = c(NA,NA)
+                 , ymean.lim = c(NA,NA)
+                 )#end list
+n          = n + 1
+theme[[n]] = list( vnam      = c(                "vm0")
+                 , desc      = c( "Max. Carboxylation")
+                 , colour    = c(         "dodgerblue")
+                 , lwd       = c(                  2.5)
+                 , type      = "o"
+                 , plog      = FALSE
+                 , prefix    = "vm0"
+                 , title     = "Maximum carboxylation"
+                 , unit      = untab$umolom2los
+                 , legpos    = "topleft"
+                 , emean     = TRUE
+                 , mmean     = TRUE
+                 , qmean     = TRUE
+                 , ymean     = TRUE
+                 , emean.lim = c(NA,NA)
+                 , mmean.lim = c(NA,NA)
+                 , qmean.lim = c(NA,NA)
+                 , ymean.lim = c(NA,NA)
+                 )#end list
+n          = n + 1
+theme[[n]] = list( vnam      = c(                "sla")
+                 , desc      = c( "Specific leaf area")
+                 , colour    = c(        "forestgreen")
+                 , lwd       = c(                  2.5)
+                 , type      = "o"
+                 , plog      = FALSE
+                 , prefix    = "sla"
+                 , title     = "Specific leaf area"
+                 , unit      = untab$m2lokgc
+                 , legpos    = "topleft"
+                 , emean     = TRUE
+                 , mmean     = TRUE
+                 , qmean     = TRUE
+                 , ymean     = TRUE
+                 , emean.lim = c(NA,NA)
+                 , mmean.lim = c(NA,NA)
+                 , qmean.lim = c(NA,NA)
+                 , ymean.lim = c(NA,NA)
+                 )#end list
+n          = n + 1
+theme[[n]] = list( vnam      = c(         "llspan")
+                 , desc      = c( "Leaf longevity")
+                 , colour    = c(        "purple2")
+                 , lwd       = c(              2.5)
+                 , type      = "o"
+                 , plog      = FALSE
+                 , prefix    = "llspan"
+                 , title     = "Leaf longevity"
+                 , unit      = untab$mo
                  , legpos    = "topleft"
                  , emean     = TRUE
                  , mmean     = TRUE

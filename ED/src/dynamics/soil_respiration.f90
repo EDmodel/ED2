@@ -30,6 +30,9 @@ module soil_respiration
       integer       , dimension(mzg), intent(in) :: ntext_soil
       !----- Local variables. -------------------------------------------------------------!
       type(patchtype)               , pointer    :: cpatch
+      character(len=25)                          :: downregfile
+      logical                                    :: isthere
+      integer                                    :: jpa
       integer                                    :: ico
       integer                                    :: ipft
       integer                                    :: k
@@ -62,7 +65,6 @@ module soil_respiration
       real                                       :: auto_C_resp
       !----- Local constants. -------------------------------------------------------------!
       logical                       , parameter  :: print_debug = .false.
-      character(len=14)             , parameter  :: downregfile = 'rh_downreg.txt'
       !----- Locally saved variables. -----------------------------------------------------!
       logical                       , save       :: first_time = .true.
       !------------------------------------------------------------------------------------!
@@ -71,23 +73,97 @@ module soil_respiration
 
 
       !----- Write debugging information. -------------------------------------------------!
-      if (first_time) then
-         if (print_debug) then
-            !----- Append step to the output file. ----------------------------------------!
-            open (unit=83,file=downregfile,status='replace',action='write')
-            write (unit=83,fmt='(29(a,1x))')                                               &
-                     '  YEAR',      ' MONTH',      '   DAY',      '  HOUR',      '   MIN'  &
-              ,      '   IPA','        AREA','    SFC_TEMP','   SFC_WATER','  SFC_MSTPOT'  &
-              ,'  SFC_MSTREL','  SFC_OXYREL','     AF_TEMP','    AF_MOIST','   AF_OXYGEN'  &
-              ,'    A_DECOMP','   SOIL_TEMP','  SOIL_WATER',' SOIL_MSTPOT',' SOIL_MSTREL'  &
-              ,' SOIL_OXYREL','     BF_TEMP','    BF_MOIST','   BF_OXYGEN','    B_DECOMP'  &
-              ,'   AHET_RESP','   BHET_RESP','   THET_RESP','   AUTO_RESP'
-            close (unit=83,status='keep')
+      if (first_time .and. print_debug) then
+         !---------------------------------------------------------------------------------!
+         !     Decide what to do depending on the thread.                                  !
+         !---------------------------------------------------------------------------------!
+         select case (ipa)
+         case (1)
             !------------------------------------------------------------------------------!
-         end if
+            !     MASTER thread.  Initialise all files.                                    !
+            !------------------------------------------------------------------------------!
+            do jpa=1, csite%npatches
+               !----- File name. ----------------------------------------------------------!
+               write (downregfile,fmt='(a,i4.4,a)') 'rh_downreg_patch-',jpa,'.txt'
+               !---------------------------------------------------------------------------!
+
+
+               !----- Delete file in case it's there. -------------------------------------!
+               inquire (file=trim(downregfile),exist=isthere)
+               if (isthere) then
+                  open (unit=83,file=trim(downregfile),status='old',action='write')
+                  close(unit=83,status='delete')
+               end if
+               !---------------------------------------------------------------------------!
+
+
+
+               !---------------------------------------------------------------------------!
+               !     Create header.                                                        !
+               !---------------------------------------------------------------------------!
+               open  (unit=10+jpa,file=downregfile,status='replace',action='write')
+               write (unit=10+jpa,fmt='(29(a,1x))')                                        &
+                                    '  YEAR',      ' MONTH',      '   DAY',      '  HOUR'  &
+                             ,      '   MIN',      '   IPA','        AREA','    SFC_TEMP'  &
+                             ,'   SFC_WATER','  SFC_MSTPOT','  SFC_MSTREL','  SFC_OXYREL'  &
+                             ,'     AF_TEMP','    AF_MOIST','   AF_OXYGEN','    A_DECOMP'  &
+                             ,'   SOIL_TEMP','  SOIL_WATER',' SOIL_MSTPOT',' SOIL_MSTREL'  &
+                             ,' SOIL_OXYREL','     BF_TEMP','    BF_MOIST','   BF_OXYGEN'  &
+                             ,'    B_DECOMP','   AHET_RESP','   BHET_RESP','   THET_RESP'  &
+                             ,'   AUTO_RESP'
+               close (unit=10+jpa,status='keep')
+               !---------------------------------------------------------------------------!
+            end do
+            !------------------------------------------------------------------------------!
+         case default
+            !----- File name. -------------------------------------------------------------!
+            write (downregfile,fmt='(a,i4.4,a)') 'rh_downreg_patch-',ipa,'.txt'
+            !------------------------------------------------------------------------------!
+
+
+            !----- Keep looping until file is created by the first thread. ----------------!
+            waitloop: do
+               call wait_sec(5)
+               inquire (file=trim(downregfile),exist=isthere)
+               if (isthere) exit waitloop
+            end do waitloop
+            !------------------------------------------------------------------------------!
+         end select
          !---------------------------------------------------------------------------------!
 
+
+         !----- Update so this is not repeated. -------------------------------------------!
          first_time = .false.
+         !---------------------------------------------------------------------------------!
+      else if (first_time) then
+         !----- Update so this is not repeated. -------------------------------------------!
+         first_time = .false.
+         !---------------------------------------------------------------------------------!
+      else if (print_debug) then
+         !---------------------------------------------------------------------------------!
+         !     Make sure that the file exists. This is needed in the case of a new patch   !
+         ! being created.                                                                  !
+         !---------------------------------------------------------------------------------!
+         write (downregfile,fmt='(a,i4.4,a)') 'rh_downreg_patch-',ipa,'.txt'
+         !---------------------------------------------------------------------------------!
+
+
+         !----- Create header for patch. --------------------------------------------------!
+         inquire (file=trim(downregfile),exist=isthere)
+         if (.not. isthere) then
+            open  (unit=10+jpa,file=downregfile,status='replace',action='write')
+            write (unit=10+jpa,fmt='(29(a,1x))')                                           &
+                                 '  YEAR',      ' MONTH',      '   DAY',      '  HOUR'     &
+                          ,      '   MIN',      '   IPA','        AREA','    SFC_TEMP'     &
+                          ,'   SFC_WATER','  SFC_MSTPOT','  SFC_MSTREL','  SFC_OXYREL'     &
+                          ,'     AF_TEMP','    AF_MOIST','   AF_OXYGEN','    A_DECOMP'     &
+                          ,'   SOIL_TEMP','  SOIL_WATER',' SOIL_MSTPOT',' SOIL_MSTREL'     &
+                          ,' SOIL_OXYREL','     BF_TEMP','    BF_MOIST','   BF_OXYGEN'     &
+                          ,'    B_DECOMP','   AHET_RESP','   BHET_RESP','   THET_RESP'     &
+                          ,'   AUTO_RESP'
+            close (unit=10+jpa,status='keep')
+         end if
+         !---------------------------------------------------------------------------------!
       end if
       !------------------------------------------------------------------------------------!
 
@@ -386,10 +462,15 @@ module soil_respiration
          !---------------------------------------------------------------------------------!
 
 
+         !----- File name. ----------------------------------------------------------------!
+         write (downregfile,fmt='(a,i4.4,a)') 'rh_downreg_patch-',ipa,'.txt'
+         !---------------------------------------------------------------------------------!
+
+
 
          !----- Append step to the output file. -------------------------------------------!
-         open (unit=83,file=downregfile,status='old',position='append',action='write')
-         write(unit=83,fmt='(6(i6,1x),23(f12.6,1x))')                                      &
+         open (unit=10+ipa,file=downregfile,status='old',position='append',action='write')
+         write(unit=10+ipa,fmt='(6(i6,1x),23(f12.6,1x))')                                  &
                         current_time%year,current_time%month,current_time%date             &
                        ,current_time%hour,current_time%min,ipa,csite%area(ipa)             &
                        ,csite%soil_tempk (mzg,ipa),csite%soil_water(mzg,ipa)               &
@@ -398,7 +479,7 @@ module soil_respiration
                        ,avg_soil_temp,avg_soil_water,avg_soil_mstpot,brl_soil_moist        &
                        ,brl_soil_oxygen,bf_temperature,bf_moisture,bf_oxygen               &
                        ,csite%B_decomp(ipa),ahet_C_resp,bhet_C_resp,thet_C_resp,auto_C_resp
-         close (unit=83,status='keep')
+         close (unit=10+ipa,status='keep')
          !---------------------------------------------------------------------------------!
 
 

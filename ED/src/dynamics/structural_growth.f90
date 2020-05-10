@@ -484,12 +484,21 @@ module structural_growth
 
 
                   !------------------------------------------------------------------------!
-                  !      Send dead seeds to the litter pool (this time, only those that    !
-                  ! were not harvested).                                                   !
+                  !      Send dead seed and failed recruits to the litter pool (this time, !
+                  ! exclude fraction of bseeds that was harvested.                         !
                   !------------------------------------------------------------------------!
                   bseeds_mort_litter = cpatch%bseeds(ico) * cpatch%nplant(ico)             &
                                      * seedling_mortality(ipft)
                   !------------------------------------------------------------------------!
+
+
+                  !------------------------------------------------------------------------!
+                  !      Split seedling mortality.  This pools is comprised of several     !
+                  ! things: flowers, fruits, seeds, and failed recruits.  Because we do    !
+                  ! not have the actual fractions that go to each pool, we 
+                  !------------------------------------------------------------------------!
+                  !------------------------------------------------------------------------!
+
 
 
                   !----- Integrate mortality losses. --------------------------------------!
@@ -569,7 +578,10 @@ module structural_growth
                   ! - AGB                                                                  !
                   ! - Rooting depth                                                        !
                   !------------------------------------------------------------------------!
-                  call update_cohort_derived_props(cpatch,ico,cpoly%lsl(isi),new_year)
+                  call update_cohort_derived_props(cpatch,ico,cpoly%lsl(isi),new_year      &
+                                                  ,cpoly%llspan_toc(ipft,isi)              &
+                                                  ,cpoly%vm_bar_toc(ipft,isi)              &
+                                                  ,cpoly%sla_toc   (ipft,isi) )
                   !------------------------------------------------------------------------!
 
 

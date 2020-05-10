@@ -51,8 +51,8 @@ module update_derived_utils
    !     This subroutine will assign values derived from the basic properties of a given   !
    ! cohort.                                                                               !
    !---------------------------------------------------------------------------------------!
-   subroutine update_cohort_derived_props(cpatch,ico,lsl,new_year)
-
+   subroutine update_cohort_derived_props(cpatch,ico,lsl,new_year,llspan_toc,vm_bar_toc    &
+                                         ,sla_toc)
       use ed_state_vars  , only : patchtype               ! ! structure
       use pft_coms       , only : is_grass                ! ! function
       use allometry      , only : bd2dbh                  & ! function
@@ -80,6 +80,9 @@ module update_derived_utils
       integer        , intent(in) :: ico
       integer        , intent(in) :: lsl
       logical        , intent(in) :: new_year
+      real           , intent(in) :: llspan_toc
+      real           , intent(in) :: vm_bar_toc
+      real           , intent(in) :: sla_toc
       !----- Local variables --------------------------------------------------------------!
       real                        :: bleaf_max
       integer                     :: ipft
@@ -157,9 +160,10 @@ module update_derived_utils
       !------------------------------------------------------------------------------------!
       select case (trait_plasticity_scheme)
       case (-1,1) ! Update trait every year
-         if (new_year) call update_cohort_plastic_trait(cpatch,ico)
+         if (new_year) call update_cohort_plastic_trait(cpatch,ico                         &
+                                                       ,llspan_toc,vm_bar_toc,sla_toc)
       case (-2,2) ! Update trait every month
-         call update_cohort_plastic_trait(cpatch,ico)
+         call update_cohort_plastic_trait(cpatch,ico,llspan_toc,vm_bar_toc,sla_toc)
       end select
       !------------------------------------------------------------------------------------!
 
@@ -207,17 +211,15 @@ module update_derived_utils
    !< trees. Biogesciences, 7(6):1833-1859. doi:10.5194/bg-7-1833-2010.\n
    !=======================================================================================!
    !---------------------------------------------------------------------------------------!
-   subroutine update_cohort_plastic_trait(cpatch,ico)
+   subroutine update_cohort_plastic_trait(cpatch,ico,llspan_toc,vm_bar_toc,sla_toc)
       use ed_state_vars  , only : patchtype               ! ! structure
-      use pft_coms       , only : SLA                     & ! intent(in)
-                                , kplastic_vm0            & ! intent(in)
+      use pft_coms       , only : kplastic_vm0            & ! intent(in)
                                 , kplastic_sla            & ! intent(in)
                                 , kplastic_ll             & ! intent(in)
                                 , eplastic_vm0            & ! intent(in)
                                 , eplastic_sla            & ! intent(in)
                                 , laimax_plastic          & ! intent(in)
                                 , lma_slope               & ! intent(in)
-                                , Vm0                     & ! intent(in)
                                 , leaf_turnover_rate      & ! intent(in)
                                 , is_tropical             & ! intent(in)
                                 , is_grass                ! ! intent(in)
@@ -230,6 +232,9 @@ module update_derived_utils
       !----- Arguments --------------------------------------------------------------------!
       type(patchtype), target     :: cpatch       ! Current patch
       integer        , intent(in) :: ico          ! Cohort index
+      real           , intent(in) :: llspan_toc   ! Leaf lifespan           (top-of-canopy)
+      real           , intent(in) :: vm_bar_toc   ! Photosynthetic capacity (top-of-canopy)
+      real           , intent(in) :: sla_toc      ! Specific leaf area      (top-of-canopy)
       !----- Local variables --------------------------------------------------------------!
       integer                     :: ipft         ! Alias for current PFT
       integer                     :: jco          ! Cohort count
@@ -275,7 +280,7 @@ module update_derived_utils
       !     reduce Vm0.                                                                    !
       !------------------------------------------------------------------------------------!
       lnexp              = max(lnexp_min,kplastic_vm0(ipft) * max_cum_lai)
-      cpatch%vm_bar(ico) = Vm0(ipft) * exp(lnexp)
+      cpatch%vm_bar(ico) = vm_bar_toc * exp(lnexp)
       !------------------------------------------------------------------------------------!
 
 
@@ -288,11 +293,11 @@ module update_derived_utils
       case ( 1, 2)
          !------ SLA is defined at the top of canopy, use LAI to change SLA. --------------!
          lnexp   = max(lnexp_min,min(lnexp_max,kplastic_sla(ipft) * max_cum_lai))
-         new_sla = SLA(ipft) * exp(lnexp)
+         new_sla = sla_toc * exp(lnexp)
          !---------------------------------------------------------------------------------!
       case (-1,-2)
          !------ SLA is defined at the bottom of canopy, use height to change SLA. --------!
-         new_sla = SLA(ipft) / (1. + lma_slope(ipft) * cpatch%hite(ico))
+         new_sla = sla_toc / (1. + lma_slope(ipft) * cpatch%hite(ico))
          !---------------------------------------------------------------------------------!
       end select
       !------------------------------------------------------------------------------------!
@@ -329,7 +334,7 @@ module update_derived_utils
             ! data (Fig 5a of RK16).                                                       !
             !------------------------------------------------------------------------------!
             lnexp              = max(lnexp_min,min(lnexp_max,kplastic_ll(ipft)*max_cum_lai))
-            cpatch%llspan(ico) = 12. / leaf_turnover_rate(ipft) * exp(lnexp)
+            cpatch%llspan(ico) = llspan_toc * exp(lnexp)
             !------------------------------------------------------------------------------!
          case (-1,-2)
             !------------------------------------------------------------------------------!
@@ -338,9 +343,9 @@ module update_derived_utils
             ! plastic values.  For the term b we use X17 slope from Table S1               !
             ! (log10(b) ~ log10(Vcmax_m)).                                                 !
             !------------------------------------------------------------------------------!
-            cpatch%llspan(ico) = 12. / leaf_turnover_rate(ipft)                            &
-                               * ( cpatch%vm_bar(ico) / Vm0(ipft) ) ** eplastic_vm0(ipft)  &
-                               * ( cpatch%sla   (ico) / SLA(ipft) ) ** eplastic_sla(ipft)
+            cpatch%llspan(ico) = llspan_toc                                                &
+                               * ( cpatch%vm_bar(ico) / vm_bar_toc ) ** eplastic_vm0(ipft) &
+                               * ( cpatch%sla   (ico) / sla_toc    ) ** eplastic_sla(ipft)
             !------------------------------------------------------------------------------!
          end select
          !---------------------------------------------------------------------------------!

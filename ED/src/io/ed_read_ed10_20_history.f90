@@ -26,7 +26,10 @@ subroutine read_ed10_ed20_history_file
                                   , pft_1st_check               & ! intent(in)
                                   , agf_bs                      & ! intent(in)
                                   , f_bstorage_init             & ! intent(in)
-                                  , include_these_pft           ! ! intent(in)
+                                  , include_these_pft           & ! intent(in)
+                                  , leaf_turnover_rate          & ! intent(in)
+                                  , vm0                         & ! intent(in)
+                                  , sla                         ! ! intent(in)
    use ed_misc_coms        , only : sfilin                      & ! intent(in)
                                   , ied_init_mode               ! ! intent(in)
    use consts_coms         , only : pio180                      & ! intent(in)
@@ -62,6 +65,7 @@ subroutine read_ed10_ed20_history_file
                                   , f0_ssc                      & ! intent(in)
                                   , f0_psc                      & ! intent(in)
                                   , c2n_structural              ! ! intent(in)
+   use phenology_coms      , only : llspan_inf                  ! ! intent(in)
    use physiology_coms     , only : iddmort_scheme              & ! intent(in)
                                   , trait_plasticity_scheme     ! ! intent(in)
    use update_derived_utils, only : update_cohort_plastic_trait ! ! subroutine
@@ -150,6 +154,7 @@ subroutine read_ed10_ed20_history_file
    real                 , dimension(maxfiles)             :: plon_list,plat_list
    real                 , dimension(maxfiles)             :: clon_list,clat_list
    real                 , dimension(maxfiles)             :: file_pdist,file_cdist
+   real                 , dimension(n_pft)                :: leaf_lifespan
    real                                                   :: dummy
    real                                                   :: area_tot
    real                                                   :: area_sum
@@ -166,6 +171,16 @@ subroutine read_ed10_ed20_history_file
    !----- External function. --------------------------------------------------------------!
    real                 , external                        :: sngloff
    real                 , external                        :: dist_gc
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Define PFT-dependent leaf life span, used for initialisation.                     !
+   !---------------------------------------------------------------------------------------!
+   leaf_lifespan(:) = merge( 12.0 / leaf_turnover_rate(:)                                  &
+                           , llspan_inf                                                    &
+                           , leaf_turnover_rate(:) > 0.0  )
    !---------------------------------------------------------------------------------------!
 
 
@@ -926,7 +941,10 @@ subroutine read_ed10_ed20_history_file
                         case (0)
                            continue
                         case default
-                           call update_cohort_plastic_trait(cpatch,ic2)
+                           call update_cohort_plastic_trait(cpatch,ic2                     &
+                                                           ,leaf_lifespan(ipft(ic))        &
+                                                           ,vm0          (ipft(ic))        &
+                                                           ,sla          (ipft(ic)) )
                         end select
                         !------------------------------------------------------------------!
 

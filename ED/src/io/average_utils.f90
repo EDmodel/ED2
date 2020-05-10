@@ -3993,15 +3993,15 @@ module average_utils
    !> level has been found.
    !---------------------------------------------------------------------------------------!
    subroutine integrate_ed_mmean_vars(cgrid)
-      use ed_state_vars, only : edtype        & ! structure
-                              , polygontype   & ! structure
-                              , sitetype      & ! structure
-                              , patchtype     ! ! structure
-      use ed_max_dims  , only : n_dbh         & ! intent(in)
-                              , n_pft         ! ! intent(in)
-      use consts_coms  , only : yr_day        ! ! intent(in)
-      use ed_misc_coms , only : current_time  & ! intent(in)
-                              , simtime       ! ! structure
+      use ed_state_vars, only : edtype       & ! structure
+                              , polygontype  & ! structure
+                              , sitetype     & ! structure
+                              , patchtype    ! ! structure
+      use ed_max_dims  , only : n_dbh        & ! intent(in)
+                              , n_pft        ! ! intent(in)
+      use consts_coms  , only : yr_day       ! ! intent(in)
+      use ed_misc_coms , only : current_time & ! intent(in)
+                              , simtime      ! ! structure
       implicit none
       !----- Argument. --------------------------------------------------------------------!
       type(edtype)      , target    :: cgrid
@@ -4014,8 +4014,13 @@ module average_utils
       integer                       :: isi
       integer                       :: ipa
       integer                       :: ico
+      integer                       :: ipft
       integer                       :: ndays
       real                          :: ndaysi
+      !----- Local constants. -------------------------------------------------------------!
+      character(len=10), parameter :: fmti='(a,1x,i14)'
+      character(len=13), parameter :: fmtf='(a,1x,es14.7)'
+      character(len=27), parameter :: fmtt='(a,i4.4,2(1x,i2.2),1x,f6.0)'
       !------------------------------------------------------------------------------------!
 
 
@@ -5152,12 +5157,24 @@ module average_utils
                !      Patch loop.                                                          !
                !---------------------------------------------------------------------------!
                cohortloop: do ico=1,cpatch%ncohorts
+                  ipft = cpatch%pft(ico)
+
+
                   !------------------------------------------------------------------------!
                   !      Integrate the cohort-level variables that have no daily means     !
                   ! because their time step is one day.                                    !
                   !------------------------------------------------------------------------!
                   cpatch%mmean_thbark          (ico) = cpatch%mmean_thbark          (ico)  &
                                                      + cpatch%thbark                (ico)  &
+                                                     * ndaysi
+                  cpatch%mmean_vm_bar          (ico) = cpatch%mmean_vm_bar          (ico)  &
+                                                     + cpatch%vm_bar                (ico)  &
+                                                     * ndaysi
+                  cpatch%mmean_sla             (ico) = cpatch%mmean_sla             (ico)  &
+                                                     + cpatch%sla                   (ico)  &
+                                                     * ndaysi
+                  cpatch%mmean_llspan          (ico) = cpatch%mmean_llspan          (ico)  &
+                                                     + cpatch%llspan                (ico)  &
                                                      * ndaysi
                   cpatch%mmean_lai             (ico) = cpatch%mmean_lai             (ico)  &
                                                      + cpatch%lai                   (ico)  &
@@ -6333,6 +6350,9 @@ module average_utils
                !---------------------------------------------------------------------------!
                cohortloop: do ico=1,cpatch%ncohorts
                   cpatch%mmean_thbark             (ico) = 0.0
+                  cpatch%mmean_vm_bar             (ico) = 0.0
+                  cpatch%mmean_sla                (ico) = 0.0
+                  cpatch%mmean_llspan             (ico) = 0.0
                   cpatch%mmean_lai                (ico) = 0.0
                   cpatch%mmean_bleaf              (ico) = 0.0
                   cpatch%mmean_broot              (ico) = 0.0

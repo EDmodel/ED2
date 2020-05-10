@@ -4,13 +4,140 @@
 #==========================================================================================#
 #     Functions to read in LAS files in R.                                                 #
 #                                                                                          #
-# Originally developed by:                                                                 #
-#    Michael Sumner                                                                        #
-#    Antarctic Climate & Ecosystems Cooperative Research Centre                            #
-#    Hobart, Tasmania, Australia                                                           #
-#                                                                                          #
-# Minor modifications by Marcos Longo.                                                     #
+#     The function now uses package rlas, with a few modifications.  The rlas function     #
+# readlas is preferrable because it handles LAZ files.  The output is written similarly to #
+# the previous read.las for back-compatibility.                                            #
 #------------------------------------------------------------------------------------------#
+read.las <<- function( lasfile
+                     , skip          = 0
+                     , nrows         = NULL
+                     , return.sp     = FALSE
+                     , return.header = FALSE
+                     , int.nbits     = 12L   # number of bits for intensity 
+                     , select        = c("xyzitrndecskwupo")
+                     ){ 
+
+
+   #----- Stop if return.sp is true but package sp can't be loaded. -----------------------#
+   if (return.sp && ! return.header){
+      if (! "package:sp" %in% search()){
+         isok = require(sp)
+         if (! isok) stop("Function read.las requires package sp if return.sp = TRUE!")
+      }#end if
+      #------------------------------------------------------------------------------------#
+   }#end if
+   #---------------------------------------------------------------------------------------#
+
+
+   #---------------------------------------------------------------------------------------#
+   #      Check whether the las is compressed.  In case so, make a temporary file.         #
+   #---------------------------------------------------------------------------------------#
+   is.las = any(sapply(X=c("\\.las$"      ,"\\.laz$"      ),FUN=grepl,x=lasfile))
+   is.gz  = any(sapply(X=c("\\.las\\.gz$" ,"\\.laz\\.gz$" ),FUN=grepl,x=lasfile))
+   is.bz2 = any(sapply(X=c("\\.las\\.bz2$","\\.laz\\.bz2$"),FUN=grepl,x=lasfile))
+   if (! file.exists(lasfile)){
+      stop(paste0(" File ",lasfile," doesn't exist!"))
+   }else if (is.las){
+      temp.las = lasfile
+   }else if (is.bz2){
+      temp.las = file.path( tempdir()
+                          , gsub(pattern="\\.bz2$",replacement="",x=basename(lasfile))
+                          )#end file.path
+      if (file.exists(temp.las)) file.remove(temp.las)
+      dummy    = bunzip2(filename=lasfile,destname=temp.las,remove=FALSE)
+   }else if (is.gz){
+      temp.las = file.path( tempdir()
+                          , gsub(pattern="\\.gz$",replacement="",x=basename(lasfile))
+                          )#end file.path
+      if (file.exists(temp.las)) file.remove(temp.las)
+      dummy    = gunzip(filename=lasfile,destname=temp.las,remove=FALSE)
+   }else{
+      cat0("Unrecognised format for file ",basename(lasfile),".")
+      cat0("Acceptable formats are las, laz, las.gz, laz.gz, las.bz2, or laz.bz2.")
+      stop("Invalid lidar file!")
+   }#end if
+   #---------------------------------------------------------------------------------------#
+
+
+   #------ Read the header. ---------------------------------------------------------------#
+   pheader               = read.lasheader(file=temp.las)
+   numberPointRecords    = pheader[["Number of point records" ]]
+   offsetToPointData     = pheader[["Offset to point data"    ]]
+   pointDataRecordLength = pheader[["Point Data Record Length"]]
+   x.fac                 = pheader[["X scale factor"          ]]
+   x.off                 = pheader[["X offset"                ]]
+   y.fac                 = pheader[["Y scale factor"          ]]
+   y.off                 = pheader[["Y offset"                ]]
+   z.fac                 = pheader[["Z scale factor"          ]]
+   z.off                 = pheader[["Z offset"                ]]
+   #---------------------------------------------------------------------------------------#
+
+
+   #---------------------------------------------------------------------------------------#
+   #      Decide whether to return the header or the full data set.                        #
+   #---------------------------------------------------------------------------------------#
+   if (return.header){
+      #----- Copy header to answer. -------------------------------------------------------#
+      ans = pheader
+      #------------------------------------------------------------------------------------#
+   }else{
+      #----- Make translation table. ------------------------------------------------------#
+      eqname = rbind( c("X"                 ,"x"               )
+                    , c("Y"                 ,"y"               )
+                    , c("Z"                 ,"z"               )
+                    , c("gpstime"           ,"gpstime"         )
+                    , c("Intensity"         ,"intensity"       )
+                    , c("ReturnNumber"      ,"retn.number"     )
+                    , c("NumberOfReturns"   ,"number.retn.gp"  )
+                    , c("ScanDirectionFlag" ,"scan.dir.flag"   )
+                    , c("EdgeOfFlightline"  ,"edge.flight.line")
+                    , c("Classification"    ,"pt.class"        )
+                    , c("Synthetic_flag"    ,"synthetic"       )
+                    , c("Keypoint_flag"     ,"key.point"       )
+                    , c("Withheld_flag"     ,"withheld"        )
+                    , c("ScanAngleRank"     ,"scan.angle.rank" )
+                    , c("UserData"          ,"user.data"       )
+                    , c("PointSourceID"     ,"pt.source.ID"    )
+                    )#end cbind
+      #------------------------------------------------------------------------------------#
+
+
+
+      #----- Keep only the columns that are 
+      ans        = rlas::read.las(files=lasfile,select=select)
+      both       = intersect(eqname[,1],names(ans))
+      ans        = as.data.frame(ans[,..both])
+      keep       = eqname[,1] %in% both
+      names(ans) = eqname[keep,2]
+      #------------------------------------------------------------------------------------#
+
+
+
+      #---- Estimate the pulse number. ----------------------------------------------------#
+      if ("retn.number" %in% names(ans)){
+         retn.before      = c(Inf,ans$retn.number[-nrow(ans)])
+         ans$pulse.number = cumsum(ans$retn.number == 1 | ans$retn.number <= retn.before)
+      }#end if ("retn.number" %in% names(ans))
+      #------------------------------------------------------------------------------------#
+
+
+      #------------------------------------------------------------------------------------#
+      #     Decide the output format.  Default is a data frame, but it can be also Spatial #
+      # Points (package sp).                                                               #
+      #------------------------------------------------------------------------------------#
+      if (return.sp) ans = SpatialPoints(ans)
+      #------------------------------------------------------------------------------------#
+   }#end if (return.header)
+   #---------------------------------------------------------------------------------------#
+   
+
+
+   #----- Return answer. ------------------------------------------------------------------#
+   return (ans)
+   #---------------------------------------------------------------------------------------#
+}#end function read.las
+#==========================================================================================#
+#==========================================================================================#
 
 
 
@@ -19,6 +146,13 @@
 #==========================================================================================#
 #==========================================================================================#
 #     This function reads in the LAS files.                                                #
+#                                                                                          #
+# Originally developed by:                                                                 #
+#    Michael Sumner                                                                        #
+#    Antarctic Climate & Ecosystems Cooperative Research Centre                            #
+#    Hobart, Tasmania, Australia                                                           #
+#                                                                                          #
+# Minor modifications by Marcos Longo.                                                     #
 #                                                                                          #
 # To do:                                                                                   #
 #   - Generalise to any version                                                            #
@@ -32,13 +166,13 @@
 #   - Parse header                                                                         #
 #   - Provide chunked read                                                                 #
 #------------------------------------------------------------------------------------------#
-read.las <<- function( lasfile
-                     , skip          = 0
-                     , nrows         = NULL
-                     , return.sp     = FALSE
-                     , return.header = FALSE
-                     , int.nbits     = 12L # number of bits for intensity (sensor-specific)
-                     ){ 
+old.read.las <<- function( lasfile
+                         , skip          = 0
+                         , nrows         = NULL
+                         , return.sp     = FALSE
+                         , return.header = FALSE
+                         , int.nbits     = 12L   # number of bits for intensity 
+                         ){ 
 
 
    #----- Stop if return.sp is true but package sp can't be loaded. -----------------------#
@@ -216,7 +350,7 @@ read.las <<- function( lasfile
                        , nrow  = numberPointRecords
                        , byrow = TRUE
                        )#end matrix
-       close(con = con)
+      close(con = con)
       #------------------------------------------------------------------------------------#
 
 

@@ -553,7 +553,11 @@ module reproduction
                            !---------------------------------------------------------------!
                         case (-2,2) ! Update trait every month
                            !----- Allow recruits to start adapted to their environment. ---!
-                           call update_cohort_plastic_trait(cpatch,ico)
+                           ipft = cpatch%pft(ico)
+                           call update_cohort_plastic_trait(cpatch,ico                     &
+                                                           ,cpoly%llspan_toc(ipft,isi)     &
+                                                           ,cpoly%vm_bar_toc(ipft,isi)     &
+                                                           ,cpoly%sla_toc   (ipft,isi) )
                            !---------------------------------------------------------------!
                         end select
                         !------------------------------------------------------------------!
