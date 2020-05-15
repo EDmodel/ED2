@@ -279,7 +279,7 @@ subroutine leaftw_derivs(mzg,initp,dinitp,csite,ipa,dt,is_hybrid)
    !---------------------------------------------------------------------------------------!
    do k = 1, ksn
       if (initp%sfcwater_depth(k) > 0.d0 .and. initp%sfcwater_mass(k) > 0.d0) then
-         snden = initp%sfcwater_mass(k) / initp%sfcwater_depth(k) *2. !EJL 4/30/18
+         snden = initp%sfcwater_mass(k) / initp%sfcwater_depth(k)
          rk4aux(ibuff)%th_cond_p(k) = ss(1) * exp(ss(2) * initp%sfcwater_tempk(k))         &
                                 * (ss(3) + snden * (ss(4) + snden * (ss(5) + snden*ss(6))))
       else

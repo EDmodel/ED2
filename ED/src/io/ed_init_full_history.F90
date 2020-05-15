@@ -4031,12 +4031,20 @@ subroutine fill_history_site(csite,sipa_index,npatches_global,is_burnt)
                      ,'MINERALIZED_SOIL_N          ',dsetrank,iparallel,.true. ,foundvar)
    call hdf_getslab_r(csite%fast_soil_N                                                    &
                      ,'FAST_SOIL_N                 ',dsetrank,iparallel,.true. ,foundvar)
+   call hdf_getslab_r(csite%today_At_decomp                                                 &
+                     ,'TODAY_AT_DECOMP              ',dsetrank,iparallel,.true. ,foundvar)
+   call hdf_getslab_r(csite%today_Aw_decomp                                                 &
+                     ,'TODAY_AW_DECOMP              ',dsetrank,iparallel,.true. ,foundvar)
    call hdf_getslab_r(csite%today_A_decomp                                                 &
                      ,'TODAY_A_DECOMP              ',dsetrank,iparallel,.true. ,foundvar)
    call hdf_getslab_r(csite%today_Af_decomp                                                &
                      ,'TODAY_AF_DECOMP             ',dsetrank,iparallel,.true. ,foundvar)
    call hdf_getslab_r(csite%A_decomp                                                       &
                      ,'A_DECOMP                    ',dsetrank,iparallel,.true. ,foundvar)
+   call hdf_getslab_r(csite%At_decomp                                                       &
+                     ,'AT_DECOMP                    ',dsetrank,iparallel,.true. ,foundvar)
+   call hdf_getslab_r(csite%Aw_decomp                                                       &
+                     ,'AW_DECOMP                    ',dsetrank,iparallel,.true. ,foundvar)
    call hdf_getslab_r(csite%f_decomp                                                       &
                      ,'F_DECOMP                    ',dsetrank,iparallel,.true. ,foundvar)
    call hdf_getslab_r(csite%rh                                                             &

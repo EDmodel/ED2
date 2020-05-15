@@ -1219,6 +1219,8 @@ module ed_state_vars
       real , pointer,dimension(:) :: co2budget_rh
       !<Average heterotrophic respiration [&mu;mol_CO2/m2/s]
 
+      real , pointer,dimension(:,:) :: today_Aw_decomp
+      real , pointer,dimension(:,:) :: today_At_decomp
       real , pointer,dimension(:,:) :: today_A_decomp
       !<Daily average of A_decomp, the temperature and moisture dependence
       !<of heterotrophic respiration.  The "today" variable is used in the
@@ -1347,6 +1349,8 @@ module ed_state_vars
       !<Fraction of vegetation covered with snow.  Used for computing 
       !<surface roughness.
 
+      real , pointer,dimension(:,:) :: At_decomp
+      real , pointer,dimension(:,:) :: Aw_decomp
       real , pointer,dimension(:,:) :: A_decomp
       !<limitation of heterotrophic respiration due to physical 
       !<environmental factors (0-1 coefficient)
@@ -4319,6 +4323,8 @@ module ed_state_vars
       allocate(csite%co2budget_gpp                 (              npatches))
       allocate(csite%co2budget_plresp              (              npatches))
       allocate(csite%co2budget_rh                  (              npatches))
+      allocate(csite%today_At_decomp                (          nzl,npatches))
+      allocate(csite%today_Aw_decomp                (          nzl,npatches))
       allocate(csite%today_A_decomp                (          nzl,npatches))
       allocate(csite%today_Af_decomp               (          nzl,npatches))
       allocate(csite%repro                         (        n_pft,npatches))
@@ -4361,6 +4367,8 @@ module ed_state_vars
       allocate(csite%peat_depth                    (              npatches))
       allocate(csite%snowfac                       (              npatches))
       allocate(csite%snowfac                       (              npatches))
+      allocate(csite%At_decomp                      (          nzl,npatches))
+      allocate(csite%Aw_decomp                      (          nzl,npatches))
       allocate(csite%A_decomp                      (          nzl,npatches))
       allocate(csite%f_decomp                      (          nzl,npatches))
       allocate(csite%rh                            (          nzl,npatches))
@@ -6217,6 +6225,8 @@ module ed_state_vars
       nullify(csite%co2budget_gpp              )
       nullify(csite%co2budget_plresp           )
       nullify(csite%co2budget_rh               )
+      nullify(csite%today_At_decomp             )
+      nullify(csite%today_Aw_decomp             )
       nullify(csite%today_A_decomp             )
       nullify(csite%today_Af_decomp            )
       nullify(csite%repro                      )
@@ -6259,6 +6269,8 @@ module ed_state_vars
       nullify(csite%peat_depth                 )
       nullify(csite%snowfac                    )
       nullify(csite%snowfac                    )
+      nullify(csite%At_decomp                   )
+      nullify(csite%Aw_decomp                   )
       nullify(csite%A_decomp                   )
       nullify(csite%f_decomp                   )
       nullify(csite%rh                         )
@@ -7178,6 +7190,8 @@ module ed_state_vars
       if(associated(csite%co2budget_gpp         )) deallocate(csite%co2budget_gpp         )
       if(associated(csite%co2budget_plresp      )) deallocate(csite%co2budget_plresp      )
       if(associated(csite%co2budget_rh          )) deallocate(csite%co2budget_rh          )
+      if(associated(csite%today_At_decomp        )) deallocate(csite%today_At_decomp        )
+      if(associated(csite%today_Aw_decomp        )) deallocate(csite%today_Aw_decomp        )
       if(associated(csite%today_A_decomp        )) deallocate(csite%today_A_decomp        )
       if(associated(csite%today_Af_decomp       )) deallocate(csite%today_Af_decomp       )
       if(associated(csite%repro                 )) deallocate(csite%repro                 )
@@ -7221,6 +7235,8 @@ module ed_state_vars
       if(associated(csite%peat_depth            )) deallocate(csite%peat_depth            )
       if(associated(csite%snowfac               )) deallocate(csite%snowfac               )
       if(associated(csite%snowfac               )) deallocate(csite%snowfac               )
+      if(associated(csite%At_decomp              )) deallocate(csite%At_decomp              )
+      if(associated(csite%Aw_decomp              )) deallocate(csite%Aw_decomp              )
       if(associated(csite%A_decomp              )) deallocate(csite%A_decomp              )
       if(associated(csite%f_decomp              )) deallocate(csite%f_decomp              )
       if(associated(csite%rh                    )) deallocate(csite%rh                    )
@@ -8109,8 +8125,12 @@ module ed_state_vars
            osite%structural_soil_L        (m,opa) = isite%structural_soil_L        (m,ipa)
            osite%mineralized_soil_N       (m,opa) = isite%mineralized_soil_N       (m,ipa)
            osite%fast_soil_N              (m,opa) = isite%fast_soil_N              (m,ipa)
-           osite%today_A_decomp           (m,opa) = isite%today_Af_decomp          (m,ipa)
+           osite%today_At_decomp          (m,opa) = isite%today_At_decomp          (m,ipa)
+           osite%today_Aw_decomp          (m,opa) = isite%today_Aw_decomp          (m,ipa)
+           osite%today_A_decomp           (m,opa) = isite%today_A_decomp           (m,ipa)
            osite%today_Af_decomp          (m,opa) = isite%today_Af_decomp          (m,ipa)
+           osite%At_decomp                (m,opa) = isite%At_decomp                (m,ipa)
+           osite%Aw_decomp                (m,opa) = isite%Aw_decomp                (m,ipa)
            osite%A_decomp                 (m,opa) = isite%A_decomp                 (m,ipa)
            osite%f_decomp                 (m,opa) = isite%f_decomp                 (m,ipa)
            osite%rh                       (m,opa) = isite%rh                       (m,ipa)
@@ -8859,6 +8879,8 @@ module ed_state_vars
       osite%co2budget_rh              (1:z) = pack(isite%co2budget_rh              ,lmask)
       do m=1,nzl !EJL
         osite%today_A_decomp          (m,1:z) = pack(isite%today_A_decomp     (m,:),lmask)
+        osite%today_At_decomp          (m,1:z) = pack(isite%today_At_decomp     (m,:),lmask)
+        osite%today_Aw_decomp          (m,1:z) = pack(isite%today_Aw_decomp     (m,:),lmask)
         osite%today_Af_decomp         (m,1:z) = pack(isite%today_Af_decomp    (m,:),lmask)
       end do
       osite%veg_rough                 (1:z) = pack(isite%veg_rough                 ,lmask)
@@ -8905,6 +8927,8 @@ module ed_state_vars
       osite%snowfac                   (1:z) = pack(isite%snowfac                   ,lmask)
       do m=1,nzl !EJL
         osite%A_decomp                (m,1:z) = pack(isite%A_decomp           (m,:),lmask)
+        osite%At_decomp                (m,1:z) = pack(isite%At_decomp           (m,:),lmask)
+        osite%Aw_decomp                (m,1:z) = pack(isite%Aw_decomp           (m,:),lmask)
         osite%f_decomp                (m,1:z) = pack(isite%f_decomp           (m,:),lmask)
         osite%rh                      (m,1:z) = pack(isite%rh                 (m,:),lmask)
       enddo

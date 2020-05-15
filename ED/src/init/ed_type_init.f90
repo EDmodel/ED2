@@ -686,10 +686,14 @@ subroutine init_ed_patch_vars(csite,ipaa,ipaz,lsl)
 
    !------ Decomposition rates... ---------------------------------------------------------!
    csite%A_decomp                  (1:nzl,ipaa:ipaz) = 0.0
+   csite%At_decomp                  (1:nzl,ipaa:ipaz) = 0.0
+   csite%Aw_decomp                  (1:nzl,ipaa:ipaz) = 0.0
    csite%f_decomp                  (1:nzl,ipaa:ipaz) = 0.0
    csite%rh                        (1:nzl,ipaa:ipaz) = 0.0
    csite%cwd_rh                          (ipaa:ipaz) = 0.0
    csite%today_A_decomp            (1:nzl,ipaa:ipaz) = 0.0
+   csite%today_Aw_decomp            (1:nzl,ipaa:ipaz) = 0.0
+   csite%today_At_decomp            (1:nzl,ipaa:ipaz) = 0.0
    csite%today_Af_decomp           (1:nzl,ipaa:ipaz) = 0.0
    !---------------------------------------------------------------------------------------!
 
