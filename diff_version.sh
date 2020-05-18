@@ -15,22 +15,37 @@
 #------------------------------------------------------------------------------------------#
 #      Settings.                                                                           #
 #------------------------------------------------------------------------------------------#
-#------ Extensions. -----------------------------------------------------------------------#
-exts=".c .f90 .F90 .r .txt"
+#------ System. ---------------------------------------------------------------------------#
+myos=$(uname -s)
+#------ How detailed should the check be (partial - c, f90, and F90; total - everything. --#
+comptype="partial"
 #------ Sub-directories to be compared. ---------------------------------------------------#
 subdirs="ED BRAMS Ramspost R-utils"
 #------ Editor to use (I've only tested with nedit, use others at your own risk). ---------#
 editor="nedit"
 #------ Two paths with EDBRAMS (full path). -----------------------------------------------#
-here="/n/home00/mlongo/EDBRAMS"
-there="/n/home00/mlongo/.backupscripts/.model_backup/EDBRAMS"
+ours="${HOME}/EDBRAMS"
+theirs="${HOME}/MainLine/EDBRAMS"
+ournew=true
+#------------------------------------------------------------------------------------------#
+
+
+
+
+#------------------------------------------------------------------------------------------#
+#      Extensions.  Decide how much to check.                                              #
+#------------------------------------------------------------------------------------------#
+case "${comptype}" in
+partial) exts=".c .f90 .F90" ;;
+*)       exts=".c .f90 .F90 .r .txt" ;;
+esac
 #------------------------------------------------------------------------------------------#
 
 
 #------------------------------------------------------------------------------------------#
 #      Remove any comparison file that may exist.                                          #
 #------------------------------------------------------------------------------------------#
-/bin/rm -f notthesame.txt
+/bin/rm -f notthesame.*
 #------------------------------------------------------------------------------------------#
 
 
@@ -47,15 +62,15 @@ do
    do
      if [ ${subdir} == "R-utils" ] && [ ${ext} == ".txt" ]
      then
-        srchere="${here}/${subdir}/samap"
-        srcthere="${there}/${subdir}/samap"
+        srcours="${ours}/${subdir}/samap"
+        srctheirs="${theirs}/${subdir}/samap"
      elif [ ${subdir} == "R-utils" ]
      then
-        srchere="${here}/${subdir}"
-        srcthere="${there}/${subdir}"
+        srcours="${ours}/${subdir}"
+        srctheirs="${theirs}/${subdir}"
      else
-        srchere="${here}/${subdir}/src"
-        srcthere="${there}/${subdir}/src"
+        srcours="${ours}/${subdir}/src"
+        srctheirs="${theirs}/${subdir}/src"
      fi
      #-------------------------------------------------------------------------------------#
 
@@ -63,27 +78,82 @@ do
      #-------------------------------------------------------------------------------------#
      #    Look for files that were changed or were removed in the remote test.             #
      #-------------------------------------------------------------------------------------#
-     lookuptable=$(find ${srchere} -name "*${ext}")
-     for filehere in ${lookuptable}
+     lookuptable=$(find ${srcours} -name "*${ext}")
+     for fileours in ${lookuptable}
      do
-       file=$(basename ${filehere})
-       newpath=$(dirname ${filehere} | sed s@${here}@${there}@g)
-       filethere="${newpath}/${file}"
-       if [ -s ${filethere} ] 
+       file=$(basename ${fileours})
+       newpath=$(dirname ${fileours} | sed s@${ours}@${theirs}@g)
+       case "${myos}" in
+       Darwin|Cygwin)
+          #---- Case-insensitive file system. ---------------------------------------------#
+          filetheirs="${newpath}/${file}"
+          alt=""
+          ;;
+          #--------------------------------------------------------------------------------#
+       *)
+          #----- Probably Linux or Unix, assume case-sensitive file system. ---------------#
+          case "${ext}" in
+          ".f90")
+             alt_file=$(echo ${file} | sed s@"\\.f90"@".F90"@g)
+             if [ -s "${newpath}/${alt_file}" ]
+             then
+                filetheirs="${newpath}/${alt_file}"
+                alt=".F90"
+             else
+                filetheirs="${newpath}/${file}"
+                alt=""
+             fi
+             ;;
+          ".F90")
+             alt_file=$(echo ${file} | sed s@"\\.F90"@".f90"@g)
+             if [ -s "${newpath}/${alt_file}" ]
+             then
+                filetheirs="${newpath}/${alt_file}"
+                alt=".f90"
+             else
+                filetheirs="${newpath}/${file}"
+                alt=""
+             fi
+             ;;
+          *)
+             filetheirs="${newpath}/${file}"
+             alt=""
+             ;;
+          esac
+          ;;
+          #--------------------------------------------------------------------------------#
+       esac
+       filetheirs="${newpath}/${file}"
+       if [ -s ${filetheirs} ] 
        then
-         ldif=$(diff -ib ${filethere} ${filehere} | wc -l)
+         ldif=$(diff -ibB <(grep -vE "^\s*!" ${fileours}) <(grep -vE "^\s*!" ${filetheirs}) | wc -l)
          if [ ${ldif} -gt 0 ]
          then
-            woroot=$(echo ${filehere} | sed s@"${srchere}/"@""@g)
-            echo "${woroot} has changed..."
-            diff -ib ${filehere} ${filethere} > notthesame.txt
-            ${editor} ${filehere} ${filethere} notthesame.txt 1> /dev/null 2> /dev/null
+            woroot=$(echo ${fileours} | sed s@"${srcours}/"@""@g)
+            case "${alt}" in
+            .f90|.F90)
+               echo "${woroot} has changed.  New extension is ${alt}."
+               ;;
+            *)
+               echo "${woroot} has changed."
+               ;;
+            esac
+            if ${ournew}
+            then
+               diff -uibB <(grep -vE "^\s*!" ${filetheirs}) <(grep -vE "^\s*!" ${fileours})\
+                  > notthesame${ext}
+            else
+               diff -uibB <(grep -vE "^\s*!" ${fileours}) <(grep -vE "^\s*!" ${filetheirs})\
+                  > notthesame${ext}
+            fi
+            ${editor} ${fileours} ${filetheirs} notthesame${ext} 1> /dev/null 2> /dev/null
+            /bin/rm -f notthesame${ext}
          fi
        else
-           woroot=$(echo ${filehere} | sed s@"${srchere}/"@""@g)
-           echo "${woroot} is exclusive to ${here} version..."
-       fi #if [ -s ${filethere} ]
-     done #for filehere in ${lookuptable}
+           woroot=$(echo ${fileours} | sed s@"${srcours}/"@""@g)
+           echo "${woroot} is exclusive to ${ours} version."
+       fi #if [ -s ${filetheirs} ]
+     done #for fileours in ${lookuptable}
      #-------------------------------------------------------------------------------------#
 
 
@@ -91,18 +161,18 @@ do
      #-------------------------------------------------------------------------------------#
      #    Look for files that were changed or were removed in the remote test.             #
      #-------------------------------------------------------------------------------------#
-     lookuptable=$(find ${srcthere} -name "*${ext}")
-     for filethere in ${lookuptable}
+     lookuptable=$(find ${srctheirs} -name "*${ext}")
+     for filetheirs in ${lookuptable}
      do
-       file=$(basename ${filethere})
-       newpath=$(dirname ${filethere} | sed s@${there}@${here}@g)
-       filehere="${newpath}/${file}"
-       if [ ! -s ${filehere} ] 
+       file=$(basename ${filetheirs})
+       newpath=$(dirname ${filetheirs} | sed s@${theirs}@${ours}@g)
+       fileours="${newpath}/${file}"
+       if [ ! -s ${fileours} ] 
        then
-           woroot=$(echo ${filethere} | sed s@"${srcthere}/"@""@g)
-           echo "${woroot} is exclusive to ${there} version..."
-       fi #if [ -s ${filethere} ]
-     done #for filehere in ${lookuptable}
+           woroot=$(echo ${filetheirs} | sed s@"${srctheirs}/"@""@g)
+           echo "${woroot} is exclusive to ${theirs} version."
+       fi #if [ -s ${filetheirs} ]
+     done #for fileours in ${lookuptable}
      #-------------------------------------------------------------------------------------#
    done #for ext in ${exts}
    #---------------------------------------------------------------------------------------#

@@ -1,19 +1,21 @@
 #------------------------------------------------------------------------------------------#
 #   Function that creates an atlas-like colour scheme.                                     #
 #------------------------------------------------------------------------------------------#
-atlas <<- function(n){
-   green  = c("#D4FFCC","#73E69A","#36B260","#137F38","#004D1A")
-   orange = c("#FFF2B3","#FFCC66","#CB7A51","#994317","#4C1900")
+atlas <<- function(n,sat=1.00){
+   rrr   = c( 140, 191, 223, 246, 235, 199, 128,  53,   1)*sat #- Red ---------------------#
+   ggg   = c(  81, 129, 194, 232, 245, 234, 205, 151, 102)*sat #- Green -------------------#
+   bbb   = c(  10,  45, 125, 195, 245, 229, 193, 143,  94)*sat #- Blue --------------------#
+   pivot = round(seq(from=1,to=n,by=(n-1)/(length(rrr)-1)),digits=0)
 
-   nodes     = c(rev(green),orange)
-   nodes     = data.frame(t(col2rgb(nodes)))
-   pivot     = round(seq(from=1,to=n,length.out=nrow(nodes)),digits=0)
-   rgb.out   = data.frame(t(mapply(FUN=spline,y=nodes,MoreArgs=list(x=pivot,n=n))))$y
-   rgb.out   = lapply(X=rgb.out,FUN=as.integer)
-   rgb.out   = lapply(X=rgb.out,FUN=pmax,  0)
-   rgb.out   = lapply(X=rgb.out,FUN=pmin,255)
-   rgb.out   = rgb(r=rgb.out$red,g=rgb.out$green,b=rgb.out$blue,maxColorValue=255)
-   return(rgb.out)
+   red   = as.integer(spline(x=pivot,y=rrr,n=n)$y)
+   green = as.integer(spline(x=pivot,y=ggg,n=n)$y)
+   blue  = as.integer(spline(x=pivot,y=bbb,n=n)$y)
+
+   red  [red   > 255] = 255; red  [red   < 0] = 0
+   green[green > 255] = 255; green[green < 0] = 0
+   blue [blue  > 255] = 255; blue [blue  < 0] = 0
+   mycolsch = rgb(r=red,g=green,b=blue,maxColorValue=255)
+   return(mycolsch)
 }#end function atlas
 #------------------------------------------------------------------------------------------#
 
@@ -23,8 +25,8 @@ atlas <<- function(n){
 #------------------------------------------------------------------------------------------#
 #   Function that creates an atlas-like colour scheme.                                     #
 #------------------------------------------------------------------------------------------#
-iatlas <<- function(n){
-   rgb.out   = rev(atlas(n=n))
-   return(rgb.out)
+iatlas <<- function(n,sat=1.00){
+   mycolsch = rev(atlas(n,sat=sat))
+   return(mycolsch)
 }#end function iatlas
 #------------------------------------------------------------------------------------------#

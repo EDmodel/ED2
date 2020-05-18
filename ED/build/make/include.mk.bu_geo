@@ -32,13 +32,6 @@ BASE=$(ED_ROOT)/build/
 # --------------------------------------------------------------
 
 # HDF 5  Libraries
-# ED2 HAS OPTIONAL HDF 5 I/O
-# If you wish to use this functionality specify USE_HDF5=1
-# and specify the location of the include directory
-# library files. Make sure you include the zlib.a location too.
-
-USE_HDF5=1
-
 HDF5_INCS=-I${SCC_HDF5_INCLUDE}
 HDF5C_INCS=-I${SCC_HDF5_INCLUDE}
 HDF5_LIBS=-L${SCC_HDF5_LIB} -lhdf5 -lm -lhdf5_fortran -lhdf5 -lhdf5_hl -lz
@@ -77,6 +70,7 @@ USE_MPIWTIME=1
 
 #----------------- gfortran on Linux -----------
 CMACH=PC_GFORTRAN
+FC_TYPE=GNU
 F_COMP=mpif90
 C_COMP=mpicc 
 LOADER=mpif90

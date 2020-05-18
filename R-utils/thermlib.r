@@ -244,7 +244,7 @@ tslif <<- function (pres,hum,type.hum="shum"){
    }else if (type.hum == "pvap"){
       pvap = hum
    }else{
-      stop(paste(" Humidity type (",type.hum,") is not valid!",sep=""))
+      stop(paste0(" Humidity type (",type.hum,") is not valid!"))
    }#end if
    #---------------------------------------------------------------------------------------#
 

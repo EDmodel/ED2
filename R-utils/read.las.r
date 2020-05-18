@@ -4,39 +4,17 @@
 #==========================================================================================#
 #     Functions to read in LAS files in R.                                                 #
 #                                                                                          #
-# Originally developed by:                                                                 #
-#    Michael Sumner                                                                        #
-#    Antarctic Climate & Ecosystems Cooperative Research Centre                            #
-#    Hobart, Tasmania, Australia                                                           #
-#                                                                                          #
-# Minor modifications by Marcos Longo.                                                     #
-#------------------------------------------------------------------------------------------#
-
-
-
-
-
-#==========================================================================================#
-#==========================================================================================#
-#     This function reads in the LAS files.                                                #
-#                                                                                          #
-# To do:                                                                                   #
-#   - Generalise to any version                                                            #
-#   - Figure out what this gpstime is to convert to POSIXct...                             #
-#   - How do we get coordinate system?                                                     #
-#   - Bits after Intensity                                                                 #
-#   - Can we be more efficient to "seek" without actually reading bytes on windows?        #
-#                                                                                          #
-# Done:                                                                                    #
-#   - Ensure the entire header is read, from Header Size                                   #
-#   - Parse header                                                                         #
-#   - Provide chunked read                                                                 #
+#     The function now uses package rlas, with a few modifications.  The rlas function     #
+# readlas is preferrable because it handles LAZ files.  The output is written similarly to #
+# the previous read.las for back-compatibility.                                            #
 #------------------------------------------------------------------------------------------#
 read.las <<- function( lasfile
                      , skip          = 0
                      , nrows         = NULL
                      , return.sp     = FALSE
                      , return.header = FALSE
+                     , int.nbits     = 12L   # number of bits for intensity 
+                     , select        = c("xyzitrndecskwupo")
                      ){ 
 
 
@@ -50,6 +28,193 @@ read.las <<- function( lasfile
    }#end if
    #---------------------------------------------------------------------------------------#
 
+
+   #---------------------------------------------------------------------------------------#
+   #      Check whether the las is compressed.  In case so, make a temporary file.         #
+   #---------------------------------------------------------------------------------------#
+   is.las = any(sapply(X=c("\\.las$"      ,"\\.laz$"      ),FUN=grepl,x=lasfile))
+   is.gz  = any(sapply(X=c("\\.las\\.gz$" ,"\\.laz\\.gz$" ),FUN=grepl,x=lasfile))
+   is.bz2 = any(sapply(X=c("\\.las\\.bz2$","\\.laz\\.bz2$"),FUN=grepl,x=lasfile))
+   if (! file.exists(lasfile)){
+      stop(paste0(" File ",lasfile," doesn't exist!"))
+   }else if (is.las){
+      temp.las = lasfile
+   }else if (is.bz2){
+      temp.las = file.path( tempdir()
+                          , gsub(pattern="\\.bz2$",replacement="",x=basename(lasfile))
+                          )#end file.path
+      if (file.exists(temp.las)) file.remove(temp.las)
+      dummy    = bunzip2(filename=lasfile,destname=temp.las,remove=FALSE)
+   }else if (is.gz){
+      temp.las = file.path( tempdir()
+                          , gsub(pattern="\\.gz$",replacement="",x=basename(lasfile))
+                          )#end file.path
+      if (file.exists(temp.las)) file.remove(temp.las)
+      dummy    = gunzip(filename=lasfile,destname=temp.las,remove=FALSE)
+   }else{
+      cat0("Unrecognised format for file ",basename(lasfile),".")
+      cat0("Acceptable formats are las, laz, las.gz, laz.gz, las.bz2, or laz.bz2.")
+      stop("Invalid lidar file!")
+   }#end if
+   #---------------------------------------------------------------------------------------#
+
+
+   #------ Read the header. ---------------------------------------------------------------#
+   pheader               = read.lasheader(file=temp.las)
+   numberPointRecords    = pheader[["Number of point records" ]]
+   offsetToPointData     = pheader[["Offset to point data"    ]]
+   pointDataRecordLength = pheader[["Point Data Record Length"]]
+   x.fac                 = pheader[["X scale factor"          ]]
+   x.off                 = pheader[["X offset"                ]]
+   y.fac                 = pheader[["Y scale factor"          ]]
+   y.off                 = pheader[["Y offset"                ]]
+   z.fac                 = pheader[["Z scale factor"          ]]
+   z.off                 = pheader[["Z offset"                ]]
+   #---------------------------------------------------------------------------------------#
+
+
+   #---------------------------------------------------------------------------------------#
+   #      Decide whether to return the header or the full data set.                        #
+   #---------------------------------------------------------------------------------------#
+   if (return.header){
+      #----- Copy header to answer. -------------------------------------------------------#
+      ans = pheader
+      #------------------------------------------------------------------------------------#
+   }else{
+      #----- Make translation table. ------------------------------------------------------#
+      eqname = rbind( c("X"                 ,"x"               )
+                    , c("Y"                 ,"y"               )
+                    , c("Z"                 ,"z"               )
+                    , c("gpstime"           ,"gpstime"         )
+                    , c("Intensity"         ,"intensity"       )
+                    , c("ReturnNumber"      ,"retn.number"     )
+                    , c("NumberOfReturns"   ,"number.retn.gp"  )
+                    , c("ScanDirectionFlag" ,"scan.dir.flag"   )
+                    , c("EdgeOfFlightline"  ,"edge.flight.line")
+                    , c("Classification"    ,"pt.class"        )
+                    , c("Synthetic_flag"    ,"synthetic"       )
+                    , c("Keypoint_flag"     ,"key.point"       )
+                    , c("Withheld_flag"     ,"withheld"        )
+                    , c("ScanAngleRank"     ,"scan.angle.rank" )
+                    , c("UserData"          ,"user.data"       )
+                    , c("PointSourceID"     ,"pt.source.ID"    )
+                    )#end cbind
+      #------------------------------------------------------------------------------------#
+
+
+
+      #----- Keep only the columns that are 
+      ans        = rlas::read.las(files=lasfile,select=select)
+      both       = intersect(eqname[,1],names(ans))
+      ans        = as.data.frame(ans[,..both])
+      keep       = eqname[,1] %in% both
+      names(ans) = eqname[keep,2]
+      #------------------------------------------------------------------------------------#
+
+
+
+      #---- Estimate the pulse number. ----------------------------------------------------#
+      if ("retn.number" %in% names(ans)){
+         retn.before      = c(Inf,ans$retn.number[-nrow(ans)])
+         ans$pulse.number = cumsum(ans$retn.number == 1 | ans$retn.number <= retn.before)
+      }#end if ("retn.number" %in% names(ans))
+      #------------------------------------------------------------------------------------#
+
+
+      #------------------------------------------------------------------------------------#
+      #     Decide the output format.  Default is a data frame, but it can be also Spatial #
+      # Points (package sp).                                                               #
+      #------------------------------------------------------------------------------------#
+      if (return.sp) ans = SpatialPoints(ans)
+      #------------------------------------------------------------------------------------#
+   }#end if (return.header)
+   #---------------------------------------------------------------------------------------#
+   
+
+
+   #----- Return answer. ------------------------------------------------------------------#
+   return (ans)
+   #---------------------------------------------------------------------------------------#
+}#end function read.las
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
+#     This function reads in the LAS files.                                                #
+#                                                                                          #
+# Originally developed by:                                                                 #
+#    Michael Sumner                                                                        #
+#    Antarctic Climate & Ecosystems Cooperative Research Centre                            #
+#    Hobart, Tasmania, Australia                                                           #
+#                                                                                          #
+# Minor modifications by Marcos Longo.                                                     #
+#                                                                                          #
+# To do:                                                                                   #
+#   - Generalise to any version                                                            #
+#   - Figure out what this gpstime is to convert to POSIXct...                             #
+#   - How do we get coordinate system?                                                     #
+#   - Bits after Intensity                                                                 #
+#   - Can we be more efficient to "seek" without actually reading bytes on windows?        #
+#                                                                                          #
+# Done:                                                                                    #
+#   - Ensure the entire header is read, from Header Size                                   #
+#   - Parse header                                                                         #
+#   - Provide chunked read                                                                 #
+#------------------------------------------------------------------------------------------#
+old.read.las <<- function( lasfile
+                         , skip          = 0
+                         , nrows         = NULL
+                         , return.sp     = FALSE
+                         , return.header = FALSE
+                         , int.nbits     = 12L   # number of bits for intensity 
+                         ){ 
+
+
+   #----- Stop if return.sp is true but package sp can't be loaded. -----------------------#
+   if (return.sp && ! return.header){
+      if (! "package:sp" %in% search()){
+         isok = require(sp)
+         if (! isok) stop("Function read.las requires package sp if return.sp = TRUE!")
+      }#end if
+      #------------------------------------------------------------------------------------#
+   }#end if
+   #---------------------------------------------------------------------------------------#
+
+
+   #---------------------------------------------------------------------------------------#
+   #      Check whether the las is compressed.  In case so, make a temporary file.         #
+   #---------------------------------------------------------------------------------------#
+   is.las = grepl(pattern="\\.las$"      ,x=lasfile)
+   is.gz  = grepl(pattern="\\.las\\.gz$" ,x=lasfile)
+   is.bz2 = grepl(pattern="\\.las\\.bz2$",x=lasfile)
+   if (! file.exists(lasfile)){
+      stop(paste0(" File ",lasfile," doesn't exist!"))
+   }else if (is.las){
+      temp.las = lasfile
+   }else if (is.bz2){
+      temp.las = file.path( tempdir()
+                          , gsub(pattern="\\.bz2$",replacement="",x=basename(lasfile))
+                          )#end file.path
+      if (file.exists(temp.las)) file.remove(temp.las)
+      dummy    = bunzip2(filename=lasfile,destname=temp.las,remove=FALSE)
+   }else if (is.gz){
+      temp.las = file.path( tempdir()
+                          , gsub(pattern="\\.gz$",replacement="",x=basename(lasfile))
+                          )#end file.path
+      if (file.exists(temp.las)) file.remove(temp.las)
+      dummy    = gunzip(filename=lasfile,destname=temp.las,remove=FALSE)
+   }else{
+      stop("Unrecognised format: point cloud must be las, las.gz, or las.bz2!")
+   }#end if
+   #---------------------------------------------------------------------------------------#
+
+
+
    #----- Get the header. -----------------------------------------------------------------#
    hd             = las.header()
    nhd            = nrow(hd)
@@ -58,7 +223,7 @@ read.las <<- function( lasfile
    #---------------------------------------------------------------------------------------#
 
    #---- Open connection, and read the LAS File bytes. ------------------------------------#
-   con                   = file( description = lasfile, open = "rb")
+   con                   = file( description = temp.las, open = "rb")
    isLASFbytes           = readBin( con    = con
                                   , what   = "raw"
                                   , size   = 1
@@ -75,7 +240,7 @@ read.las <<- function( lasfile
                                   , endian = "little"
                                   )#end readBin
    if (! pheader[[hd$Item[1]]] %in% "LASF") {
-      stop(paste("File ",basename(lasfile)," is not a valid LAS file!",sep=""))
+      stop(paste("File ",basename(temp.las)," is not a valid LAS file!",sep=""))
    }#end if
    #---------------------------------------------------------------------------------------#
 
@@ -134,7 +299,7 @@ read.las <<- function( lasfile
 
 
       #----- Read in the actual data. -----------------------------------------------------#
-      con  = file   (description=lasfile, open = "rb")
+      con  = file   (description=temp.las, open = "rb")
       junk = readBin(con=con,what="raw",size=1L,n=offsetToPointData)
       #------------------------------------------------------------------------------------#
 
@@ -185,7 +350,7 @@ read.las <<- function( lasfile
                        , nrow  = numberPointRecords
                        , byrow = TRUE
                        )#end matrix
-       close(con = con)
+      close(con = con)
       #------------------------------------------------------------------------------------#
 
 
@@ -197,6 +362,7 @@ read.las <<- function( lasfile
                         , y                = empty
                         , z                = empty
                         , intensity        = empty
+                        , pulse.number     = empty
                         , retn.number      = empty
                         , number.retn.gp   = empty
                         , scan.dir.flag    = empty
@@ -265,6 +431,7 @@ read.las <<- function( lasfile
                              , signed = FALSE
                              , endian = "little"
                              )#end readBin
+      ans$intensity = ans$intensity * 2^(16L-int.nbits)
       #------------------------------------------------------------------------------------#
 
 
@@ -338,7 +505,7 @@ read.las <<- function( lasfile
                                    , what   = "integer"
                                    , size   = 1L
                                    , n      = numberPointRecords
-                                   , signed = FALSE
+                                   , signed = TRUE
                                    , endian = "little"
                                    )#end readBin
       #------------------------------------------------------------------------------------#
@@ -390,6 +557,11 @@ read.las <<- function( lasfile
 
 
 
+      #---- Estimate the pulse number. ----------------------------------------------------#
+      retn.before      = c(Inf,ans$retn.number[-nrow(ans)])
+      ans$pulse.number = cumsum(ans$retn.number == 1 | ans$retn.number <= retn.before)
+      #------------------------------------------------------------------------------------#
+
 
       #------------------------------------------------------------------------------------#
       #     Decide the output format.  Default is a data frame, but it can be also Spatial #
@@ -397,8 +569,13 @@ read.las <<- function( lasfile
       #------------------------------------------------------------------------------------#
       if (return.sp) ans = SpatialPoints(ans)
       #------------------------------------------------------------------------------------#
-
    }#end if (return.header)
+   #---------------------------------------------------------------------------------------#
+
+   #----- Remove temporary file. ----------------------------------------------------------#
+   if (is.gz || is.bz2) file.remove(temp.las)
+   #---------------------------------------------------------------------------------------#
+
 
    #----- Return answer. ------------------------------------------------------------------#
    return (ans)

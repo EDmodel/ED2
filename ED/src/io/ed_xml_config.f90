@@ -70,11 +70,13 @@ recursive subroutine read_ed_xml_config(filename)
   use fusion_fission_coms
   use grid_coms, only : ngrids
   use ed_max_dims, only : str_len
+  use canopy_air_coms, only : f_bndlyr_init
 
   use soil_coms  !, only: infiltration_method, dewmax, water_stab_thresh
 !  use ed_data
   use ed_misc_coms!, only: ied_init_mode,ffilout,integration_scheme,sfilin,sfilout,thsums_database
-  use rk4_coms, only : rk4min_veg_temp
+  use rk4_coms, only : rk4min_veg_temp, tiny_offset
+  use budget_utils, only : tol_subday_budget, tol_carbon_budget
   implicit none
   integer(4) :: i,npft,ntag,myPFT,nlu,myLU,len,ival = 0
   logical(4) :: texist = .false.
@@ -82,6 +84,7 @@ recursive subroutine read_ed_xml_config(filename)
   character*(*) :: filename
   character(len=str_len)  :: cval
   integer             :: ng
+  real, external :: sngloff
 !  type(eddata) :: data
 
   print*,"Opening ED2 XML Config file",trim(filename)
@@ -120,6 +123,93 @@ recursive subroutine read_ed_xml_config(filename)
 !!     stop
   endif
   
+
+
+  !*******  MET PARAMS
+  call libxml2f90__ll_selectlist(TRIM(FILENAME))       
+  call libxml2f90__ll_selecttag('ACT','config',1) !select upper level tag
+  call libxml2f90__ll_exist('DOWN','met',ntag)    !get number of met tags
+  print*,"MET READ FROM FILE ::",ntag
+  if (ntag >= 1) then
+     do i=1,ntag
+        call libxml2f90__ll_selecttag('DOWN','met',i)
+
+        call getConfigREAL  ('met_land_min'   ,'met',i,rval,texist)
+        if (texist) met_land_min     = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('rshort_min'     ,'met',i,rval,texist)
+        if (texist) rshort_min       = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('rshort_max'     ,'met',i,rval,texist)
+        if (texist) rshort_max       = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('rlong_min'      ,'met',i,rval,texist)
+        if (texist) rlong_min        = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('rlong_max'      ,'met',i,rval,texist)
+        if (texist) rlong_max        = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('dt_radinterp'   ,'met',i,rval,texist)
+        if (texist) dt_radinterp     = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('atm_tmp_min'    ,'met',i,rval,texist)
+        if (texist) atm_tmp_min      = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('atm_tmp_max'    ,'met',i,rval,texist)
+        if (texist) atm_tmp_max      = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('atm_shv_min'    ,'met',i,rval,texist)
+        if (texist) atm_shv_min      = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('atm_shv_max'    ,'met',i,rval,texist)
+        if (texist) atm_shv_max      = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('atm_rhv_min'    ,'met',i,rval,texist)
+        if (texist) atm_rhv_min      = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('atm_rhv_max'    ,'met',i,rval,texist)
+        if (texist) atm_rhv_max      = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('atm_co2_min'    ,'met',i,rval,texist)
+        if (texist) atm_co2_min      = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('atm_co2_max'    ,'met',i,rval,texist)
+        if (texist) atm_co2_max      = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('prss_min'       ,'met',i,rval,texist)
+        if (texist) prss_min         = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('prss_max'       ,'met',i,rval,texist)
+        if (texist) prss_max         = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('pcpg_min'       ,'met',i,rval,texist)
+        if (texist) pcpg_min         = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('pcpg_max'       ,'met',i,rval,texist)
+        if (texist) pcpg_max         = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('vels_min'       ,'met',i,rval,texist)
+        if (texist) vels_min         = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('vels_max'       ,'met',i,rval,texist)
+        if (texist) vels_max         = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('geoht_min'      ,'met',i,rval,texist)
+        if (texist) geoht_min        = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('geoht_max'      ,'met',i,rval,texist)
+        if (texist) geoht_max        = sngloff(rval,tiny_offset)
+        call getConfigINT   ('print_radinterp','met',i,ival,texist)
+        if (texist) print_radinterp  = ival == 1
+        call getConfigSTRING('vbdsf_file'     ,'met',i,cval,texist)
+        if (texist) vbdsf_file       = trim(cval)
+        call getConfigSTRING('vddsf_file'     ,'met',i,cval,texist)
+        if (texist) vddsf_file       = trim(cval)
+        call getConfigSTRING('nbdsf_file'     ,'met',i,cval,texist)
+        if (texist) nbdsf_file       = trim(cval)
+        call getConfigSTRING('nddsf_file'     ,'met',i,cval,texist)
+        if (texist) nddsf_file       = trim(cval)
+         call libxml2f90__ll_selecttag('UP','config',1) !move back up to top level
+
+      end do
+  end if
+
+
+  !*******  MET PARAMS
+  call libxml2f90__ll_selectlist(TRIM(FILENAME))       
+  call libxml2f90__ll_selecttag('ACT','config',1) !select upper level tag
+  call libxml2f90__ll_exist('DOWN','can_air',ntag)    !get number of met tags
+  print*,"CAN_AIR READ FROM FILE ::",ntag
+  if (ntag >= 1) then
+     do i=1,ntag
+        call libxml2f90__ll_selecttag('DOWN','can_air',i)
+
+        call getConfigREAL  ('f_bndlyr_init','can_air',i,rval,texist)
+        if (texist) f_bndlyr_init = sngloff(rval,tiny_offset)
+        call libxml2f90__ll_selecttag('UP','config',1) !move back up to top level
+
+      end do
+  end if
+
 
 
   !*******  MISC
@@ -169,7 +259,16 @@ recursive subroutine read_ed_xml_config(filename)
            use_target_year = 1
         endif
         call getConfigINT  ('outputMonth','ed_misc',i,ival,texist)
-        if(texist) outputMonth = ival
+        ! Output month no longer exists (conflict between branches)
+        ! Kept month_yrstep because it does what outputMonth did plus it changes
+        ! the month in which patch dynamics occurs.  In case it is set, issue a 
+        ! warning.
+        if (texist) then
+           call warning(" Found ""outputMonth"" was found in XML.  This will overwrite "// &
+                        " variable ""month_yrstep"" set in the namelist."                  &
+                       ,"read_ed_xml_config","ed_xml_config.f90")
+           month_yrstep = ival
+        end if
         call getConfigINT  ('burnin','ed_misc',i,ival,texist)
         if(texist) burnin = ival
 
@@ -181,6 +280,8 @@ recursive subroutine read_ed_xml_config(filename)
         call getConfigINT  ('vary_hyd','ed_misc',i,ival,texist)
         if(texist) vary_hyd = ival
         
+        call getConfigINT  ('use_efrd_trtree','ed_misc',i,ival,texist)
+        if(texist) use_efrd_trtree = ival == 1
         
         
         call libxml2f90__ll_selecttag('UP','config',1) !move back up to top level
@@ -200,7 +301,7 @@ recursive subroutine read_ed_xml_config(filename)
      call getConfigINT   ('num','landuse',i,myLU,texist)
      if (myLU >= 1 .and. myLU <= n_dist_types) then
         call getConfigREAL  ('min_oldgrowth','landuse',i,rval,texist)
-        if(texist) min_oldgrowth(myLU) = real(rval)
+        if(texist) min_oldgrowth(myLU) = sngloff(rval,tiny_offset)
      else
         write (unit=*,fmt='(a,1x,i6,1x,a)')                                                &
             ' Land use type ',myLU,' is invalid thus ignored!!!'
@@ -241,6 +342,22 @@ recursive subroutine read_ed_xml_config(filename)
                  is_grass(myPFT) = .true.
               end if
            end if
+           call getConfigINT('is_conifer','pft',i,ival,texist)
+           if(texist) then
+              if(ival .eq. 0) then
+                 is_conifer(myPFT) = .false.
+              else
+                 is_conifer(myPFT) = .true.
+              end if
+           end if
+           call getConfigINT('is_savannah','pft',i,ival,texist)
+           if(texist) then
+              if(ival .eq. 0) then
+                 is_savannah(myPFT) = .false.
+              else
+                 is_savannah(myPFT) = .true.
+              end if
+           end if
            call getConfigINT('is_liana','pft',i,ival,texist)
            if(texist) then
               if(ival .eq. 0) then
@@ -262,420 +379,464 @@ recursive subroutine read_ed_xml_config(filename)
 
 
 !! CANOPY RADIATION
-       call getConfigREAL  ('clumping_factor','pft',i,rval,texist)
-           if(texist) clumping_factor(myPFT) = real(rval)
-       call getConfigREAL  ('orient_factor','pft',i,rval,texist)
-           if(texist) orient_factor(myPFT) = real(rval)
+           call getConfigREAL  ('clumping_factor','pft',i,rval,texist)
+           if(texist) clumping_factor(myPFT) = sngloff(rval,tiny_offset)
+           call getConfigREAL  ('orient_factor','pft',i,rval,texist)
+           if(texist) orient_factor(myPFT) = sngloff(rval,tiny_offset)
 
            call getConfigREAL  ('leaf_emiss_tir','pft',i,rval,texist)
            if(texist) leaf_emiss_tir(myPFT) = rval
            call getConfigREAL  ('wood_emiss_tir','pft',i,rval,texist)
            if(texist) wood_emiss_tir(myPFT) = rval
 
-       call getConfigREAL  ('leaf_reflect_vis','pft',i,rval,texist)
-           if(texist) leaf_reflect_vis(myPFT) = real(rval)
-       call getConfigREAL  ('leaf_reflect_nir','pft',i,rval,texist)
-           if(texist) leaf_reflect_nir(myPFT) = real(rval)
-       call getConfigREAL  ('wood_reflect_vis','pft',i,rval,texist)
-           if(texist) wood_reflect_vis(myPFT) = real(rval)
-       call getConfigREAL  ('wood_reflect_nir','pft',i,rval,texist)
-           if(texist) wood_reflect_nir(myPFT) = real(rval)
-       call getConfigREAL  ('leaf_trans_vis','pft',i,rval,texist)
-           if(texist) leaf_trans_vis(myPFT) = real(rval)
-       call getConfigREAL  ('leaf_trans_nir','pft',i,rval,texist)
-           if(texist) leaf_trans_nir(myPFT) = real(rval)
-       call getConfigREAL  ('wood_trans_vis','pft',i,rval,texist)
-           if(texist) wood_trans_vis(myPFT) = real(rval)
-       call getConfigREAL  ('wood_trans_nir','pft',i,rval,texist)
-           if(texist) wood_trans_nir(myPFT) = real(rval)
-
-       call getConfigREAL  ('leaf_backscatter_vis','pft',i,rval,texist)
-           if(texist) leaf_backscatter_vis(myPFT) = real(rval)
-       call getConfigREAL  ('leaf_backscatter_nir','pft',i,rval,texist)
-           if(texist) leaf_backscatter_nir(myPFT) = real(rval)
-       call getConfigREAL  ('leaf_backscatter_tir','pft',i,rval,texist)
-           if(texist) leaf_backscatter_tir(myPFT) = real(rval)
- 
-       call getConfigREAL  ('wood_backscatter_vis','pft',i,rval,texist)
-           if(texist) wood_backscatter_vis(myPFT) = real(rval)
-       call getConfigREAL  ('wood_backscatter_nir','pft',i,rval,texist)
-           if(texist) wood_backscatter_nir(myPFT) = real(rval)
-       call getConfigREAL  ('wood_backscatter_tir','pft',i,rval,texist)
-           if(texist) wood_backscatter_vis(myPFT) = real(rval)
-
-       call getConfigREAL  ('leaf_scatter_vis','pft',i,rval,texist)
-           if(texist) leaf_scatter_vis(myPFT) = real(rval)
-       call getConfigREAL  ('leaf_scatter_nir','pft',i,rval,texist)
-           if(texist) leaf_scatter_nir(myPFT) = real(rval)
-       call getConfigREAL  ('wood_scatter_vis','pft',i,rval,texist)
-           if(texist) wood_scatter_vis(myPFT) = real(rval)
-       call getConfigREAL  ('wood_scatter_nir','pft',i,rval,texist)
-           if(texist) wood_scatter_nir(myPFT) = real(rval)
-
-       call getConfigREAL  ('phi1','pft',i,rval,texist)
-           if(texist) phi1(myPFT) = real(rval)
-       call getConfigREAL  ('phi2','pft',i,rval,texist)
-           if(texist) phi2(myPFT) = real(rval)
-       call getConfigREAL  ('mu_bar','pft',i,rval,texist)
-           if(texist) mu_bar(myPFT) = real(rval)
+           call getConfigREAL  ('leaf_reflect_vis','pft',i,rval,texist)
+           if(texist) leaf_reflect_vis(myPFT) = sngloff(rval,tiny_offset)
+           call getConfigREAL  ('leaf_reflect_nir','pft',i,rval,texist)
+           if(texist) leaf_reflect_nir(myPFT) = sngloff(rval,tiny_offset)
+           call getConfigREAL  ('wood_reflect_vis','pft',i,rval,texist)
+           if(texist) wood_reflect_vis(myPFT) = sngloff(rval,tiny_offset)
+           call getConfigREAL  ('wood_reflect_nir','pft',i,rval,texist)
+           if(texist) wood_reflect_nir(myPFT) = sngloff(rval,tiny_offset)
+           call getConfigREAL  ('leaf_trans_vis','pft',i,rval,texist)
+           if(texist) leaf_trans_vis(myPFT) = sngloff(rval,tiny_offset)
+           call getConfigREAL  ('leaf_trans_nir','pft',i,rval,texist)
+           if(texist) leaf_trans_nir(myPFT) = sngloff(rval,tiny_offset)
+           call getConfigREAL  ('wood_trans_vis','pft',i,rval,texist)
+           if(texist) wood_trans_vis(myPFT) = sngloff(rval,tiny_offset)
+           call getConfigREAL  ('wood_trans_nir','pft',i,rval,texist)
+           if(texist) wood_trans_nir(myPFT) = sngloff(rval,tiny_offset)
 
 ! photosynthesis variables
            call getConfigINT  ('photosyn_pathway','pft',i,ival,texist)
            if(texist) photosyn_pathway(myPFT) = ival
            call getConfigREAL  ('quantum_efficiency','pft',i,rval,texist)
-           if(texist) quantum_efficiency(myPFT) = real(rval)
+           if(texist) quantum_efficiency(myPFT) = sngloff(rval,tiny_offset)
+           call getConfigREAL  ('curvpar_electron','pft',i,rval,texist)
+           if(texist) curvpar_electron(myPFT) = sngloff(rval,tiny_offset)
+           call getConfigREAL  ('qyield_psII','pft',i,rval,texist)
+           if(texist) qyield_psII(myPFT) = sngloff(rval,tiny_offset)
 
            call getConfigREAL  ('Vm0','pft',i,rval,texist)
-           if(texist) Vm0(myPFT) = real(rval)
+           if(texist) Vm0(myPFT) = sngloff(rval,tiny_offset)
+           call getConfigREAL  ('vm0_v0','pft',i,rval,texist)
+           if(texist) vm0_v0(myPFT) = sngloff(rval,tiny_offset)
+           call getConfigREAL  ('vm0_v1','pft',i,rval,texist)
+           if(texist) vm0_v1(myPFT) = sngloff(rval,tiny_offset)
            call getConfigREAL  ('Vm_low_temp','pft',i,rval,texist)
-           if(texist) Vm_low_temp(myPFT) = real(rval)
+           if(texist) Vm_low_temp(myPFT) = sngloff(rval,tiny_offset)
            call getConfigREAL  ('Vm_high_temp','pft',i,rval,texist)
-           if(texist) Vm_high_temp(myPFT) = real(rval)
-       call getConfigREAL  ('Vm_decay_e','pft',i,rval,texist)
-           if(texist) Vm_decay_e(myPFT) = real(rval)
-       call getConfigREAL  ('Vm_decay_a','pft',i,rval,texist)
-           if(texist) Vm_decay_a(myPFT) = real(rval)
-       call getConfigREAL  ('Vm_decay_b','pft',i,rval,texist)
-           if(texist) Vm_decay_b(myPFT) = real(rval)
+           if(texist) Vm_high_temp(myPFT) = sngloff(rval,tiny_offset)
+           call getConfigREAL  ('Vm_decay_e','pft',i,rval,texist)
+           if (texist) then
+              Vm_decay_elow (myPFT) = sngloff(rval,tiny_offset)
+              Vm_decay_ehigh(myPFT) = sngloff(rval,tiny_offset)
+           end if
+           call getConfigREAL  ('Vm_decay_elow','pft',i,rval,texist)
+           if(texist) Vm_decay_elow(myPFT) = sngloff(rval,tiny_offset)
+           call getConfigREAL  ('Vm_decay_ehigh','pft',i,rval,texist)
+           if(texist) Vm_decay_ehigh(myPFT) = sngloff(rval,tiny_offset)
            call getConfigREAL  ('vm_hor','pft',i,rval,texist)
-           if(texist) vm_hor(myPFT) = real(rval)
+           if(texist) vm_hor(myPFT) = sngloff(rval,tiny_offset)
            call getConfigREAL  ('vm_q10','pft',i,rval,texist)
-           if(texist) vm_q10(myPFT) = real(rval)
+           if(texist) vm_q10(myPFT) = sngloff(rval,tiny_offset)
+           call getConfigREAL  ('kplastic_vm0','pft',i,rval,texist)
+           if(texist) kplastic_vm0(myPFT) = sngloff(rval,tiny_offset)
+           call getConfigREAL  ('Jm0','pft',i,rval,texist)
+           if(texist) Jm0(myPFT) = sngloff(rval,tiny_offset)
+           call getConfigREAL  ('Jm_low_temp','pft',i,rval,texist)
+           if(texist) Jm_low_temp(myPFT) = sngloff(rval,tiny_offset)
+           call getConfigREAL  ('Jm_high_temp','pft',i,rval,texist)
+           if(texist) Jm_high_temp(myPFT) = sngloff(rval,tiny_offset)
+           call getConfigREAL  ('Jm_decay_e','pft',i,rval,texist)
+           if (texist) then
+              Jm_decay_elow (myPFT) = sngloff(rval,tiny_offset)
+              Jm_decay_ehigh(myPFT) = sngloff(rval,tiny_offset)
+           end if
+           call getConfigREAL  ('Jm_decay_elow','pft',i,rval,texist)
+           if(texist) Jm_decay_elow(myPFT) = sngloff(rval,tiny_offset)
+           call getConfigREAL  ('Jm_decay_ehigh','pft',i,rval,texist)
+           if(texist) Jm_decay_ehigh(myPFT) = sngloff(rval,tiny_offset)
+           call getConfigREAL  ('jm_hor','pft',i,rval,texist)
+           if(texist) jm_hor(myPFT) = sngloff(rval,tiny_offset)
+           call getConfigREAL  ('jm_q10','pft',i,rval,texist)
+           if(texist) jm_q10(myPFT) = sngloff(rval,tiny_offset)
+           call getConfigREAL  ('Tpm0','pft',i,rval,texist)
+           if(texist) Tpm0(myPFT) = sngloff(rval,tiny_offset)
+           call getConfigREAL  ('electron_transport_factor','pft',i,rval,texist)
+           if(texist) electron_transport_factor(myPFT) = sngloff(rval,tiny_offset)
+           call getConfigREAL  ('triose_phosphate_factor','pft',i,rval,texist)
+           if(texist) triose_phosphate_factor(myPFT) = sngloff(rval,tiny_offset)
 
 !! Leaf Respiration
            call getConfigREAL  ('dark_respiration_factor','pft',i,rval,texist)
-           if(texist) dark_respiration_factor(myPFT) = real(rval)
+           if(texist) dark_respiration_factor(myPFT) = sngloff(rval,tiny_offset)
            call getConfigREAL  ('Rd_low_temp','pft',i,rval,texist)
-           if(texist) Rd_low_temp(myPFT) = real(rval)
-       call getConfigREAL  ('Rd_high_temp','pft',i,rval,texist)
-           if(texist) Rd_high_temp(myPFT) = real(rval)
-       call getConfigREAL  ('Rd_decay_e','pft',i,rval,texist)
-           if(texist) Rd_decay_e(myPFT) = real(rval)
+           if(texist) Rd_low_temp(myPFT) = sngloff(rval,tiny_offset)
+           call getConfigREAL  ('Rd_high_temp','pft',i,rval,texist)
+           if(texist) Rd_high_temp(myPFT) = sngloff(rval,tiny_offset)
+           call getConfigREAL  ('Rd_decay_e','pft',i,rval,texist)
+           if (texist) then
+              Rd_decay_elow (myPFT) = sngloff(rval,tiny_offset)
+              Rd_decay_ehigh(myPFT) = sngloff(rval,tiny_offset)
+           end if
+           call getConfigREAL  ('Rd_decay_elow','pft',i,rval,texist)
+           if(texist) Rd_decay_elow(myPFT) = sngloff(rval,tiny_offset)
+           call getConfigREAL  ('Rd_decay_ehigh','pft',i,rval,texist)
+           if(texist) Rd_decay_ehigh(myPFT) = sngloff(rval,tiny_offset)
            call getConfigREAL  ('Rd_hor','pft',i,rval,texist)
-           if(texist) Rd_hor(myPFT) = real(rval)
+           if(texist) Rd_hor(myPFT) = sngloff(rval,tiny_offset)
            call getConfigREAL  ('Rd_q10','pft',i,rval,texist)
-           if(texist) Rd_q10(myPFT) = real(rval)
+           if(texist) Rd_q10(myPFT) = sngloff(rval,tiny_offset)
            call getConfigREAL  ('Rd0','pft',i,rval,texist)
-           if(texist) Rd0(myPFT) = real(rval)
+           if(texist) Rd0(myPFT) = sngloff(rval,tiny_offset)
 
 !! Stomatal parameters
            call getConfigREAL  ('D0','pft',i,rval,texist)
-           if(texist) D0(myPFT) = real(rval)
+           if(texist) D0(myPFT) = sngloff(rval,tiny_offset)
            call getConfigREAL  ('stomatal_slope','pft',i,rval,texist)
-           if(texist) stomatal_slope(myPFT) = real(rval)
+           if(texist) stomatal_slope(myPFT) = sngloff(rval,tiny_offset)
            call getConfigREAL  ('cuticular_cond','pft',i,rval,texist)
-           if(texist) cuticular_cond(myPFT) = real(rval)
+           if(texist) cuticular_cond(myPFT) = sngloff(rval,tiny_offset)
            call getConfigREAL  ('water_conductance','pft',i,rval,texist)
-           if(texist) water_conductance(myPFT) = real(rval)
+           if(texist) water_conductance(myPFT) = sngloff(rval,tiny_offset)
            call getConfigREAL  ('leaf_width','pft',i,rval,texist)
-           if(texist) leaf_width(myPFT) = real(rval)
+           if(texist) leaf_width(myPFT) = sngloff(rval,tiny_offset)
+           call getConfigREAL  ('branch_diam','pft',i,rval,texist)
+           if(texist) branch_diam(myPFT) = sngloff(rval,tiny_offset)
 
 ! respiration & turnover variables
            call getConfigREAL  ('growth_resp_factor','pft',i,rval,texist)
-           if(texist) growth_resp_factor(myPFT) = real(rval)
+           if(texist) growth_resp_factor(myPFT) = sngloff(rval,tiny_offset)
            call getConfigREAL  ('leaf_turnover_rate','pft',i,rval,texist)
-           if(texist) leaf_turnover_rate(myPFT) = real(rval)
+           if(texist) leaf_turnover_rate(myPFT) = sngloff(rval,tiny_offset)
+           call getConfigREAL  ('eplastic_vm0','pft',i,rval,texist)
+           if(texist) eplastic_vm0(myPFT) = sngloff(rval,tiny_offset)
+           call getConfigREAL  ('eplastic_sla','pft',i,rval,texist)
+           if(texist) eplastic_sla(myPFT) = sngloff(rval,tiny_offset)
+           call getConfigREAL  ('kplastic_LL','pft',i,rval,texist)
+           if(texist) kplastic_LL (myPFT) = sngloff(rval,tiny_offset)
            call getConfigREAL  ('root_turnover_rate','pft',i,rval,texist)
-           if(texist) root_turnover_rate(myPFT) = real(rval)
+           if(texist) root_turnover_rate(myPFT) = sngloff(rval,tiny_offset)
+           call getConfigREAL  ('bark_turnover_rate','pft',i,rval,texist)
+           if(texist) bark_turnover_rate(myPFT) = sngloff(rval,tiny_offset)
            call getConfigREAL  ('storage_turnover_rate','pft',i,rval,texist)
-           if(texist) storage_turnover_rate(myPFT) = real(rval)
+           if(texist) storage_turnover_rate(myPFT) = sngloff(rval,tiny_offset)
            call getConfigREAL  ('f_labile','pft',i,rval,texist)
-           if(texist) f_labile(myPFT) = real(rval)
+           if(texist) f_labile_leaf(myPFT) = sngloff(rval,tiny_offset)
+           call getConfigREAL  ('f_labile_leaf','pft',i,rval,texist)
+           if(texist) f_labile_leaf(myPFT) = sngloff(rval,tiny_offset)
+           call getConfigREAL  ('f_labile_stem','pft',i,rval,texist)
+           if(texist) f_labile_stem(myPFT) = sngloff(rval,tiny_offset)
            call getConfigREAL  ('root_respiration_factor','pft',i,rval,texist)
-           if(texist) root_respiration_factor(myPFT) = real(rval)
+           if(texist) root_respiration_factor(myPFT) = sngloff(rval,tiny_offset)
            call getConfigREAL  ('rrf_low_temp','pft',i,rval,texist)
-           if(texist) rrf_low_temp(myPFT) = real(rval)
+           if(texist) rrf_low_temp(myPFT) = sngloff(rval,tiny_offset)
            call getConfigREAL  ('rrf_high_temp','pft',i,rval,texist)
-           if(texist) rrf_high_temp(myPFT) = real(rval)
+           if(texist) rrf_high_temp(myPFT) = sngloff(rval,tiny_offset)
            call getConfigREAL  ('rrf_decay_e','pft',i,rval,texist)
-           if(texist) rrf_decay_e(myPFT) = real(rval)
+           if (texist) then
+              rrf_decay_elow (myPFT) = sngloff(rval,tiny_offset)
+              rrf_decay_ehigh(myPFT) = sngloff(rval,tiny_offset)
+           end if
+           call getConfigREAL  ('rrf_decay_elow','pft',i,rval,texist)
+           if(texist) rrf_decay_elow(myPFT) = sngloff(rval,tiny_offset)
+           call getConfigREAL  ('rrf_decay_ehigh','pft',i,rval,texist)
+           if(texist) rrf_decay_ehigh(myPFT) = sngloff(rval,tiny_offset)
            call getConfigREAL  ('rrf_hor','pft',i,rval,texist)
-           if(texist) rrf_hor(myPFT) = real(rval)
+           if(texist) rrf_hor(myPFT) = sngloff(rval,tiny_offset)
            call getConfigREAL  ('rrf_q10','pft',i,rval,texist)
-           if(texist) rrf_q10(myPFT) = real(rval)
+           if(texist) rrf_q10(myPFT) = sngloff(rval,tiny_offset)
 
 ! mortality
            call getConfigREAL  ('frost_mort','pft',i,rval,texist)
-           if(texist) frost_mort(myPFT) = real(rval)
+           if(texist) frost_mort(myPFT) = sngloff(rval,tiny_offset)
            call getConfigREAL  ('mort0','pft',i,rval,texist)
-           if(texist) mort0(myPFT) = real(rval)
+           if(texist) mort0(myPFT) = sngloff(rval,tiny_offset)
            call getConfigREAL  ('mort1','pft',i,rval,texist)
-           if(texist) mort1(myPFT) = real(rval)
+           if(texist) mort1(myPFT) = sngloff(rval,tiny_offset)
            call getConfigREAL  ('mort2','pft',i,rval,texist)
-           if(texist) mort2(myPFT) = real(rval)
+           if(texist) mort2(myPFT) = sngloff(rval,tiny_offset)
            call getConfigREAL  ('mort3','pft',i,rval,texist)
-           if(texist) mort3(myPFT) = real(rval)
+           if(texist) mort3(myPFT) = sngloff(rval,tiny_offset)
            call getConfigREAL  ('cbr_severe_stress','pft',i,rval,texist)
-           if(texist) cbr_severe_stress(myPFT) = real(rval)
+           if(texist) cbr_severe_stress(myPFT) = sngloff(rval,tiny_offset)
            call getConfigREAL  ('seedling_mortality','pft',i,rval,texist)
-           if(texist) seedling_mortality(myPFT) = real(rval)
-       
-       call getConfigREAL  ('treefall_gt','pft',i,rval,texist)
-           if(texist) treefall_s_gtht(myPFT) = real(rval)
-           call getConfigREAL  ('treefall_s_gtht','pft',i,rval,texist)
-           if(texist) treefall_s_gtht(myPFT) = real(rval)
-           call getConfigREAL  ('treefall_lt','pft',i,rval,texist)
-           if(texist) treefall_s_ltht(myPFT) = real(rval)
-           call getConfigREAL  ('treefall_s_ltht','pft',i,rval,texist)
-           if(texist) treefall_s_ltht(myPFT) = real(rval)
+           if(texist) seedling_mortality(myPFT) = sngloff(rval,tiny_offset)
 
-           call getConfigREAL  ('fire_s_gtht','pft',i,rval,texist)
-           if(texist) fire_s_gtht(myPFT) = real(rval)
-           call getConfigREAL  ('fire_s_ltht','pft',i,rval,texist)
-           if(texist) fire_s_ltht(myPFT) = real(rval)
+           call getConfigREAL  ('treefall_gt','pft',i,rval,texist)
+           if(texist) treefall_s_gtht(myPFT) = sngloff(rval,tiny_offset)
+           call getConfigREAL  ('treefall_s_gtht','pft',i,rval,texist)
+           if(texist) treefall_s_gtht(myPFT) = sngloff(rval,tiny_offset)
+           call getConfigREAL  ('treefall_lt','pft',i,rval,texist)
+           if(texist) treefall_s_ltht(myPFT) = sngloff(rval,tiny_offset)
+           call getConfigREAL  ('treefall_s_ltht','pft',i,rval,texist)
+           if(texist) treefall_s_ltht(myPFT) = sngloff(rval,tiny_offset)
+           call getConfigREAL  ('felling_s_gtharv','pft',i,rval,texist)
+           if(texist) felling_s_gtharv(myPFT) = sngloff(rval,tiny_offset)
+           call getConfigREAL  ('felling_s_ltharv','pft',i,rval,texist)
+           if(texist) felling_s_ltharv(myPFT) = sngloff(rval,tiny_offset)
+           call getConfigREAL  ('skid_s_gtharv','pft',i,rval,texist)
+           if(texist) skid_s_gtharv(myPFT) = sngloff(rval,tiny_offset)
+           call getConfigREAL  ('skid_s_ltharv','pft',i,rval,texist)
+           if(texist) skid_s_ltharv(myPFT) = sngloff(rval,tiny_offset)
+           call getConfigREAL  ('fire_s_min','pft',i,rval,texist)
+           if(texist) fire_s_min(myPFT) = sngloff(rval,tiny_offset)
+           call getConfigREAL  ('fire_s_max','pft',i,rval,texist)
+           if(texist) fire_s_max(myPFT) = sngloff(rval,tiny_offset)
+           call getConfigREAL  ('fire_s_inter','pft',i,rval,texist)
+           if(texist) fire_s_inter(myPFT) = sngloff(rval,tiny_offset)
+           call getConfigREAL  ('fire_s_slope','pft',i,rval,texist)
+           if(texist) fire_s_slope(myPFT) = sngloff(rval,tiny_offset)
 
            call getConfigREAL  ('plant_min_temp','pft',i,rval,texist)
-           if(texist) plant_min_temp(myPFT) = real(rval)       
+           if(texist) plant_min_temp(myPFT) = sngloff(rval,tiny_offset)
 
 ! allocation variables
            call getConfigREAL  ('rho','pft',i,rval,texist)
-           if(texist) rho(myPFT) = real(rval)
+           if(texist) rho(myPFT) = sngloff(rval,tiny_offset)
            call getConfigREAL  ('SLA','pft',i,rval,texist)
-           if(texist) SLA(myPFT) = real(rval)
-           call getConfigREAL  ('horiz_branch','pft',i,rval,texist)
-           if(texist) horiz_branch(myPFT) = real(rval)
+           if(texist) SLA(myPFT) = sngloff(rval,tiny_offset)
+           call getConfigREAL  ('sla_s0','pft',i,rval,texist)
+           if(texist) sla_s0(myPFT) = sngloff(rval,tiny_offset)
+           call getConfigREAL  ('sla_s1','pft',i,rval,texist)
+           if(texist) sla_s1(myPFT) = sngloff(rval,tiny_offset)
+           call getConfigREAL  ('kplastic_sla','pft',i,rval,texist)
+           if(texist) kplastic_sla(myPFT) = sngloff(rval,tiny_offset)
+           call getConfigREAL  ('lma_slope','pft',i,rval,texist)
+           if(texist) lma_slope(myPFT) = sngloff(rval,tiny_offset)
+           call getConfigREAL  ('laimax_plastic','pft',i,rval,texist)
+           if(texist) laimax_plastic(myPFT) = sngloff(rval,tiny_offset)
            call getConfigREAL  ('q','pft',i,rval,texist)
-           if(texist) q(myPFT) = real(rval)
+           if(texist) q(myPFT) = sngloff(rval,tiny_offset)
            call getConfigREAL  ('sapwood_ratio','pft',i,rval,texist)
-           if(texist) sapwood_ratio(myPFT) = real(rval)
+           if(texist) sapwood_ratio(myPFT) = sngloff(rval,tiny_offset)
            call getConfigREAL  ('qsw','pft',i,rval,texist)
-           if(texist) qsw(myPFT) = real(rval)
+           if(texist) qsw(myPFT) = sngloff(rval,tiny_offset)
+           call getConfigREAL  ('qbark','pft',i,rval,texist)
+           if(texist) qbark(myPFT) = sngloff(rval,tiny_offset)
            call getConfigREAL  ('SRA','pft',i,rval,texist)
-           if(texist) SRA(myPFT) = real(rval)
+           if(texist) SRA(myPFT) = sngloff(rval,tiny_offset)
            call getConfigREAL  ('root_beta','pft',i,rval,texist)
-           if(texist) root_beta(myPFT) = real(rval)
+           if(texist) root_beta(myPFT) = sngloff(rval,tiny_offset)
            call getConfigREAL  ('init_density','pft',i,rval,texist)
-           if(texist) init_density(myPFT) = real(rval)
+           if(texist) init_density(myPFT) = sngloff(rval,tiny_offset)
+           call getConfigREAL  ('f_bstorage_init','pft',i,rval,texist)
+           if(texist) f_bstorage_init(myPFT) = sngloff(rval,tiny_offset)
 
 ! plant hydraulic variables
            call getConfigREAL  ('leaf_water_sat','pft',i,rval,texist)
-           if(texist) leaf_water_sat(myPFT) = real(rval)
+           if(texist) leaf_water_sat(myPFT) = sngloff(rval,tiny_offset)
            call getConfigREAL  ('wood_water_sat','pft',i,rval,texist)
-           if(texist) wood_water_sat(myPFT) = real(rval)
+           if(texist) wood_water_sat(myPFT) = sngloff(rval,tiny_offset)
+           call getConfigREAL  ('bark_water_sat','pft',i,rval,texist)
+           if(texist) bark_water_sat(myPFT) = sngloff(rval,tiny_offset)
            call getConfigREAL  ('leaf_water_cap','pft',i,rval,texist)
-           if(texist) leaf_water_cap(myPFT) = real(rval)
+           if(texist) leaf_water_cap(myPFT) = sngloff(rval,tiny_offset)
            call getConfigREAL  ('wood_water_cap','pft',i,rval,texist)
-           if(texist) wood_water_cap(myPFT) = real(rval)
+           if(texist) wood_water_cap(myPFT) = sngloff(rval,tiny_offset)
            call getConfigREAL  ('leaf_rwc_min','pft',i,rval,texist)
-           if(texist) leaf_rwc_min(myPFT) = real(rval)
+           if(texist) leaf_rwc_min(myPFT) = sngloff(rval,tiny_offset)
            call getConfigREAL  ('wood_rwc_min','pft',i,rval,texist)
-           if(texist) wood_rwc_min(myPFT) = real(rval)
+           if(texist) wood_rwc_min(myPFT) = sngloff(rval,tiny_offset)
            call getConfigREAL  ('leaf_psi_min','pft',i,rval,texist)
-           if(texist) leaf_psi_min(myPFT) = real(rval)
+           if(texist) leaf_psi_min(myPFT) = sngloff(rval,tiny_offset)
            call getConfigREAL  ('wood_psi_min','pft',i,rval,texist)
-           if(texist) wood_psi_min(myPFT) = real(rval)
+           if(texist) wood_psi_min(myPFT) = sngloff(rval,tiny_offset)
            call getConfigREAL  ('leaf_psi_tlp','pft',i,rval,texist)
-           if(texist) leaf_psi_tlp(myPFT) = real(rval)
+           if(texist) leaf_psi_tlp(myPFT) = sngloff(rval,tiny_offset)
            call getConfigREAL  ('wood_psi_tlp','pft',i,rval,texist)
-           if(texist) wood_psi_tlp(myPFT) = real(rval)
+           if(texist) wood_psi_tlp(myPFT) = sngloff(rval,tiny_offset)
            call getConfigREAL  ('leaf_psi_osmotic','pft',i,rval,texist)
-           if(texist) leaf_psi_osmotic(myPFT) = real(rval)
+           if(texist) leaf_psi_osmotic(myPFT) = sngloff(rval,tiny_offset)
            call getConfigREAL  ('wood_psi_osmotic','pft',i,rval,texist)
-           if(texist) wood_psi_osmotic(myPFT) = real(rval)
+           if(texist) wood_psi_osmotic(myPFT) = sngloff(rval,tiny_offset)
            call getConfigREAL  ('leaf_elastic_mod','pft',i,rval,texist)
-           if(texist) leaf_elastic_mod(myPFT) = real(rval)
+           if(texist) leaf_elastic_mod(myPFT) = sngloff(rval,tiny_offset)
            call getConfigREAL  ('wood_elastic_mod','pft',i,rval,texist)
-           if(texist) wood_elastic_mod(myPFT) = real(rval)
+           if(texist) wood_elastic_mod(myPFT) = sngloff(rval,tiny_offset)
            call getConfigREAL  ('wood_Kmax','pft',i,rval,texist)
-           if(texist) wood_Kmax(myPFT) = real(rval)
+           if(texist) wood_Kmax(myPFT) = sngloff(rval,tiny_offset)
            call getConfigREAL  ('wood_Kexp','pft',i,rval,texist)
-           if(texist) wood_Kexp(myPFT) = real(rval)
+           if(texist) wood_Kexp(myPFT) = sngloff(rval,tiny_offset)
            call getConfigREAL  ('wood_psi50','pft',i,rval,texist)
-           if(texist) wood_psi50(myPFT) = real(rval)
+           if(texist) wood_psi50(myPFT) = sngloff(rval,tiny_offset)
            call getConfigREAL  ('vessel_curl_factor','pft',i,rval,texist)
-           if(texist) vessel_curl_factor(myPFT) = real(rval)
+           if(texist) vessel_curl_factor(myPFT) = sngloff(rval,tiny_offset)
            call getConfigREAL  ('stoma_lambda','pft',i,rval,texist)
-           if(texist) stoma_lambda(myPFT) = real(rval)
+           if(texist) stoma_lambda(myPFT) = sngloff(rval,tiny_offset)
            call getConfigREAL  ('stoma_beta','pft',i,rval,texist)
-           if(texist) stoma_beta(myPFT) = real(rval)
+           if(texist) stoma_beta(myPFT) = sngloff(rval,tiny_offset)
            call getConfigREAL  ('stoma_psi_b','pft',i,rval,texist)
-           if(texist) stoma_psi_b(myPFT) = real(rval)
+           if(texist) stoma_psi_b(myPFT) = sngloff(rval,tiny_offset)
            call getConfigREAL  ('stoma_psi_c','pft',i,rval,texist)
-           if(texist) stoma_psi_c(myPFT) = real(rval)
+           if(texist) stoma_psi_c(myPFT) = sngloff(rval,tiny_offset)
            call getConfigREAL  ('high_psi_threshold','pft',i,rval,texist)
            if(texist) high_psi_threshold(myPFT) = int(rval)
            call getConfigREAL  ('low_psi_threshold','pft',i,rval,texist)
            if(texist) low_psi_threshold(myPFT) = int(rval)
            call getConfigREAL  ('leaf_shed_rate','pft',i,rval,texist)
-           if(texist) leaf_shed_rate(myPFT) = real(rval)
+           if(texist) leaf_shed_rate(myPFT) = sngloff(rval,tiny_offset)
            call getConfigREAL  ('leaf_grow_rate','pft',i,rval,texist)
-           if(texist) leaf_grow_rate(myPFT) = real(rval)
+           if(texist) leaf_grow_rate(myPFT) = sngloff(rval,tiny_offset)
 
      ! Height
            call getConfigREAL  ('b1Ht','pft',i,rval,texist)
-           if(texist) b1Ht(myPFT) = real(rval)
+           if(texist) b1Ht(myPFT) = sngloff(rval,tiny_offset)
            call getConfigREAL  ('b2Ht','pft',i,rval,texist)
-           if(texist) b2Ht(myPFT) = real(rval)
-       call getConfigREAL  ('hgt_ref','pft',i,rval,texist)
-           if(texist) hgt_ref(myPFT) = real(rval)
+           if(texist) b2Ht(myPFT) = sngloff(rval,tiny_offset)
+           call getConfigREAL  ('hgt_ref','pft',i,rval,texist)
+           if(texist) hgt_ref(myPFT) = sngloff(rval,tiny_offset)
            call getConfigREAL  ('hgt_min','pft',i,rval,texist)
-           if(texist) hgt_min(myPFT) = real(rval)
+           if(texist) hgt_min(myPFT) = sngloff(rval,tiny_offset)
            call getConfigREAL  ('hgt_max','pft',i,rval,texist)
-           if(texist) hgt_max(myPFT) = real(rval)
-       call getConfigREAL  ('min_dbh','pft',i,rval,texist)
-           if(texist) min_dbh(myPFT) = real(rval)
+           if(texist) hgt_max(myPFT) = sngloff(rval,tiny_offset)
+           call getConfigREAL  ('min_dbh','pft',i,rval,texist)
+           if(texist) min_dbh(myPFT) = sngloff(rval,tiny_offset)
            call getConfigREAL  ('dbh_crit','pft',i,rval,texist)
-           if(texist) dbh_crit(myPFT) = real(rval)
-           call getConfigREAL  ('dbh_adult','pft',i,rval,texist)
-           if(texist) dbh_adult(myPFT) = real(rval)
+           if(texist) dbh_crit(myPFT) = sngloff(rval,tiny_offset)
            call getConfigREAL  ('dbh_bigleaf','pft',i,rval,texist)
-           if(texist) dbh_bigleaf(myPFT) = real(rval)
+           if(texist) dbh_bigleaf(myPFT) = sngloff(rval,tiny_offset)
 
      ! Leaf
            call getConfigREAL  ('b1Bl','pft',i,rval,texist)
-           if (texist) then
-              b1Bl_small(myPFT) = real(rval)
-              b1Bl_large(myPFT) = real(rval)
-           end if
+           if (texist) b1Bl(myPFT) = sngloff(rval,tiny_offset)
            call getConfigREAL  ('b2Bl','pft',i,rval,texist)
-           if (texist) then
-              b2Bl_small(myPFT) = real(rval)
-              b2Bl_large(myPFT) = real(rval)
-           end if
-           call getConfigREAL  ('b1Bl_small','pft',i,rval,texist)
-           if (texist) then
-              b1Bl_small(myPFT) = real(rval)
-           end if
-           call getConfigREAL  ('b2Bl_small','pft',i,rval,texist)
-           if (texist) then
-              b2Bl_small(myPFT) = real(rval)
-           end if
-           call getConfigREAL  ('b1Bl_large','pft',i,rval,texist)
-           if (texist) then
-              b1Bl_large(myPFT) = real(rval)
-           end if
-           call getConfigREAL  ('b2Bl_large','pft',i,rval,texist)
-           if (texist) then
-              b2Bl_large(myPFT) = real(rval)
-           end if
-           call getConfigREAL  ('bleaf_adult','pft',i,rval,texist)
-           if (texist) then
-              bleaf_adult(myPFT) = real(rval)
-           end if
-
+           if (texist) b2Bl(myPFT) = sngloff(rval,tiny_offset)
 
      ! Stem
            call getConfigREAL  ('b1Bs','pft',i,rval,texist)
            if (texist) then
-              b1Bs_small(myPFT) = real(rval)
-              b1Bs_large(myPFT)   = real(rval)
+              b1Bs_small(myPFT) = sngloff(rval,tiny_offset)
+              b1Bs_large(myPFT)   = sngloff(rval,tiny_offset)
            end if
            call getConfigREAL  ('b2Bs','pft',i,rval,texist)
            if (texist) then
-              b2Bs_small(myPFT) = real(rval)
-              b2Bs_large(myPFT) = real(rval)
+              b2Bs_small(myPFT) = sngloff(rval,tiny_offset)
+              b2Bs_large(myPFT) = sngloff(rval,tiny_offset)
            end if
            call getConfigREAL  ('b1Bs_small','pft',i,rval,texist)
            if (texist) then
-              b1Bs_small(myPFT) = real(rval)
+              b1Bs_small(myPFT) = sngloff(rval,tiny_offset)
            end if
            call getConfigREAL  ('b2Bs_small','pft',i,rval,texist)
            if (texist) then
-              b2Bs_small(myPFT) = real(rval)
+              b2Bs_small(myPFT) = sngloff(rval,tiny_offset)
            end if
            call getConfigREAL  ('b1Bs_large','pft',i,rval,texist)
            if (texist) then
-              b1Bs_large(myPFT) = real(rval)
+              b1Bs_large(myPFT) = sngloff(rval,tiny_offset)
            end if
            call getConfigREAL  ('b2Bs_large','pft',i,rval,texist)
            if (texist) then
-              b2Bs_large(myPFT) = real(rval)
+              b2Bs_large(myPFT) = sngloff(rval,tiny_offset)
            end if
-           call getConfigREAL  ('b1SA','pft',i,rval,texist)
-           if (texist) then
-              b1SA(myPFT) = real(rval)
-           end if
-           call getConfigREAL  ('b2SA','pft',i,rval,texist)
-           if (texist) then
-              b2SA(myPFT) = real(rval)
-           end if
-       call getConfigREAL  ('min_bdead','pft',i,rval,texist)
-           if(texist) min_bdead(myPFT) = real(rval)
-       call getConfigREAL  ('bdead_crit','pft',i,rval,texist)
-           if(texist) bdead_crit(myPFT) = real(rval)
+           call getConfigREAL  ('min_bdead','pft',i,rval,texist)
+           if(texist) min_bdead(myPFT) = sngloff(rval,tiny_offset)
+           call getConfigREAL  ('bdead_crit','pft',i,rval,texist)
+           if(texist) bdead_crit(myPFT) = sngloff(rval,tiny_offset)
 
      ! Canopy
-       call getConfigREAL  ('b1Ca','pft',i,rval,texist)
-           if(texist) b1Ca(myPFT) = real(rval)
-       call getConfigREAL  ('b2Ca','pft',i,rval,texist)
-           if(texist) b2Ca(myPFT) = real(rval)
+           call getConfigREAL  ('b1Ca','pft',i,rval,texist)
+           if(texist) b1Ca(myPFT) = sngloff(rval,tiny_offset)
+           call getConfigREAL  ('b2Ca','pft',i,rval,texist)
+           if(texist) b2Ca(myPFT) = sngloff(rval,tiny_offset)
 
      ! branches
-       call getConfigREAL  ('b1WAI','pft',i,rval,texist)
-           if(texist) b1WAI(myPFT) = real(rval)
-       call getConfigREAL  ('b2WAI','pft',i,rval,texist)
-           if(texist) b2WAI(myPFT) = real(rval)
-       call getConfigREAL  ('brf_wd','pft',i,rval,texist)
-           if(texist) brf_wd(myPFT) = real(rval)
+           call getConfigREAL  ('b1WAI','pft',i,rval,texist)
+           if (texist) b1WAI(myPFT) = sngloff(rval,tiny_offset)
+           call getConfigREAL  ('b2WAI','pft',i,rval,texist)
+           if (texist) b2WAI(myPFT) = sngloff(rval,tiny_offset)
+           call getConfigREAL  ('brf_wd','pft',i,rval,texist)
+           if(texist) brf_wd(myPFT) = sngloff(rval,tiny_offset)
+
+     ! Sapwood area
+           call getConfigREAL  ('b1SA','pft',i,rval,texist)
+           if (texist) b1SA(myPFT) = sngloff(rval,tiny_offset)
+           call getConfigREAL  ('b2SA','pft',i,rval,texist)
+           if (texist) b2SA(myPFT) = sngloff(rval,tiny_offset)
+
+     ! bark/sapwood thickness
+           call getConfigREAL  ('qrhob','pft',i,rval,texist)
+           if(texist) qrhob(myPFT) = sngloff(rval,tiny_offset)
+           call getConfigREAL  ('b1Xb','pft',i,rval,texist)
+           if(texist) b1Xb(myPFT) = sngloff(rval,tiny_offset)
+           call getConfigREAL  ('b1Xs','pft',i,rval,texist)
+           if(texist) b1Xs(myPFT) = sngloff(rval,tiny_offset)
 
     ! coarse roots
            call getConfigREAL  ('agf_bs','pft',i,rval,texist)
-           if(texist) agf_bs(:) = real(rval)
-       call getConfigREAL  ('b1Vol','pft',i,rval,texist)
-           if(texist) b1Vol(myPFT) = real(rval)
-       call getConfigREAL  ('b2Vol','pft',i,rval,texist)
-           if(texist) b2Vol(myPFT) = real(rval)
-       call getConfigREAL  ('b1Rd','pft',i,rval,texist)
-           if(texist) b1Rd(myPFT) = real(rval)
-       call getConfigREAL  ('b2Rd','pft',i,rval,texist)
-           if(texist) b2Rd(myPFT) = real(rval)
+           if(texist) agf_bs(:) = sngloff(rval,tiny_offset)
+           call getConfigREAL  ('b1Vol','pft',i,rval,texist)
+           if(texist) b1Vol(myPFT) = sngloff(rval,tiny_offset)
+           call getConfigREAL  ('b2Vol','pft',i,rval,texist)
+           if(texist) b2Vol(myPFT) = sngloff(rval,tiny_offset)
+           call getConfigREAL  ('b1Rd','pft',i,rval,texist)
+           if(texist) b1Rd(myPFT) = sngloff(rval,tiny_offset)
+           call getConfigREAL  ('b2Rd','pft',i,rval,texist)
+           if(texist) b2Rd(myPFT) = sngloff(rval,tiny_offset)
+           call getConfigREAL  ('d18O_ref','pft',i,rval,texist)
+           if(texist) d18O_ref(myPFT) = sngloff(rval,tiny_offset)
+           call getConfigREAL  ('b1d18O','pft',i,rval,texist)
+           if(texist) b1d18O(myPFT) = sngloff(rval,tiny_offset)
+           call getConfigREAL  ('b2d18O','pft',i,rval,texist)
+           if(texist) b2d18O(myPFT) = sngloff(rval,tiny_offset)
+           call getConfigREAL  ('b1Efrd','pft',i,rval,texist)
+           if(texist) b1Efrd(myPFT) = sngloff(rval,tiny_offset)
+           call getConfigREAL  ('b2Efrd','pft',i,rval,texist)
+           if(texist) b2Efrd(myPFT) = sngloff(rval,tiny_offset)
 
-       call getConfigREAL  ('init_laimax','pft',i,rval,texist)
-           if(texist) init_laimax(myPFT) = real(rval)
+           call getConfigREAL  ('init_laimax','pft',i,rval,texist)
+           if(texist) init_laimax(myPFT) = sngloff(rval,tiny_offset)
 
 ! nitro
            call getConfigREAL  ('c2n_leaf','pft',i,rval,texist)
-           if(texist) c2n_leaf(myPFT) = real(rval)
+           if(texist) c2n_leaf(myPFT) = sngloff(rval,tiny_offset)
 !           call getConfigREAL  ('c2n_stem','pft',i,rval,texist)                  !! not pft-level in current mainline
-!           if(texist) c2n_stem(myPFT) = real(rval)
-           call getConfigREAL  ('c2n_recruit','pft',i,rval,texist)
-           if(texist) c2n_recruit(myPFT) = real(rval)
+!           if(texist) c2n_stem(myPFT) = sngloff(rval,tiny_offset)
 !!$           call getConfigREAL  ('c2n_storage','pft',i,rval,texist)
-!!$           if(texist) c2n_storage(myPFT) = real(rval)
+!!$           if(texist) c2n_storage(myPFT) = sngloff(rval,tiny_offset)
 
 ! leaf dependent
            call getConfigINT   ('phenology','pft',i,ival,texist)
            if(texist) phenology(myPFT) = ival
+
+! Specific heat
            call getConfigREAL  ('c_grn_leaf_dry','pft',i,rval,texist)
-           if(texist) c_grn_leaf_dry(myPFT) = real(rval)
-           call getConfigREAL  ('wat_dry_ratio_grn','pft',i,rval,texist)
-           if(texist) wat_dry_ratio_grn(myPFT) = real(rval)
-           call getConfigREAL  ('wat_dry_ratio_ngrn','pft',i,rval,texist)
-           if(texist) wat_dry_ratio_ngrn(myPFT) = real(rval)
-           call getConfigREAL  ('c_ngrn_biom_dry','pft',i,rval,texist)
-           if(texist) c_ngrn_biom_dry(myPFT) = real(rval)
-           call getConfigREAL  ('delta_c','pft',i,rval,texist)
-           if(texist) delta_c(myPFT) = real(rval)
+           if(texist) c_grn_leaf_dry(myPFT) = sngloff(rval,tiny_offset)
+           call getConfigREAL  ('c_ngrn_wood_dry','pft',i,rval,texist)
+           if(texist) c_ngrn_wood_dry(myPFT) = sngloff(rval,tiny_offset)
+           call getConfigREAL  ('c_ngrn_bark_dry','pft',i,rval,texist)
+           if(texist) c_ngrn_bark_dry(myPFT) = sngloff(rval,tiny_offset)
+           call getConfigREAL  ('delta_c_wood','pft',i,rval,texist)
+           if(texist) delta_c_wood(myPFT) = sngloff(rval,tiny_offset)
+           call getConfigREAL  ('delta_c_bark','pft',i,rval,texist)
+           if(texist) delta_c_bark(myPFT) = sngloff(rval,tiny_offset)
+
+! Crown depth
            call getConfigREAL  ('b1Cl','pft',i,rval,texist)
-           if(texist) b1Cl(myPFT) = real(rval)
+           if(texist) b1Cl(myPFT) = sngloff(rval,tiny_offset)
            call getConfigREAL  ('b2Cl','pft',i,rval,texist)
-           if(texist) b2Cl(myPFT) = real(rval)
+           if(texist) b2Cl(myPFT) = sngloff(rval,tiny_offset)
 
 ! reproduction
            call getConfigREAL  ('r_fract','pft',i,rval,texist)
-           if(texist) r_fract(myPFT) = real(rval)
+           if(texist) r_fract(myPFT) = sngloff(rval,tiny_offset)
+           call getConfigREAL  ('r_cv50','pft',i,rval,texist)
+           if(texist) r_cv50(myPFT) = sngloff(rval,tiny_offset)
+           call getConfigINT   ('r_bang','pft',i,ival,texist)
+           if(texist) r_bang(myPFT) = ival == 1
 !!$           call getConfigREAL  ('c_fract','pft',i,rval,texist)
-!!$           if(texist) c_fract(myPFT) = real(rval)
+!!$           if(texist) c_fract(myPFT) = sngloff(rval,tiny_offset)
            call getConfigREAL  ('st_fract','pft',i,rval,texist)
-           if(texist) st_fract(myPFT) = real(rval)
+           if(texist) st_fract(myPFT) = sngloff(rval,tiny_offset)
            call getConfigREAL  ('nonlocal_dispersal','pft',i,rval,texist)
-           if(texist) nonlocal_dispersal(myPFT) = real(rval)
+           if(texist) nonlocal_dispersal(myPFT) = sngloff(rval,tiny_offset)
            call getConfigREAL  ('repro_min_h','pft',i,rval,texist)
-           if(texist) repro_min_h(myPFT) = real(rval)
+           if(texist) repro_min_h(myPFT) = sngloff(rval,tiny_offset)
 
 !!! OTHER / derived
-           call getConfigREAL  ('one_plant_c','pft',i,rval,texist)
-           if(texist) one_plant_c(myPFT) = real(rval)
-           call getConfigREAL  ('min_recruit_size','pft',i,rval,texist)
-           if(texist) min_recruit_size(myPFT) = real(rval)
-           call getConfigREAL  ('min_cohort_size','pft',i,rval,texist)
-           if(texist) min_cohort_size(myPFT) = real(rval)
            call getConfigREAL  ('seed_rain','pft',i,rval,texist)
-           if(texist) seed_rain(myPFT) = real(rval)
-           call getConfigREAL  ('negligible_nplant','pft',i,rval,texist)
-           if(texist) negligible_nplant(myPFT) = real(rval)
-           call getConfigREAL  ('veg_hcap_min','pft',i,rval,texist)
-           if(texist) veg_hcap_min(myPFT) = real(rval)
+           if(texist) seed_rain(myPFT) = sngloff(rval,tiny_offset)
 
         else
            print*,"INVALID PFT READ FROM CONFIG FILE ::", myPFT
@@ -693,16 +854,20 @@ recursive subroutine read_ed_xml_config(filename)
      do i=1,ntag
         call libxml2f90__ll_selecttag('DOWN','pftconst',i)
         
-        call getConfigREAL  ('c2n_slow','pftconst',i,rval,texist)
-        if(texist) c2n_slow = real(rval)
-        call getConfigREAL  ('c2n_structural','pftconst',i,rval,texist)
-        if(texist) c2n_structural = real(rval)
 !        call getConfigREAL  ('c2n_stem','pftconst',i,rval,texist)
-!        if(texist) c2n_stem = real(rval)
+!        if(texist) c2n_stem = sngloff(rval,tiny_offset)
         call getConfigREAL  ('l2n_stem','pftconst',i,rval,texist)
-        if(texist) l2n_stem = real(rval)
+        if(texist) l2n_stem = sngloff(rval,tiny_offset)
         call getConfigREAL  ('C2B','pftconst',i,rval,texist)
-        if(texist) C2B = real(rval)
+        if(texist) C2B = sngloff(rval,tiny_offset)
+
+
+     ! liana-specific parameters
+        call getConfigREAL  ('h_edge','pftconst',i,rval,texist)
+        if(texist) h_edge = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('liana_dbh_crit','pftconst',i,rval,texist)
+        if(texist) liana_dbh_crit = sngloff(rval,tiny_offset)
+
         
         call libxml2f90__ll_selecttag('UP','config',1) !move back up to top level
      enddo
@@ -725,17 +890,17 @@ recursive subroutine read_ed_xml_config(filename)
          call getConfigINT  ('outputPeriod','hydro',i,ival,texist)
          if(texist) HydroOutputPeriod = ival
          call getConfigREAL  ('MoistRateTuning','hydro',i,rval,texist)
-         if(texist) MoistRateTuning = real(rval)
+         if(texist) MoistRateTuning = sngloff(rval,tiny_offset)
          call getConfigREAL  ('MoistSatThresh','hydro',i,rval,texist)
-         if(texist) MoistSatThresh = real(rval)
+         if(texist) MoistSatThresh = sngloff(rval,tiny_offset)
          call getConfigREAL  ('MoistdWT','hydro',i,rval,texist)
-         if(texist) Moist_dWT = real(rval)
+         if(texist) Moist_dWT = sngloff(rval,tiny_offset)
          call getConfigREAL  ('FracLiqRunoff','hydro',i,rval,texist)
-         if(texist) FracLiqRunoff = real(rval)
+         if(texist) FracLiqRunoff = sngloff(rval,tiny_offset)
          call getConfigREAL  ('runoff_vmax','hydro',i,rval,texist)
-         if(texist) runoff_vmax = real(rval)
+         if(texist) runoff_vmax = sngloff(rval,tiny_offset)
          call getConfigREAL  ('GrassLAImax','hydro',i,rval,texist)
-         if(texist) GrassLAImax = real(rval)
+         if(texist) GrassLAImax = sngloff(rval,tiny_offset)
 !! redundant with SOIL runoff_time 
          call getConfigREAL  ('inverse_runoff_time','hydro',i,rval,texist)
          if(texist) then
@@ -759,15 +924,15 @@ recursive subroutine read_ed_xml_config(filename)
         call libxml2f90__ll_selecttag('DOWN','scenario',i)
         
         call getConfigREAL  ('atm_tmp_intercept','scenario',i,rval,texist)
-        if(texist) atm_tmp_intercept = real(rval)
+        if(texist) atm_tmp_intercept = sngloff(rval,tiny_offset)
         call getConfigREAL  ('atm_tmp_slope','scenario',i,rval,texist)
-        if(texist) atm_tmp_slope = real(rval)
+        if(texist) atm_tmp_slope = sngloff(rval,tiny_offset)
         call getConfigREAL  ('prec_intercept','scenario',i,rval,texist)
-        if(texist) prec_intercept = real(rval)
+        if(texist) prec_intercept = sngloff(rval,tiny_offset)
         call getConfigREAL  ('prec_slope','scenario',i,rval,texist)
-        if(texist) prec_slope = real(rval)
+        if(texist) prec_slope = sngloff(rval,tiny_offset)
         call getConfigINT  ('humid_scenario','scenario',i,ival,texist)
-        if(texist)  humid_scenario = real(ival)
+        if(texist)  humid_scenario = ival
         
         call libxml2f90__ll_selecttag('UP','config',1) !move back up to top level
      enddo
@@ -784,33 +949,33 @@ recursive subroutine read_ed_xml_config(filename)
         call libxml2f90__ll_selecttag('DOWN','lapse',i)
 
          call getConfigREAL  ('geoht','lapse',i,rval,texist)
-         if(texist) lapse%geoht = real(rval)
+         if(texist) lapse%geoht = sngloff(rval,tiny_offset)
          call getConfigREAL  ('vels','lapse',i,rval,texist)
-         if(texist) lapse%vels = real(rval)
+         if(texist) lapse%vels = sngloff(rval,tiny_offset)
          call getConfigREAL  ('atm_ustar','lapse',i,rval,texist)
-         if(texist) lapse%atm_ustar = real(rval)
+         if(texist) lapse%atm_ustar = sngloff(rval,tiny_offset)
          call getConfigREAL  ('atm_tmp','lapse',i,rval,texist)
-         if(texist) lapse%atm_tmp = real(rval)
+         if(texist) lapse%atm_tmp = sngloff(rval,tiny_offset)
          call getConfigREAL  ('rv','lapse',i,rval,texist)
-         if(texist) lapse%atm_shv = real(rval)
+         if(texist) lapse%atm_shv = sngloff(rval,tiny_offset)
          call getConfigREAL  ('prss','lapse',i,rval,texist)
-         if(texist) lapse%prss = real(rval)
+         if(texist) lapse%prss = sngloff(rval,tiny_offset)
          call getConfigREAL  ('pcpg','lapse',i,rval,texist)
-         if(texist) lapse%pcpg = real(rval)
+         if(texist) lapse%pcpg = sngloff(rval,tiny_offset)
          call getConfigREAL  ('atm_co2','lapse',i,rval,texist)
-         if(texist) lapse%atm_co2 = real(rval)
+         if(texist) lapse%atm_co2 = sngloff(rval,tiny_offset)
          call getConfigREAL  ('rlong','lapse',i,rval,texist)
-         if(texist) lapse%rlong = real(rval)
+         if(texist) lapse%rlong = sngloff(rval,tiny_offset)
          call getConfigREAL  ('par_diffuse','lapse',i,rval,texist)
-         if(texist) lapse%par_diffuse = real(rval)
+         if(texist) lapse%par_diffuse = sngloff(rval,tiny_offset)
          call getConfigREAL  ('par_beam','lapse',i,rval,texist)
-         if(texist) lapse%par_beam = real(rval)
+         if(texist) lapse%par_beam = sngloff(rval,tiny_offset)
          call getConfigREAL  ('nir_diffuse','lapse',i,rval,texist)
-         if(texist) lapse%nir_diffuse = real(rval)
+         if(texist) lapse%nir_diffuse = sngloff(rval,tiny_offset)
          call getConfigREAL  ('nir_beam','lapse',i,rval,texist)
-         if(texist) lapse%nir_beam = real(rval)
+         if(texist) lapse%nir_beam = sngloff(rval,tiny_offset)
          call getConfigREAL  ('pptnorm','lapse',i,rval,texist)
-         if(texist) lapse%pptnorm = real(rval)
+         if(texist) lapse%pptnorm = sngloff(rval,tiny_offset)
 
 
          call libxml2f90__ll_selecttag('UP','config',1) !move back up to top level
@@ -828,26 +993,53 @@ recursive subroutine read_ed_xml_config(filename)
         call libxml2f90__ll_selecttag('DOWN','radiation',i)
         
         call getConfigREAL  ('rlong_min','radiation',i,rval,texist)
-        if(texist) rlong_min = real(rval) 
+        if(texist) rlong_min = sngloff(rval,tiny_offset) 
         call getConfigREAL  ('veg_temp_min','radiation',i,rval,texist)
         if(texist) rk4min_veg_temp = rval ! This is double precision. 
 !        call getConfigREAL  ('visible_fraction','radiation',i,rval,texist)
-!        if(texist) visible_fraction = real(rval)
+!        if(texist) visible_fraction = sngloff(rval,tiny_offset)
 !        call getConfigREAL  ('visible_fraction_dir','radiation',i,rval,texist)
-!        if(texist) visible_fraction_dir = real(rval)
+!        if(texist) visible_fraction_dir = sngloff(rval,tiny_offset)
 !        call getConfigREAL  ('visible_fraction_dif','radiation',i,rval,texist)
-!        if(texist) visible_fraction_dif = real(rval)
-        call getConfigREAL  ('leaf_scatter_nir','radiation',i,rval,texist)
-        if(texist) leaf_scatter_nir = real(rval)
+!        if(texist) visible_fraction_dif = sngloff(rval,tiny_offset)
         call getConfigREAL  ('leaf_reflect_nir','radiation',i,rval,texist)
-        if(texist) leaf_reflect_nir = real(rval)
+        if(texist) leaf_reflect_nir = sngloff(rval,tiny_offset)
         call getConfigREAL  ('leaf_trans_nir','radiation',i,rval,texist)
-        if(texist) leaf_trans_nir = real(rval)
-        call getConfigREAL  ('diffuse_backscatter_vis','radiation',i,rval,texist)
-        if(texist) leaf_backscatter_vis = real(rval)
-        call getConfigREAL  ('diffuse_backscatter_nir','radiation',i,rval,texist)
-        if(texist) leaf_backscatter_nir = real(rval)
+        if(texist) leaf_trans_nir = sngloff(rval,tiny_offset)
+
+        !----- Crown closure index variables. ---------------------------------------------!
+        call getConfigREAL  ('cci_radius','radiation',i,rval,texist)
+        if(texist) cci_radius  = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('cci_pixres','radiation',i,rval,texist)
+        if(texist) cci_pixres  = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('cci_gapsize','radiation',i,rval,texist)
+        if(texist) cci_gapsize = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('cci_gapmin','radiation',i,rval,texist)
+        if(texist) cci_gapmin  = sngloff(rval,tiny_offset)
+        call getConfigINT  ('cci_nretn','radiation',i,ival,texist)
+        if(texist) cci_nretn = ival
+        !----------------------------------------------------------------------------------!
+
+        call libxml2f90__ll_selecttag('UP','config',1) !move back up to top level
+     enddo
+  endif
+
+  !********  BUDGET
+  call libxml2f90__ll_selectlist(TRIM(FILENAME))       
+  call libxml2f90__ll_selecttag('ACT','config',1) !select upper level tag
+  call libxml2f90__ll_exist('DOWN','budget',ntag)    !get number of pft tags
+  print*,"BUDGET READ FROM FILE ::",ntag
+  if(ntag .ge. 1) then
+     do i=1,ntag
+
+        call libxml2f90__ll_selecttag('DOWN','budget',i)
         
+        call getConfigREAL  ('tol_subday_budget','budget',i,rval,texist)
+        if(texist) tol_subday_budget = sngloff(rval,tiny_offset) 
+        call getConfigREAL  ('tol_carbon_budget','budget',i,rval,texist)
+        if(texist) tol_carbon_budget = sngloff(rval,tiny_offset) 
+        !----------------------------------------------------------------------------------!
+
         call libxml2f90__ll_selecttag('UP','config',1) !move back up to top level
      enddo
   endif
@@ -860,16 +1052,47 @@ recursive subroutine read_ed_xml_config(filename)
   print*,"SOIL READ FROM FILE ::",ntag
   if(ntag .ge. 1) then
      do i=1,ntag
-
-        call libxml2f90__ll_selecttag('DOWN','soil',i)
-        
-        call getConfigREAL  ('water_stab_thresh','soil',i,rval,texist)
-        if(texist) water_stab_thresh = real(rval)
-        call getConfigINT  ('infiltration_method','soil',i,ival,texist)
-         if(texist) infiltration_method = ival
+         call libxml2f90__ll_selecttag('DOWN','soil',i)
+         call getConfigREAL  ('soil_rough','soil',i,rval,texist)
+         if (texist) then
+            soil_rough  = sngloff(rval,tiny_offset)
+            soil_rough8 = rval
+         end if
+         call getConfigREAL  ('snow_rough','soil',i,rval,texist)
+         if (texist) then
+            snow_rough  = sngloff(rval,tiny_offset)
+            snow_rough8 = rval
+         end if
+         call getConfigREAL  ('ny07_eq04_a','soil',i,rval,texist)
+         if (texist) then
+            ny07_eq04_a  = sngloff(rval,tiny_offset)
+            ny07_eq04_a8 = rval
+         end if
+         call getConfigREAL  ('ny07_eq04_m','soil',i,rval,texist)
+         if (texist) then
+            ny07_eq04_m  = sngloff(rval,tiny_offset)
+            ny07_eq04_m8 = rval
+         end if
          call getConfigREAL  ('dewmax','soil',i,rval,texist)
-         if(texist) dewmax = real(rval)
-
+         if(texist) dewmax = sngloff(rval,tiny_offset)
+         call getConfigREAL  ('water_stab_thresh','soil',i,rval,texist)
+         if(texist) water_stab_thresh = sngloff(rval,tiny_offset)
+         call getConfigREAL  ('tiny_sfcwater_mass','soil',i,rval,texist)
+         if(texist) tiny_sfcwater_mass = sngloff(rval,tiny_offset)
+         call getConfigREAL  ('snowmin','soil',i,rval,texist)
+         if(texist) snowmin = sngloff(rval,tiny_offset)
+         call getConfigINT  ('infiltration_method','soil',i,ival,texist)
+         if(texist) infiltration_method = ival
+         call getConfigREAL  ('freezecoef','soil',i,rval,texist)
+         if (texist) then
+            freezecoef  = sngloff(rval,tiny_offset)
+            freezecoef8 = rval
+         end if
+         call getConfigREAL  ('hydcond_min','soil',i,rval,texist)
+         if (texist) then
+           hydcond_min  = sngloff(rval,tiny_offset)
+           hydcond_min8 = rval
+         end if
          call getConfigSTRING  ('vegetation_database','soil',i,cval,texist)
          if (texist) then
             do ng=1,ngrids
@@ -897,7 +1120,7 @@ recursive subroutine read_ed_xml_config(filename)
 
          !!CHECK FOR CONFLICT WITH INVERSE_RUNOFF_TIME
          call getConfigREAL  ('runoff_time','soil',i,rval,texist) 
-         if(texist) runoff_time = real(rval)
+         if(texist) runoff_time = sngloff(rval,tiny_offset)
       
         call libxml2f90__ll_selecttag('UP','config',1) !move back up to top level
      enddo
@@ -915,57 +1138,112 @@ recursive subroutine read_ed_xml_config(filename)
         
         call libxml2f90__ll_selecttag('DOWN','decomposition',i)
         
-        call getConfigREAL  ('cwd_frac','decomposition',i,rval,texist)
-        if(texist) cwd_frac = real(rval)
 
         call getConfigREAL  ('resp_opt_water','decomposition',i,rval,texist)
-        if(texist)  resp_opt_water = real(rval)
+        if(texist)  resp_opt_water = sngloff(rval,tiny_offset)
         call getConfigREAL  ('resp_water_below_opt','decomposition',i,rval,texist)
-        if(texist) resp_water_below_opt = real(rval)
+        if(texist) resp_water_below_opt = sngloff(rval,tiny_offset)
         call getConfigREAL  ('resp_water_above_opt','decomposition',i,rval,texist)
-        if(texist) resp_water_above_opt = real(rval)
+        if(texist) resp_water_above_opt = sngloff(rval,tiny_offset)
         call getConfigREAL  ('resp_temperature_increase','decomposition',i,rval,texist)
-        if(texist) resp_temperature_increase = real(rval)
+        if(texist) resp_temperature_increase = sngloff(rval,tiny_offset)
         call getConfigREAL  ('N_immobil_supply_scale','decomposition',i,rval,texist)
-        if(texist) N_immobil_supply_scale = real(rval)
+        if(texist) N_immobil_supply_scale = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('e_lignin','decomposition',i,rval,texist)
+        if(texist)  e_lignin = sngloff(rval,tiny_offset)
         call getConfigREAL  ('r_fsc','decomposition',i,rval,texist)
-        if(texist)  r_fsc = real(rval)
+        if(texist)  r_fsc = sngloff(rval,tiny_offset)
         call getConfigREAL  ('r_stsc','decomposition',i,rval,texist)
-        if(texist)  r_stsc = real(rval)
+        if (texist)  then
+           r_stsc_o = sngloff(rval,tiny_offset)
+           r_stsc_l = sngloff(rval,tiny_offset)
+        end if
+        call getConfigREAL  ('r_stsc_l','decomposition',i,rval,texist)
+        if(texist)  r_stsc_l = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('r_stsc_o','decomposition',i,rval,texist)
+        if(texist)  r_stsc_o = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('r_msc_int','decomposition',i,rval,texist)
+        if(texist)  r_msc_int = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('r_msc_slp','decomposition',i,rval,texist)
+        if(texist)  r_msc_slp = sngloff(rval,tiny_offset)
         call getConfigREAL  ('r_ssc','decomposition',i,rval,texist)
-        if(texist)  r_ssc = real(rval)
+        if(texist)  r_ssc = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('r_psc','decomposition',i,rval,texist)
+        if(texist)  r_psc = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('fx_msc_psc_int','decomposition',i,rval,texist)
+        if(texist)  fx_msc_psc_int = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('fx_msc_psc_slp','decomposition',i,rval,texist)
+        if(texist)  fx_msc_psc_slp = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('fx_ssc_psc_int','decomposition',i,rval,texist)
+        if(texist)  fx_ssc_psc_int = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('fx_ssc_psc_slp','decomposition',i,rval,texist)
+        if(texist)  fx_ssc_psc_slp = sngloff(rval,tiny_offset)
         call getConfigREAL  ('K1','decomposition',i,rval,texist)
-        if(texist)  decay_rate_stsc = real(rval)
+        if(texist)  decay_rate_stsc = sngloff(rval,tiny_offset)
         call getConfigREAL  ('K2','decomposition',i,rval,texist)
-        if(texist)  decay_rate_fsc = real(rval)
+        if(texist)  decay_rate_fsc = sngloff(rval,tiny_offset)
         call getConfigREAL  ('K3','decomposition',i,rval,texist)
-        if(texist)  decay_rate_ssc = real(rval)
+        if(texist)  decay_rate_ssc = sngloff(rval,tiny_offset)
         call getConfigREAL  ('decay_rate_stsc','decomposition',i,rval,texist)
-        if(texist)  decay_rate_stsc = real(rval)
+        if(texist)  decay_rate_stsc = sngloff(rval,tiny_offset)
         call getConfigREAL  ('decay_rate_fsc','decomposition',i,rval,texist)
-        if(texist)  decay_rate_fsc = real(rval)
+        if(texist)  decay_rate_fsc = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('decay_rate_msc','decomposition',i,rval,texist)
+        if(texist)  decay_rate_msc = sngloff(rval,tiny_offset)
         call getConfigREAL  ('decay_rate_ssc','decomposition',i,rval,texist)
-        if(texist)  decay_rate_ssc = real(rval)
+        if(texist)  decay_rate_ssc = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('decay_rate_psc','decomposition',i,rval,texist)
+        if(texist)  decay_rate_psc = sngloff(rval,tiny_offset)
         call getConfigINT   ('N_decomp_lim','decomposition',i,ival,texist)
         if(texist)  N_decomp_lim= ival
         call getConfigREAL  ('rh_decay_low','decomposition',i,rval,texist)
-        if(texist)  rh_decay_low = real(rval)
+        if(texist)  rh_decay_low = sngloff(rval,tiny_offset)
         call getConfigREAL  ('rh_decay_high','decomposition',i,rval,texist)
-        if(texist)  rh_decay_high = real(rval)
+        if(texist)  rh_decay_high = sngloff(rval,tiny_offset)
         call getConfigREAL  ('rh_low_temp','decomposition',i,rval,texist)
-        if(texist)  rh_low_temp = real(rval)
+        if(texist)  rh_low_temp = sngloff(rval,tiny_offset)
         call getConfigREAL  ('rh_high_temp','decomposition',i,rval,texist)
-        if(texist)  rh_high_temp = real(rval)
+        if(texist)  rh_high_temp = sngloff(rval,tiny_offset)
         call getConfigREAL  ('rh_decay_dry','decomposition',i,rval,texist)
-        if(texist)  rh_decay_dry = real(rval)
+        if(texist)  rh_decay_dry = sngloff(rval,tiny_offset)
         call getConfigREAL  ('rh_decay_wet','decomposition',i,rval,texist)
-        if(texist)  rh_decay_wet = real(rval)
+        if(texist)  rh_decay_wet = sngloff(rval,tiny_offset)
         call getConfigREAL  ('rh_dry_smoist','decomposition',i,rval,texist)
-        if(texist)  rh_dry_smoist = real(rval)
+        if(texist)  rh_dry_smoist = sngloff(rval,tiny_offset)
         call getConfigREAL  ('rh_wet_smoist','decomposition',i,rval,texist)
-        if(texist)  rh_wet_smoist = real(rval)
+        if(texist)  rh_wet_smoist = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('rh_moyano12_a0','decomposition',i,rval,texist)
+        if(texist)  rh_moyano12_a0 = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('rh_moyano12_a1','decomposition',i,rval,texist)
+        if(texist)  rh_moyano12_a1 = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('rh_moyano12_a2','decomposition',i,rval,texist)
+        if(texist)  rh_moyano12_a2 = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('rh_active_depth','decomposition',i,rval,texist)
+        if(texist)  rh_active_depth = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('rh0','decomposition',i,rval,texist)
+        if(texist)  rh0 = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('rh_p_smoist','decomposition',i,rval,texist)
+        if(texist)  rh_p_smoist = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('rh_p_oxygen','decomposition',i,rval,texist)
+        if(texist)  rh_p_oxygen = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('rh_q10','decomposition',i,rval,texist)
+        if(texist)  rh_q10 = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('agf_fsc','decomposition',i,rval,texist)
+        if(texist) agf_fsc = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('agf_stsc','decomposition',i,rval,texist)
+        if(texist) agf_stsc = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('f0_msc','decomposition',i,rval,texist)
+        if(texist) f0_msc = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('f0_psc','decomposition',i,rval,texist)
+        if(texist) f0_psc = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('c2n_slow','pftconst',i,rval,texist)
+        if(texist) c2n_slow = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('c2n_structural','pftconst',i,rval,texist)
+        if(texist) c2n_structural = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('c2n_fast_0','pftconst',i,rval,texist)
+        if(texist) c2n_fast_0 = sngloff(rval,tiny_offset)
 
-        
+
         call libxml2f90__ll_selecttag('UP','config',1) !move back up to top level
      enddo
   endif
@@ -982,27 +1260,103 @@ recursive subroutine read_ed_xml_config(filename)
         call libxml2f90__ll_selecttag('DOWN','fusefiss',i)
         
         call getConfigREAL  ('min_recruit_size','fusefiss',i,rval,texist)
-        if(texist) min_recruit_size = real(rval)
+        if(texist) min_recruit_size = sngloff(rval,tiny_offset)
 
+        call getConfigINT  ('ff_nhgt','fusefiss',i,ival,texist)
+        if(texist) ff_nhgt = ival
 
+        !! Old patch and cohort fusion parameters (slated to be deleted)
+        call getConfigREAL  ('dark_cumlai_min','fusefiss',i,rval,texist)
+        if(texist) dark_cumlai_min = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('dark_cumlai_max','fusefiss',i,rval,texist)
+        if(texist) dark_cumlai_max = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('sunny_cumlai_min','fusefiss',i,rval,texist)
+        if(texist) sunny_cumlai_min = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('sunny_cumlai_max','fusefiss',i,rval,texist)
+        if(texist) sunny_cumlai_max = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('light_toler_min','fusefiss',i,rval,texist)
+        if(texist) light_toler_min = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('light_toler_max','fusefiss',i,rval,texist)
+        if(texist) light_toler_max = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('dark_cumlai_mult','fusefiss',i,rval,texist)
+        if(texist) dark_cumlai_mult = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('sunny_cumlai_mult','fusefiss',i,rval,texist)
+        if(texist) sunny_cumlai_mult = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('light_toler_mult','fusefiss',i,rval,texist)
+        if(texist) light_toler_mult = sngloff(rval,tiny_offset)
         call getConfigREAL  ('fusetol','fusefiss',i,rval,texist)
-        if(texist) fusetol = real(rval)
+        if(texist) fusetol = sngloff(rval,tiny_offset)
         call getConfigREAL  ('fusetol_h','fusefiss',i,rval,texist)
-        if(texist) fusetol_h = real(rval)
+        if(texist) fusetol_h = sngloff(rval,tiny_offset)
         call getConfigREAL  ('lai_fuse_tol','fusefiss',i,rval,texist)
-        if(texist) lai_fuse_tol = real(rval)
-        call getConfigREAL  ('lai_tol','fusefiss',i,rval,texist)
-        if(texist) lai_tol = real(rval)
-        call getConfigREAL  ('ff_nhgt','fusefiss',i,rval,texist)
-        if(texist) ff_nhgt = real(rval)
+        if(texist) lai_fuse_tol = sngloff(rval,tiny_offset)
         call getConfigREAL  ('coh_tolerance_max','fusefiss',i,rval,texist)
-        if(texist) coh_tolerance_max = real(rval)
+        if(texist) coh_tolerance_max = sngloff(rval,tiny_offset)
+        call getConfigINT  ('fuse_relax','fusefiss',i,ival,texist)
+        if(texist) fuse_relax = ival == 1
+
+        !!! New/remaining patch and cohort fusion parameters
+        call getConfigINT  ('niter_patfus','fusefiss',i,ival,texist)
+        if(texist) niter_patfus = ival
+        call getConfigREAL  ('pat_light_ext','fusefiss',i,rval,texist)
+        if(texist) pat_light_ext = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('pat_light_tol_min','fusefiss',i,rval,texist)
+        if(texist) pat_light_tol_min = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('pat_light_tol_max','fusefiss',i,rval,texist)
+        if(texist) pat_light_tol_max = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('pat_light_tol_mult','fusefiss',i,rval,texist)
+        if(texist) pat_light_tol_mult = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('pat_light_mxd_fac','fusefiss',i,rval,texist)
+        if(texist) pat_light_mxd_fac = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('pat_diff_age_tol','fusefiss',i,rval,texist)
+        if(texist) pat_diff_age_tol = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('pat_min_area_remain','fusefiss',i,rval,texist)
+        if(texist) pat_min_area_remain = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('coh_size_tol_min','fusefiss',i,rval,texist)
+        if(texist) coh_size_tol_min = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('coh_size_tol_max','fusefiss',i,rval,texist)
+        if(texist) coh_size_tol_max = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('coh_size_tol_mult','fusefiss',i,rval,texist)
+        if(texist) coh_size_tol_mult = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('pat_laimax_fine','fusefiss',i,rval,texist)
+        if(texist) pat_laimax_fine = sngloff(rval,tiny_offset)
+
+        call getConfigREAL  ('lai_tol','fusefiss',i,rval,texist)
+        if(texist) lai_tol = sngloff(rval,tiny_offset)
 !        call getConfigREAL  ('ntol','fusefiss',i,rval,texist)
         
         call libxml2f90__ll_selecttag('UP','config',1) !move back up to top level
      enddo
   endif
     
+  !*********  Horizontal shading
+  call libxml2f90__ll_selectlist(TRIM(FILENAME))       
+  call libxml2f90__ll_selecttag('ACT','config',1) !select upper level tag
+  call libxml2f90__ll_exist('DOWN','hrzshade',ntag)    !get number of hrzshade tags
+  print*,"HORIZONTAL SHADING READ FROM FILE ::",ntag
+  if (ntag >= 1) then
+     do i=1,ntag
+
+        call libxml2f90__ll_selecttag('DOWN','hrzshade',i)
+
+        call getConfigREAL  ('cci_radius','hrzshade',i,rval,texist)
+        if(texist) cci_radius = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('cci_pixres','hrzshade',i,rval,texist)
+        if(texist) cci_pixres = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('cci_gapsize','hrzshade',i,rval,texist)
+        if(texist) cci_gapsize = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('cci_gapmin','hrzshade',i,rval,texist)
+        if(texist) cci_gapmin = sngloff(rval,tiny_offset)
+        call getConfigINT  ('cci_nretn','hrzshade',i,ival,texist)
+        if(texist) cci_nretn = ival
+        call getConfigREAL  ('cci_hmax','hrzshade',i,rval,texist)
+        if(texist) cci_hmax = sngloff(rval,tiny_offset)
+
+
+        call libxml2f90__ll_selecttag('UP','config',1) !move back up to top level
+     end do
+  end if
+
 
   !*********  DISTURBANCE
   call libxml2f90__ll_selectlist(TRIM(FILENAME))       
@@ -1016,10 +1370,10 @@ recursive subroutine read_ed_xml_config(filename)
         
         !! GENERAL
         call getConfigREAL  ('min_new_patch_area','disturbance',i,rval,texist)
-        if(texist) min_patch_area = real(rval)
+        if(texist) min_patch_area = sngloff(rval,tiny_offset)
         !! GENERAL
         call getConfigREAL  ('min_patch_area','disturbance',i,rval,texist)
-        if(texist) min_patch_area = real(rval)
+        if(texist) min_patch_area = sngloff(rval,tiny_offset)
         call getConfigINT  ('include_fire','disturbance',i,ival,texist)
         if(texist) include_fire = ival
         call getConfigINT  ('ianth_disturb','disturbance',i,ival,texist)
@@ -1027,23 +1381,23 @@ recursive subroutine read_ed_xml_config(filename)
  
         !! TREEFALL
         call getConfigREAL  ('treefall_disturbance_rate','disturbance',i,rval,texist)
-        if(texist) treefall_disturbance_rate = real(rval)
+        if(texist) treefall_disturbance_rate = sngloff(rval,tiny_offset)
         
         call getConfigREAL  ('Time2Canopy','disturbance',i,rval,texist)
-        if(texist) Time2Canopy = real(rval)
+        if(texist) Time2Canopy = sngloff(rval,tiny_offset)
         
         call getConfigREAL  ('treefall_hite_threshold','disturbance',i,rval,texist)
-        if(texist) treefall_hite_threshold = real(rval)
+        if(texist) treefall_hite_threshold = sngloff(rval,tiny_offset)
 
         !! FORESTRY
         call getConfigINT  ('plantation_year','disturbance',i,ival,texist)
         if(texist) plantation_year = ival
         call getConfigREAL  ('plantation_rotation','disturbance',i,rval,texist)
-        if(texist) plantation_rotation = real(rval)
+        if(texist) plantation_rotation = sngloff(rval,tiny_offset)
         call getConfigREAL  ('min_harvest_biomass','disturbance',i,rval,texist)
-        if(texist) min_harvest_biomass = real(rval)
+        if(texist) min_harvest_biomass = sngloff(rval,tiny_offset)
         call getConfigREAL  ('mature_harvest_age','disturbance',i,rval,texist)
-        if(texist) mature_harvest_age = real(rval)
+        if(texist) mature_harvest_age = sngloff(rval,tiny_offset)
         !! Possibly DEPRECATED 
         call getConfigINT  ('forestry_on','disturbance',i,ival,texist)
         if(texist) forestry_on = ival
@@ -1051,12 +1405,22 @@ recursive subroutine read_ed_xml_config(filename)
         if(texist) agriculture_on = ival
         
         !! FIRE
-        call getConfigREAL  ('fire_hite_threshold','disturbance',i,rval,texist)
-        if(texist) fire_hite_threshold = real(rval)
         call getConfigREAL  ('fire_dryness_threshold','disturbance',i,rval,texist)
-        if(texist) fire_dryness_threshold = real(rval)
+        if(texist) fire_dryness_threshold = sngloff(rval,tiny_offset)
         call getConfigREAL  ('fire_parameter','disturbance',i,rval,texist)
-        if(texist) fire_parameter = real(rval)
+        if(texist) fire_parameter = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('fire_smoist_depth','disturbance',i,rval,texist)
+        if(texist) fire_smoist_depth = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('fuel_height_max','disturbance',i,rval,texist)
+        if(texist) fuel_height_max = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('f_combusted_fast_c','disturbance',i,rval,texist)
+        if(texist) f_combusted_fast_c = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('f_combusted_struct_c','disturbance',i,rval,texist)
+        if(texist) f_combusted_struct_c = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('f_combusted_fast_n','disturbance',i,rval,texist)
+        if(texist) f_combusted_fast_n = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('f_combusted_struct_n','disturbance',i,rval,texist)
+        if(texist) f_combusted_struct_n = sngloff(rval,tiny_offset)
 
         call libxml2f90__ll_selecttag('UP','config',1) !move back up to top level
      enddo
@@ -1074,25 +1438,54 @@ recursive subroutine read_ed_xml_config(filename)
         call libxml2f90__ll_selecttag('DOWN','phenology',i)
         
         call getConfigREAL  ('retained_carbon_fraction','phenology',i,rval,texist)
-        if(texist)  retained_carbon_fraction = real(rval)
+        if(texist)  retained_carbon_fraction = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('root_phen_factor','phenology',i,rval,texist)
+        if(texist)  root_phen_factor = sngloff(rval,tiny_offset)
         call getConfigREAL  ('theta_crit','phenology',i,rval,texist)
-        if(texist)  thetacrit= real(rval)
-        call getConfigREAL  ('elongf_min','phenology',i,rval,texist)
-        if(texist)  elongf_min= real(rval)
+        if(texist)  thetacrit= sngloff(rval,tiny_offset)
         call getConfigREAL  ('dl_tr','phenology',i,rval,texist)
-        if(texist)  dl_tr = real(rval)
+        if(texist)  dl_tr = sngloff(rval,tiny_offset)
         call getConfigREAL  ('st_tr1','phenology',i,rval,texist)
-        if(texist)  st_tr1 = real(rval)
+        if(texist)  st_tr1 = sngloff(rval,tiny_offset)
         call getConfigREAL  ('st_tr2','phenology',i,rval,texist)
-        if(texist)  st_tr2 = real(rval)
+        if(texist)  st_tr2 = sngloff(rval,tiny_offset)
         call getConfigREAL  ('phen_a','phenology',i,rval,texist)
-        if(texist)  phen_a = real(rval)
+        if(texist)  phen_a = sngloff(rval,tiny_offset)
         call getConfigREAL  ('phen_b','phenology',i,rval,texist)
-        if(texist)  phen_b = real(rval)
+        if(texist)  phen_b = sngloff(rval,tiny_offset)
         call getConfigREAL  ('phen_c','phenology',i,rval,texist)
-        if(texist)  phen_c = real(rval)
+        if(texist)  phen_c = sngloff(rval,tiny_offset)
         call getConfigINT  ('iphen_scheme','phenology',i,ival,texist)
         if(texist) iphen_scheme = ival
+
+        ! Light phenology
+        call getConfigREAL  ('radavg_window','phenology',i,rval,texist)
+        if(texist)  radavg_window = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('turnamp_window','phenology',i,rval,texist)
+        if(texist)  turnamp_window = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('turnamp_min','phenology',i,rval,texist)
+        if(texist)  turnamp_min = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('turnamp_max','phenology',i,rval,texist)
+        if(texist)  turnamp_max = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('llspan_window','phenology',i,rval,texist)
+        if(texist)  llspan_window = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('llspan_min','phenology',i,rval,texist)
+        if(texist)  llspan_min = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('llspan_max','phenology',i,rval,texist)
+        if(texist)  llspan_max = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('vm0_window','phenology',i,rval,texist)
+        if(texist)  vm0_window = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('vm0_tran','phenology',i,rval,texist)
+        if(texist)  vm0_tran = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('vm0_slope','phenology',i,rval,texist)
+        if(texist)  vm0_slope = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('vm0_amp','phenology',i,rval,texist)
+        if(texist)  vm0_amp = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('vm0_min','phenology',i,rval,texist)
+        if(texist)  vm0_min = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('sla_window','phenology',i,rval,texist)
+        if(texist)  sla_window = sngloff(rval,tiny_offset)
+
 
         call getConfigINT  ('iphenys1','phenology',i,ival,texist)
         if(texist) iphenys1 = ival
@@ -1143,12 +1536,18 @@ recursive subroutine read_ed_xml_config(filename)
   call libxml2f90__ll_selectlist(TRIM(FILENAME))       
   call libxml2f90__ll_selecttag('ACT','config',1) !select upper level tag
   call libxml2f90__ll_exist('DOWN','initcond',ntag)    !get number of pft tags
-  init_fsc = -1.0
+  init_fgc  = -1.0
+  init_fsc  = -1.0
+  init_stgc = -1.0
   init_stsc = -1.0
-  init_ssc = -1.0
+  init_msc  = -1.0
+  init_psc  = -1.0
+  init_ssc  = -1.0
+  init_stgl = -1.0
   init_stsl = -1.0
-  init_fsn = -1.0
-  init_msn = -1.0
+  init_fgn  = -1.0
+  init_fsn  = -1.0
+  init_msn  = -1.0
   
   print*,"INITCOND READ FROM FILE ::",ntag
   if(ntag .ge. 1) then
@@ -1156,18 +1555,30 @@ recursive subroutine read_ed_xml_config(filename)
         
         call libxml2f90__ll_selecttag('DOWN','initcond',i)
 
+        call getConfigREAL  ('fgc','initcond',i,rval,texist)
+        if(texist) init_fgc = sngloff(rval,tiny_offset)
         call getConfigREAL  ('fsc','initcond',i,rval,texist)
-        if(texist) init_fsc = rval
+        if(texist) init_fsc = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('stgc','initcond',i,rval,texist)
+        if(texist) init_stgc = sngloff(rval,tiny_offset)
         call getConfigREAL  ('stsc','initcond',i,rval,texist)
-        if(texist) init_stsc = rval
+        if(texist) init_stsc = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('msc','initcond',i,rval,texist)
+        if(texist) init_msc = sngloff(rval,tiny_offset)
         call getConfigREAL  ('ssc','initcond',i,rval,texist)
-        if(texist) init_ssc = rval
+        if(texist) init_ssc = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('psc','initcond',i,rval,texist)
+        if(texist) init_psc = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('stgl','initcond',i,rval,texist)
+        if(texist) init_stgl = sngloff(rval,tiny_offset)
         call getConfigREAL  ('stsl','initcond',i,rval,texist)
-        if(texist) init_stsl = rval
+        if(texist) init_stsl = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('fgn','initcond',i,rval,texist)
+        if(texist) init_fgn = sngloff(rval,tiny_offset)
         call getConfigREAL  ('fsn','initcond',i,rval,texist)
-        if(texist) init_fsn = rval
+        if(texist) init_fsn = sngloff(rval,tiny_offset)
         call getConfigREAL  ('msn','initcond',i,rval,texist)
-        if(texist) init_msn = rval
+        if(texist) init_msn = sngloff(rval,tiny_offset)
         
 
         
@@ -1181,57 +1592,57 @@ recursive subroutine read_ed_xml_config(filename)
 !!$         call getConfigINT  ('estimator','numerics',i,ival,texist)
 !!$         if(texist) data%estimator = ival
 !!$         call getConfigREAL  ('Vm_amp','numerics',i,rval,texist)
-!!$         if(texist) data%Vm_amp = real(rval)
+!!$         if(texist) data%Vm_amp = sngloff(rval,tiny_offset)
 !!$         call getConfigINT  ('n_poi','numerics',i,ival,texist)
 !!$         if(texist) data%n_poi = ival
 !!$         call getConfigINT  ('max_cohorts','numerics',i,ival,texist)
 !!$         if(texist) data%max_cohorts = ival
 !!$         call getConfigREAL  ('dbhmax','numerics',i,rval,texist)
-!!$         if(texist) data%dbhmax = real(rval)
+!!$         if(texist) data%dbhmax = sngloff(rval,tiny_offset)
 !!$         call getConfigREAL  ('f_area','community',i,rval,texist)
-!!$         if(texist) data%f_area = real(rval)
+!!$         if(texist) data%f_area = sngloff(rval,tiny_offset)
 !!$         call getConfigINT  ('forecast_beg_year','community',i,ival,texist)
 !!$         if(texist) data%forecast_beg_year = ival
 !!$         call getConfigINT  ('project_landuse_rates','community',i,ival,texist)
 !!$         if(texist) data%project_landuse_rates = ival
 !!$         call getConfigREAL  ('k_fw','community',i,rval,texist)
-!!$         if(texist) data%k_fw = real(rval)
+!!$         if(texist) data%k_fw = sngloff(rval,tiny_offset)
 !!$         call getConfigREAL  ('fp1','community',i,rval,texist)
-!!$         if(texist) data%fp1 = real(rval)
+!!$         if(texist) data%fp1 = sngloff(rval,tiny_offset)
 !!$         call getConfigREAL  ('btol','community',i,rval,texist)
-!!$         if(texist) data%btol = real(rval)
+!!$         if(texist) data%btol = sngloff(rval,tiny_offset)
 !!$         call getConfigREAL  (' theta_crit_lo','community',i,rval,texist)
-!!$         if(texist) data%theta_crit_lo = real(rval)
+!!$         if(texist) data%theta_crit_lo = sngloff(rval,tiny_offset)
 !!$         call getConfigREAL  (' theta_crit_hi','community',i,rval,texist)
-!!$         if(texist) data%theta_crit_hi= real(rval)
+!!$         if(texist) data%theta_crit_hi= sngloff(rval,tiny_offset)
 !!$         call getConfigREAL  ('gee_delay_time','community',i,rval,texist)
-!!$         if(texist) data%gee_delay_time= real(rval)
+!!$         if(texist) data%gee_delay_time= sngloff(rval,tiny_offset)
 !!$         call getConfigREAL  ('k_nlr','ecosystem',i,rval,texist)
-!!$         if(texist) data%k_nlr = real(rval)
+!!$         if(texist) data%k_nlr = sngloff(rval,tiny_offset)
 !!$         call getConfigREAL  ('nlr_low_temp','ecosystem',i,rval,texist)
-!!$         if(texist) data%nlr_low_temp = real(rval)
+!!$         if(texist) data%nlr_low_temp = sngloff(rval,tiny_offset)
 !!$         call getConfigREAL  ('nlr_slope','ecosystem',i,rval,texist)
-!!$         if(texist) data%nlr_slope = real(rval)
+!!$         if(texist) data%nlr_slope = sngloff(rval,tiny_offset)
 !!$         call getConfigINT  ('winter_decay','ecosystem',i,ival,texist)
 !!$         if(texist) data%winter_decay = ival
 !!$         call getConfigREAL  ('resp_opt_temp','ecosystem',i,rval,texist)
-!!$         if(texist) data%resp_opt_temp = real(rval)
+!!$         if(texist) data%resp_opt_temp = sngloff(rval,tiny_offset)
 !!$         call getConfigREAL  ('resp_tshr','ecosystem',i,rval,texist)
-!!$         if(texist) data%resp_tshr = real(rval)
+!!$         if(texist) data%resp_tshr = sngloff(rval,tiny_offset)
 !!$         call getConfigREAL  ('resp_tshl','ecosystem',i,rval,texist)
-!!$         if(texist) data%resp_tshl = real(rval)
+!!$         if(texist) data%resp_tshl = sngloff(rval,tiny_offset)
 !!$         call getConfigREAL  ('resp_max_temp','ecosystem',i,rval,texist)
-!!$         if(texist) data%resp_max_temp = real(rval)
+!!$         if(texist) data%resp_max_temp = sngloff(rval,tiny_offset)
 !!$         call getConfigREAL  ('resp_opt_water','ecosystem',i,rval,texist)
-!!$         if(texist) data%resp_opt_water = real(rval)
+!!$         if(texist) data%resp_opt_water = sngloff(rval,tiny_offset)
 !!$         call getConfigREAL  ('resp_water_decay','ecosystem',i,rval,texist)
-!!$         if(texist) data%resp_water_decay = real(rval)
+!!$         if(texist) data%resp_water_decay = sngloff(rval,tiny_offset)
 !!$         call getConfigREAL  ('resp_water_growth','ecosystem',i,rval,texist)
-!!$         if(texist) data%resp_water_growth = real(rval)
+!!$         if(texist) data%resp_water_growth = sngloff(rval,tiny_offset)
 !!$         call getConfigREAL  ('nitrogen2','ecosystem',i,rval,texist)
-!!$         if(texist) data%nitrogen2 = real(rval)
+!!$         if(texist) data%nitrogen2 = sngloff(rval,tiny_offset)
 !!$         call getConfigREAL  ('nitrogen1','ecosystem',i,rval,texist)
-!!$         if(texist) data%nitrogen1 = real(rval)
+!!$         if(texist) data%nitrogen1 = sngloff(rval,tiny_offset)
 !!$
 !!$         call getConfigINT  ('phenol_spring_firstyear','settings',i,ival,texist)
 !!$         if(texist) data%phenol_spring_firstyear = ival
@@ -1257,7 +1668,7 @@ recursive subroutine read_ed_xml_config(filename)
 !!$         call getConfigSTRING  ('optimizer_filepath','settings',i,cval,texist)
 !!$         if(texist) data%opt_inputs_fn = trim(cval)
 !!$         call getConfigREAL  ('grid_resolution','settings',i,rval,texist)
-!!$         if(texist) data%grid_resolution = real(rval)
+!!$         if(texist) data%grid_resolution = sngloff(rval,tiny_offset)
 
 
        
@@ -1346,6 +1757,9 @@ subroutine write_ed_xml_config
 !  use ed_data
   use ed_misc_coms !, only: ied_init_mode,ffilout,integration_scheme,sfilin,sfilout,thsums_database
   use rk4_coms     !, only : rk4min_veg_temp
+  use budget_utils   , only : tol_subday_budget & ! intent(in)
+                            , tol_carbon_budget ! ! intent(in)
+  use canopy_air_coms, only : f_bndlyr_init     ! ! intent(in)
 
   implicit none
 !  integer :: ival
@@ -1362,11 +1776,59 @@ subroutine write_ed_xml_config
   call libxml2f90_ll_opentag("config")
   !-----------------------------------------------------
 
+
+  !************   MET  *****************
+  call libxml2f90_ll_opentag("met")
+        call putConfigREAL  ("met_land_min"   ,met_land_min   )
+        call putConfigREAL  ("rshort_min"     ,rshort_min     )
+        call putConfigREAL  ("rshort_max"     ,rshort_max     )
+        call putConfigREAL  ("rlong_min"      ,rlong_min      )
+        call putConfigREAL  ("rlong_max"      ,rlong_max      )
+        call putConfigREAL  ("dt_radinterp"   ,dt_radinterp   )
+        call putConfigREAL  ("atm_tmp_min"    ,atm_tmp_min    )
+        call putConfigREAL  ("atm_tmp_max"    ,atm_tmp_max    )
+        call putConfigREAL  ("atm_shv_min"    ,atm_shv_min    )
+        call putConfigREAL  ("atm_shv_max"    ,atm_shv_max    )
+        call putConfigREAL  ("atm_rhv_min"    ,atm_rhv_min    )
+        call putConfigREAL  ("atm_rhv_max"    ,atm_rhv_max    )
+        call putConfigREAL  ("atm_co2_min"    ,atm_co2_min    )
+        call putConfigREAL  ("atm_co2_max"    ,atm_co2_max    )
+        call putConfigREAL  ("prss_min"       ,prss_min       )
+        call putConfigREAL  ("prss_max"       ,prss_max       )
+        call putConfigREAL  ("pcpg_min"       ,pcpg_min       )
+        call putConfigREAL  ("pcpg_max"       ,pcpg_max       )
+        call putConfigREAL  ("vels_min"       ,vels_min       )
+        call putConfigREAL  ("vels_max"       ,vels_max       )
+        call putConfigREAL  ("geoht_min"      ,geoht_min      )
+        call putConfigREAL  ("geoht_max"      ,geoht_max      )
+        if (print_radinterp) then
+           ival = 1
+        else
+           ival = 0
+        end if
+        call putConfigINT   ("print_radinterp",ival           )
+        call putConfigSTRING("vbdsf_file"     ,vbdsf_file     )
+        call putConfigSTRING("vddsf_file"     ,vddsf_file     )
+        call putConfigSTRING("nbdsf_file"     ,nbdsf_file     )
+        call putConfigSTRING("nddsf_file"     ,nddsf_file     )
+  call libxml2f90_ll_closetag("met")
+
+
+
+
+  !************   CANOPY AIR  *****************
+  call libxml2f90_ll_opentag("can_air")
+        call putConfigREAL  ("f_bndlyr_init"  ,f_bndlyr_init  )
+  call libxml2f90_ll_closetag("can_air")
+
+
+
+
   !************   MISC  *****************
   call libxml2f90_ll_opentag("misc")
      call putConfigINT("restart_mode",ied_init_mode)
      call putConfigSTRING("output_filepath",ffilout)
-     call putConfigSTRING("input_filepath",sfilin)
+     call putConfigSTRING("input_filepath",sfilin(1))
      call putConfigSTRING("history_out_filepath",sfilout)
      call putConfigINT("ivegt_dynamics",ivegt_dynamics)
      call putConfigINT("ibigleaf",ibigleaf)
@@ -1376,7 +1838,6 @@ subroutine write_ed_xml_config
   !************   ED_MISC  *****************
   call libxml2f90_ll_opentag("ed_misc")
      call putConfigINT("restart_target_year",restart_target_year)
-     call putConfigINT("outputMonth",outputMonth)
      call putConfigINT("burnin",burnin)
      call putConfigINT("vary_elev",vary_elev)
      call putConfigINT("vary_rad",vary_rad)
@@ -1409,6 +1870,18 @@ subroutine write_ed_xml_config
            ival = 0
         end if
         call putConfigINT("is_grass",ival)
+        if (is_conifer(i)) then
+           ival = 1
+        else
+           ival = 0
+        end if
+        call putConfigINT("is_conifer",ival)
+        if (is_savannah(i)) then
+           ival = 1
+        else
+           ival = 0
+        end if
+        call putConfigINT("is_savannah",ival)
         if (is_liana(i)) then
            ival = 1
         else
@@ -1436,57 +1909,55 @@ subroutine write_ed_xml_config
      
 !! CANOPY RADIATION
         call putConfigREAL8("clumping_factor",clumping_factor(i))
-        call putConfigREAL("orient_factor",orient_factor(i))
+        call putConfigREAL8("orient_factor",orient_factor(i))
         call putConfigREAL8("leaf_emiss_tir",leaf_emiss_tir(i))
         call putConfigREAL8("wood_emiss_tir",wood_emiss_tir(i))
 
         call putConfigREAL8("leaf_reflect_vis",leaf_reflect_vis(i))
-        call putConfigREAL8("leaf_reflect_nir",leaf_reflect_vis(i))
-        call putConfigREAL8("wood_reflect_vis",leaf_reflect_vis(i))
-        call putConfigREAL8("wood_reflect_nir",leaf_reflect_vis(i))
+        call putConfigREAL8("leaf_reflect_nir",leaf_reflect_nir(i))
+        call putConfigREAL8("wood_reflect_vis",wood_reflect_vis(i))
+        call putConfigREAL8("wood_reflect_nir",wood_reflect_nir(i))
 
-        call putConfigREAL8("leaf_trans_vis",leaf_reflect_vis(i))
-        call putConfigREAL8("leaf_trans_nir",leaf_reflect_vis(i))
-        call putConfigREAL8("wood_trans_vis",leaf_reflect_vis(i))
-        call putConfigREAL8("wood_trans_nir",leaf_reflect_vis(i))
-
-        call putConfigREAL8("leaf_backscatter_vis",leaf_backscatter_vis(i))
-        call putConfigREAL8("leaf_backscatter_nir",leaf_backscatter_nir(i))
-        call putConfigREAL8("leaf_backscatter_tir",leaf_backscatter_tir(i))
-
-        call putConfigREAL8("wood_backscatter_vis",leaf_backscatter_vis(i))
-        call putConfigREAL8("wood_backscatter_nir",leaf_backscatter_nir(i))
-        call putConfigREAL8("wood_backscatter_tir",leaf_backscatter_tir(i))
-
-        call putConfigREAL8("leaf_scatter_vis",leaf_scatter_vis(i))
-        call putConfigREAL8("leaf_scatter_nir",leaf_scatter_vis(i))
-        call putConfigREAL8("wood_scatter_vis",leaf_scatter_vis(i))
-        call putConfigREAL8("wood_scatter_nir",leaf_scatter_vis(i))
-
-        call putConfigREAL8("phi1",phi1(i))
-        call putConfigREAL8("phi2",phi2(i))
-        call putConfigREAL8("mu_bar",mu_bar(i))
+        call putConfigREAL8("leaf_trans_vis",leaf_trans_vis(i))
+        call putConfigREAL8("leaf_trans_nir",leaf_trans_nir(i))
+        call putConfigREAL8("wood_trans_vis",wood_trans_vis(i))
+        call putConfigREAL8("wood_trans_nir",wood_trans_nir(i))
 
 !! PHOTOSYNTHESIS
-        call putConfigINT("photosyn_pathway",photosyn_pathway(i))
-        call putConfigREAL("quantum_efficiency",quantum_efficiency(i))
-        call putConfigREAL("Vm0",Vm0(i))
-        call putConfigREAL("Vm_low_temp", Vm_low_temp(i))
-        call putConfigREAL("Vm_high_temp",Vm_high_temp(i))
-        call putConfigREAL("Vm_decay_e",  Vm_decay_e(i))
-        call putConfigREAL("Vm_decay_a",  Vm_decay_a(i))
-        call putConfigREAL("Vm_decay_b",  Vm_decay_b(i))
-        call putConfigREAL("vm_hor",      Vm_hor(i))
-        call putConfigREAL("vm_q10",      Vm_q10(i))
+        call putConfigINT ("photosyn_pathway"         ,photosyn_pathway         (i))
+        call putConfigREAL("quantum_efficiency"       ,quantum_efficiency       (i))
+        call putConfigREAL("curvpar_electron"         ,curvpar_electron         (i))
+        call putConfigREAL("qyield_psII"              ,qyield_psII              (i))
+        call putConfigREAL("Vm0"                      ,Vm0                      (i))
+        call putConfigREAL("Vm0_v0"                   ,Vm0_v0                   (i))
+        call putConfigREAL("Vm0_v1"                   ,Vm0_v1                   (i))
+        call putConfigREAL("Vm_low_temp"              ,Vm_low_temp              (i))
+        call putConfigREAL("Vm_high_temp"             ,Vm_high_temp             (i))
+        call putConfigREAL("Vm_decay_elow"            ,Vm_decay_elow            (i))
+        call putConfigREAL("Vm_decay_ehigh"           ,Vm_decay_ehigh           (i))
+        call putConfigREAL("vm_hor"                   ,vm_hor                   (i))
+        call putConfigREAL("vm_q10"                   ,vm_q10                   (i))
+        call putConfigREAL("kplastic_vm0"             ,kplastic_vm0             (i))
+        call putConfigREAL("Jm0"                      ,Jm0                      (i))
+        call putConfigREAL("Jm_low_temp"              ,Jm_low_temp              (i))
+        call putConfigREAL("Jm_high_temp"             ,Jm_high_temp             (i))
+        call putConfigREAL("Jm_decay_elow"            ,Jm_decay_elow            (i))
+        call putConfigREAL("Jm_decay_ehigh"           ,Jm_decay_ehigh           (i))
+        call putConfigREAL("jm_hor"                   ,jm_hor                   (i))
+        call putConfigREAL("jm_q10"                   ,jm_q10                   (i))
+        call putConfigREAL("Tpm0"                     ,Tpm0                     (i))
+        call putConfigREAL("electron_transport_factor",electron_transport_factor(i))
+        call putConfigREAL("triose_phosphate_factor"  ,triose_phosphate_factor  (i))
 
 !! LEAF RESPIRATION
         call putConfigREAL("dark_respiration_factor",dark_respiration_factor(i))
-        call putConfigREAL("Rd_low_temp",  Rd_low_temp(i))
-        call putConfigREAL("Rd_high_temp", Rd_high_temp(i))
-        call putConfigREAL("Rd_decay_e",   Rd_decay_e(i))
-        call putConfigREAL("Rd_hor",       Rd_hor(i))
-        call putConfigREAL("Rd_q10",       Rd_q10(i))
-        call putConfigREAL("Rd0",          Rd0(i))
+        call putConfigREAL("Rd0"                    ,Rd0                    (i))
+        call putConfigREAL("Rd_low_temp"            ,Rd_low_temp            (i))
+        call putConfigREAL("Rd_high_temp"           ,Rd_high_temp           (i))
+        call putConfigREAL("Rd_decay_elow"          ,Rd_decay_elow          (i))
+        call putConfigREAL("Rd_decay_ehigh"         ,Rd_decay_ehigh         (i))
+        call putConfigREAL("rd_hor"                 ,rd_hor                 (i))
+        call putConfigREAL("rd_q10"                 ,rd_q10                 (i))
 
 !! STOMATAL PARAMETERS
         call putConfigREAL("D0",               D0(i))
@@ -1494,20 +1965,27 @@ subroutine write_ed_xml_config
         call putConfigREAL("cuticular_cond",   cuticular_cond(i))
         call putConfigREAL("water_conductance",water_conductance(i))
         call putConfigREAL("leaf_width",       leaf_width(i))
+        call putConfigREAL("branch_diam",      branch_diam(i))
 
 
 !! RESPIRAION AND TURNOVER
-        call putConfigREAL("growth_resp_factor",   growth_resp_factor(i))
-        call putConfigREAL("leaf_turnover_rate",   leaf_turnover_rate(i))
-        call putConfigREAL("root_turnover_rate",   root_turnover_rate(i))
-        call putConfigREAL("storage_turnover_rate",storage_turnover_rate(i))
-        call putConfigREAL("f_labile",             f_labile(i))
+        call putConfigREAL("growth_resp_factor"     ,growth_resp_factor     (i))
+        call putConfigREAL("leaf_turnover_rate"     ,leaf_turnover_rate     (i))
+        call putConfigREAL("eplastic_vm0"           ,eplastic_vm0           (i))
+        call putConfigREAL("eplastic_sla"           ,eplastic_sla           (i))
+        call putConfigREAL("kplastic_LL"            ,kplastic_LL            (i))
+        call putConfigREAL("root_turnover_rate"     ,root_turnover_rate     (i))
+        call putConfigREAL("bark_turnover_rate"     ,bark_turnover_rate     (i))
+        call putConfigREAL("storage_turnover_rate"  ,storage_turnover_rate  (i))
+        call putConfigREAL("f_labile_leaf"          ,f_labile_leaf          (i))
+        call putConfigREAL("f_labile_stem"          ,f_labile_stem          (i))
         call putConfigREAL("root_respiration_factor",root_respiration_factor(i))
-        call putConfigREAL("rrf_low_temp",         rrf_low_temp(i))
-        call putConfigREAL("rrf_high_temp",        rrf_high_temp(i))
-        call putConfigREAL("rrf_decay_e",          rrf_decay_e(i))
-        call putConfigREAL("rrf_hor",              rrf_hor(i))
-        call putConfigREAL("rrf_q10",              rrf_q10(i))
+        call putConfigREAL("rrf_low_temp"           ,rrf_low_temp           (i))
+        call putConfigREAL("rrf_high_temp"          ,rrf_high_temp          (i))
+        call putConfigREAL("rrf_decay_elow"         ,rrf_decay_elow         (i))
+        call putConfigREAL("rrf_decay_ehigh"        ,rrf_decay_ehigh        (i))
+        call putConfigREAL("rrf_hor"                ,rrf_hor                (i))
+        call putConfigREAL("rrf_q10"                ,rrf_q10                (i))
 
 !! MORTALITY
         call putConfigREAL("frost_mort",frost_mort(i))
@@ -1518,51 +1996,66 @@ subroutine write_ed_xml_config
         call putConfigREAL("cbr_severe_stress",cbr_severe_stress(i))
         call putConfigREAL("seedling_mortality",seedling_mortality(i))
 
-        call putConfigREAL("treefall_s_gtht",treefall_s_gtht(i))
-        call putConfigREAL("treefall_s_ltht",treefall_s_ltht(i))
+        call putConfigREAL("treefall_s_gt"   ,treefall_s_gtht (i))
+        call putConfigREAL("treefall_s_lt"   ,treefall_s_ltht (i))
+        call putConfigREAL("felling_s_gtharv",felling_s_gtharv(i))
+        call putConfigREAL("felling_s_ltharv",felling_s_ltharv(i))
+        call putConfigREAL("skid_s_gtharv"   ,skid_s_gtharv   (i))
+        call putConfigREAL("skid_s_ltharv"   ,skid_s_ltharv   (i))
 
-        call putConfigREAL("fire_s_gtht",fire_s_gtht(i))
-        call putConfigREAL("fire_s_ltht",fire_s_ltht(i))
-
+        call putConfigREAL("fire_s_min"        ,fire_s_min   (i))
+        call putConfigREAL("fire_s_max"        ,fire_s_max   (i))
+        call putConfigREAL("fire_s_inter"      ,fire_s_inter (i))
+        call putConfigREAL("fire_s_slope"      ,fire_s_slope (i))
+ 
         call putConfigREAL("plant_min_temp",plant_min_temp(i))
 
 !! ALLOCATION
-        call putConfigREAL("rho",rho(i))
-        call putConfigREAL("SLA",SLA(i))
-        call putConfigREAL("horiz_branch",horiz_branch(i))
-        call putConfigREAL("q",q(i))
-        call putConfigREAL("sapwood_ratio",sapwood_ratio(i))
-        call putConfigREAL("qsw",qsw(i))
-        call putConfigREAL("SRA",SRA(i))
-        call putConfigREAL("root_beta",root_beta(i))
-        call putConfigREAL("init_density",init_density(i))
+        call putConfigREAL("rho"            ,rho            (i))
+        call putConfigREAL("SLA"            ,SLA            (i))
+        call putConfigREAL("sla_s0"         ,sla_s0         (i))
+        call putConfigREAL("sla_s1"         ,sla_s1         (i))
+        call putConfigREAL("kplastic_sla"   ,kplastic_sla   (i))
+        call putConfigREAL("lma_slope"      ,lma_slope      (i))
+        call putConfigREAL("laimax_plastic" ,laimax_plastic (i))
+        call putConfigREAL("q"              ,q              (i))
+        call putConfigREAL("sapwood_ratio"  ,sapwood_ratio  (i))
+        call putConfigREAL("qsw"            ,qsw            (i))
+        call putConfigREAL("qbark"          ,qbark          (i))
+        call putConfigREAL("SRA"            ,SRA            (i))
+        call putConfigREAL("root_beta"      ,root_beta      (i))
+        call putConfigREAL("init_density"   ,init_density   (i))
+        call putConfigREAL("f_bstorage_init",f_bstorage_init(i))
+
+
 !! PLANT HYDRAULICS
-        call putConfigREAL("leaf_water_sat",leaf_water_sat(i))
-        call putConfigREAL("wood_water_sat",wood_water_sat(i))
-        call putConfigREAL("leaf_water_cap",leaf_water_cap(i))
-        call putConfigREAL("wood_water_cap",wood_water_cap(i))
-        call putConfigREAL("leaf_rwc_min",leaf_rwc_min(i))
-        call putConfigREAL("wood_rwc_min",wood_rwc_min(i))
-        call putConfigREAL("leaf_psi_min",leaf_psi_min(i))
-        call putConfigREAL("wood_psi_min",wood_psi_min(i))
-        call putConfigREAL("leaf_psi_tlp",leaf_psi_tlp(i))
-        call putConfigREAL("wood_psi_tlp",wood_psi_tlp(i))
-        call putConfigREAL("leaf_psi_osmotic",leaf_psi_osmotic(i))
-        call putConfigREAL("wood_psi_osmotic",wood_psi_osmotic(i))
-        call putConfigREAL("leaf_elastic_mod",leaf_elastic_mod(i))
-        call putConfigREAL("wood_elastic_mod",wood_elastic_mod(i))
-        call putConfigREAL("wood_Kmax",wood_Kmax(i))
-        call putConfigREAL("wood_Kexp",wood_Kexp(i))
-        call putConfigREAL("wood_psi50",wood_psi50(i))
+        call putConfigREAL("leaf_water_sat"    ,leaf_water_sat    (i))
+        call putConfigREAL("wood_water_sat"    ,wood_water_sat    (i))
+        call putConfigREAL("bark_water_sat"    ,bark_water_sat    (i))
+        call putConfigREAL("leaf_water_cap"    ,leaf_water_cap    (i))
+        call putConfigREAL("wood_water_cap"    ,wood_water_cap    (i))
+        call putConfigREAL("leaf_rwc_min"      ,leaf_rwc_min      (i))
+        call putConfigREAL("wood_rwc_min"      ,wood_rwc_min      (i))
+        call putConfigREAL("leaf_psi_min"      ,leaf_psi_min      (i))
+        call putConfigREAL("wood_psi_min"      ,wood_psi_min      (i))
+        call putConfigREAL("leaf_psi_tlp"      ,leaf_psi_tlp      (i))
+        call putConfigREAL("wood_psi_tlp"      ,wood_psi_tlp      (i))
+        call putConfigREAL("leaf_psi_osmotic"  ,leaf_psi_osmotic  (i))
+        call putConfigREAL("wood_psi_osmotic"  ,wood_psi_osmotic  (i))
+        call putConfigREAL("leaf_elastic_mod"  ,leaf_elastic_mod  (i))
+        call putConfigREAL("wood_elastic_mod"  ,wood_elastic_mod  (i))
+        call putConfigREAL("wood_Kmax"         ,wood_Kmax         (i))
+        call putConfigREAL("wood_Kexp"         ,wood_Kexp         (i))
+        call putConfigREAL("wood_psi50"        ,wood_psi50        (i))
         call putConfigREAL("vessel_curl_factor",vessel_curl_factor(i))
-        call putConfigREAL("stoma_lambda",stoma_lambda(i))
-        call putConfigREAL("stoma_beta",stoma_beta(i))
-        call putConfigREAL("stoma_psi_b",stoma_psi_b(i))
-        call putConfigREAL("stoma_psi_c",stoma_psi_c(i))
+        call putConfigREAL("stoma_lambda"      ,stoma_lambda      (i))
+        call putConfigREAL("stoma_beta"        ,stoma_beta        (i))
+        call putConfigREAL("stoma_psi_b"       ,stoma_psi_b       (i))
+        call putConfigREAL("stoma_psi_c"       ,stoma_psi_c       (i))
         call putConfigINT ("high_psi_threshold",high_psi_threshold(i))
-        call putConfigINT ("low_psi_threshold",low_psi_threshold(i))
-        call putConfigREAL("leaf_grow_rate",leaf_grow_rate(i))
-        call putConfigREAL("leaf_shed_rate",leaf_shed_rate(i))
+        call putConfigINT ("low_psi_threshold" ,low_psi_threshold (i))
+        call putConfigREAL("leaf_grow_rate"    ,leaf_grow_rate    (i))
+        call putConfigREAL("leaf_shed_rate"    ,leaf_shed_rate    (i))
 
      !! HEIGHT
         call putConfigREAL("b1Ht",       b1Ht(i))
@@ -1572,23 +2065,17 @@ subroutine write_ed_xml_config
         call putConfigREAL("hgt_max",    hgt_max(i))
         call putConfigREAL("min_dbh",    min_dbh(i))
         call putConfigREAL("dbh_crit",   dbh_crit(i))
-        call putConfigREAL("dbh_adult",  dbh_adult(i))
         call putConfigREAL("dbh_bigleaf",dbh_bigleaf(i))
 
      !! LEAF
-        call putConfigREAL("b1Bl_small", b1Bl_small(i))
-        call putConfigREAL("b1Bl_large", b1Bl_large(i))
-        call putConfigREAL("b2Bl_small", b2Bl_small(i))
-        call putConfigREAL("b2Bl_large", b2Bl_large(i))
-        call putConfigREAL("bleaf_adult",bleaf_adult(i))
+        call putConfigREAL("b1Bl", b1Bl(i))
+        call putConfigREAL("b2Bl", b2Bl(i))
 
      !! STEM
         call putConfigREAL("b1Bs_small",b1Bs_small(i))
         call putConfigREAL("b1Bs_large",b1Bs_large(i))
         call putConfigREAL("b2Bs_small",b2Bs_small(i))
         call putConfigREAL("b2Bs_large",b2Bs_large(i))
-        call putConfigREAL("b1SA",b1SA(i))
-        call putConfigREAL("b2SA",b2SA(i))
         call putConfigREAL("min_bdead", min_bdead(i))
         call putConfigREAL("bdead_crit",bdead_crit(i))
 
@@ -1597,45 +2084,66 @@ subroutine write_ed_xml_config
         call putConfigREAL("b2Ca",      b2Ca(i))
 
      !! BRANCHES
-        call putConfigREAL("b1WAI",     b1WAI(i))
-        call putConfigREAL("b2WAI",     b2WAI(i))
-        call putConfigREAL("brf_wd",    brf_wd(i))
+        call putConfigREAL("b1WAI" , b1WAI (i))
+        call putConfigREAL("b2WAI" , b2WAI (i))
+        call putConfigREAL("brf_wd", brf_wd(i))
+
+     !! SAPWOOD AREA
+        call putConfigREAL("b1SA",b1SA(i))
+        call putConfigREAL("b2SA",b2SA(i))
+
+     !! BARK/SAPWOOD THICKNESS
+        call putConfigREAL("qrhob",   qrhob(i))
+        call putConfigREAL("b1Xb",    b1Xb(i))
+        call putConfigREAL("b1Xs",    b1Xs(i))
 
      !! COARSE ROOTS
-        call putConfigREAL("agf_bs",     agf_bs(i))
-        call putConfigREAL("b1Vol",      b1Vol(i))
-        call putConfigREAL("b2Vol",      b2Vol(i))
-        call putConfigREAL("b1Rd",       b1Rd(i))
-        call putConfigREAL("b2Rd",       b2Rd(i))
-        call putConfigREAL("init_laimax",init_laimax(i))
+        call putConfigREAL("agf_bs"  , agf_bs  (i))
+        call putConfigREAL("b1Vol"   , b1Vol   (i))
+        call putConfigREAL("b2Vol"   , b2Vol   (i))
+        call putConfigREAL("b1Rd"    , b1Rd    (i))
+        call putConfigREAL("b2Rd"    , b2Rd    (i))
+        call putConfigREAL("d18O_ref", d18O_ref(i))
+        call putConfigREAL("b1d18O"  , b1d18O  (i))
+        call putConfigREAL("b2d18O"  , b2d18O  (i))
+        call putConfigREAL("b1Efrd"  , b1Efrd  (i))
+        call putConfigREAL("b2Efrd"  , b2Efrd  (i))
+        
+        call putConfigSCIENTIFIC("init_laimax",init_laimax(i))
 
      !! NITRO
         call putConfigREAL("c2n_leaf",   c2n_leaf(i))
-        call putConfigREAL("c2n_recruit",c2n_recruit(i))
 
      !! LEAF DEPENDENT
         call putConfigINT("phenology",         phenology(i))
+
+     !! SPECIFIC HEAT
         call putConfigREAL("c_grn_leaf_dry",    c_grn_leaf_dry(i))
-        call putConfigREAL("wat_dry_ratio_grn", wat_dry_ratio_grn(i))
-        call putConfigREAL("wat_dry_ratio_ngrn",wat_dry_ratio_ngrn(i))
-        call putConfigREAL("c_ngrn_biom_dry",   c_ngrn_biom_dry(i))
-        call putConfigREAL("delta_c",           delta_c(i))
+        call putConfigREAL("c_ngrn_wood_dry",   c_ngrn_wood_dry(i))
+        call putConfigREAL("c_ngrn_bark_dry",   c_ngrn_bark_dry(i))
+        call putConfigREAL("delta_c_wood",      delta_c_wood(i))
+        call putConfigREAL("delta_c_bark",      delta_c_bark(i))
+
+     !! CROWN DEPTH
         call putConfigREAL("b1Cl",              b1Cl(i))
         call putConfigREAL("b2Cl",              b2Cl(i))
 
      !! REPRODUCTION
         call putConfigREAL("r_fract", r_fract(i))
+        call putConfigREAL("r_cv50" , r_cv50 (i))
+        if (r_bang(i)) then
+           ival = 1
+        else
+           ival = 0
+        end if
+        call putConfigINT("r_bang",ival)
         call putConfigREAL("st_fract",st_fract(i))
         call putConfigREAL("nonlocal_dispersal",nonlocal_dispersal(i))
         call putConfigREAL("repro_min_h",repro_min_h(i))
+        call putConfigREAL("min_recruit_size",min_recruit_size(i))
 
      !! OTHER
-        call putConfigREAL("one_plant_c",      one_plant_c(i))
-        call putConfigREAL("min_recruit_size", min_recruit_size(i))
-        call putConfigREAL("min_cohort_size",  min_cohort_size(i))
         call putConfigREAL("seed_rain",        seed_rain(i))
-        call putConfigREAL("negligible_nplant",negligible_nplant(i))
-        call putConfigREAL("veg_hcap_min",     veg_hcap_min(i))
 
         call libxml2f90_ll_closetag("pft")
      endif
@@ -1643,10 +2151,10 @@ subroutine write_ed_xml_config
  
   !************   PFT CONSTANTS  *****************
   call libxml2f90_ll_opentag("pftconst")
-     call putConfigREAL("c2n_slow",c2n_slow)
-     call putConfigREAL("c2n_structural",c2n_structural)
      call putConfigREAL("l2n_stem",l2n_stem)
      call putConfigREAL("C2B",C2B)
+     call putConfigREAL("h_edge",h_edge)
+     call putConfigREAL("liana_dbh_crit",liana_dbh_crit)
   call libxml2f90_ll_closetag("pftconst")
 
   !************   HYDROLOGY  *****************
@@ -1692,28 +2200,36 @@ subroutine write_ed_xml_config
   !************   CANOPY RADIATION  *****************
   call libxml2f90_ll_opentag("radiation")
      call putConfigREAL("rlong_min",prec_slope)
-     call putConfigREAL("veg_temp_min",rk4min_veg_temp)
-     call putConfigREAL("leaf_scatter_nir",leaf_scatter_nir)
-     call putConfigREAL("leaf_reflect_nir",leaf_reflect_nir)
-     call putConfigREAL("leaf_trans_nir",leaf_trans_nir)
-     call putConfigREAL("diffuse_backscatter_vis",leaf_backscatter_vis)
-     call putConfigREAL("diffuse_backscatter_nir",leaf_backscatter_nir)
+     call putConfigREAL8("veg_temp_min",rk4min_veg_temp)
   call libxml2f90_ll_closetag("radiation")
+
+  !************   BUDGET TOLERANCE  *****************
+  call libxml2f90_ll_opentag("budget")
+     call putConfigREAL("tol_subday_budget",tol_subday_budget)
+     call putConfigREAL("tol_carbon_budget",tol_carbon_budget)
+  call libxml2f90_ll_closetag("budget")
 
   !************   SOILS  *****************
   call libxml2f90_ll_opentag("soil")
-     call putConfigREAL("water_stab_thresh",water_stab_thresh)
-     call putConfigINT("infiltration_method",infiltration_method)
-     call putConfigREAL("dewmax",dewmax)
-     call putConfigSTRING("soilstate_db",soilstate_db)
-     call putConfigSTRING("soildepth_db",soildepth_db)
-     call putConfigINT("isoilstateinit",isoilstateinit)
-     call putConfigINT("isoildepthflg",isoildepthflg)
-     call putConfigREAL("runoff_time",runoff_time)
+
+     call putConfigREAL  ("soil_rough"         ,soil_rough         )
+     call putConfigREAL  ("snow_rough"         ,snow_rough         )
+     call putConfigREAL  ("ny07_eq04_a"        ,ny07_eq04_a        )
+     call putConfigREAL  ("ny07_eq04_m"        ,ny07_eq04_m        )
+     call putConfigREAL  ("dewmax"             ,dewmax             )
+     call putConfigREAL  ("water_stab_thresh"  ,water_stab_thresh  )
+     call putConfigREAL  ("tiny_sfcwater_mass" ,tiny_sfcwater_mass )
+     call putConfigREAL  ("snowmin"            ,snowmin            )
+     call putConfigINT   ("infiltration_method",infiltration_method)
+     call putConfigSTRING("soilstate_db"       ,soilstate_db       )
+     call putConfigSTRING("soildepth_db"       ,soildepth_db       )
+     call putConfigINT   ("isoilstateinit"     ,isoilstateinit     )
+     call putConfigINT   ("isoildepthflg"      ,isoildepthflg      )
+     call putConfigREAL  ("runoff_time"        ,runoff_time        )
      call libxml2f90_ll_opentag("grid")
         do ng=1,ngrids
-           call putConfigSTRING("vegetation_database",veg_database(ng))
-           call putConfigSTRING("soil_database",soil_database(ng))
+           call putConfigSTRING("vegetation_database",veg_database (ng))
+           call putConfigSTRING("soil_database"      ,soil_database(ng))
         end do
      call libxml2f90_ll_closetag("grid")
 
@@ -1721,43 +2237,108 @@ subroutine write_ed_xml_config
 
   !************   DECOMPOSITION  *****************
   call libxml2f90_ll_opentag("decomposition")
-     call putConfigREAL("cwd_frac",cwd_frac)
-     call putConfigREAL("resp_opt_water",resp_opt_water)
-     call putConfigREAL("resp_water_below_opt",resp_water_below_opt)
-     call putConfigREAL("resp_water_above_opt",resp_water_above_opt)
+     call putConfigREAL("resp_opt_water"           ,resp_opt_water           )
+     call putConfigREAL("resp_water_below_opt"     ,resp_water_below_opt     )
+     call putConfigREAL("resp_water_above_opt"     ,resp_water_above_opt     )
      call putConfigREAL("resp_temperature_increase",resp_temperature_increase)
-     call putConfigREAL("N_immobil_supply_scale",N_immobil_supply_scale)
-     call putConfigREAL("r_fsc",r_fsc)
-     call putConfigREAL("r_stsc",r_stsc)
-     call putConfigREAL("r_ssc",r_ssc)
-     call putConfigREAL("K1",decay_rate_stsc)
-     call putConfigREAL("K2",decay_rate_fsc)
-     call putConfigREAL("K3",decay_rate_ssc)
-     call putConfigREAL("decay_rate_stsc",decay_rate_stsc)
-     call putConfigREAL("decay_rate_fsc",decay_rate_fsc)
-     call putConfigREAL("decay_rate_ssc",decay_rate_ssc)
-     call putConfigINT ("N_decomp_lim",N_decomp_lim)
-     call putConfigREAL("rh_decay_low",rh_decay_low)
-     call putConfigREAL("rh_decay_high",rh_decay_high)
-     call putConfigREAL("rh_low_temp",rh_low_temp)
-     call putConfigREAL("rh_high_temp",rh_high_temp)
-     call putConfigREAL("rh_decay_dry",rh_decay_dry)
-     call putConfigREAL("rh_decay_wet",rh_decay_wet)
-     call putConfigREAL("rh_dry_smoist",rh_dry_smoist)
-     call putConfigREAL("rh_wet_smoist",rh_wet_smoist)
+     call putConfigREAL("N_immobil_supply_scale"   ,N_immobil_supply_scale   )
+     call putConfigREAL("e_lignin"                 ,e_lignin                 )
+     call putConfigREAL("r_fsc"                    ,r_fsc                    )
+     call putConfigREAL("r_stsc_l"                 ,r_stsc_l                 )
+     call putConfigREAL("r_stsc_o"                 ,r_stsc_o                 )
+     call putConfigREAL("r_msc_int"                ,r_msc_int                )
+     call putConfigREAL("r_msc_slp"                ,r_msc_slp                )
+     call putConfigREAL("r_ssc"                    ,r_ssc                    )
+     call putConfigREAL("r_psc"                    ,r_psc                    )
+     call putConfigREAL("fx_msc_psc_int"           ,fx_msc_psc_int           )
+     call putConfigREAL("fx_msc_psc_slp"           ,fx_msc_psc_slp           )
+     call putConfigREAL("fx_ssc_psc_int"           ,fx_ssc_psc_int           )
+     call putConfigREAL("fx_ssc_psc_slp"           ,fx_ssc_psc_slp           )
+     call putConfigREAL("decay_rate_fsc"           ,decay_rate_fsc           )
+     call putConfigREAL("decay_rate_stsc"          ,decay_rate_stsc          )
+     call putConfigREAL("decay_rate_msc"           ,decay_rate_msc           )
+     call putConfigREAL("decay_rate_ssc"           ,decay_rate_ssc           )
+     call putConfigREAL("decay_rate_psc"           ,decay_rate_psc           )
+     call putConfigINT ("N_decomp_lim"             ,N_decomp_lim             )
+     call putConfigREAL("rh_decay_low"             ,rh_decay_low             )
+     call putConfigREAL("rh_decay_high"            ,rh_decay_high            )
+     call putConfigREAL("rh_low_temp"              ,rh_low_temp              )
+     call putConfigREAL("rh_high_temp"             ,rh_high_temp             )
+     call putConfigREAL("rh_decay_dry"             ,rh_decay_dry             )
+     call putConfigREAL("rh_decay_wet"             ,rh_decay_wet             )
+     call putConfigREAL("rh_dry_smoist"            ,rh_dry_smoist            )
+     call putConfigREAL("rh_wet_smoist"            ,rh_wet_smoist            )
+     call putConfigREAL("rh_moyano12_a0"           ,rh_moyano12_a0           )
+     call putConfigREAL("rh_moyano12_a1"           ,rh_moyano12_a1           )
+     call putConfigREAL("rh_moyano12_a2"           ,rh_moyano12_a2           )
+     call putConfigREAL("rh_active_depth"          ,rh_active_depth          )
+     call putConfigREAL("rh0"                      ,rh0                      )
+     call putConfigREAL("rh_q10"                   ,rh_q10                   )
+     call putConfigREAL("rh_p_smoist"              ,rh_p_smoist              )
+     call putConfigREAL("rh_p_oxygen"              ,rh_p_oxygen              )
+     call putConfigREAL("agf_fsc"                  ,agf_fsc                  )
+     call putConfigREAL("agf_stsc"                 ,agf_stsc                 )
+     call putConfigREAL("f0_msc"                   ,f0_msc                   )
+     call putConfigREAL("f0_psc"                   ,f0_psc                   )
+     call putConfigREAL("c2n_slow"                 ,c2n_slow                 )
+     call putConfigREAL("c2n_structural"           ,c2n_structural           )
+     call putConfigREAL("c2n_fast_0"               ,c2n_fast_0               )
 
   call libxml2f90_ll_closetag("decomposition")
 
   !************   FUSION/FISSION  *****************
   call libxml2f90_ll_opentag("fusefiss")
-     call putConfigREAL("min_recruit_size",min_recruit_size)
-     call putConfigREAL("fusetol",fusetol)
-     call putConfigREAL("fusetol_h",fusetol_h)
-     call putConfigREAL("lai_fuse_tol",lai_fuse_tol)
-     call putConfigREAL("lai_tol",lai_tol)
-     call putConfigINT ("ff_nhgt",ff_nhgt)
-     call putConfigREAL("coh_tolerance_max",coh_tolerance_max)
+     call putConfigINT  ("ff_nhgt"            ,ff_nhgt            )
+     !----- Old patch/cohort fusion parameters
+     call putConfigREAL ("dark_cumlai_min"    ,dark_cumlai_min    )
+     call putConfigREAL ("dark_cumlai_max"    ,dark_cumlai_max    )
+     call putConfigREAL ("sunny_cumlai_min"   ,sunny_cumlai_min   )
+     call putConfigREAL ("sunny_cumlai_max"   ,sunny_cumlai_max   )
+     call putConfigREAL ("light_toler_min"    ,light_toler_min    )
+     call putConfigREAL ("light_toler_max"    ,light_toler_max    )
+     call putConfigREAL ("sunny_cumlai_mult"  ,sunny_cumlai_mult  )
+     call putConfigREAL ("dark_cumlai_mult"   ,dark_cumlai_mult   )
+     call putConfigREAL ("light_toler_mult"   ,light_toler_mult   )
+     call putConfigREAL ("fusetol"            ,fusetol            )
+     call putConfigREAL ("fusetol_h"          ,fusetol_h          )
+     call putConfigREAL ("lai_fuse_tol"       ,lai_fuse_tol       )
+     call putConfigREAL ("coh_tolerance_max"  ,coh_tolerance_max  )
+     if (fuse_relax) then
+        ival = 1
+     else
+        ival = 0
+     end if
+     call putConfigINT  ("fuse_relax"         ,ival               )
+     !------ New patch/cohort fusion parameters
+     call putConfigINT  ("niter_patfus"       ,niter_patfus       )
+     call putConfigREAL ("pat_light_tol_min"  ,pat_light_tol_min  )
+     call putConfigREAL ("pat_light_tol_max"  ,pat_light_tol_max  )
+     call putConfigREAL ("pat_light_tol_mult" ,pat_light_tol_mult )
+     call putConfigREAL ("pat_light_mxd_fac"  ,pat_light_mxd_fac  )
+     call putConfigREAL ("pat_diff_age_tol"   ,pat_diff_age_tol   )
+     call putConfigREAL ("pat_min_area_remain",pat_min_area_remain)
+     call putConfigINT  ("niter_cohfus"       ,niter_cohfus       )
+     call putConfigREAL ("coh_size_tol_min"   ,coh_size_tol_min   )
+     call putConfigREAL ("coh_size_tol_max"   ,coh_size_tol_max   )
+     call putConfigREAL ("coh_size_tol_mult"  ,coh_size_tol_mult  )
+     call putConfigREAL ("pat_laimax_fine"    ,pat_laimax_fine    )
+     call putConfigREAL ("lai_tol"            ,lai_tol            )
   call libxml2f90_ll_closetag("fusefiss")
+
+
+
+  !************   HRZSHADE  *****************
+  call libxml2f90_ll_opentag("hrzshade")
+     call putConfigREAL ("cci_radius" ,cci_radius )
+     call putConfigREAL ("cci_pixres" ,cci_pixres )
+     call putConfigREAL ("cci_gapsize",cci_gapsize)
+     call putConfigREAL ("cci_gapmin" ,cci_gapmin )
+     call putConfigINT  ("cci_nretn"  ,cci_nretn  )
+     call putConfigREAL ("cci_hmax"   ,cci_hmax   )
+  call libxml2f90_ll_closetag("hrzshade")
+
+
+
 
   !************   DISTURBANCE  *****************
   call libxml2f90_ll_opentag("disturbance")
@@ -1767,7 +2348,7 @@ subroutine write_ed_xml_config
      call putConfigINT("ianth_disturb",ianth_disturb)
      ! --- Treefall
      call putConfigREAL("treefall_disturbance_rate",treefall_disturbance_rate)
-     call putConfigREAL("Time2Canopy",Time2Canopy)
+     call putConfigSCIENTIFIC("Time2Canopy",Time2Canopy)
      call putConfigREAL("treefall_hite_threshold",treefall_hite_threshold)
      ! --- Forestry
      call putConfigINT("forestry_on",forestry_on)
@@ -1777,28 +2358,46 @@ subroutine write_ed_xml_config
      call putConfigREAL("min_harvest_biomass",min_harvest_biomass)
      call putConfigREAL("mature_harvest_age",mature_harvest_age)
      ! --- Fire
-     call putConfigREAL("fire_hite_threshold",fire_hite_threshold)
-     call putConfigINT("include_fire",include_fire)
+     call putConfigINT("include_fire"           ,include_fire          )
      call putConfigREAL("fire_dryness_threshold",fire_dryness_threshold)
-     call putConfigREAL("fire_parameter",fire_parameter)
+     call putConfigREAL("fire_parameter"        ,fire_parameter        )
+     call putConfigREAL("fire_smoist_depth"     ,fire_smoist_depth     )
+     call putConfigREAL("fuel_height_max"       ,fuel_height_max       )
+     call putConfigREAL("f_combusted_fast_c"    ,f_combusted_fast_c    )
+     call putConfigREAL("f_combusted_struct_c"  ,f_combusted_struct_c  )
+     call putConfigREAL("f_combusted_fast_n"    ,f_combusted_fast_n    )
+     call putConfigREAL("f_combusted_struct_n"  ,f_combusted_struct_n  )
   call libxml2f90_ll_closetag("disturbance")
 
   !************   PHENOLOGY  *****************
   call libxml2f90_ll_opentag("phenology")
      call putConfigREAL("retained_carbon_fraction",retained_carbon_fraction)
-     call putConfigREAL("theta_crit",thetacrit)
-     call putConfigREAL("elongf_min",elongf_min)
-     call putConfigREAL("dl_tr",dl_tr)
-     call putConfigREAL("st_tr1",st_tr1)
-     call putConfigREAL("st_tr2",st_tr2)
-     call putConfigREAL("phen_a",phen_a)
-     call putConfigREAL("phen_b",phen_b)
-     call putConfigREAL("phen_c",phen_c)
-     call putConfigINT("iphen_scheme",iphen_scheme)
-     call putConfigINT("iphenys1",iphenys1)
-     call putConfigINT("iphenysf",iphenysf)
-     call putConfigINT("iphenyf1",iphenyf1)
-     call putConfigINT("iphenyff",iphenyff)
+     call putConfigREAL("root_phen_factor"        ,root_phen_factor        )
+     call putConfigREAL("theta_crit"              ,thetacrit               )
+     call putConfigREAL("dl_tr"                   ,dl_tr                   )
+     call putConfigREAL("st_tr1"                  ,st_tr1                  )
+     call putConfigREAL("st_tr2"                  ,st_tr2                  )
+     call putConfigREAL("phen_a"                  ,phen_a                  )
+     call putConfigREAL("phen_b"                  ,phen_b                  )
+     call putConfigREAL("phen_c"                  ,phen_c                  )
+     call putConfigINT("iphen_scheme"             ,iphen_scheme            )
+     call putConfigREAL("radavg_window"           ,radavg_window           )
+     call putConfigREAL("turnamp_window"          ,turnamp_window          )
+     call putConfigREAL("turnamp_min"             ,turnamp_min             )
+     call putConfigREAL("turnamp_max"             ,turnamp_max             )
+     call putConfigREAL("llspan_window"           ,llspan_window           )
+     call putConfigREAL("llspan_min"              ,llspan_min              )
+     call putConfigREAL("llspan_max"              ,llspan_max              )
+     call putConfigREAL("vm0_window"              ,vm0_window              )
+     call putConfigREAL("vm0_tran"                ,vm0_tran                )
+     call putConfigREAL("vm0_slope"               ,vm0_slope               )
+     call putConfigREAL("vm0_amp"                 ,vm0_amp                 )
+     call putConfigREAL("vm0_min"                 ,vm0_min                 )
+     call putConfigREAL("sla_window"              ,sla_window              )
+     call putConfigINT("iphenys1"                 ,iphenys1                )
+     call putConfigINT("iphenysf"                 ,iphenysf                )
+     call putConfigINT("iphenyf1"                 ,iphenyf1                )
+     call putConfigINT("iphenyff"                 ,iphenyff                )
   call libxml2f90_ll_closetag("phenology")
 
   !************   PHYSIOLOGY  *****************
@@ -1812,12 +2411,18 @@ subroutine write_ed_xml_config
 
   !************   INITIAL CONDITIONS  *****************
   call libxml2f90_ll_opentag("initcond")
-     call putConfigREAL("fsc",init_fsc)
-     call putConfigREAL("stsc",init_stsc)
-     call putConfigREAL("ssc",init_ssc)
-     call putConfigREAL("stsl",init_stsl)
-     call putConfigREAL("fsn",init_fsn)
-     call putConfigREAL("msn",init_msn)
+     call putConfigREAL("fgc"  ,init_fgc )
+     call putConfigREAL("fsc"  ,init_fsc )
+     call putConfigREAL("stgc" ,init_stgc)
+     call putConfigREAL("stsc" ,init_stsc)
+     call putConfigREAL("msc"  ,init_msc )
+     call putConfigREAL("ssc"  ,init_ssc )
+     call putConfigREAL("psc"  ,init_psc )
+     call putConfigREAL("stgl" ,init_stgl)
+     call putConfigREAL("stsl" ,init_stsl)
+     call putConfigREAL("fgn"  ,init_fgn )
+     call putConfigREAL("fsn"  ,init_fsn )
+     call putConfigREAL("msn"  ,init_msn )
   call libxml2f90_ll_closetag("initcond")
 
   !-----------------------------------------------------
@@ -1835,7 +2440,11 @@ subroutine putConfigSTRING(tag,value)
   character(*),intent(in) :: tag 
   character(*),intent(in) :: value
   integer :: lenval 
-  lenval = len(value)
+  !! `len(value)` includes trailing whitespace and other stuff, but below, we
+  !! only write `trim(value)`, which is shorter. This leads to a bunch of
+  !! non-readable garbage getting dumped into the output file. We can avoid that
+  !! by doing `len(trim(value))` here, so the lengths match.
+  lenval = len(trim(value))
   call libxml2f90_ll_opentag(tag)
   call libxml2f90_ll_addid(trim(tag),lenval,trim(value))
   call libxml2f90_ll_closetag(tag)
@@ -1866,6 +2475,19 @@ subroutine putConfigREAL(tag,rvalue)
   call libxml2f90_ll_addid(trim(tag),lenval,trim(value))
   call libxml2f90_ll_closetag(tag)
 end subroutine putConfigREAL
+
+subroutine putConfigSCIENTIFIC(tag,rvalue)
+  use ed_max_dims, only : str_len
+  character(*),intent(in) :: tag 
+  real,intent(in) :: rvalue
+  character(str_len) :: value
+  integer :: lenval 
+  write(value,"(es14.7)") rvalue
+  lenval = len(trim(value))
+  call libxml2f90_ll_opentag(tag)
+  call libxml2f90_ll_addid(trim(tag),lenval,trim(value))
+  call libxml2f90_ll_closetag(tag)
+end subroutine putConfigSCIENTIFIC
 
 subroutine putConfigREAL8(tag,rvalue)
   use ed_max_dims, only : str_len

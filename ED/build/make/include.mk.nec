@@ -171,6 +171,7 @@ USE_MPIWTIME=0
 
 #----------------  NEC-SX6 ---------------
 CMACH=NEC_SX
+FC_TYPE=NEC
 F_COMP=sxmpif90
 C_COMP=sxmpic++
 LOADER=sxmpif90

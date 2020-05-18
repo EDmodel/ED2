@@ -10,10 +10,25 @@
 !==========================================================================================!
 !==========================================================================================!
 module fusion_fission_coms
-   use ed_max_dims, only : str_len      & ! intent(in)
-                         , n_dist_types ! ! intent(in)
+   use ed_max_dims, only : str_len      ! ! intent(in)
 
    implicit none
+
+
+   !---------------------------------------------------------------------------------------!
+   !> IFUSION is a temporary flag for patch fusion. 
+   !> 0 -- Original (ED-2.1) patch/cohort fusion routines.
+   !> 1 -- Updated (ED-2.2) patch/cohort fusion routines.
+   !> (MLO) The old scheme had some issues, mostly the fact that it used relative 
+   !> differences in light levels, and had high rate of tolerance increase.  This would 
+   !> eventually fuse patches with very different upper canopy.  Also, the patch fusion
+   !> scheme did not check for number of remaining patches that were so small that would
+   !> be terminated.  Both problems are much more likely to make a difference when initial
+   !> conditions have a large number of patches (> 1000), which is quite common when using
+   !> airborne lidar.  I am keeping the old scheme to avoid disrupting people's work, but
+   !> eventually I would prefer deleting the routines. 
+   !---------------------------------------------------------------------------------------!
+   integer :: ifusion
 
    !----- Maximum number of iterations for patch fusion. ----------------------------------!
    integer :: niter_patfus
@@ -23,23 +38,10 @@ module fusion_fission_coms
 
    !----- Number of height bins in patch profiling ----------------------------------------!
    integer :: ff_nhgt
+   !---------------------------------------------------------------------------------------!
 
-   !----- Cohort fusion tolerance on DBH (dimensionless) ----------------------------------!
-   real    :: fusetol
 
-   !----- Cohort fusion tolerance on height (m) -------------------------------------------!
-   real    :: fusetol_h
-
-   !----- Cohort fusion tolerance on LAI (m2 leaf/m2 ground) ------------------------------!
-   real    :: lai_fuse_tol
-
-   !----- Cohort splitting tolerance on LAI (m2 leaf/ m2 ground) --------------------------!
-   real    :: lai_tol
-
-   !----- Cohort maximum tolerance factor -------------------------------------------------!
-   real    :: coh_tolerance_max
-
-   !---- Patch fusion variables. ----------------------------------------------------------!
+   !---- Old patch fusion variables (slated to be deleted in the near future). ------------!
    real :: dark_cumlai_min
    real :: dark_cumlai_max
    real :: sunny_cumlai_min
@@ -51,8 +53,50 @@ module fusion_fission_coms
    real :: light_toler_mult
    !---------------------------------------------------------------------------------------!
 
-   !----- Flag to allow a less strict fusion test for short cohorts. ----------------------!
-   logical :: fuse_relax
+
+   !---- Old cohort fusion variables (slated to be deleted in the near future). -----------!
+   real    :: fusetol           ! Cohort fusion tolerance on DBH (dimensionless) 
+   real    :: fusetol_h         ! Cohort fusion tolerance on height (m) !
+   real    :: lai_fuse_tol      ! Cohort fusion tolerance on LAI (m2 leaf/m2 ground)
+   real    :: coh_tolerance_max ! Cohort maximum tolerance factor 
+   logical :: fuse_relax        ! Flag to allow a less strict fusion test
+   !---------------------------------------------------------------------------------------!
+
+
+   !---- New patch fusion variables. ------------------------------------------------------!
+   real :: pat_light_ext        ! Extinction coefficient for patch fusion.  This is more
+                                !    like ED-1.0, but for simplicity we compare patch 
+                                !    similarity using Beer's law. 
+   real :: pat_light_tol_min    ! Minimum tolerance for patch light difference.
+   real :: pat_light_tol_max    ! Maximum tolerance for patch light difference.
+   real :: pat_light_tol_mult   ! Multiplier for the light tolerance.
+   real :: pat_light_mxd_fac    ! Light tolerance for maximum deviation.
+   real :: pat_diff_age_tol     ! Maximum age difference to be considered same age [yr].
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Minimum area to remain resolved.  This condition is normally met, except when    !
+   ! initialising the simulation with massive amount of data (like airborne lidar data).   !
+   !---------------------------------------------------------------------------------------!
+   real    :: pat_min_area_remain
+   !---------------------------------------------------------------------------------------!
+
+   !---- Cohort fusion variables. ---------------------------------------------------------!
+   integer :: niter_cohfus      ! Number of cohort fusion iterations.
+   real    :: coh_size_tol_min  ! Minimum tolerance for relative size difference.
+   real    :: coh_size_tol_max  ! Maximum tolerance for relative size difference.
+   real    :: coh_size_tol_mult ! Multiplier for the relative size tolerance.
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !----- Cohort splitting tolerance on LAI (m2 leaf/ m2 ground) --------------------------!
+   real    :: lai_tol
+   !---------------------------------------------------------------------------------------!
+
+
 
    !---------------------------------------------------------------------------------------!
    !      Correlation coefficient that is assumed between two patches and two cohorts when !
@@ -65,20 +109,22 @@ module fusion_fission_coms
 
 
    !---------------------------------------------------------------------------------------!
-   !      Minimum age above which we disregard the disturbance type (land use) and assume  !
-   ! old growth, thus allowing patch fusion to occur.                                      !
-   !---------------------------------------------------------------------------------------!
-   real, dimension(n_dist_types) :: min_oldgrowth
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !---------------------------------------------------------------------------------------!
    !     Flag to decide whether we should print the full details of the patch fusion       !
    ! process.                                                                              !
    !---------------------------------------------------------------------------------------!
    logical                :: print_fuse_details
    character(len=str_len) :: fuse_prefix
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Maximum patch-level LAI to be considered realistic during initialisation.  In     !
+   ! very few cases, the airborne lidar initialisation algorithm predicts unreasonable     !
+   ! total LAI (often in places with barely any return above the minimum height            !
+   ! considered).  Because airborne lidar has tens of thousands of patches, it is hard to  !
+   ! spot individual patches that didn't work, so we terminate these patches.              !
+   !---------------------------------------------------------------------------------------!
+   real :: pat_laimax_fine
    !---------------------------------------------------------------------------------------!
 
 end Module fusion_fission_coms

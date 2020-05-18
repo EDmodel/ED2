@@ -21,6 +21,17 @@ R.major <<- as.numeric(R.version$major)
 
 
 #------------------------------------------------------------------------------------------#
+#      Make the screen output as wide as the screen permits.                               #
+#------------------------------------------------------------------------------------------#
+ncstring = as.integer(Sys.getenv("COLUMNS"))
+if (! is.na(ncstring)){
+   if (ncstring > 80 & ncstring < 500) options(width=ncstring)
+}#end if (! is.na(ncstring))
+#------------------------------------------------------------------------------------------#
+
+
+
+#------------------------------------------------------------------------------------------#
 #      Define the default colours for a white background and black foreground.             #
 #------------------------------------------------------------------------------------------#
 grid.colour   = "grey66"
@@ -89,7 +100,7 @@ if (ibackground == 0){
    foreground    <<- "white"
    background    <<- "#282828"
 }else{
-   stop(paste(" Invalid ibackground value (",ibackground,")",sep=""))
+   stop(paste0(" Invalid ibackground value (",ibackground,")"))
 }#end if
 #------------------------------------------------------------------------------------------#
 
@@ -197,57 +208,77 @@ par.user <<- list( bg       = "transparent"
 #------------------------------------------------------------------------------------------#
 
 
+#----- Wrapper for loading packages without pop ups. --------------------------------------#
+discreet.require <<- function(...){
+   dummy = suppressPackageStartupMessages(suppressWarnings(require(...)))
+   return(dummy)
+}#end discreet.require
+#------------------------------------------------------------------------------------------#
+
 #-----------------------------------------------------------------------------------------#
 #     Load all packages needed.                                                            #
 #------------------------------------------------------------------------------------------#
 loaded.package = list()
-loaded.package[["abind"       ]] = require(abind       )
-loaded.package[["akima"       ]] = require(akima       )
-loaded.package[["boot"        ]] = require(boot        )
-loaded.package[["car"         ]] = require(car         )
-loaded.package[["caTools"     ]] = require(caTools     )
-loaded.package[["chron"       ]] = require(chron       )
-loaded.package[["compiler"    ]] = require(compiler    )
-loaded.package[["fields"      ]] = require(fields      )
-loaded.package[["gbm"         ]] = require(gbm         )
-loaded.package[["geoR"        ]] = require(geoR        )
-loaded.package[["glmulti"     ]] = require(glmulti     )
-loaded.package[["grDevices"   ]] = require(grDevices   )
-loaded.package[["gstat"       ]] = require(gstat       )
-loaded.package[["hdf5"        ]] = require(hdf5        )
-loaded.package[["klaR"        ]] = require(klaR        )
-loaded.package[["kriging"     ]] = require(kriging     )
-loaded.package[["leaps"       ]] = require(leaps       )
-loaded.package[["maps"        ]] = require(maps        )
-loaded.package[["mapdata "    ]] = require(mapdata     )
-loaded.package[["MASS"        ]] = require(MASS        )
-loaded.package[["MCMCpack"    ]] = require(MCMCpack    )
-loaded.package[["ncdf"        ]] = require(ncdf        )
-loaded.package[["nlme"        ]] = require(nlme        )
-loaded.package[["numDeriv"    ]] = require(numDeriv    )
-loaded.package[["PBSmapping"  ]] = require(PBSmapping  )
-loaded.package[["plotrix"     ]] = require(plotrix     )
-loaded.package[["proto"       ]] = require(proto       )
-loaded.package[["randomForest"]] = require(randomForest)
-loaded.package[["raster"      ]] = require(raster      )
-loaded.package[["rgdal"       ]] = require(rgdal       )
-loaded.package[["rgeos"       ]] = require(rgeos       )
-loaded.package[["rJava"       ]] = require(rJava       )
-loaded.package[["robustbase"  ]] = require(robustbase  )
-loaded.package[["RSEIS"       ]] = require(RSEIS       )
-loaded.package[["R.utils"     ]] = require(R.utils     )
-loaded.package[["shapefiles"  ]] = require(shapefiles  )
-loaded.package[["splancs"     ]] = require(splancs     )
-loaded.package[["sn"          ]] = require(sn          )
-loaded.package[["sp"          ]] = require(sp          )
-loaded.package[["stats4"      ]] = require(stats4      )
-loaded.package[["VoxR"        ]] = require(VoxR        )
-loaded.package[["zoo"         ]] = require(zoo         )
+loaded.package[["abind"       ]] = discreet.require(abind       )
+loaded.package[["agricolae"   ]] = discreet.require(agricolae   )
+loaded.package[["akima"       ]] = discreet.require(akima       )
+loaded.package[["beanplot"    ]] = discreet.require(beanplot    )
+loaded.package[["boot"        ]] = discreet.require(boot        )
+loaded.package[["callr"       ]] = discreet.require(callr       )
+loaded.package[["car"         ]] = discreet.require(car         )
+loaded.package[["caTools"     ]] = discreet.require(caTools     )
+loaded.package[["chron"       ]] = discreet.require(chron       )
+loaded.package[["cluster"     ]] = discreet.require(cluster     )
+loaded.package[["compiler"    ]] = discreet.require(compiler    )
+loaded.package[["devtools"    ]] = discreet.require(devtools    )
+loaded.package[["FAdist"      ]] = discreet.require(FAdist      )
+loaded.package[["fields"      ]] = discreet.require(fields      )
+loaded.package[["gbm"         ]] = discreet.require(gbm         )
+loaded.package[["gdalUtils"   ]] = discreet.require(gdalUtils   )
+loaded.package[["geoR"        ]] = discreet.require(geoR        )
+loaded.package[["gpclib"      ]] = discreet.require(gpclib      )
+loaded.package[["grDevices"   ]] = discreet.require(grDevices   )
+loaded.package[["gstat"       ]] = discreet.require(gstat       )
+loaded.package[["hdf5"        ]] = discreet.require(hdf5        )
+loaded.package[["Hmisc"       ]] = discreet.require(Hmisc       )
+loaded.package[["klaR"        ]] = discreet.require(klaR        )
+loaded.package[["kriging"     ]] = discreet.require(kriging     )
+loaded.package[["leaps"       ]] = discreet.require(leaps       )
+loaded.package[["maps"        ]] = discreet.require(maps        )
+loaded.package[["mapdata"     ]] = discreet.require(mapdata     )
+loaded.package[["maptools"    ]] = discreet.require(maptools    )
+loaded.package[["MASS"        ]] = discreet.require(MASS        )
+loaded.package[["MCMCpack"    ]] = discreet.require(MCMCpack    )
+loaded.package[["nlme"        ]] = discreet.require(nlme        )
+loaded.package[["numDeriv"    ]] = discreet.require(numDeriv    )
+loaded.package[["onls"        ]] = discreet.require(onls        )
+loaded.package[["PBSmapping"  ]] = discreet.require(PBSmapping  )
+loaded.package[["plotrix"     ]] = discreet.require(plotrix     )
+loaded.package[["pls"         ]] = discreet.require(pls         )
+loaded.package[["proto"       ]] = discreet.require(proto       )
+loaded.package[["randomForest"]] = discreet.require(randomForest)
+loaded.package[["raster"      ]] = discreet.require(raster      )
+loaded.package[["rgdal"       ]] = discreet.require(rgdal       )
+loaded.package[["rgeos"       ]] = discreet.require(rgeos       )
+loaded.package[["rlas"        ]] = discreet.require(rlas        )
+loaded.package[["robustbase"  ]] = discreet.require(robustbase  )
+loaded.package[["rworldmap"   ]] = discreet.require(rworldmap   )
+loaded.package[["RSEIS"       ]] = discreet.require(RSEIS       )
+loaded.package[["R.utils"     ]] = discreet.require(R.utils     )
+loaded.package[["shapefiles"  ]] = discreet.require(shapefiles  )
+loaded.package[["splancs"     ]] = discreet.require(splancs     )
+loaded.package[["smatr"       ]] = discreet.require(smatr       )
+loaded.package[["sn"          ]] = discreet.require(sn          )
+loaded.package[["sp"          ]] = discreet.require(sp          )
+loaded.package[["stats4"      ]] = discreet.require(stats4      )
+loaded.package[["vioplot"     ]] = discreet.require(vioplot     )
+loaded.package[["VoxR"        ]] = discreet.require(VoxR        )
+loaded.package[["zoo"         ]] = discreet.require(zoo         )
 loaded.package = unlist(loaded.package)
 if (! all(loaded.package)){
    miss = which(! loaded.package)
    cat(" You must install the following packages before using the scripts:","\n")
-   for (m in miss) cat(" -> ",names(loaded.package)[m],"\n")
+   for (m in miss) cat(" -> ",names(loaded.package)[m],"\n",sep="")
    risky = readline(" Are you sure you want to proceed [y|N]? ")
    risky = tolower(risky)
    if (! risky %in% c("y","yes")) stop("Missing packages!!!")
@@ -262,6 +293,17 @@ if (! all(loaded.package)){
 #------------------------------------------------------------------------------------------#
 envir = as.environment("package:boot")
 try(unlockBinding("grav",envir),silent=TRUE)
+#------------------------------------------------------------------------------------------#
+
+
+
+#------------------------------------------------------------------------------------------#
+#  SHADY BUSINESS...  We must unlock read.las from package rlas and replace by our         #
+#                     function, which calls rlas::read.las but returns data in a slightly  #
+#                     different format.                                                    #
+#------------------------------------------------------------------------------------------#
+envir = as.environment("package:rlas")
+try(unlockBinding("read.las",envir),silent=TRUE)
 #------------------------------------------------------------------------------------------#
 
 
@@ -308,10 +350,20 @@ try(unlockBinding("pspline",envir),silent=TRUE)
 
 
 #------------------------------------------------------------------------------------------#
+#  SHADY BUSINESS...  We must unlock theme from package ggplot2 and replace by our         #
+# function.                                                                                #
+#------------------------------------------------------------------------------------------#
+envir = as.environment("package:ggplot2")
+try(unlockBinding("theme",envir),silent=TRUE)
+#------------------------------------------------------------------------------------------#
+
+
+
+#------------------------------------------------------------------------------------------#
 #     Organise the files so we load them in the right order.                               #
 #------------------------------------------------------------------------------------------#
 at.first      = c("colour.utils.r","rconstants.r","globdims.r","unitlist.r")
-at.end        = c("iso3166.r","pft.coms.r","pmonthly_varlist.r")
+at.end        = c("iso3166.r","pft.coms.r","pmonthly_varlist.r","pcomp_varlist.r")
 myself        = c("load.everything.r")
 all.scripts   = sort(list.files(path=srcdir,pattern="\\.[RrSsQq]$"))
 back.up       = sort(list.files(path=srcdir,pattern="^[~]"))
@@ -333,20 +385,69 @@ nscripts      = length(order.scripts)
 #------------------------------------------------------------------------------------------#
 warn.orig = getOption("warn")
 options(warn=2)
-cat(" + Loading scripts from ",srcdir,"...","\n")
+cat(" + Load scripts from ",srcdir,".","\n",sep="")
 for (iscript in sequence(nscripts)){
    script.now  = order.scripts[iscript]
    full        = file.path(srcdir,script.now)
    isok        = try(source(full),silent=TRUE)
    if ("try-error" %in% is(isok)){
       options(warn=warn.orig)
-      cat("   - Script ",script.now," has bugs!  Check the errors/warnings: ","\n")
+      cat("   - Script ",script.now," has bugs!  Check the errors/warnings: ","\n",sep="")
       source(full)
       stop("Source code problem")
    }#end if
 }#end for
 options(warn=warn.orig)
 #------------------------------------------------------------------------------------------#
+
+
+
+#------------------------------------------------------------------------------------------#
+#      Check for fortran code to be loaded.                                                #
+#------------------------------------------------------------------------------------------#
+all.f90  = sort( c( list.files(path=srcdir,pattern="\\.[Ff]90$")
+                  , list.files(path=srcdir,pattern="\\.[Ff]$")
+                  )#end c
+               )#end sort
+nall.f90 = length(all.f90)
+for (if90 in sequence(nall.f90)){
+   fnow    = file.path(srcdir,all.f90[if90])
+   flib.o  = fnow
+   flib.o  = gsub(pattern = "\\.[Ff]90$",replacement=".o",x=flib.o)
+   flib.o  = gsub(pattern = "\\.[Ff]$"  ,replacement=".o",x=flib.o)
+   flib.so = fnow
+   flib.so = gsub(pattern = "\\.[Ff]90$",replacement=".so",x=flib.so)
+   flib.so = gsub(pattern = "\\.[Ff]$"  ,replacement=".so",x=flib.so)
+   flib.sl = fnow
+   flib.sl = gsub(pattern = "\\.[Ff]90$",replacement=".sl",x=flib.sl)
+   flib.sl = gsub(pattern = "\\.[Ff]$"  ,replacement=".sl",x=flib.sl)
+
+   #----- Select library. -----------------------------------------------------------------#
+   if (file.exists(flib.so)){
+      flib.sx = flib.so
+   }else if (file.exists(flib.sl)){
+      flib.sx = flib.sl
+   }else{
+      #----- This is guaranteed to fail, so it will force recompilation. ------------------#
+      flib.sx = flib.o
+      #------------------------------------------------------------------------------------#
+   }#end if (file.exists(flib.so))
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #----- Check whether dynamic library can be loaded.  In case not, recompile. -----------#
+   dummy = try(dyn.load(flib.sx),silent=TRUE)
+   if ("try-error" %in% is(dummy)){
+      dummy = if (file.exists(flib.so)){file.remove(flib.so)}else{character(0)}
+      dummy = if (file.exists(flib.sl)){file.remove(flib.sl)}else{character(0)}
+      dummy = if (file.exists(flib.o )){file.remove(flib.o )}else{character(0)}
+      dummy = rcmd(cmd="SHLIB",cmdargs=fnow,libpath=srcdir)
+   }#end if ("try-error" %in% is(dummy))
+   #---------------------------------------------------------------------------------------#
+}#end for (if90 in sequence(nall.f90))
+#------------------------------------------------------------------------------------------#
+
 
 
 #------------------------------------------------------------------------------------------#

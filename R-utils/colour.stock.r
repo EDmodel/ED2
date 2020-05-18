@@ -3,31 +3,100 @@
 #     This function creates a vector with colours for plots that are mostly CB friendly.   #
 #  The quality decays as the number of lines increases.                                    #
 #------------------------------------------------------------------------------------------#
-colour.stock <<- function(n){
+colour.stock <<- function(n,alt=FALSE,shf=alt,pvf=3){
    #----- Build the colour stock.  Add pale and dark versions of the default colours. -----#
-   cstock = c("#3B24B3","#A3CC52","#E65C17"
-             ,"#990F0F","#306614","#2996CC"
-             ,"#B49ED2","#F5C858","#00F3FB"
-             )#end c
-   pale   = round(0.5 * (col2rgb(cstock) + 255))
-   pale   = RGB(R=pale[1,],G=pale[2,],B=pale[3,])
-   dark   = round(0.5 * col2rgb(cstock))
-   dark   = RGB(R=dark[1,],G=dark[2,],B=dark[3,])
-   cstock = c(cstock,pale,dark)
+   if (alt){
+      cstock = c("#811F9E","#2BD2DB","#F87856"
+                ,"#CB003D","#107C92","#1BA2F7"
+                ,"#CCCA3D","#9ECC8F","#F9E5C0"
+                ,"#74B236","#B2CCFF","#A67DB2"
+                )#end c
+   }else{
+      cstock = c("#332288","#56B4E9","#E69F00"
+                ,"#882255","#009E73","#0072B2"
+                ,"#F0E442","#CC79A7","#D55E00"
+                ,"#060606","#DDCC77","#785EF0"
+                )#end c
+   }#end if (alt)
+   nstock.base = length(cstock)
+
+
 
    #---------------------------------------------------------------------------------------#
    #    Make sure does not exceed the maximum number of colours.                           #
    #---------------------------------------------------------------------------------------#
-   if (n > length(cstock)){
+   if (n > (6 * nstock.base)){
       cat("-----------------------------------------","\n",sep="")
       cat(" Provided n      = ",n                    ,"\n",sep="")
-      cat(" Maximum allowed = ",length(cstock)       ,"\n",sep="")
+      cat(" Maximum allowed = ",6*nstock.base        ,"\n",sep="")
       cat("-----------------------------------------","\n",sep="")
       stop("Either reduce n or add more colours to the colour stock")
-   }else{
-      ans = cstock[sequence(n)]
-      return(ans)
-   }#end if
+   }#end if (n > (6 * length(cstock)))
+   #---------------------------------------------------------------------------------------#
+
+
+   #---------------------------------------------------------------------------------------#
+   #    Make pvf is valid.                                                                 #
+   #---------------------------------------------------------------------------------------#
+   if (pvf < 1.01){
+      cat("-----------------------------------------","\n",sep="")
+      cat(" Provided pvf    = ",pvf                  ,"\n",sep="")
+      cat(" Minimum allowed = ",1.01                 ,"\n",sep="")
+      cat("-----------------------------------------","\n",sep="")
+      stop("Increase pvf")
+   }#end if (pvf < 1.01)
+   #---------------------------------------------------------------------------------------#
+
+
+   #---------------------------------------------------------------------------------------#
+   #       Large number of colours, interpolate base.                                      #
+   #---------------------------------------------------------------------------------------#
+   if (n > (3 * nstock.base)){
+      midst        = col2hsv(cstock)
+      o            = order(midst[1,])
+      midst        = midst[,o]
+      lastcol      = midst[,1,drop=FALSE]
+      lastcol[1,]  = lastcol[1,] + 1.0
+      morecols     = t(apply(X=cbind(midst,lastcol),MARGIN=1,FUN=mid.points))
+      morecols[1,] = morecols[1,] %% 1.
+      morecols     = hsv(h=morecols[1,],s=morecols[2,],v=morecols[3,])
+      cstock       = sample(c(cstock,morecols))
+   }else if (shf){
+      cstock       = sample(cstock)
+   }#end if 
+   #---------------------------------------------------------------------------------------#
+   
+   #---------------------------------------------------------------------------------------#
+   #    Find factors to push closer to zero or one.                                        #
+   #---------------------------------------------------------------------------------------#
+   cwgt  = (pvf - 1.0) / pvf
+   czero = 0.
+   cone  = 1.0 / pvf
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #    Expand data to include pale and darker colours.                                    #
+   #---------------------------------------------------------------------------------------#
+   hsv0       = col2hsv(cstock)
+   hsv1       = hsv0
+   hsv1[2,]   = ifelse(test=hsv1[2,] > 0.5,yes=czero+cwgt*hsv1[2,],no=cone +cwgt*hsv1[2,])
+   hsv1[3,]   = ifelse(test=hsv1[3,] > 0.5,yes=cone +cwgt*hsv1[3,],no=czero+cwgt*hsv1[3,])
+   hsv2       = hsv0
+   hsv2[2,]   = ifelse(test=hsv2[2,] > 0.5,yes=cone +cwgt*hsv2[2,],no=czero+cwgt*hsv2[2,])
+   hsv2[3,]   = ifelse(test=hsv2[3,] > 0.5,yes=czero+cwgt*hsv2[3,],no=cone +cwgt*hsv2[3,])
+   alt1       = hsv(h=hsv1[1,],s=hsv1[2,],v=hsv1[3,])
+   alt2       = hsv(h=hsv2[1,],s=hsv2[2,],v=hsv2[3,])
+   cstock.new = c(cstock,alt1,alt2)
+   hsv.new    = round(rbind(t(hsv0),t(hsv1),t(hsv2)),2)
+   #---------------------------------------------------------------------------------------#
+
+   #---------------------------------------------------------------------------------------#
+   #    Make sure does not exceed the maximum number of colours.                           #
+   #---------------------------------------------------------------------------------------#
+   ans = cstock.new[sequence(n)]
+   return(ans)
    #---------------------------------------------------------------------------------------#
 }#end colour.stock
 #==========================================================================================#
@@ -64,5 +133,30 @@ pch.stock <<- function(n){
    }#end if
    #---------------------------------------------------------------------------------------#
 }#end pch.stock
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
+#     This function creates a vector with pch for plots to make it easier for CB folks.    #
+#  The quality decays as the number of lines increases.                                    #
+#------------------------------------------------------------------------------------------#
+lty.stock <<- function(n){
+   #----- Build the line type stock. ------------------------------------------------------#
+   lstock = c("solid","longdash","dotdash","dotted","twodash","dashed")
+   #---------------------------------------------------------------------------------------#
+
+   #---------------------------------------------------------------------------------------#
+   #    Repeat line patterns until the sought size is reached.                             #
+   #---------------------------------------------------------------------------------------#
+   ans = rep(x=lstock,times= ceiling(n/length(lstock)))
+   ans = ans[sequence(n)]
+   return(ans)
+   #---------------------------------------------------------------------------------------#
+}#end lty.stock
 #==========================================================================================#
 #==========================================================================================#

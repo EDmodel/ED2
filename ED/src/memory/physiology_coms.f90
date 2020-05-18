@@ -29,6 +29,8 @@
 ! - C92 - Collatz, G. J., M. Ribas-Carbo, J. A. Berry, 1992: Coupled photosynthesis-       !
 !         stomatal conductance model for leaves of C4 plants.  Aust. J. Plant Physiol.,    !
 !         19, 519-538.                                                                     !
+! - C00 - von Caemmerer, S., 2000: Biochemical models of leaf photosynthesis. Number 2 in  !
+!         Techniques in Plant Sciences. CSIRO Publishing, Collingwood, VIC, Australia.     !
 ! - E78 - Ehleringer, J. R., 1978: Implications of quantum yield differences on the        !
 !         distributions of C3 and C4 grasses.  Oecologia, 31, 255-267.                     !
 !                                                                                          !
@@ -47,21 +49,26 @@ module physiology_coms
 
    integer                :: iphysiol 
    !---------------------------------------------------------------------------------------!
-   !<IPHYSIOL --  This variable will determine the functional form that will control how
-   !< the various parameters will vary with temperature, and how the CO2
-   !< compensation point for gross photosynthesis (Gamma*) will be found.
-   !< Options are:\n
-   !<
-   !< 0 -- Original ED-2.1, we use the "Arrhenius" function as in Foley et al. (1996) and   \n
-   !<      Moorcroft et al. (2001).  Gamma* is found using the parameters for tau as in     \n
-   !<      Foley et al. (1996).                                                             \n
-   !< 1 -- Modified ED-2.1.  In this case Gamma* is found using the Michaelis-Mentel        \n
-   !<      coefficients for CO2 and O2, as in Farquhar et al. (1980) and in CLM.            \n
-   !< 2 -- Collatz et al. (1991).  We use the power (Q10) equations, with Collatz et al.    \n
-   !<      parameters for compensation point, and the Michaelis-Mentel coefficients.  The   \n
-   !<      correction for high and low temperatures are the same as in Moorcroft et al.     \n
-   !<      (2001).                                                                          \n
-   !< 3 -- Same as 2, except that we find Gamma* as in Farquhar et al. (1980) and in CLM.   \n
+   !< IPHYSIOL --  This variable will determine the functional form that will control how  
+   !<              the various parameters will vary with temperature, and how the CO2      
+   !<              compensation point for gross photosynthesis (Gamma*) will be found.     
+   !<              Options are:                                                            
+   !<                                                                                      
+   !< 0 -- Original ED-2.1, we use the "Arrhenius" function as in Foley et al. (1996) and  
+   !<      Moorcroft et al. (2001).  Gamma* is found using the parameters for tau as in    
+   !<      Foley et al. (1996).                                                            
+   !< 1 -- Similar to case 0, but we use Jmax to determine the RubP-regeneration (aka      
+   !<      light) limitation case, account for the triose phosphate utilisation limitation 
+   !<      case (C3), and use the Michaelis-Mentel coefficients along with other parameters
+   !<      from von Caemmerer (2000).                                                      
+   !< 2 -- Collatz et al. (1991).  We use the power (Q10) equations, with Collatz et al.   
+   !<      parameters for compensation point, and the Michaelis-Mentel coefficients.  The  
+   !<      correction for high and low temperatures are the same as in Moorcroft et al.    
+   !<      (2001).                                                                         
+   !< 3 -- Similar to case 2, but we use Jmax to determine the RubP-regeneration (aka      
+   !<      light) limitation case, account for the triose phosphate utilisation limitation 
+   !<      case (C3), and use the Michaelis-Mentel coefficients along with other parameters
+   !<      from von Caemmerer (2000).                                                      
    !< 4 -- Use "Arrhenius" function as in Harley et al. (1991). This has to be run with     \n
    !<      ISTOMATA_SCHEME = 1
    !---------------------------------------------------------------------------------------!
@@ -78,27 +85,35 @@ module physiology_coms
 
    integer               :: h2o_plant_lim 
    !---------------------------------------------------------------------------------------!
-   !< H2O_PLANT_LIM -- this determines whether plant photosynthesis can be limited by      \n
-   !<                  soil moisture, the FSW, defined as FSW = Supply / (Demand + Supply).\n
-   !<                                                                                      \n
-   !<                  Demand is always the transpiration rates in case soil moisture is   \n
-   !<                  not limiting (the psi_0 term times LAI).  The supply is determined  \n
-   !<                  by Kw * nplant * Broot * Available_Water, and the definition of     \n
-   !<                  available water changes depending on H2O_PLANT_LIM:                 \n
-   !<                  0.  Force FSW = 1 (effectively available water is infinity).        \n
-   !<                  1.  Available water is the total soil water above wilting point,    \n
-   !<                      integrated across all layers within the rooting zone.           \n
-   !<                  2.  Available water is the soil water at field capacity minus       \n
-   !<                      wilting point, scaled by the so-called wilting factor:          \n
-   !<                      (psi(k) - (H - z(k)) - psi_wp) / (psi_fc - psi_wp)              \n
-   !<                      where psi is the matric potentital at layer k, z is the layer   \n
-   !<                      depth, H it the crown height and psi_fc and psi_wp are the      \n
-   !<                      matric potentials at wilting point and field capacity.          \n
-   !<                  3.  Use leaf water potential to modify fsw following Powell et al.  \n
-   !<                      2017. Need to set PLANT_HYDRO_SCHEME to non-zero values         \n
-   !<                  4.  Use leaf water potential to modify Optimization-based stomatal  \n
-   !<                      model following Xu et al. 2016. Need to set PLANT_HYDRO_SCHEME  \n
-   !<                      to non-zero values and set ISTOMATA_SCHEME to 1.                \n
+   !< H2O_PLANT_LIM -- this determines whether plant photosynthesis can be limited by      
+   !<                  soil moisture, the FSW, defined as FSW = Supply / (Demand + Supply).
+   !<                                                                                      
+   !< Demand is always the transpiration rates in case soil moisture is not limiting (the  
+   !< psi_0 term times LAI).  The supply is determined by                                  
+   !<                                                                                      
+   !< Kw * nplant * Broot * Available_Water,                                               
+   !<                                                                                      
+   !< and the definition of available water changes depending on H2O_PLANT_LIM:            
+   !< 0.  Force FSW = 1 (effectively available water is infinity).                         
+   !< 1.  (Legacy) Available water is the total soil water above wilting point, integrated 
+   !<     across all layers within the rooting zone.                                       
+   !< 2.  (ED-2.2 default) Available water is the soil water at field capacity minus wilt- 
+   !<     ing point, scaled by the so-called wilting factor:                               
+   !<                                                                                      
+   !<          (psi(k) - (H - z(k)) - psi_wp) / (psi_fc - psi_wp)                          
+   !<                                                                                      
+   !<     where psi is the matric potentital at layer k, z is the layer depth, H it the    
+   !<     crown height and psi_fc and psi_wp are the matric potentials at wilting point    
+   !<     and field capacity.                                                              
+   !< 3.  (Beta) Use leaf water potential to modify fsw following Powell et al. (2017).    
+   !<     This setting requires PLANT_HYDRO_SCHEME to be non-zero.                         
+   !< 4.  (Beta) Use leaf water potential to modify the optimization-based stomatal model  
+   !<     following Xu et al. (2016).  This setting requires PLANT_HYDRO_SCHEME to be      
+   !<     non-zero values and set ISTOMATA_SCHEME to 1.                                    
+   !< 5.  (Beta) Similar to 2, but the water supply directly affects gsw, as opposed to    
+   !<     fsw.  This is done by making D0 a function of soil moisture.  Note that this     
+   !<     still uses Kw but Kw must be significantly lower, at least for tropical trees    
+   !<     (1/15 - 1/10 of the original).                                                   
    !---------------------------------------------------------------------------------------!
 
    integer               :: istruct_growth_scheme
@@ -126,10 +141,6 @@ module physiology_coms
    !<  Christofferson et al. 2016 GMD\n
    !<                       2. Track plant hydrodynamics using parameters from
    !<  Xu et al. 2016 New Phytologist\n
-   !<                      -1. Same as 1 but leaf/wood heat capacity does not
-   !< change with internal water content.
-   !<                      -2. Same as 2 but leaf/wood heat capacity does not
-   !< change with internal water content.
    !---------------------------------------------------------------------------------------!
 
    integer               :: trait_plasticity_scheme
@@ -146,6 +157,7 @@ module physiology_coms
    !<                           -1. Same as 1 but use height to adjust SLA\n
    !<                           -2. Same as 2 but use height to adjust SLA\n
    !---------------------------------------------------------------------------------------!
+
 
 
    !---------------------------------------------------------------------------------------!
@@ -219,14 +231,6 @@ module physiology_coms
    !                  (1.0 = default).                                                     !
    ! GROWTHRESP    -- The actual growth respiration factor (C3/C4 tropical PFTs only).     !
    !                  (1.0 = default).                                                     !
-   ! LWIDTH_GRASS  -- Leaf width for grasses, in metres.  This controls the leaf boundary  !
-   !                  layer conductance (gbh and gbw).                                     !
-   ! LWIDTH_BLTREE -- Leaf width for trees, in metres.  This controls the leaf boundary    !
-   !                  layer conductance (gbh and gbw).  This is applied to broadleaf trees !
-   !                  only.                                                                !
-   ! LWIDTH_NLTREE -- Leaf width for trees, in metres.  This controls the leaf boundary    !
-   !                  layer conductance (gbh and gbw).  This is applied to conifer trees   !
-   !                  only.                                                                !
    ! Q10_C3        -- Q10 factor for C3 plants (used only if IPHYSIOL is set to 2 or 3).   !
    ! Q10_C4        -- Q10 factor for C4 plants (used only if IPHYSIOL is set to 2 or 3).   !
    !---------------------------------------------------------------------------------------!
@@ -249,9 +253,6 @@ module physiology_coms
    real(kind=4)               :: klowco2in
    real(kind=4)               :: rrffact
    real(kind=4)               :: growthresp
-   real(kind=4)               :: lwidth_grass
-   real(kind=4)               :: lwidth_bltree
-   real(kind=4)               :: lwidth_nltree
    real(kind=4)               :: q10_c3
    real(kind=4)               :: q10_c4
    !---------------------------------------------------------------------------------------!
@@ -270,16 +271,17 @@ module physiology_coms
    !----- Bounds for the new C3 solver. ---------------------------------------------------!
    real(kind=4) :: c34smin_lint_co2 ! Minimum carbon dioxide concentration      [  mol/mol]
    real(kind=4) :: c34smax_lint_co2 ! Maximum carbon dioxide concentration      [  mol/mol]
-   real(kind=4) :: c34smax_gsw      ! Maximum stom. conductance for water vap.  [ mol/m²/s]
+   real(kind=4) :: c34smax_gsw      ! Maximum stom. conductance for water vap.  [ mol/m2/s]
    !---------------------------------------------------------------------------------------!
 
 
 
    !---------------------------------------------------------------------------------------!
-   !     This is the minimum threshold for the photosynthetically active radiation, in     !
-   ! µmol/m²/s to consider non-night time conditions (day time or twilight).               !
+   !     Upper limit for light compensation point, usually set when the minimum electron   !
+   ! transport exceeds Jm (this should occur very rarely, typically when temperature is    !
+   ! exceedingly high).                                                                    !
    !---------------------------------------------------------------------------------------!
-   real(kind=4) :: par_twilight_min ! Minimum non-nocturnal PAR.                [ mol/m²/s]
+   real(kind=4) :: par_lightcompp_max
    !---------------------------------------------------------------------------------------!
 
 
@@ -310,7 +312,7 @@ module physiology_coms
 
    !---------------------------------------------------------------------------------------!
    !     This parameter is from F80, and is the ratio between the turnover number for the  !
-   ! oxylase function and the turnover number for the carboxylase function.                !
+   ! oxygenase function and the turnover number for the carboxylase function.              !
    !---------------------------------------------------------------------------------------!
    real(kind=4) :: kookc
    !---------------------------------------------------------------------------------------!
@@ -393,12 +395,17 @@ module physiology_coms
    real(kind=8) :: ko2_hor8
    real(kind=8) :: ko2_q108
    real(kind=8) :: klowco28
-   real(kind=8) :: par_twilight_min8
+   real(kind=8) :: par_lightcompp_max8
    real(kind=8) :: o2_ref8
    real(kind=8) :: qyield08
    real(kind=8) :: qyield18
    real(kind=8) :: qyield28
    real(kind=8) :: ehleringer_alpha0c8
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !----- Parameters for trait plasticity. ------------------------------------------------!
    !---------------------------------------------------------------------------------------!
 
 end module physiology_coms

@@ -260,6 +260,8 @@ module soil_coms
    integer      :: infiltration_method ! Infiltration scheme (for rk4_derivs)    [     0|1]
    real(kind=4) :: freezecoef          ! Coeff. for infiltration of frozen water [     ---]
    real(kind=8) :: freezecoef8         ! Coeff. for infiltration of frozen water [     ---]
+   real(kind=4) :: hydcond_min         ! Coeff. for infiltration of frozen water [     m/s]
+   real(kind=8) :: hydcond_min8        ! Coeff. for infiltration of frozen water [     m/s]
    !---------------------------------------------------------------------------------------!
 
 
@@ -268,7 +270,6 @@ module soil_coms
    !     Miscellaneous constants.                                                          !
    !---------------------------------------------------------------------------------------!
    integer           , parameter :: pctlcon = 1
-   integer           , parameter :: nvgcon = 7 ! I don't think it is been used...
    !----- Constants from  equation E27 (Medvigy 2007) -------------------------------------!
    real(kind=8), dimension(6), parameter :: ss = (/ 1.093d-3, 2.800d-2, 3.000d-2           &
                                                   , 3.030d-4,-1.770d-7, 2.250d-9 /) 
@@ -344,6 +345,7 @@ module soil_coms
       real(kind=4) :: slden      ! "Dry" soil density (porosity)                 [   kg/m3]
       real(kind=4) :: soilld     ! Soil moist. below which drought phen. happens [   m3/m3]
       real(kind=4) :: soilfr     ! Soil moist. below which fires may happen      [   m3/m3]
+      real(kind=4) :: slpotcp    ! Water potential for dry soil                  [       m]
       real(kind=4) :: slpotwp    ! Water potential for wilting point             [       m]
       real(kind=4) :: slpotfc    ! Water potential for field capacity            [       m]
       real(kind=4) :: slpotld    ! Water pot. below which drought phen happens   [       m]
@@ -371,6 +373,7 @@ module soil_coms
       real(kind=8) :: slden      ! "Dry" soil density (porosity)                 [   kg/m3]
       real(kind=8) :: soilld     ! Soil moist. below which drought phen. happens [   m3/m3]
       real(kind=8) :: soilfr     ! Soil moist. below which fires may happen      [   m3/m3]
+      real(kind=8) :: slpotcp    ! Water potential for dry soil                  [       m]
       real(kind=8) :: slpotwp    ! Water potential for wilting point             [       m]
       real(kind=8) :: slpotfc    ! Water potential for field capacity            [       m]
       real(kind=8) :: slpotld    ! Water pot. below which drought phen happens   [       m]
@@ -727,7 +730,9 @@ module soil_coms
 
 
       !----- Find the hydraulic conductivity. ---------------------------------------------!
-      hydr_conduct = fzcorr * slcons1(k,nsoil) * relmoist ** (2. * soil(nsoil)%slbs + 3.)
+      hydr_conduct = fzcorr                                                                &
+                   * max( hydcond_min                                                      &
+                        , slcons1(k,nsoil) * relmoist ** (2. * soil(nsoil)%slbs + 3.) )
       !------------------------------------------------------------------------------------!
 
 
@@ -774,8 +779,9 @@ module soil_coms
 
 
       !----- Find the hydraulic conductivity. ---------------------------------------------!
-      hydr_conduct8 = fzcorr * slcons18(k,nsoil)                                           &
-                    * relmoist ** (2.d0 * soil8(nsoil)%slbs + 3.d0)
+      hydr_conduct8 = fzcorr                                                               &
+                    * max( hydcond_min8 , slcons18(k,nsoil) * relmoist                     &
+                                        ** (2.d0 * soil8(nsoil)%slbs + 3.d0) )
       !------------------------------------------------------------------------------------!
 
 

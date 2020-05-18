@@ -269,6 +269,14 @@ Module rconstants
    !---------------------------------------------------------------------------------------!
 
 
+   !---------------------------------------------------------------------------------------!
+   !      These terms are used to convert extensive enthalpy and water to temperature.     !
+   !---------------------------------------------------------------------------------------!
+   real, parameter :: cph2o_tscvap = cph2o * tsupercool_vap
+   real, parameter :: cpdiff_epim1 = cph2o - epi * cpdry
+   !---------------------------------------------------------------------------------------!
+
+
 
    !---------------------------------------------------------------------------------------!
    !     Minimum temperature for computing the condensation effect of temperature on       !
@@ -316,6 +324,28 @@ Module rconstants
    !---------------------------------------------------------------------------------------!
    real, parameter :: huge_num  = 1.e+19
    real, parameter :: tiny_num  = 1.e-19
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     These are useful to test numbers with a safe margin.                              !
+   !---------------------------------------------------------------------------------------!
+   real, parameter :: almost_zero = epsilon(1.)
+   real, parameter :: almost_one  = 1. - almost_zero
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Tolerance for truncation errors.  "s" are the strict tolerance (literally the     !
+   ! machine epsilon), whereas the "r" are the relaxed tolerance (the square root of the   !
+   ! strict tolerance).                                                                    !
+   !---------------------------------------------------------------------------------------!
+   real(kind=4), parameter :: s_tol_trunc  = epsilon(1.)
+   real(kind=4), parameter :: r_tol_trunc  = 100. * s_tol_trunc
+   real(kind=8), parameter :: s_tol_trunc8 = epsilon(1.d0)
+   real(kind=8), parameter :: r_tol_trunc8 = 1.d2 * s_tol_trunc8
    !---------------------------------------------------------------------------------------!
 
 
@@ -454,6 +484,8 @@ Module rconstants
    real(kind=8), parameter :: lnexp_max8      = dble(lnexp_max     )
    real(kind=8), parameter :: huge_num8       = dble(huge_num      )
    real(kind=8), parameter :: tiny_num8       = dble(tiny_num      )
+   real(kind=8), parameter :: almost_zero8    = dble(almost_zero   )
+   real(kind=8), parameter :: almost_one8     = dble(almost_one    )
    real(kind=8), parameter :: euler_gam8      = dble(euler_gam     )
    real(kind=8), parameter :: mol_2_umol8     = dble(mol_2_umol    )
    real(kind=8), parameter :: umol_2_mol8     = dble(umol_2_mol    )

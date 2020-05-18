@@ -51,15 +51,16 @@ subroutine ed_filelist(fnames,file_prefix,nfile)
 
 
 
-   !----- Determine the files based on the prefix -----------------------------------------!
-   write (unit=*,fmt='(a,1x,a)') ' [-] filelist_f: Checking prefix: ',trim(file_prefix)
-   !---------------------------------------------------------------------------------------!
-
 
 
    !----- Find the length of the prefix. --------------------------------------------------!
    iprelen = len_trim(file_prefix)
    if(iprelen == 0) iprelen=len(file_prefix)
+   !---------------------------------------------------------------------------------------!
+
+   !----- Determine the files based on the prefix -----------------------------------------!
+   write (unit=*,fmt='(a,1x,a )') ' [-] filelist_f: Checking prefix: ',trim(file_prefix)
+   write (unit=*,fmt='(a,1x,i5)') '                 Prefix length:   ',iprelen
    !---------------------------------------------------------------------------------------!
 
 
@@ -132,7 +133,11 @@ subroutine ed_filelist(fnames,file_prefix,nfile)
    !      Print the first 10 files on screen, so the user can check whether it makes sense !
    ! or not.                                                                               !
    !---------------------------------------------------------------------------------------!
-   write (unit=*,fmt='(a)') ' +  Showing first 10 files:'
+   if (n > 10) then
+      write (unit=*,fmt='(a,i5,a)') ' +  Showing first 10 files (out of ',n,'):'
+   else
+      write (unit=*,fmt='(a,i5,a)') ' +  Showing all ',n,' files:'
+   end if
    do nf=1,n
       fnames(nf) = trim(filelist(indices(nf):indices(nf+1)-1))
 

@@ -234,6 +234,13 @@ subroutine copy_atm2lsm(ifm,init)
                                   + radiate_g(ifm)%par_beam    (i,j) )
                end if
                !---------------------------------------------------------------------------!
+            case (5)
+               !----- Split radiation based on clearness index. ---------------------------!
+               call short_bdown_clearidx(radiate_g(ifm)%rshort_diffuse(i,j)                &
+                                        ,radiate_g(ifm)%cosz(i,j),par_beam(i,j)            &
+                                        ,par_diff(i,j),nir_beam(i,j),nir_diff(i,j)         &
+                                        ,rshortd(i,j) )
+               !---------------------------------------------------------------------------!
             end select
             !------------------------------------------------------------------------------!
          end do

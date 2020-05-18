@@ -71,6 +71,10 @@ module phenology_coms
    !                     to the same polygon, even if they are in different sites.  They   !
    !                     can't go outside their original polygon, though.  This is the     !
    !                     same as option 1 if there is only one site per polygon.           !
+   !                 3.  Similar to 2, but reproduction allocation for tropical trees is   !
+   !                     assumed to be an asymptote as a function of height, following one !
+   !                     of the functional forms proposed by Wenk and Falster (2015). This !
+   !                     is experimental, use it at your own risk.                         !
    !---------------------------------------------------------------------------------------!
    integer                 :: repro_scheme
    !---------------------------------------------------------------------------------------!
@@ -144,6 +148,23 @@ module phenology_coms
    ! and nitrogen and put it into storage.                                                 !
    !---------------------------------------------------------------------------------------!
    real    :: retained_carbon_fraction
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Factor that controls the fine-root "elongation factor" relative to leaf           !
+   ! elongation factor.  This is currently applied only for PFTs with phenology = 5.       !
+   !                                                                                       !
+   ! e_root = (e_leaf + root_phen_factor - 1) / root_phen_factor.                          !
+   !                                                                                       !
+   ! root_phen_factor > 1.  Fine roots will senesce more slowly than leaf shedding.        !
+   ! root_phen_factor = 1.  Fine root elongation factor will be the same as for leaves.    !
+   ! root_phen_factor < 1.  Fine roots will senesce more rapidly than leaf shedding.       !
+   ! root_phen_factor = 0.  Special flag to disable fine-root phenology.                   !
+   ! root_phen_factor < 0.  Non-sensical, currently assume the same as 0.                  !
+   !---------------------------------------------------------------------------------------!
+   real    :: root_phen_factor
    !---------------------------------------------------------------------------------------!
 
 
@@ -240,8 +261,12 @@ module phenology_coms
 
 
    !---------------------------------------------------------------------------------------!
-   !      Variables controlling the light phenology as in Kim et al. (20??)                !
+   !      Variables controlling the light phenology as in Kim et al. (2012)                !
    !---------------------------------------------------------------------------------------!
+   !----- Radiation window for running average [days] -------------------------------------!
+   real :: radavg_window
+   !----- Turnover weight, the inverse of the window. -------------------------------------!
+   real :: radavg_wgt
    !----- Turnover window for running average [days] --------------------------------------!
    real :: turnamp_window
    !----- Turnover weight, the inverse of the window. -------------------------------------!
@@ -273,6 +298,10 @@ module phenology_coms
    real :: vm0_slope
    real :: vm0_amp
    real :: vm0_min
+   !----- SLA window for running average [days]. ------------------------------------------!
+   real :: sla_window
+   !----- SLA weight, the inverse of the window. ------------------------------------------!
+   real :: sla_wgt
    !---------------------------------------------------------------------------------------!
 
 end module phenology_coms

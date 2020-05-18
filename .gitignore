@@ -3,7 +3,7 @@
 # ignore output files
 *.o
 *.a
-ED/build/ed_2.1-*
+ED/build/ed_2.?-*
 .nfs*
 
 # ignore backup files
@@ -29,6 +29,7 @@ Ramspost/*/bin/*.f90
 Ramspost/*/bin/*.F90
 Ramspost/*/bin/*.c
 RAPP/*/bin/dependency.mk
+RAPP/*/bin/include.mk
 RAPP/*/bin/*.mod
 RAPP/*/bin/*.f90
 RAPP/*/bin/*.F90
@@ -142,9 +143,10 @@ ED/build/bin/configure
 ED/build/rad_param.data
 ED/slurmdbg
 R-utils/read.q.temporary.r
-
+ED/m61build
 #Manfredo ignores
 .*
+!.github/
 !.gitignore
 !.travis.yml
 !.gitattributes
@@ -159,3 +161,5 @@ ED/build/thermal_sums/*
 ED/build/ED2IN*
 ED/build/allom_param.txt
 ED/build/pft_sizes.txt
+R-utils/quick.template.r
+R-utils/read.q.quick.r

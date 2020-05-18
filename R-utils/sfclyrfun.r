@@ -3,6 +3,32 @@
 #    Some global dimensions.                                                               #
 #------------------------------------------------------------------------------------------#
 
+
+
+#------------------------------------------------------------------------------------------#
+# ISFCLYRM -- Similarity theory model.  The model that computes u*, T*, etc...             #
+# 1.  (Legacy) BRAMS default, based on Louis (1979, Boundary-Layer Meteorol.).  It uses    #
+#     empirical relations to estimate the flux based on the bulk Richardson number.        #
+#                                                                                          #
+#       All models below use an interative method to find z/L, and the only change is the  #
+# functional form of the psi functions.                                                    #
+#                                                                                          #
+# 2.  (Legacy) Oncley and Dudhia (1995) model, based on MM5.                               #
+# 3.  (ED-2.2 default) Beljaars and Holtslag (1991) model. Similar to 2, but it uses an    #
+#     alternative method for the stable case that mixes more than the OD95.                #
+# 4.  (Beta) CLM-based (Oleson et al. 2013, NCAR/TN-503+STR).  Similar to options  2 and   #
+#     3, but it uses special functions to deal with very stable and very stable cases.  It #
+#     also accounts for different roughness lengths between momentum and heat.             #
+#------------------------------------------------------------------------------------------#
+if ("isfclyrm" %in% ls()){
+   isfclyrm <<- isfclyrm
+}else{
+   isfclyrm <<- 4
+}#end if
+#------------------------------------------------------------------------------------------#
+
+
+
 #----- Conversion for vegetation height. --------------------------------------------------#
 vh2vr      <<- 0.13    # Vegetation height => roughness
 vh2dh      <<- 0.63    # Vegetation height => 0-plane displacement height
@@ -28,15 +54,6 @@ bb         <<- 5.0
 csm        <<- 7.5
 csh        <<- 5.0
 dd         <<- 5.0
-#------------------------------------------------------------------------------------------#
-
-
-
-
-
-#----- Global constants. ------------------------------------------------------------------#
-z0moz0h    <<-  1.
-z0hoz0m    <<-  1. / z0moz0h 
 #------------------------------------------------------------------------------------------#
 
 
@@ -92,12 +109,12 @@ psihc.uh  <<- 0.
 #     This function computes the correction function for non-neutral conditions for        #
 # momentum.                                                                                #
 #------------------------------------------------------------------------------------------#
-psim =  function(method,zeta){
+psim <<- function(zeta){
 
-   if (method == 2 | method == 3){
+   if (isfclyrm == 2 | isfclyrm == 3){
       stab  = zeta >= 0.
       unst  = zeta <  0.
-   }else if (method == 4){
+   }else if (isfclyrm == 4){
       vuns  = zeta <  zetac.um
       unst  = zeta <  0        & zeta >= zetac.um
       stab  = zeta >= 0        & zeta <= zetac.sm
@@ -111,18 +128,18 @@ psim =  function(method,zeta){
    x[stab]  =  zeta[stab]
    x[unst]  =  (1.0-gamm*zeta[unst])^0.25
 
-   if (method == 2){
+   if (isfclyrm == 2){
       psimloc[stab] = - beta.s * zeta[stab]
       psimloc[unst] = ( log(0.125*(1.0+x[unst])*(1.0+x[unst])*(1.0+x[unst]*x[unst])) 
                       - 2.0 * atan(x[unst]) + 0.5 * pi)
 
-   }else if (method == 3){
+   }else if (isfclyrm == 3){
       psimloc[stab] = ( abh * zeta[stab]
                       + bbh * (zeta[stab] - cbh/dbh) * exp(-dbh*zeta[stab]) 
                       + bbh * cbh / dbh )
       psimloc[unst] = ( log(0.125*(1.0+x[unst])*(1.0+x[unst])*(1.0+x[unst]*x[unst])) 
                       - 2.0 * atan(x[unst]) + 0.5 * pi )
-   }else if (method == 4){
+   }else if (isfclyrm == 4){
       psimloc[vsta] = ( (1.0 - beta.vs) * log(zeta[vsta]/zetac.sm)
                       + (1.0 - beta.s ) * zetac.sm - zeta[vsta] )
       psimloc[stab] = - beta.s * zeta[stab]
@@ -140,7 +157,7 @@ psim =  function(method,zeta){
    }#end if
 
    return(psimloc)
-} # end function
+} # end function psim
 #==========================================================================================#
 #==========================================================================================#
 
@@ -154,12 +171,12 @@ psim =  function(method,zeta){
 #     This function computes the correction function for non-neutral conditions for        #
 # heat.                                                                                    #
 #------------------------------------------------------------------------------------------#
-psih =  function(method,zeta){
+psih <<-  function(zeta){
 
-   if (method == 2 | method == 3){
+   if (isfclyrm == 2 | isfclyrm == 3){
       stab  = zeta >= 0.
       unst  = zeta <  0.
-   }else if (method == 4){
+   }else if (isfclyrm == 4){
       vuns  = zeta <  zetac.uh
       unst  = zeta <  0        & zeta >= zetac.uh
       stab  = zeta >= 0        & zeta <= zetac.sh
@@ -172,17 +189,17 @@ psih =  function(method,zeta){
    y[stab]  =  zeta[stab]
    y[unst]  =  (1.0-gamh*zeta[unst])^0.50
 
-   if (method == 2){
+   if (isfclyrm == 2){
       psihloc[stab] =  - beta.s * zeta[stab]
       psihloc[unst] =  log(0.25*(1.0+y[unst])*(1.0+y[unst]))
 
-   }else if(method == 3){
+   }else if(isfclyrm == 3){
       psihloc[stab] =  ( 1. - (1. + abh * ebh * zeta[stab])^fbh
                        + bbh *(zeta[stab] - cbh / dbh) * exp(-dbh*zeta[stab])
                        + bbh * cbh / dbh )
       psihloc[unst]  =  log(0.25*(1.0+y[unst])*(1.0+y[unst]))
 
-   }else if (method == 4){
+   }else if (isfclyrm == 4){
       psihloc[vsta] = ( (1.0 - beta.vs) * log(zeta[vsta]/zetac.sh)
                       + (1.0 - beta.s ) * zetac.sh - zeta[vsta] )
       psihloc[stab] =  - beta.s * zeta[stab]
@@ -207,12 +224,12 @@ psih =  function(method,zeta){
 #     This function computes the derivative of the correction function for non-neutral     #
 # conditions for momentum.                                                                 #
 #------------------------------------------------------------------------------------------#
-dpsimdzeta =  function(method,zeta){
+dpsimdzeta <<-  function(zeta){
 
-   if (method == 2 | method == 3){
+   if (isfclyrm == 2 | isfclyrm == 3){
       stab  = zeta >= 0.
       unst  = zeta <  0.
-   }else if (method == 4){
+   }else if (isfclyrm == 4){
       vuns  = zeta <  zetac.uh
       unst  = zeta <  0        & zeta >= zetac.uh
       stab  = zeta >= 0        & zeta <= zetac.sh
@@ -226,18 +243,18 @@ dpsimdzeta =  function(method,zeta){
    xx[stab]  =  zeta[stab]
    xx[unst]  =  sqrt(sqrt(1.0-gamm*zeta[unst]))
 
-   if (method == 2){
+   if (isfclyrm == 2){
       dpsimdzloc[stab] = - beta.s + 0.*zeta[stab]
       # dpsimdzloc[unst] = - gamm / (xx[unst]*(1.0+xx[unst])*(1.0+xx[unst]*xx[unst]))
       dpsimdzloc[unst] = (1.0 - 1.0/xx[unst]) / zeta[unst]
 
-   }else if (method == 3){
+   }else if (isfclyrm == 3){
       dpsimdzloc[stab] = ( abh 
                          + bbh*(1. - dbh*zeta[stab] + cbh)*exp(-dbh*zeta[stab]) )
       # dpsimdzloc[unst] =  - gamm / (xx[unst]*(1.0+xx[unst])*(1.0+xx[unst]*xx[unst]))
       dpsimdzloc[unst] = (1.0 - 1.0/xx[unst]) / zeta[unst]
 
-   }else if (method == 4){
+   }else if (isfclyrm == 4){
       dpsimdzloc[vsta] = (1.0 - beta.vs) / zeta[vsta] - 1.0
       dpsimdzloc[stab] = - beta.s + 0.*zeta[stab]
       # dpsimdzloc[unst] = - gamm / (xx[unst]*(1.0+xx[unst])*(1.0+xx[unst]*xx[unst]))
@@ -263,12 +280,12 @@ dpsimdzeta =  function(method,zeta){
 #     This function computes the derivative of the correction function for non-neutral     #
 # conditions for heat.                                                                     #
 #------------------------------------------------------------------------------------------#
-dpsihdzeta =  function(method,zeta){
+dpsihdzeta <<-  function(zeta){
 
-   if (method == 2 | method == 3){
+   if (isfclyrm == 2 | isfclyrm == 3){
       stab  = zeta >= 0.
       unst  = zeta <  0.
-   }else if (method == 4){
+   }else if (isfclyrm == 4){
       vuns  = zeta <  zetac.uh
       unst  = zeta <  0        & zeta >= zetac.uh
       stab  = zeta >= 0        & zeta <= zetac.sh
@@ -281,16 +298,16 @@ dpsihdzeta =  function(method,zeta){
    yy[stab]  =  zeta[stab]
    yy[unst]  =  sqrt(1.0-gamh*zeta[unst])
 
-   if (method == 2){
+   if (isfclyrm == 2){
       dpsihdzloc[stab] =  - beta.s + 0.*zeta[stab]
       # dpsihdzloc[unst] =  - gamh / (yy[unst] * (1.0 + yy[unst]))
       dpsihdzloc[unst]   = (1.0 - 1.0/yy[unst]) / zeta[unst]
-   }else if(method == 3){
+   }else if(isfclyrm == 3){
       dpsihdzloc[stab] = ( -fbh * abh * ebh * ((1. + abh * ebh * zeta[stab])^(fbh-1))
                          + bbh * (1. - dbh * zeta[stab] + cbh) * exp(-dbh*zeta[stab]) )
       # dpsihdzloc[unst] = - gamh / (yy[unst] * (1.0 + yy[unst]))
       dpsihdzloc[unst]   = (1.0 - 1.0/yy[unst]) / zeta[unst]
-   }else if(method == 4){
+   }else if(isfclyrm == 4){
       dpsihdzloc[vsta] = (1.0 - beta.vs) / zeta[vsta] - 1.0
       dpsihdzloc[stab] =  - beta.s + 0.*zeta[stab]
       # dpsihdzloc[unst] =  - gamh / (yy[unst] * (1.0 + yy[unst]))
@@ -312,11 +329,11 @@ dpsihdzeta =  function(method,zeta){
 #     This subroutine combutes the residual of z/L, which is used to find the normalised   #
 # height zeta.                                                                             #
 #------------------------------------------------------------------------------------------#
-zolmzeta =  function(zeta,method,rib,zstar,z0m,z0h){
+zolmzeta <<-  function(zeta,rib,zstar,z0m,z0h){
   zeta0m     =  z0m*zeta/zstar
   zeta0h     =  z0h*zeta/zstar
-  fm         =  log(zref/z0m) - psim(method,zeta) + psim(method,zeta0m)
-  fh         =  log(zref/z0h) - psih(method,zeta) + psih(method,zeta0h)
+  fm         =  log(zref/z0m) - psim(zeta) + psim(zeta0m)
+  fh         =  log(zref/z0h) - psih(zeta) + psih(zeta0h)
 
 
 
@@ -348,7 +365,7 @@ zolmzeta =  function(zeta,method,rib,zstar,z0m,z0h){
 # the unlikely case in which Newton's method fails, switch back to modified Regula         #
 # Falsi method (Illinois).                                                                 #
 #------------------------------------------------------------------------------------------#
-zoobukhov = function (method,rib,zstar,rough,zoz0m,lnzoz0m,zoz0h,lnzoz0h){
+zoobukhov <<- function (rib,zstar,rough,zoz0m,lnzoz0m,zoz0h,lnzoz0h,z0moz0h=1.){
 
 
    #---------------------------------------------------------------------------------------#
@@ -363,8 +380,10 @@ zoobukhov = function (method,rib,zstar,rough,zoz0m,lnzoz0m,zoz0h,lnzoz0h){
    z0hoz = 1. / zoz0h
    #---------------------------------------------------------------------------------------#
 
+
+
    #----- Find the maximum acceptable Richardson number for methods 2 and 4. --------------#
-   if (method == 3){
+   if (isfclyrm == 3){
       ribuse = rib
    }else{
       ribuse = min(rib,(1.0-toler) * tprandtl / beta.s )
@@ -389,7 +408,7 @@ zoobukhov = function (method,rib,zstar,rough,zoz0m,lnzoz0m,zoz0h,lnzoz0h){
    if (ribuse <= 0. && zetasmall > - z0moz0h * toler){
       zeta = zetasmall
       return(zeta)
-   }else if (ribuse > 0. && zetasmall < z0moz0h * toler){
+   }else if ((ribuse > 0.) && ( zetasmall < (z0moz0h * toler) )){
       zeta = zetasmall / (1.0 - beta.s * ribuse / tprandtl)
       return(zeta)
    }else{
@@ -412,10 +431,10 @@ zoobukhov = function (method,rib,zstar,rough,zoz0m,lnzoz0m,zoz0h,lnzoz0h){
    #----- Find the function and its derivative. -------------------------------------------#
    zeta0m   = zetaa * z0moz
    zeta0h   = zetaa * z0hoz
-   fm       = lnzoz0m - psim(method,zetaa) + psim(method,zeta0m)
-   fh       = lnzoz0h - psih(method,zetaa) + psih(method,zeta0h)
-   dfmdzeta = z0moz * dpsimdzeta(method,zeta0m) - dpsimdzeta(method,zetaa)
-   dfhdzeta = z0hoz * dpsihdzeta(method,zeta0h) - dpsihdzeta(method,zetaa)
+   fm       = lnzoz0m - psim(zetaa) + psim(zeta0m)
+   fh       = lnzoz0h - psih(zetaa) + psih(zeta0h)
+   dfmdzeta = z0moz * dpsimdzeta(zeta0m) - dpsimdzeta(zetaa)
+   dfhdzeta = z0hoz * dpsihdzeta(zeta0h) - dpsihdzeta(zetaa)
    funa     = coeff * fm * fm / fh - zetaa
    myderiv  = coeff * (2. * fm * dfmdzeta * fh - fm * fm * dfhdzeta) / (fh * fh) - 1.
    #---------------------------------------------------------------------------------------#
@@ -458,10 +477,10 @@ zoobukhov = function (method,rib,zstar,rough,zoz0m,lnzoz0m,zoz0h,lnzoz0h){
          zetaz    = zetaa - fun/myderiv
          zeta0m   = zetaz * z0moz
          zeta0h   = zetaz * z0hoz
-         fm       = lnzoz0m - psim(method,zetaz) + psim(method,zeta0m)
-         fh       = lnzoz0h - psih(method,zetaz) + psih(method,zeta0h)
-         dfmdzeta = z0moz * dpsimdzeta(method,zeta0m) - dpsimdzeta(method,zetaz)
-         dfhdzeta = z0hoz * dpsihdzeta(method,zeta0h) - dpsihdzeta(method,zetaz)
+         fm       = lnzoz0m - psim(zetaz) + psim(zeta0m)
+         fh       = lnzoz0h - psih(zetaz) + psih(zeta0h)
+         dfmdzeta = z0moz * dpsimdzeta(zeta0m) - dpsimdzeta(zetaz)
+         dfhdzeta = z0hoz * dpsihdzeta(zeta0h) - dpsihdzeta(zetaz)
          fun      = coeff * fm * fm / fh - zetaz
          myderiv  = coeff * (2. * fm * dfmdzeta * fh - fm * fm * dfhdzeta) / ( fh * fh) - 1.
 
@@ -524,29 +543,29 @@ zoobukhov = function (method,rib,zstar,rough,zoz0m,lnzoz0m,zoz0h,lnzoz0h){
          }#end if
          zeta0m   = zetaz * z0moz
          zeta0h   = zetaz * z0hoz
-         fm       = lnzoz0m - psim(method,zetaz) + psim(method,zeta0m)
-         fh       = lnzoz0h - psih(method,zetaz) + psih(method,zeta0h)
+         fm       = lnzoz0m - psim(zetaz) + psim(zeta0m)
+         fh       = lnzoz0h - psih(zetaz) + psih(zeta0h)
          funz     = coeff * fm * fm / fh - zetaz
          zside    = funa * funz < 0.0
       }#end while
 
       if (! zside){
-         print(paste("=================================================="))
-         print(paste("            No second guess for you...            "))
-         print(paste("=================================================="))
-         print(paste(" ZSTAR   =",zstar                                  ))
-         print(paste(" ROUGH   =",rough                                  ))
-         print(paste(" LNZOZ0M =",lnzoz0m                                ))
-         print(paste(" LNZOZ0H =",lnzoz0h                                ))
-         print(paste(" RIB     =",rib                                    ))
-         print(paste(" RIBUSE  =",ribuse                                 ))
-         print(paste(" STABLE  =",stable                                 ))
-         print(paste(" FUN     =",fun                                    ))
-         print(paste(" DELTA   =",delta                                  ))
-         print(paste(" ZETAA   =",zetaa                                  ))
-         print(paste(" FUNA    =",funa                                   ))
-         print(paste(" ZETAZ   =",zetaz                                  ))
-         print(paste(" FUNZ    =",funz                                   ))
+         cat0("====================================================")
+         cat0("            No second guess for you...              ")
+         cat0("====================================================")
+         cat0(" ZSTAR   = ",zstar                                   )
+         cat0(" ROUGH   = ",rough                                   )
+         cat0(" LNZOZ0M = ",lnzoz0m                                 )
+         cat0(" LNZOZ0H = ",lnzoz0h                                 )
+         cat0(" RIB     = ",rib                                     )
+         cat0(" RIBUSE  = ",ribuse                                  )
+         cat0(" STABLE  = ",stable                                  )
+         cat0(" FUN     = ",fun                                     )
+         cat0(" DELTA   = ",delta                                   )
+         cat0(" ZETAA   = ",zetaa                                   )
+         cat0(" FUNA    = ",funa                                    )
+         cat0(" ZETAZ   = ",zetaz                                   )
+         cat0(" FUNZ    = ",funz                                    )
          stop("Failed finding a second guess in zoobukhov, sorry...")
       }#end if
    }#end if
@@ -570,8 +589,8 @@ zoobukhov = function (method,rib,zstar,rough,zoz0m,lnzoz0m,zoz0h,lnzoz0h){
          #------ Find the new function ----------------------------------------------------#
          zeta0m   = zeta * z0moz
          zeta0h   = zeta * z0hoz
-         fm       = lnzoz0m - psim(method,zeta) + psim(method,zeta0m)
-         fh       = lnzoz0h - psih(method,zeta) + psih(method,zeta0h)
+         fm       = lnzoz0m - psim(zeta) + psim(zeta0m)
+         fh       = lnzoz0h - psih(zeta) + psih(zeta0h)
          fun      = coeff * fm * fm / fh - zeta
 
          #------ Define the new interval based on the intermediate value theorem. ---------#
@@ -601,35 +620,35 @@ zoobukhov = function (method,rib,zstar,rough,zoz0m,lnzoz0m,zoz0h,lnzoz0h){
    if (converged){
       return(zeta)
    }else{
-      print(paste("-------------------------------------------------------"))
-      print(paste(" Zeta finding didn't converge!!!"                       ))
-      print(paste(" I gave up, after",maxfpo,"iterations..."               ))
-      print(paste(" "                                                      ))
-      print(paste(" Input values."                                         ))
-      print(paste(" "                                                      ))
-      print(paste("RIB             [   ---] =",rib                         ))
-      print(paste("RIBUSE          [   ---] =",ribuse                      ))
-      print(paste("ZSTAR           [     m] =",zstar                       ))
-      print(paste("ROUGH           [     m] =",rough                       ))
-      print(paste("ZOZ0M           [   ---] =",zoz0m                       ))
-      print(paste("LNZOZ0M         [   ---] =",lnzoz0m                     ))
-      print(paste("ZOZ0H           [   ---] =",zoz0h                       ))
-      print(paste("LNZOZ0H         [   ---] =",lnzoz0h                     ))
-      print(paste("STABLE          [   T|F] =",stable                      ))
-      print(paste(" "                                                      ))
-      print(paste(" Last iteration outcome (downdraft values)."            ))
-      print(paste("ZETAA           [   ---] =",zetaa                       ))
-      print(paste("ZETAZ           [   ---] =",zetaz                       ))
-      print(paste("FUN             [   ---] =",fun                         ))
-      print(paste("FM              [   ---] =",fm                          ))
-      print(paste("FH              [   ---] =",fh                          ))
-      print(paste("FUNA            [   ---] =",funa                        ))
-      print(paste("FUNZ            [   ---] =",funz                        ))
-      print(paste("MYDERIV         [   ---] =",myderiv                     ))
-      print(paste("TOLER           [   ---] =",toler                       ))
-      print(paste("ERROR           [   ---] =",abs(zetaz-zetaa)/abs(zetaz) ))
-      print(paste("ZETA            [   ---] =",zeta                        ))
-      print(paste("-------------------------------------------------------"))
+      cat0("--------------------------------------------------------")
+      cat0(" Zeta finding didn't converge!!!"                        )
+      cat0(" I gave up, after",maxfpo,"iterations..."                )
+      cat0(" "                                                       )
+      cat0(" Input values."                                          )
+      cat0(" "                                                       )
+      cat0("RIB             [   ---] = ",rib                         )
+      cat0("RIBUSE          [   ---] = ",ribuse                      )
+      cat0("ZSTAR           [     m] = ",zstar                       )
+      cat0("ROUGH           [     m] = ",rough                       )
+      cat0("ZOZ0M           [   ---] = ",zoz0m                       )
+      cat0("LNZOZ0M         [   ---] = ",lnzoz0m                     )
+      cat0("ZOZ0H           [   ---] = ",zoz0h                       )
+      cat0("LNZOZ0H         [   ---] = ",lnzoz0h                     )
+      cat0("STABLE          [   T|F] = ",stable                      )
+      cat0(" "                                                       )
+      cat0(" Last iteration outcome (downdraft values)."             )
+      cat0("ZETAA           [   ---] = ",zetaa                       )
+      cat0("ZETAZ           [   ---] = ",zetaz                       )
+      cat0("FUN             [   ---] = ",fun                         )
+      cat0("FM              [   ---] = ",fm                          )
+      cat0("FH              [   ---] = ",fh                          )
+      cat0("FUNA            [   ---] = ",funa                        )
+      cat0("FUNZ            [   ---] = ",funz                        )
+      cat0("MYDERIV         [   ---] = ",myderiv                     )
+      cat0("TOLER           [   ---] = ",toler                       )
+      cat0("ERROR           [   ---] = ",abs(zetaz-zetaa)/abs(zetaz) )
+      cat0("ZETA            [   ---] = ",zeta                        )
+      cat0("--------------------------------------------------------")
 
       stop("Zeta didn't converge, giving up!")
    }# end if
@@ -649,7 +668,7 @@ zoobukhov = function (method,rib,zstar,rough,zoz0m,lnzoz0m,zoz0h,lnzoz0h){
 #     This subroutine combutes the residual of z/L, which is used to find the normalised   #
 # height zeta.                                                                             #
 #------------------------------------------------------------------------------------------#
-ed.stars = function(rib,uspd,dthetav,thetav,dens,zref,z0m,z0h,ustmin,ribmin,ribmax,method){
+ed.stars = function(rib,uspd,dthetav,thetav,dens,zref,z0m,z0h,ustmin,ribmin,ribmax){
 
    #---------------------------------------------------------------------------------------#
    #     Make sure all wind speed, and theta v and the gradient have the same dimension.   #
@@ -667,12 +686,12 @@ ed.stars = function(rib,uspd,dthetav,thetav,dens,zref,z0m,z0h,ustmin,ribmin,ribm
    #---------------------------------------------------------------------------------------#
    unst      = rib < 0.
    stab      = rib >= 0.
-   if (method == 2){
+   if (isfclyrm == 2){
       ribmax.use = min(ribmax,0.3)
    }else{
       ribmax.use = ribmax
    }#end if
-   if (method == 4 && iphim.clm == 1){
+   if (isfclyrm == 4 && iphim.clm == 1){
       ribmin.use = max(ribmin,-4.0)
    }else{
       ribmin.use = ribmin
@@ -703,7 +722,7 @@ ed.stars = function(rib,uspd,dthetav,thetav,dens,zref,z0m,z0h,ustmin,ribmin,ribm
    #---------------------------------------------------------------------------------------#
    #     Select which method to use.                                                       #
    #---------------------------------------------------------------------------------------#
-   if (method == 1){
+   if (isfclyrm == 1){
       #------------------------------------------------------------------------------------#
       #    Louis (1979).                                                                   #
       #------------------------------------------------------------------------------------#
@@ -764,16 +783,16 @@ ed.stars = function(rib,uspd,dthetav,thetav,dens,zref,z0m,z0h,ustmin,ribmin,ribm
             #    delta    = delta0 ^ ntry
             #    zleft    = min(zeta1st[n]/delta,zeta1st[n]*delta)
             #    zright   = max(zeta1st[n]/delta,zeta1st[n]*delta)
-            #    funleft  = zolmzeta(zleft,method,ribuse[n],zref,z0m,z0h)
-            #    funright = zolmzeta(zright,method,ribuse[n],zref,z0m,z0h)
+            #    funleft  = zolmzeta(zleft,ribuse[n],zref,z0m,z0h)
+            #    funright = zolmzeta(zright,ribuse[n],zref,z0m,z0h)
             #    found    = funleft * funright < 0.
             # }#end while
 
-            # myroot  =  uniroot(f=zolmzeta,interval=c(zleft,zright),method=method
+            # myroot  =  uniroot(f=zolmzeta,interval=c(zleft,zright)
             #                   ,rib=ribuse[n],zref=zref,z0m=z0m,z0h=z0h)
             # zeta[n] = myroot$root
 
-            zeta[n] = zoobukhov(method=method,rib=ribuse[n],zref=zref,rough=z0m
+            zeta[n] = zoobukhov(rib=ribuse[n],zref=zref,rough=z0m
                                ,zoz0m=zoz0m,lnzoz0m=lnzoz0m,zoz0h=zoz0h,lnzoz0h=lnzoz0h)
          }#end if
       }#end for
@@ -781,10 +800,10 @@ ed.stars = function(rib,uspd,dthetav,thetav,dens,zref,z0m,z0h,ustmin,ribmin,ribm
       #----- Now that we have solved zeta, find the actual correction functions. ----------#
       zeta0m = z0m * zeta / zref
       zeta0h = z0h * zeta / zref
-      psim1  = psim(method,zeta  )
-      psim0  = psim(method,zeta0m)
-      psih1  = psih(method,zeta  )
-      psih0  = psih(method,zeta0h)
+      psim1  = psim(zeta  )
+      psim0  = psim(zeta0m)
+      psih1  = psih(zeta  )
+      psih0  = psih(zeta0h)
       #------------------------------------------------------------------------------------#
 
 
@@ -818,6 +837,6 @@ ed.stars = function(rib,uspd,dthetav,thetav,dens,zref,z0m,z0h,ustmin,ribmin,ribm
 
 
 #----- Find the psi_critical. -------------------------------------------------------------#
-psimc.um  <<- psim(method=4,zeta=zetac.um)
-psihc.uh  <<- psih(method=4,zeta=zetac.uh)
+psimc.um  <<- psim(zeta=zetac.um)
+psihc.uh  <<- psih(zeta=zetac.uh)
 #------------------------------------------------------------------------------------------#

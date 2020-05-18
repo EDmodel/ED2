@@ -55,25 +55,24 @@ obj.analysis <<- function(ref.lola,rem.lola,rem.dat,gam=NULL,verbose=FALSE){
     #--------------------------------------------------------------------------------------#
     #     Check whether the dimensions of the dataset match with the vector of distances.  #
     #--------------------------------------------------------------------------------------#
-    if (verbose) print(paste("    * Checking dimensions...",sep=""))
+    if (verbose) cat0("       * Check dimensions.")
     nrdat  = nrow(rem.dat )
     ncdat  = ncol(rem.dat )
     nrlola = nrow(rem.lola)
     nclola = ncol(rem.lola)
     if (ncdat != nrlola | nclola != 2){
-       print(paste("------------------------------------------"))
-       print(paste(" In function obj.analysis:"                ))
-       print(paste(" ---> # of rows of rem.dat:      ",nrdat ,sep=""))
-       print(paste(" ---> # of columns of rem.dat:   ",ncdat ,sep=""))
-       print(paste(" ---> # of rows of rem.lola:     ",nrlola,sep=""))
-       print(paste(" ---> # of columns of rem.lola:  ",nrlola,sep=""))
-       print(paste("------------------------------------------"))
-       print(paste(" 1.  Number of columns of rem.dat must match the number"
-                      ," of rows of rem.lola!",sep=""))
-       print(paste(" 1.  Number of columns of rem.lola must be two!",sep=""))
+       cat0("-----------------------------------------------------------------------------")
+       cat0(" In function obj.analysis:"                                                   )
+       cat0(" ---> # of rows of rem.dat:      ",nrdat                                      )
+       cat0(" ---> # of columns of rem.dat:   ",ncdat                                      )
+       cat0(" ---> # of rows of rem.lola:     ",nrlola                                     )
+       cat0(" ---> # of columns of rem.lola:  ",nrlola                                     )
+       cat0("----------------------------------------=------------------------------------")
+       cat0(" 1.  Number of columns of rem.dat must match the number of rows of rem.lola!" )
+       cat0(" 2.  Number of columns of rem.lola must be two!"                              )
        stop("Invalid input")
     }else if (length(ref.lola) != 2){
-       stop(" Ref.lola must have two elements (longitude and latitude, in this order)!")
+       stop(" Ref.lola must have two elements (longitude and latitude, in this order)!"    )
     }#end if
     #--------------------------------------------------------------------------------------#
 
@@ -99,10 +98,7 @@ obj.analysis <<- function(ref.lola,rem.lola,rem.dat,gam=NULL,verbose=FALSE){
     #--------------------------------------------------------------------------------------#
     #     Find the vector of distances between the remote sites and the reference.         #                        
     #--------------------------------------------------------------------------------------#
-    if (verbose){
-       print(paste("    * Finding distance between remote sites"
-                      ,"and the reference site...",sep=""))
-    }#end if
+    if (verbose) cat0("       * Find distance between remote sites and the reference site.")
     rem.dist = rdist.earth(x1=rem.lola,x2=ref.lola,miles=FALSE) * 1000.
     rem.dist = c(rem.dist)
     #--------------------------------------------------------------------------------------#
@@ -113,7 +109,7 @@ obj.analysis <<- function(ref.lola,rem.lola,rem.dat,gam=NULL,verbose=FALSE){
     #     Find the vector of distances amongst the remote sites, and find the mean minimum #
     # distance between the sites: that will be our proxy for delta.n.                      #
     #--------------------------------------------------------------------------------------#
-    if (verbose)  print(paste("    * Finding typical distance between sites...",sep=""))
+    if (verbose) cat0("       * Find typical distance between sites...")
     mat.dist       = rdist.earth(x1=rem.lola,miles=FALSE) * 1000.
     #----- Make the diagonals NA because so the site itself cannot be its closest site. ---#
     diag(mat.dist) = NA
@@ -123,9 +119,7 @@ obj.analysis <<- function(ref.lola,rem.lola,rem.dat,gam=NULL,verbose=FALSE){
 
 
     #----- Map the data that has at least one valid data point. ---------------------------#
-    if (verbose){
-       print(paste("    * Flag times when at least one point was valid...",sep=""))
-    }#end if
+    if (verbose) cat0("       * Flag times when at least one point was valid.")
     valid.dat = rowSums(is.finite(rem.dat))
     ok        = valid.dat != 0
     nok       = sum(ok)
@@ -136,7 +130,7 @@ obj.analysis <<- function(ref.lola,rem.lola,rem.dat,gam=NULL,verbose=FALSE){
     #--------------------------------------------------------------------------------------#
     #     Delete the lines without enough data.                                            #
     #--------------------------------------------------------------------------------------#
-    if (verbose) print(paste("    * Select lines with at least one valid datum...",sep=""))
+    if (verbose) cat0("       * Select lines with at least one valid datum.")
     use.dat  = rem.dat [ok,]
     #--------------------------------------------------------------------------------------#
 
@@ -155,7 +149,7 @@ obj.analysis <<- function(ref.lola,rem.lola,rem.dat,gam=NULL,verbose=FALSE){
     #--------------------------------------------------------------------------------------#
     #     Find the default kappa0 and kappa1 based on equations 11 of KJK83.                           #
     #--------------------------------------------------------------------------------------#
-    if (verbose) print(paste("    * Find the decay coefficients...",sep=""))
+    if (verbose) cat0("       * Find the decay coefficients.")
     kappa0 = kappa.barnes(gam=gam,dn=delta.n)
     kappa1 = gamma0 * kappa0
     #--------------------------------------------------------------------------------------#
@@ -165,9 +159,7 @@ obj.analysis <<- function(ref.lola,rem.lola,rem.dat,gam=NULL,verbose=FALSE){
     #     Find the first guess, which is a simple weighted average, with weights defined   #
     # as functions of the distance to the point.                                           #
     #--------------------------------------------------------------------------------------#
-    if (verbose){
-       print(paste("    * Finding the first guess of the objective analysis...",sep=""))
-    }#end if
+    if (verbose) cat0("       * Find objective analysis' first guess.")
     first = oa.weighted.mean(dat=use.dat,dist=use.dist,kap=kappa0)
     #--------------------------------------------------------------------------------------#
 
@@ -178,13 +170,13 @@ obj.analysis <<- function(ref.lola,rem.lola,rem.dat,gam=NULL,verbose=FALSE){
     # points by estimating the first guess for each of the points that we have, and        #
     # replacing its measurement by our first guess.                                        #
     #--------------------------------------------------------------------------------------#
-    if (verbose) print(paste("    * Finding the nudging term...",sep=""))
+    if (verbose) cat0("       * Find the nudging term:")
     #----- Initialise the nudge factor with NA. -------------------------------------------#
     use.nudge = NA * use.dat
     #----- Loop over the sites. -----------------------------------------------------------# 
-    for (p in 1:nrlola){
+    for (p in sequence(nrlola)){
        p.iata = dimnames(rem.lola)[[1]][p]
-       if (verbose) print(paste("      # Replacing column ",p," (",p.iata,")...",sep=""))
+       if (verbose) cat0("         # Replace column ",p," (",p.iata,").")
 
        #-----------------------------------------------------------------------------------# 
        #      Pretend that the reference site is site [p] and site [p] is the reference    #
@@ -234,16 +226,17 @@ obj.analysis <<- function(ref.lola,rem.lola,rem.dat,gam=NULL,verbose=FALSE){
        #-----------------------------------------------------------------------------------#
        use.nudge[,p] = use.dat[,p] - p.first
        #-----------------------------------------------------------------------------------#
-    }#end for
+    }#end for (p in sequence(nrlola))
+    #--------------------------------------------------------------------------------------#
+
 
     #--------------------------------------------------------------------------------------#
     #     The second step is just a weighted average of the nudging factor, with weights   #
     # proportional to the distance but with a lower kappa.                                 #
     #--------------------------------------------------------------------------------------#
-    if (verbose){
-       print(paste("    * Finding the second guess of the objective analysis...",sep=""))
-    }#end if
-    second = oa.weighted.mean(dat=use.nudge,dist=use.dist,kap=kappa1)
+    if (verbose) cat0("       * Find the second guess of the objective analysis.")
+    second = try( oa.weighted.mean(dat=use.nudge,dist=use.dist,kap=kappa1))
+    if ("try-error" %in% is(second)) browser()
     #--------------------------------------------------------------------------------------#
 
 
