@@ -3177,6 +3177,8 @@ module ed_init_history
                         ,'LEAF_AGING_FACTOR  ',dsetrank,iparallel,.true. ,foundvar)
       call hdf_getslab_r(cpoly%vm_bar_toc                                                  &
                         ,'VM_BAR_TOC         ',dsetrank,iparallel,.true. ,foundvar)
+      call hdf_getslab_r(cpoly%rd_bar_toc                                                  &
+                        ,'RD_BAR_TOC         ',dsetrank,iparallel,.true. ,foundvar)
       call hdf_getslab_r(cpoly%llspan_toc                                                  &
                         ,'LLSPAN_TOC         ',dsetrank,iparallel,.true. ,foundvar)
       call hdf_getslab_r(cpoly%sla_toc                                                     &
@@ -5225,6 +5227,8 @@ module ed_init_history
                         ,'LLSPAN                    ',dsetrank,iparallel,.true. ,foundvar)
       call hdf_getslab_r(cpatch%vm_bar                                                     &
                         ,'VM_BAR                    ',dsetrank,iparallel,.true. ,foundvar)
+      call hdf_getslab_r(cpatch%rd_bar                                                     &
+                        ,'RD_BAR                    ',dsetrank,iparallel,.true. ,foundvar)
       call hdf_getslab_r(cpatch%sla                                                        &
                         ,'SLA                       ',dsetrank,iparallel,.true. ,foundvar)
       call hdf_getslab_r(cpatch%leaf_psi                                                   &
@@ -5429,6 +5433,8 @@ module ed_init_history
                         ,'MMEAN_THBARK_CO           ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cpatch%mmean_vm_bar                                            &
                         ,'MMEAN_VM_BAR_CO           ',dsetrank,iparallel,.false.,foundvar)
+         call hdf_getslab_r(cpatch%mmean_rd_bar                                            &
+                        ,'MMEAN_RD_BAR_CO           ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cpatch%mmean_sla                                               &
                         ,'MMEAN_SLA_CO              ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cpatch%mmean_llspan                                            &

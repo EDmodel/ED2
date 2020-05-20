@@ -77,7 +77,7 @@ module farq_leuning
    !      This is the main driver for the photosynthesis model.                            !
    !---------------------------------------------------------------------------------------!
    subroutine lphysiol_full(ib,can_prss,can_rhos,can_shv,can_co2,ipft,leaf_par,leaf_temp   &
-                           ,lint_shv,green_leaf_factor,leaf_aging_factor,vm_bar            &
+                           ,lint_shv,green_leaf_factor,leaf_aging_factor,vm_bar,rd_bar     &
                            ,leaf_gbw,leaf_D0,A_open,A_closed,A_light,A_rubp,A_co2,gsw_open &
                            ,gsw_closed,lsfc_shv_open,lsfc_shv_closed,lsfc_co2_open         &
                            ,lsfc_co2_closed,lint_co2_open,lint_co2_closed,leaf_resp,vmout  &
@@ -147,6 +147,7 @@ module farq_leuning
       real(kind=4), intent(in)    :: green_leaf_factor ! Frac. of on-allom. gr. [      ---]
       real(kind=4), intent(in)    :: leaf_aging_factor ! Ageing parameter       [      ---]
       real(kind=4), intent(in)    :: vm_bar            ! Average Vm function    [umol/m2/s]
+      real(kind=4), intent(in)    :: rd_bar            ! Average Rd function    [umol/m2/s]
       real(kind=4), intent(in)    :: leaf_gbw          ! B.lyr. cnd. of H2O     [  kg/m2/s]
       real(kind=4), intent(in)    :: leaf_D0           ! VPD factor for closure [  mol/mol]
       real(kind=4), intent(out)   :: A_open            ! Photosyn. rate (op.)   [umol/m2/s]
@@ -262,8 +263,8 @@ module farq_leuning
          ! realized Vm0.  Rd0, Jm0, and TPm0 are all scaled with the vm_bar:Vm0 ratio.     !
          !---------------------------------------------------------------------------------!
          thispft(ib)%vm0  = dble(vm_bar) * umol_2_mol8
+         thispft(ib)%rd0  = dble(rd_bar) * umol_2_mol8
          f_plastic8       = dble(vm_bar) / dble(vm0(ipft))
-         thispft(ib)%rd0  = f_plastic8 * dble(rd0 (ipft)) * umol_2_mol8
          thispft(ib)%jm0  = f_plastic8 * dble(jm0 (ipft)) * umol_2_mol8
          thispft(ib)%TPm0 = f_plastic8 * dble(TPm0(ipft)) * umol_2_mol8
          !---------------------------------------------------------------------------------!

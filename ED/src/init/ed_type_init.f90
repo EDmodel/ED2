@@ -29,6 +29,7 @@ module ed_type_init
                                 , Vm0                & ! intent(in)
                                 , Vm0_v0             & ! intent(in)
                                 , Vm0_v1             & ! intent(in)
+                                , Rd0                & ! intent(in)
                                 , small_psi_min      ! ! intent(in)
       use canopy_air_coms, only : f_bndlyr_init      ! ! intent(in)
       use rk4_coms       , only : effarea_transp     & ! intent(in)
@@ -168,6 +169,9 @@ module ed_type_init
          cpatch%sla   (ico) = SLA(ipft)
          !---------------------------------------------------------------------------------!
       end select
+      ! Always use tabulated values for rd_bar
+      ! XX->MLO Check whether this is OK for your trait economics scenario
+      cpatch%rd_bar(ico) = Rd0(ipft)
       !------------------------------------------------------------------------------------!
 
 
@@ -655,6 +659,7 @@ module ed_type_init
          cpatch%mmean_intercepted_aw      (ico) = 0.0
          cpatch%mmean_wshed_wg            (ico) = 0.0
          cpatch%mmean_vm_bar              (ico) = 0.0
+         cpatch%mmean_rd_bar              (ico) = 0.0
          cpatch%mmean_sla                 (ico) = 0.0
          cpatch%mmean_llspan              (ico) = 0.0
          cpatch%mmean_lai                 (ico) = 0.0
@@ -1498,6 +1503,7 @@ module ed_type_init
                                , Vm0_v0             & ! intent(in)
                                , Vm0_v1             & ! intent(in)
                                , Vm0                & ! intent(in)
+                               , Rd0                & ! intent(in)
                                , phenology          ! ! intent(in)
       use phenology_coms, only : vm0_tran           & ! intent(in)
                                , vm0_slope          & ! intent(in)
@@ -1649,6 +1655,8 @@ module ed_type_init
             !------------------------------------------------------------------------------!
          end select
          !---------------------------------------------------------------------------------!
+         ! Use tabulated values, XX->MLO Check whether this is compatible with your economics trait scenario
+         cpoly%rd_bar_toc(ipft,:) = Rd0(ipft)
       end do
       !------------------------------------------------------------------------------------!
 

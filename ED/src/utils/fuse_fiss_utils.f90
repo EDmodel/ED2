@@ -2568,15 +2568,16 @@ module fuse_fiss_utils
       !    Light-phenology characteristics.  To conserve maintenance costs, leaf longevity !
       !  must be scaled with leaf biomass (but note that the scaling must be applied to    !
       !  turnover instead of leaf lifespan).  Likewise, SLA is in m2_leaf/kgC, so it must  !
-      ! be scaled with leaf biomass.  Carboxylation rate (vm_bar) is in umol/m2_leaf/s, so !
-      ! it must be scaled with LAI.                                                        !
+      ! be scaled with leaf biomass.  Carboxylation rate (vm_bar) and dark respiration rate (rd_bar) are in umol/m2_leaf/s, so !
+      ! They must be scaled with LAI.                                                        !
       !                                                                                    !
-      ! MLO -> XX. The SLA scaling with bleaf is numerically equivalent to your changes.   !
       !------------------------------------------------------------------------------------!
       cpatch%sla         (recc) = cpatch%sla         (recc) * rbleaf                       &
                                 + cpatch%sla         (donc) * dbleaf
       cpatch%vm_bar      (recc) = cpatch%vm_bar      (recc) * rlai                         &
                                 + cpatch%vm_bar      (donc) * dlai
+      cpatch%rd_bar      (recc) = cpatch%rd_bar      (recc) * rlai                         &
+                                + cpatch%rd_bar      (donc) * dlai
       !------ For Life span, we must check whether they are non-zero. ---------------------!
       if ( abs(cpatch%llspan(recc)*cpatch%llspan(donc)) > tiny_num ) then
          !---------------------------------------------------------------------------------!
@@ -3740,12 +3741,15 @@ module fuse_fiss_utils
          !  longevity must be scaled with leaf biomass (but note that the scaling must be  !
          !  applied to turnover instead of leaf lifespan).  Likewise, SLA is in            !
          !  m2_leaf/kgC, so it must be scaled with leaf biomass.  Carboxylation rate       !
-         !  (vm_bar) is in umol/m2_leaf/s, so it must be scaled with LAI.                  !
+         !  (vm_bar) and dark respiration rate (rd_bar) are in umol/m2_leaf/s, so          !
+         ! They must be scaled with LAI.                                                        !
          !---------------------------------------------------------------------------------!
          cpatch%mmean_sla             (recc) = cpatch%mmean_sla         (recc) * rbleaf    &
                                              + cpatch%mmean_sla         (donc) * dbleaf
          cpatch%mmean_vm_bar          (recc) = cpatch%mmean_vm_bar      (recc) * rlai      &
                                              + cpatch%mmean_vm_bar      (donc) * dlai
+         cpatch%mmean_rd_bar          (recc) = cpatch%mmean_rd_bar      (recc) * rlai      &
+                                             + cpatch%mmean_rd_bar      (donc) * dlai
          !------ For Life span, we must check whether they are non-zero. ------------------!
          if ( abs(cpatch%mmean_llspan(recc)*cpatch%mmean_llspan(donc)) > tiny_num ) then
             !------------------------------------------------------------------------------!

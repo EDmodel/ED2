@@ -20,7 +20,8 @@ module photosyn_driv
       use ed_max_dims    , only : n_pft                   ! ! intent(in)
       use pft_coms       , only : water_conductance       & ! intent(in)
                                 , include_pft             & ! intent(in)
-                                , vm0                     & ! intent(in)
+                                , Vm0                     & ! intent(in)
+                                , Rd0                     & ! intent(in)
                                 , D0                      & ! intent(in)
                                 , cuticular_cond          & ! intent(in)
                                 , stoma_psi_b             & ! intent(in)
@@ -106,6 +107,7 @@ module photosyn_driv
       real                                    :: wilting_factor
       real                                    :: pss_available_water
       real                                    :: vm0_tuco
+      real                                    :: rd0_tuco
       real                                    :: lnexp
       integer, dimension(n_pft)               :: tuco_pft
       !----- External function. -----------------------------------------------------------!
@@ -291,6 +293,7 @@ module photosyn_driv
                   ! top canopy.                                                            !
                   !------------------------------------------------------------------------!
                   vm0_tuco    = Vm0(ipft)
+                  rd0_tuco    = Rd0(ipft)
                   !------------------------------------------------------------------------!
                else
                   !------------------------------------------------------------------------!
@@ -299,6 +302,7 @@ module photosyn_driv
                   ! match.                                                                 !
                   !------------------------------------------------------------------------!
                   vm0_tuco    = cpatch%vm_bar(tpft)
+                  rd0_tuco    = cpatch%rd_bar(tpft)
                   !------------------------------------------------------------------------!
                end if
                !---------------------------------------------------------------------------!
@@ -328,6 +332,7 @@ module photosyn_driv
                    , green_leaf_factor(ipft)  & ! Cold-deciduous elong. factor  [      ---]
                    , leaf_aging_factor(ipft)  & ! Ageing parameter to scale VM  [      ---]
                    , vm0_tuco                 & ! Average Vm function           [umol/m2/s]
+                   , rd0_tuco                 & ! Average Rd function           [umol/m2/s]
                    , cpatch%leaf_gbw(tuco)    & ! Leaf boundary-layer conduct.  [  kg/m2/s]
                    , D0(ipft)                 & ! VPD stomatal-closure scale    [  mol/mol]
                    , csite%A_o_max(ipft,ipa)  & ! Photosynthesis rate (open   ) [umol/m2/s]
@@ -366,7 +371,7 @@ module photosyn_driv
                    , green_leaf_factor(ipft)  & ! Cold-deciduous elong. factor  [      ---]
                    , leaf_aging_factor(ipft)  & ! Ageing parameter to scale VM  [      ---]
                    , vm0_tuco                 & ! Average Vm function           [umol/m2/s]
-                   , vm0_tuco * 0.02          & ! Average Rd function           [umol/m2/s] TODO
+                   , rd0_tuco                 & ! Average Rd function           [umol/m2/s]
                    , cpatch%leaf_gbw(tuco)    & ! Leaf boundary-layer conduct.  [  kg/m2/s]
                    , 0.                       & ! Leaf water potential          [        m]
                    , 0.                       & ! Dmax Leaf water potential     [        m]
@@ -496,6 +501,7 @@ module photosyn_driv
                 , green_leaf_factor(ipft)     & ! Relative greenness            [      ---]
                 , leaf_aging_factor(ipft)     & ! Ageing parameter to scale VM  [      ---]
                 , cpatch%vm_bar(ico)          & ! Average Vm function           [umol/m2/s]
+                , cpatch%rd_bar(ico)          & ! Average Rd function           [umol/m2/s]
                 , cpatch%leaf_gbw(ico)        & ! Aerodyn. condct. of H2O(v)    [  kg/m2/s]
                 , leaf_D0                     & ! VPD scale for stom. closure   [  mol/mol]
                 , cpatch%A_open(ico)          & ! Photosynthesis rate (open)    [umol/m2/s]
@@ -534,7 +540,7 @@ module photosyn_driv
                 , green_leaf_factor(ipft)     & ! Relative greenness            [      ---]
                 , leaf_aging_factor(ipft)     & ! Ageing parameter to scale VM  [      ---]
                 , cpatch%vm_bar(ico)          & ! Average Vm function           [umol/m2/s]
-                , cpatch%vm_bar(ico) * 0.02   & ! Average Rd function           [umol/m2/s] TODO
+                , cpatch%rd_bar(ico)          & ! Average Rd function           [umol/m2/s]
                 , cpatch%leaf_gbw(ico)        & ! Aerodyn. condct. of H2O(v)    [  kg/m2/s]
                 , cpatch%leaf_psi(ico)        & ! Leaf water potential          [        m]
                 , cpatch%dmax_leaf_psi(ico)   & ! Dmax Leaf water potential     [        m]

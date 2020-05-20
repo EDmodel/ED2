@@ -5170,6 +5170,9 @@ module average_utils
                   cpatch%mmean_vm_bar          (ico) = cpatch%mmean_vm_bar          (ico)  &
                                                      + cpatch%vm_bar                (ico)  &
                                                      * ndaysi
+                  cpatch%mmean_rd_bar          (ico) = cpatch%mmean_rd_bar          (ico)  &
+                                                     + cpatch%rd_bar                (ico)  &
+                                                     * ndaysi
                   cpatch%mmean_sla             (ico) = cpatch%mmean_sla             (ico)  &
                                                      + cpatch%sla                   (ico)  &
                                                      * ndaysi
@@ -6351,6 +6354,7 @@ module average_utils
                cohortloop: do ico=1,cpatch%ncohorts
                   cpatch%mmean_thbark             (ico) = 0.0
                   cpatch%mmean_vm_bar             (ico) = 0.0
+                  cpatch%mmean_rd_bar             (ico) = 0.0
                   cpatch%mmean_sla                (ico) = 0.0
                   cpatch%mmean_llspan             (ico) = 0.0
                   cpatch%mmean_lai                (ico) = 0.0
@@ -7507,6 +7511,9 @@ module average_utils
                                                      * ndaysi
                   cpatch%qmean_a_net         (t,ico) = cpatch%qmean_a_net         (t,ico)  &
                                                      + cpatch%fmean_a_net           (ico)  &
+                                                     * ndaysi
+                  cpatch%qmean_a_light       (t,ico) = cpatch%qmean_a_light       (t,ico)  &
+                                                     + cpatch%fmean_a_light         (ico)  &
                                                      * ndaysi
                   cpatch%qmean_a_rubp        (t,ico) = cpatch%qmean_a_rubp        (t,ico)  &
                                                      + cpatch%fmean_a_rubp          (ico)  &

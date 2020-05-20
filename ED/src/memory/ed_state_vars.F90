@@ -581,10 +581,15 @@ module ed_state_vars
       real, pointer, dimension(:) :: elongf
       !<Elongation factor (0 - 1), factor to scale bleaf under drought.
 
-      ! Phenology-related
+      ! Phenology and pheno-plasticity related
       real, pointer, dimension(:) :: llspan
+      !<Leaf lifespan [months]
       real, pointer, dimension(:) :: vm_bar
+      !<Average Vm0 [umolmu;mol/m2/s]
+      real, pointer, dimension(:) :: rd_bar
+      !<Average Rd0 [umolmu;mol/m2/s]
       real, pointer, dimension(:) :: sla
+      !<specific leaf area  [m2/kgC]
 
       !------------------------------------------------------------------------------------!
       !     The following variables are used for plant hydraulic calculations              !
@@ -748,6 +753,7 @@ module ed_state_vars
       !----- Monthly means of variables that are integrated daily. ------------------------!
       real,pointer,dimension(:)   :: mmean_thbark            !<Bark thickness   [        cm]
       real,pointer,dimension(:)   :: mmean_vm_bar            !<Mx carboxyl rate [umol/m2l/s]
+      real,pointer,dimension(:)   :: mmean_rd_bar            !<Dark resp. rate  [umol/m2l/s]
       real,pointer,dimension(:)   :: mmean_sla               !<Spec leaf area   [   m2l/kgC]
       real,pointer,dimension(:)   :: mmean_llspan            !<Leaf longevity   [        mo]
       real,pointer,dimension(:)   :: mmean_lai               !<Leaf area index  [   m2l/m2g]
@@ -2439,6 +2445,7 @@ module ed_state_vars
       real,pointer,dimension(:,:) :: leaf_aging_factor ! (n_pft,nsites)
       real,pointer,dimension(:)   :: turnover_amp      ! (nsites)
       real,pointer,dimension(:,:) :: vm_bar_toc        ! (n_pft,nsites)
+      real,pointer,dimension(:,:) :: rd_bar_toc        ! (n_pft,nsites)
       real,pointer,dimension(:,:) :: llspan_toc        ! (n_pft,nsites)
       real,pointer,dimension(:,:) :: sla_toc           ! (n_pft,nsites)
 
@@ -4761,6 +4768,7 @@ module ed_state_vars
       allocate(cpoly%leaf_aging_factor             (                    n_pft,nsites))
       allocate(cpoly%turnover_amp                  (                          nsites))
       allocate(cpoly%vm_bar_toc                    (                    n_pft,nsites))
+      allocate(cpoly%rd_bar_toc                    (                    n_pft,nsites))
       allocate(cpoly%llspan_toc                    (                    n_pft,nsites))
       allocate(cpoly%sla_toc                       (                    n_pft,nsites))
       allocate(cpoly%basal_area                    (       n_pft,       n_dbh,nsites))
@@ -5676,6 +5684,7 @@ module ed_state_vars
       allocate(cpatch%elongf                       (                    ncohorts))
       allocate(cpatch%llspan                       (                    ncohorts))
       allocate(cpatch%vm_bar                       (                    ncohorts))
+      allocate(cpatch%rd_bar                       (                    ncohorts))
       allocate(cpatch%sla                          (                    ncohorts))
 
       allocate(cpatch%leaf_psi                     (                    ncohorts))
@@ -5875,6 +5884,7 @@ module ed_state_vars
       if (writing_eorq) then
          allocate(cpatch%mmean_thbark              (                    ncohorts))
          allocate(cpatch%mmean_vm_bar              (                    ncohorts))
+         allocate(cpatch%mmean_rd_bar              (                    ncohorts))
          allocate(cpatch%mmean_sla                 (                    ncohorts))
          allocate(cpatch%mmean_llspan              (                    ncohorts))
          allocate(cpatch%mmean_lai                 (                    ncohorts))
@@ -7023,6 +7033,7 @@ module ed_state_vars
       nullify(cpoly%leaf_aging_factor          )
       nullify(cpoly%turnover_amp               )
       nullify(cpoly%vm_bar_toc                 )
+      nullify(cpoly%rd_bar_toc                 )
       nullify(cpoly%llspan_toc                 )
       nullify(cpoly%sla_toc                    )
       nullify(cpoly%basal_area                 )
@@ -7861,6 +7872,7 @@ module ed_state_vars
       nullify(cpatch%elongf                  )
       nullify(cpatch%llspan                  )
       nullify(cpatch%vm_bar                  )
+      nullify(cpatch%rd_bar                  )
       nullify(cpatch%sla                     )
       nullify(cpatch%leaf_psi                )
       nullify(cpatch%wood_psi                )
@@ -8051,6 +8063,7 @@ module ed_state_vars
 
       nullify(cpatch%mmean_thbark            )
       nullify(cpatch%mmean_vm_bar            )
+      nullify(cpatch%mmean_rd_bar            )
       nullify(cpatch%mmean_sla               )
       nullify(cpatch%mmean_llspan            )
       nullify(cpatch%mmean_lai               )
@@ -9022,6 +9035,7 @@ module ed_state_vars
       if(associated(cpatch%elongf                  )) deallocate(cpatch%elongf                  )
       if(associated(cpatch%llspan                  )) deallocate(cpatch%llspan                  )
       if(associated(cpatch%vm_bar                  )) deallocate(cpatch%vm_bar                  )
+      if(associated(cpatch%rd_bar                  )) deallocate(cpatch%rd_bar                  )
       if(associated(cpatch%sla                     )) deallocate(cpatch%sla                     )
 
       if(associated(cpatch%leaf_psi                )) deallocate(cpatch%leaf_psi                )
@@ -9214,6 +9228,7 @@ module ed_state_vars
 
       if(associated(cpatch%mmean_thbark            )) deallocate(cpatch%mmean_thbark            )
       if(associated(cpatch%mmean_vm_bar            )) deallocate(cpatch%mmean_vm_bar            )
+      if(associated(cpatch%mmean_rd_bar            )) deallocate(cpatch%mmean_rd_bar            )
       if(associated(cpatch%mmean_sla               )) deallocate(cpatch%mmean_sla               )
       if(associated(cpatch%mmean_llspan            )) deallocate(cpatch%mmean_llspan            )
       if(associated(cpatch%mmean_lai               )) deallocate(cpatch%mmean_lai               )
@@ -11208,6 +11223,7 @@ module ed_state_vars
          opatch%elongf                  (oco) = ipatch%elongf                  (ico)
          opatch%llspan                  (oco) = ipatch%llspan                  (ico)
          opatch%vm_bar                  (oco) = ipatch%vm_bar                  (ico)
+         opatch%rd_bar                  (oco) = ipatch%rd_bar                  (ico)
          opatch%sla                     (oco) = ipatch%sla                     (ico)
 
          opatch%leaf_psi                (oco) = ipatch%leaf_psi                (ico)
@@ -11460,6 +11476,7 @@ module ed_state_vars
             !----- Scalars. ---------------------------------------------------------------!
             opatch%mmean_thbark            (oco) = ipatch%mmean_thbark            (ico)
             opatch%mmean_vm_bar            (oco) = ipatch%mmean_vm_bar            (ico)
+            opatch%mmean_rd_bar            (oco) = ipatch%mmean_rd_bar            (ico)
             opatch%mmean_sla               (oco) = ipatch%mmean_sla               (ico)
             opatch%mmean_llspan            (oco) = ipatch%mmean_llspan            (ico)
             opatch%mmean_lai               (oco) = ipatch%mmean_lai               (ico)
@@ -11941,6 +11958,7 @@ module ed_state_vars
       opatch%elongf                (1:z) = pack(ipatch%elongf                    ,lmask)
       opatch%llspan                (1:z) = pack(ipatch%llspan                    ,lmask)
       opatch%vm_bar                (1:z) = pack(ipatch%vm_bar                    ,lmask)
+      opatch%rd_bar                (1:z) = pack(ipatch%rd_bar                    ,lmask)
       opatch%sla                   (1:z) = pack(ipatch%sla                       ,lmask)
 
       opatch%leaf_psi              (1:z) = pack(ipatch%leaf_psi                  ,lmask)
@@ -12289,6 +12307,7 @@ module ed_state_vars
       !----- Scalars. ---------------------------------------------------------------------!
       opatch%mmean_thbark            (1:z) = pack(ipatch%mmean_thbark              ,lmask)
       opatch%mmean_vm_bar            (1:z) = pack(ipatch%mmean_vm_bar              ,lmask)
+      opatch%mmean_rd_bar            (1:z) = pack(ipatch%mmean_rd_bar              ,lmask)
       opatch%mmean_sla               (1:z) = pack(ipatch%mmean_sla                 ,lmask)
       opatch%mmean_llspan            (1:z) = pack(ipatch%mmean_llspan              ,lmask)
       opatch%mmean_lai               (1:z) = pack(ipatch%mmean_lai                 ,lmask)
@@ -22450,6 +22469,16 @@ module ed_state_vars
                            ,'[umol/m2/s]','(n_pft,isite)')
       end if
 
+      if (associated(cpoly%rd_bar_toc)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cpoly%rd_bar_toc                                          &
+                           ,nvar,igr,init,cpoly%siglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'RD_BAR_TOC :24:hist')
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Top-of-canopy Rm0 (Pheno-plasticity)'                         &
+                           ,'[umol/m2/s]','(n_pft,isite)')
+      end if
+
       if (associated(cpoly%llspan_toc)) then
          nvar=nvar+1
          call vtable_edio_r(npts,cpoly%llspan_toc                                          &
@@ -29621,6 +29650,14 @@ module ed_state_vars
                            ,'[umol/m2/s]','icohort') 
       end if
 
+      if (associated(cpatch%rd_bar)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cpatch%rd_bar,nvar,igr,init,cpatch%coglob_id,             &
+               var_len,var_len_global,max_ptrs,'RD_BAR :41:hist:anal:dail:mont:dcyc') 
+         call metadata_edio(nvar,igr,'Leaf dark respiration rate at 15C' &
+                           ,'[umol/m2/s]','icohort') 
+      end if
+
       if (associated(cpatch%sla)) then
          nvar=nvar+1
            call vtable_edio_r(npts,cpatch%sla,nvar,igr,init,cpatch%coglob_id, &
@@ -32122,6 +32159,15 @@ module ed_state_vars
                            ,'MMEAN_VM_BAR_CO             :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Maximum carboxylation rate at 15C'             &
+                           ,'[ umol/m2l/s]','(icohort)'            )
+      end if
+      if (associated(cpatch%mmean_rd_bar          )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%mmean_rd_bar                                       &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'MMEAN_RD_BAR_CO             :41:'//trim(eorq_keys))
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly mean - Leaf dark respiration rate at 15C'             &
                            ,'[ umol/m2l/s]','(icohort)'            )
       end if
       if (associated(cpatch%mmean_sla             )) then
