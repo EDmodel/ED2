@@ -1,14 +1,17 @@
 !==========================================================================================!
 !==========================================================================================!
-!    Main photosynthesis driver.                                                           !
+! MODULE: PHOTOSYN_DRIV
+!> \brief Main photosynthesis driver.                                                      
+!> \details Include Farquhar-Leuning and Farquhar-Katul two options                       
 !------------------------------------------------------------------------------------------!
 module photosyn_driv
   contains
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This subroutine will control the photosynthesis scheme (Farquar and Leuning).     !
-   ! This is called every step, but not every sub-step.                                    !
+   ! SUBROUTINE CANOPY_PHOTOSYNTHESIS       
+   !> \brief This subroutine will control the photosynthesis scheme (Farquar and Leuning). 
+   !> This is called every step, but not every sub-step.
    !---------------------------------------------------------------------------------------!
    subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,ibuff,ntext_soil,leaf_aging_factor  &
                                    ,green_leaf_factor)
@@ -351,8 +354,9 @@ module photosyn_driv
                   !------------------------------------------------------------------------!
                case (1)
                   !----- Farquhar with Katul et al. (2010) stomatal conductance. ----------!
-                  call katul_lphys(           & !
-                     csite%can_prss(ipa)      & ! Canopy air pressure           [       Pa]
+                  call katul_lphys(ibuff      & !
+                   , csite%can_prss(ipa)      & ! Canopy air pressure           [       Pa]
+                   , csite%can_rhos(ipa)      & ! Canopy air density            [    kg/m3]
                    , csite%can_shv(ipa)       & ! Canopy air sp. humidity       [    kg/kg]
                    , csite%can_co2(ipa)       & ! Canopy air CO2 mixing ratio   [ umol/mol]
                    , ipft                     & ! Plant functional type         [      ---]
@@ -362,10 +366,10 @@ module photosyn_driv
                    , green_leaf_factor(ipft)  & ! Cold-deciduous elong. factor  [      ---]
                    , leaf_aging_factor(ipft)  & ! Ageing parameter to scale VM  [      ---]
                    , vm0_tuco                 & ! Average Vm function           [umol/m2/s]
+                   , vm0_tuco * 0.02          & ! Average Rd function           [umol/m2/s] TODO
                    , cpatch%leaf_gbw(tuco)    & ! Leaf boundary-layer conduct.  [  kg/m2/s]
                    , 0.                       & ! Leaf water potential          [        m]
-                   , cpatch%last_gV(tuco)     & ! gs from last timestep         [  kg/m2/s]
-                   , cpatch%last_gJ(tuco)     & ! gs from last timestep         [  kg/m2/s]
+                   , 0.                       & ! Dmax Leaf water potential     [        m]
                    , csite%A_o_max(ipft,ipa)  & ! Photosynthesis rate (open   ) [umol/m2/s]
                    , csite%A_c_max(ipft,ipa)  & ! Photosynthesis rate (closed ) [umol/m2/s]
                    , d_A_light_max            & ! Photosynthesis rate (light  ) [umol/m2/s]
@@ -381,6 +385,9 @@ module photosyn_driv
                    , d_lint_co2_closed        & ! Intercellular CO2   (closed ) [ umol/mol]
                    , leaf_resp                & ! Leaf respiration rate         [umol/m2/s]
                    , vm                       & ! Max. carboxylation rate       [umol/m2/s]
+                   , jm                       & ! Max. electron transport       [umol/m2/s]
+                   , tpm                      & ! Max. triose phosphate         [umol/m2/s]
+                   , jact                     & ! Actual electron transport     [umol/m2/s]
                    , compp                    & ! Gross photo. compensation pt. [ umol/mol]
                    , limit_flag               & ! Photosynthesis lim. flag      [      ---]
                    )                         
@@ -515,8 +522,9 @@ module photosyn_driv
                !---------------------------------------------------------------------------!
             case (1)
                !----- Farquhar with Katul et al. (2010) stomatal conductance. ------------!
-               call katul_lphys(              & !
-                  csite%can_prss(ipa)         & ! Canopy air pressure           [       Pa]
+               call katul_lphys(ibuff         & ! Multithread buffer
+                , csite%can_prss(ipa)         & ! Canopy air pressure           [       Pa]
+                , csite%can_rhos(ipa)         & ! Canopy air density            [    kg/m3]
                 , csite%can_shv(ipa)          & ! Canopy air sp. humidity       [    kg/kg]
                 , csite%can_co2(ipa)          & ! Canopy air CO2 mixing ratio   [ umol/mol]
                 , ipft                        & ! Plant functional type         [      ---]
@@ -526,10 +534,10 @@ module photosyn_driv
                 , green_leaf_factor(ipft)     & ! Relative greenness            [      ---]
                 , leaf_aging_factor(ipft)     & ! Ageing parameter to scale VM  [      ---]
                 , cpatch%vm_bar(ico)          & ! Average Vm function           [umol/m2/s]
+                , cpatch%vm_bar(ico) * 0.02   & ! Average Rd function           [umol/m2/s] TODO
                 , cpatch%leaf_gbw(ico)        & ! Aerodyn. condct. of H2O(v)    [  kg/m2/s]
                 , cpatch%leaf_psi(ico)        & ! Leaf water potential          [        m]
-                , cpatch%last_gV(ico)         & ! gs from last timestep         [  kg/m2/s]
-                , cpatch%last_gJ(ico)         & ! gs from last timestep         [  kg/m2/s]
+                , cpatch%dmax_leaf_psi(ico)   & ! Dmax Leaf water potential     [        m]
                 , cpatch%A_open(ico)          & ! Photosynthesis rate (open)    [umol/m2/s]
                 , cpatch%A_closed(ico)        & ! Photosynthesis rate (closed)  [umol/m2/s]
                 , cpatch%A_light(ico)         & ! Photosynthesis rate (light)   [umol/m2/s]
@@ -545,19 +553,14 @@ module photosyn_driv
                 , cpatch%lint_co2_closed(ico) & ! Intercellular CO2  (closed)   [ umol/mol]
                 , leaf_resp                   & ! Leaf respiration rate         [umol/m2/s]
                 , vm                          & ! Max. capacity of Rubisco      [umol/m2/s]
+                , jm                          & ! Max. electron transport       [umol/m2/s]
+                , tpm                         & ! Max. triose phosphate         [umol/m2/s]
+                , jact                        & ! Actual electron transport     [umol/m2/s]
                 , compp                       & ! Gross photo. compens. point   [ umol/mol]
                 , limit_flag                  & ! Photosynth. limitation flag   [      ---]
                 )
                !---------------------------------------------------------------------------!
 
-               !---------------------------------------------------------------------------!
-               !     For now add dummy values.  These could come from katul_phys, but need !
-               ! to coordinate with XX.                                                    !
-               !---------------------------------------------------------------------------!
-               jm   = 0.0
-               tpm  = 0.0
-               jact = 0.0
-               !---------------------------------------------------------------------------!
             end select
             !------------------------------------------------------------------------------!
 
