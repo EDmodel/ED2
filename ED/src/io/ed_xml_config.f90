@@ -470,6 +470,8 @@ recursive subroutine read_ed_xml_config(filename)
 !! Leaf Respiration
            call getConfigREAL  ('dark_respiration_factor','pft',i,rval,texist)
            if(texist) dark_respiration_factor(myPFT) = sngloff(rval,tiny_offset)
+           call getConfigREAL  ('kplastic_rd0','pft',i,rval,texist)
+           if(texist) kplastic_rd0(myPFT) = sngloff(rval,tiny_offset)
            call getConfigREAL  ('Rd_low_temp','pft',i,rval,texist)
            if(texist) Rd_low_temp(myPFT) = sngloff(rval,tiny_offset)
            call getConfigREAL  ('Rd_high_temp','pft',i,rval,texist)
@@ -1951,6 +1953,7 @@ subroutine write_ed_xml_config
 
 !! LEAF RESPIRATION
         call putConfigREAL("dark_respiration_factor",dark_respiration_factor(i))
+        call putConfigREAL("kplastic_rd0"           ,kplastic_rd0           (i))
         call putConfigREAL("Rd0"                    ,Rd0                    (i))
         call putConfigREAL("Rd_low_temp"            ,Rd_low_temp            (i))
         call putConfigREAL("Rd_high_temp"           ,Rd_high_temp           (i))

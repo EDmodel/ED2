@@ -581,6 +581,7 @@ module structural_growth
                   call update_cohort_derived_props(cpatch,ico,cpoly%lsl(isi),new_year      &
                                                   ,cpoly%llspan_toc(ipft,isi)              &
                                                   ,cpoly%vm_bar_toc(ipft,isi)              &
+                                                  ,cpoly%rd_bar_toc(ipft,isi)              &
                                                   ,cpoly%sla_toc   (ipft,isi) )
                   !------------------------------------------------------------------------!
 

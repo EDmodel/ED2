@@ -29,6 +29,7 @@ subroutine read_ed10_ed20_history_file
                                   , include_these_pft           & ! intent(in)
                                   , leaf_turnover_rate          & ! intent(in)
                                   , vm0                         & ! intent(in)
+                                  , rd0                         & ! intent(in)
                                   , sla                         ! ! intent(in)
    use ed_misc_coms        , only : sfilin                      & ! intent(in)
                                   , ied_init_mode               ! ! intent(in)
@@ -941,9 +942,10 @@ subroutine read_ed10_ed20_history_file
                         case (0)
                            continue
                         case default
-                           call update_cohort_plastic_trait(cpatch,ic2                     &
+                           call update_cohort_plastic_trait(cpatch,ic2,.true.              &
                                                            ,leaf_lifespan(ipft(ic))        &
                                                            ,vm0          (ipft(ic))        &
+                                                           ,rd0          (ipft(ic))        &
                                                            ,sla          (ipft(ic)) )
                         end select
                         !------------------------------------------------------------------!

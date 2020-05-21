@@ -232,7 +232,7 @@ module farq_katul
       ! must be down-regulated.  Convert the resulting terms to mol/m2/s.                  !
       !------------------------------------------------------------------------------------!
       select case (trait_plasticity_scheme)
-      case (-2,-1,1,2)
+      case (-2,-1,1,2,3)
          !---------------------------------------------------------------------------------!
          !      Within-canopy trait plasticity.  In this case, the input vm_bar is the     !
          ! realized Vm0, and the input rd_bar is the realized Rd0, Jm0, and TPm0 are all   !

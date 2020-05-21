@@ -25,6 +25,7 @@ subroutine read_ed21_history_file
                                   , include_these_pft           & ! intent(in)
                                   , leaf_turnover_rate          & ! intent(in)
                                   , vm0                         & ! intent(in)
+                                  , rd0                         & ! intent(in)
                                   , sla                         ! ! intent(in)
    use ed_misc_coms        , only : sfilin                      & ! intent(in)
                                   , imonthh                     & ! intent(in)
@@ -924,9 +925,10 @@ subroutine read_ed21_history_file
                            case (0)
                               continue
                            case default
-                              call update_cohort_plastic_trait(cpatch,ico                  &
+                              call update_cohort_plastic_trait(cpatch,ico,.true.           &
                                                         ,leaf_lifespan(cpatch%pft(ico))    &
                                                         ,vm0(cpatch%pft(ico))              &
+                                                        ,rd0(cpatch%pft(ico))              &
                                                         ,sla(cpatch%pft(ico)) )
                            end select
                            !---------------------------------------------------------------!
@@ -1061,6 +1063,7 @@ subroutine read_ed21_history_unstruct
                                   , include_these_pft           & ! intent(in)
                                   , leaf_turnover_rate          & ! intent(in)
                                   , vm0                         & ! intent(in)
+                                  , rd0                         & ! intent(in)
                                   , sla                         ! ! intent(in)
    use ed_misc_coms        , only : sfilin                      & ! intent(in)
                                   , ied_init_mode               & ! intent(in)
@@ -2309,9 +2312,10 @@ subroutine read_ed21_history_unstruct
                            case (0)
                               continue
                            case default
-                              call update_cohort_plastic_trait(cpatch,ico                  &
+                              call update_cohort_plastic_trait(cpatch,ico,.true.           &
                                                         ,leaf_lifespan(cpatch%pft(ico))    &
                                                         ,vm0(cpatch%pft(ico))              &
+                                                        ,rd0(cpatch%pft(ico))              &
                                                         ,sla(cpatch%pft(ico)) )
                            end select
                            !---------------------------------------------------------------!
@@ -2455,6 +2459,7 @@ subroutine read_ed21_polyclone
                                   , include_these_pft           & ! intent(in)
                                   , leaf_turnover_rate          & ! intent(in)
                                   , vm0                         & ! intent(in)
+                                  , rd0                         & ! intent(in)
                                   , sla                         ! ! intent(in)
    use ed_misc_coms        , only : sfilin                      & ! intent(in)
                                   , iallom                      & ! intent(in)
@@ -3675,9 +3680,10 @@ subroutine read_ed21_polyclone
                            case (0)
                               continue
                            case default
-                              call update_cohort_plastic_trait(cpatch,ico                  &
+                              call update_cohort_plastic_trait(cpatch,ico,.true.           &
                                                         ,leaf_lifespan(cpatch%pft(ico))    &
                                                         ,vm0(cpatch%pft(ico))              &
+                                                        ,rd0(cpatch%pft(ico))              &
                                                         ,sla(cpatch%pft(ico)) )
                            end select
                            !---------------------------------------------------------------!

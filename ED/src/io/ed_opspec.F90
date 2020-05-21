@@ -1753,9 +1753,9 @@ end do
       ifaterr = ifaterr +1
    end if
 
-   if (trait_plasticity_scheme < -2 .or. trait_plasticity_scheme > 2) then
+   if (trait_plasticity_scheme < -2 .or. trait_plasticity_scheme > 3) then
       write (reason,fmt='(2a,1x,i4,a)')                                                    &
-                    'Invalid TRAIT_PLASTICITY_SCHEME, it must be between -2 and 2.'        &
+                    'Invalid TRAIT_PLASTICITY_SCHEME, it must be between -2 and 3.'        &
                    ,' Yours is set to',trait_plasticity_scheme,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
@@ -1776,9 +1776,9 @@ end do
 
    end if
 
-   if (iallom < 0 .or. iallom > 3) then
+   if (iallom < 0 .or. iallom > 4) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
-                    'Invalid IALLOM, it must be between 0 and 3. Yours is set to'          &
+                    'Invalid IALLOM, it must be between 0 and 4. Yours is set to'          &
                     ,iallom,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1

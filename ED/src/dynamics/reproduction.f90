@@ -551,12 +551,13 @@ module reproduction
                            !----- Trait plasticity is disabled, do nothing. ---------------!
                            continue
                            !---------------------------------------------------------------!
-                        case (-2,2) ! Update trait every month
+                        case (-2,2,3) ! Update trait every month
                            !----- Allow recruits to start adapted to their environment. ---!
                            ipft = cpatch%pft(ico)
-                           call update_cohort_plastic_trait(cpatch,ico                     &
+                           call update_cohort_plastic_trait(cpatch,ico,.true.              &
                                                            ,cpoly%llspan_toc(ipft,isi)     &
                                                            ,cpoly%vm_bar_toc(ipft,isi)     &
+                                                           ,cpoly%rd_bar_toc(ipft,isi)     &
                                                            ,cpoly%sla_toc   (ipft,isi) )
                            !---------------------------------------------------------------!
                         end select

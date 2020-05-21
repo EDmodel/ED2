@@ -290,6 +290,8 @@ module pft_coms
    !---------------------------------------------------------------------------------------!
    real, dimension(n_pft) :: dark_respiration_factor
    !---------------------------------------------------------------------------------------!
+   !----- Parameters that control the dark respiraiton rate (TRAIT_PLASTICITY = 3). -------!
+   real, dimension(n_pft) :: kplastic_rd0  ! Expansion factor for dark respiration
 
    !---------------------------------------------------------------------------------------!
    !    This variable sets the rate of electron transport.  It is dimensionless            !

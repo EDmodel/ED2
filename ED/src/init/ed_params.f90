@@ -4124,6 +4124,7 @@ subroutine init_pft_photo_params()
                              , Jm_q10                    & ! intent(out)
                              , TPm0                      & ! intent(out)
                              , Rd0                       & ! intent(out)
+                             , kplastic_rd0              & ! intent(out)
                              , Rd_low_temp               & ! intent(out)
                              , Rd_high_temp              & ! intent(out)
                              , Rd_decay_elow             & ! intent(out)
@@ -4606,13 +4607,14 @@ subroutine init_pft_photo_params()
 
 
    !---------------------------------------------------------------------------------------!
-   !     Parameter for the trait-plasticity model for Vm0 (for the controls on SLA, check  !
+   !     Parameter for the trait-plasticity model for Vm0 and Rd0 (for SLA, check          !
    ! init_pft_alloc_params).  This controls the extinction factor for Vm0.  The default    !
    ! depends upon Vcmax25 (Lloyd et al. 2010, Biogeosciences) and is initialised in        !
    ! init_derived_params_after_xml.  However, this relationship is empirical, so we also   !
    ! allow it to be initialised through XML.                                               !
    !---------------------------------------------------------------------------------------!
    kplastic_vm0(:) = undef_real
+   kplastic_rd0(:) = undef_real
    !---------------------------------------------------------------------------------------!
 
    return
@@ -7619,6 +7621,7 @@ subroutine init_derived_params_after_xml()
                                    , Rd_decay_elow             & ! intent(inout)
                                    , Rd_decay_ehigh            & ! intent(inout)
                                    , Rd0                       & ! intent(inout)
+                                   , kplastic_rd0              & ! intent(inout)
                                    , Rd_hor                    & ! intent(inout)
                                    , Rd_q10                    & ! intent(inout)
                                    , rrf_low_temp              & ! intent(inout)
@@ -8674,6 +8677,31 @@ subroutine init_derived_params_after_xml()
       end if
       !------------------------------------------------------------------------------------!
 
+      !------------------------------------------------------------------------------------!
+      !    In case kplastic_rd0 was not initialised through XML, use the function from     !
+      ! L10.  This is not the same fit, instead it was found using robust standardised     !
+      ! major axis to reduce leverage.                                                     !
+      !                                                                                    !
+      ! Reference: Unpublished trait data from BCI                                         !
+      !                                                                                    !
+      !------------------------------------------------------------------------------------!
+      if (kplastic_rd0(ipft) == undef_real) then
+          !TODO
+         !----- Use the "low" variables as placeholders for double precision. -------------!
+         lnexplow8 = -2.788d0 + 1.439d-2 * Vcmax258
+         lnexplow8 = max(lnexp_min8,min(lnexp_max8,lnexplow8))
+         !---- Set the value to negative so Vm0 decreases in the understorey. -------------!
+         tlow_fun8 = - 1.d0 * exp(lnexplow8)
+         !---------------------------------------------------------------------------------!
+
+
+         !----- Set kplastic for Vm0. -----------------------------------------------------!
+         kplastic_rd0(ipft) = sngloff(tlow_fun8,tiny_num8)
+         !---------------------------------------------------------------------------------!
+      end if
+      !------------------------------------------------------------------------------------!
+
+
 
       !------------------------------------------------------------------------------------!
       !    In case kplastic_SLA was not initialised through XML, use an empirical          !
@@ -8796,7 +8824,7 @@ subroutine init_derived_params_after_xml()
          !---------------------------------------------------------------------------------!
          !     Arrhenius-based model, print Arrhenius reference and skip Q10.              !
          !---------------------------------------------------------------------------------!
-         write(unit=18,fmt='(43(1x,a))') '         PFT','    TROPICAL','       GRASS'      &
+         write(unit=18,fmt='(44(1x,a))') '         PFT','    TROPICAL','       GRASS'      &
                                         ,'     PATHWAY','         SLA','          D0'      &
                                         ,'     VCMAX25','         VM0','      JMAX25'      &
                                         ,'         JM0','        TPM0','         RD0'      &
@@ -8809,13 +8837,13 @@ subroutine init_derived_params_after_xml()
                                         ,'    ST_SLOPE','         GS0','Q_EFFICIENCY'      &
                                         ,' CV_ELECTRON',' QYIELD_PSII','      KWROOT'      &
                                         ,'  LEAF_WIDTH','       RRFF0','KPLASTIC_VM0'      &
-                                        ,'KPLASTIC_SLA',' KPLASTIC_LL','EPLASTIC_VM0'      &
-                                        ,'EPLASTIC_SLA'
+                                        ,'KPLASTIC_RD0','KPLASTIC_SLA',' KPLASTIC_LL'      &
+                                        ,'EPLASTIC_VM0','EPLASTIC_SLA'
                                         
          do ipft=1,n_pft
             write(char_pathway,fmt='(a,i1)') 'C',photosyn_pathway(ipft)
 
-            write (unit=18,fmt='(8x,i5,2(12x,l1),11x,a2,39(1x,f12.6))')                    &
+            write (unit=18,fmt='(8x,i5,2(12x,l1),11x,a2,40(1x,f12.6))')                    &
                            ipft,is_tropical(ipft),is_grass(ipft),char_pathway,SLA(ipft)    &
                           ,D0(ipft),Vcmax25(ipft),Vm0(ipft),Jmax25(ipft),Jm0(ipft)         &
                           ,TPm0(ipft),Rd0(ipft),dark_respiration_factor(ipft)              &
@@ -8829,7 +8857,8 @@ subroutine init_derived_params_after_xml()
                           ,quantum_efficiency(ipft),curvpar_electron(ipft)                 &
                           ,qyield_psII(ipft),water_conductance(ipft)*yr_sec                &
                           ,leaf_width(ipft),root_respiration_factor(ipft)                  &
-                          ,kplastic_vm0(ipft),kplastic_sla(ipft),kplastic_LL(ipft)         &
+                          ,kplastic_vm0(ipft),kplastic_rd0(ipft)                           &
+                          ,kplastic_sla(ipft),kplastic_LL(ipft)                            &
                           ,eplastic_vm0(ipft),eplastic_sla(ipft)
          end do
          !---------------------------------------------------------------------------------!
@@ -8837,7 +8866,7 @@ subroutine init_derived_params_after_xml()
          !---------------------------------------------------------------------------------!
          !     Collatz-based model, print Q10 instead of Arrhenius reference.              !
          !---------------------------------------------------------------------------------!
-         write(unit=18,fmt='(43(1x,a))') '         PFT','    TROPICAL','       GRASS'      &
+         write(unit=18,fmt='(44(1x,a))') '         PFT','    TROPICAL','       GRASS'      &
                                         ,'     PATHWAY','         SLA','          D0'      &
                                         ,'     VCMAX25','         VM0','      JMAX25'      &
                                         ,'         JM0','        TPM0','         RD0'      &
@@ -8850,8 +8879,8 @@ subroutine init_derived_params_after_xml()
                                         ,'    ST_SLOPE','         GS0','Q_EFFICIENCY'      &
                                         ,' CV_ELECTRON',' QYIELD_PSII','      KWROOT'      &
                                         ,'  LEAF_WIDTH','       RRFF0','KPLASTIC_VM0'      &
-                                        ,'KPLASTIC_SLA',' KPLASTIC_LL','EPLASTIC_VM0'      &
-                                        ,'EPLASTIC_SLA'
+                                        ,'KPLASTIC_RD0','KPLASTIC_SLA',' KPLASTIC_LL'      &
+                                        ,'EPLASTIC_VM0','EPLASTIC_SLA'
          do ipft=1,n_pft
             write(char_pathway,fmt='(a,i1)') 'C',photosyn_pathway(ipft)
 
@@ -8869,7 +8898,8 @@ subroutine init_derived_params_after_xml()
                           ,quantum_efficiency(ipft),curvpar_electron(ipft)                 &
                           ,qyield_psII(ipft),water_conductance(ipft)*yr_sec                &
                           ,leaf_width(ipft),root_respiration_factor(ipft)                  &
-                          ,kplastic_vm0(ipft),kplastic_sla(ipft),kplastic_LL(ipft)         &
+                          ,kplastic_vm0(ipft),kplastic_rd0(ipft)                           &
+                          ,kplastic_sla(ipft),kplastic_LL(ipft)                            &
                           ,eplastic_vm0(ipft),eplastic_sla(ipft)
          end do
          !---------------------------------------------------------------------------------!
