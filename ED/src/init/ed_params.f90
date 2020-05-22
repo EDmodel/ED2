@@ -7463,7 +7463,8 @@ subroutine init_derived_params_after_xml()
                                    , lnexp_min8                & ! intent(in)
                                    , lnexp_max8                & ! intent(in)
                                    , tiny_num8                 ! ! intent(in)
-   use physiology_coms      , only : iphysiol                  ! ! intent(in)
+   use physiology_coms      , only : iphysiol                  & ! intent(in)
+                                   , trait_plasticity_scheme   ! ! intent(in)
    use pft_coms             , only : include_pft               & ! intent(in)
                                    , is_tropical               & ! intent(in)
                                    , is_grass                  & ! intent(in)
@@ -7782,6 +7783,7 @@ subroutine init_derived_params_after_xml()
    real(kind=8)                      :: temp25C8
    real(kind=8)                      :: Vcmax258
    real(kind=8)                      :: Jmax258
+   real(kind=8)                      :: Rdark258
    real(kind=8)                      :: refval8
    real(kind=8)                      :: hor8
    real(kind=8)                      :: q108
@@ -7794,6 +7796,7 @@ subroutine init_derived_params_after_xml()
    real(kind=8)                      :: lnexphigh8
    real(kind=8)                      :: thigh_fun8
    !----- Local constants. ----------------------------------------------------------------!
+   real                  , parameter :: kplastic_ref_lai = 4.d0 ! used for trait_plasticity == 3
    character(len=str_len), parameter :: zero_table_fn = 'pft_sizes.txt'
    character(len=str_len), parameter :: photo_file    = 'photo_param.txt'
    character(len=str_len), parameter :: allom_file    = 'allom_param.txt'
@@ -8550,7 +8553,7 @@ subroutine init_derived_params_after_xml()
 
 
    !---------------------------------------------------------------------------------------!
-   !     Find carboxylation rate and electron transport rate at 25 degC.                   !
+   !     Find carboxylation rate, dark respiration, and electron transport rate at 25 degC.!
    !---------------------------------------------------------------------------------------!
    do ipft=1,n_pft
       !------ Convert values to double precision to leverage the existing functions. ------!
@@ -8599,6 +8602,46 @@ subroutine init_derived_params_after_xml()
       Vcmax25(ipft) = sngloff(Vcmax258,tiny_num8)
       !------------------------------------------------------------------------------------!
 
+      !------ Convert values to double precision to leverage the existing functions. ------!
+      refval8      = dble(Rd0           (ipft))
+      hor8         = dble(Rd_hor        (ipft))
+      q108         = dble(Rd_q10        (ipft))
+      decay_elow8  = dble(Rd_decay_elow (ipft))
+      decay_ehigh8 = dble(Rd_decay_ehigh(ipft))
+      low_temp8    = dble(Rd_low_temp   (ipft)) + t008
+      high_temp8   = dble(Rd_high_temp  (ipft)) + t008
+      !------------------------------------------------------------------------------------!
+
+
+
+      !----- Find the physiology-scheme dependent, uncorrected Vcmax at 25degC.  ----------!
+      select case (iphysiol)
+      case (0,1)
+         Rdark258 = arrhenius(temp25C8,refval8,hor8)
+      case (2,3)
+         Rdark258 = collatz(temp25C8,refval8,q108)
+      end select
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !    Find the temperature correction factors to shut down Rd at extreme temper-      !
+      ! atures.  This should have minimal effect at 25degC, though.  It is unlikely, but   !
+      ! to avoid floating point exceptions, we also check whether the temperature will     !
+      ! make the exponential too large or too small.                                       !
+      !------------------------------------------------------------------------------------!
+      !----- Low temperature. -------------------------------------------------------------!
+      lnexplow8  = decay_elow8  * (low_temp8 - temp25C8)
+      lnexplow8  = max(lnexp_min8,min(lnexp_max8,lnexplow8))
+      tlow_fun8  = 1.d0 +  exp(lnexplow8)
+      !----- High temperature. ------------------------------------------------------------!
+      lnexphigh8 = decay_ehigh8 * (temp25C8 - high_temp8)
+      lnexphigh8 = max(lnexp_min8,min(lnexp_max8,lnexphigh8))
+      thigh_fun8 = 1.d0 + exp(lnexphigh8)
+      !----- Correct Vcmax. ---------------------------------------------------------------!
+      Rdark258   = Rdark258 / (tlow_fun8 * thigh_fun8)
+      !------------------------------------------------------------------------------------!
 
 
 
@@ -8664,11 +8707,17 @@ subroutine init_derived_params_after_xml()
       !------------------------------------------------------------------------------------!
       if (kplastic_vm0(ipft) == undef_real) then
          !----- Use the "low" variables as placeholders for double precision. -------------!
-         lnexplow8 = -2.788d0 + 1.439d-2 * Vcmax258
-         lnexplow8 = max(lnexp_min8,min(lnexp_max8,lnexplow8))
-         !---- Set the value to negative so Vm0 decreases in the understorey. -------------!
-         tlow_fun8 = - 1.d0 * exp(lnexplow8)
-         !---------------------------------------------------------------------------------!
+         select case (trait_plasticity_scheme)
+         case (-1,-2,0,1,2)
+            lnexplow8 = -2.788d0 + 1.439d-2 * Vcmax258
+            lnexplow8 = max(lnexp_min8,min(lnexp_max8,lnexplow8))
+            !---- Set the value to negative so Vm0 decreases in the understorey. ----------!
+            tlow_fun8 = - 1.d0 * exp(lnexplow8)
+            !------------------------------------------------------------------------------!
+         case (3)
+            ! ---- based on trait data at BCI, Panama  ---!
+            tlow_fun8 = - 1.d0 * (8.11d-1 * log(Vcmax258) - 2.22d0) / dble(kplastic_ref_lai)
+         end select
 
 
          !----- Set kplastic for Vm0. -----------------------------------------------------!
@@ -8686,14 +8735,13 @@ subroutine init_derived_params_after_xml()
       !                                                                                    !
       !------------------------------------------------------------------------------------!
       if (kplastic_rd0(ipft) == undef_real) then
-          !TODO
-         !----- Use the "low" variables as placeholders for double precision. -------------!
-         lnexplow8 = -2.788d0 + 1.439d-2 * Vcmax258
-         lnexplow8 = max(lnexp_min8,min(lnexp_max8,lnexplow8))
-         !---- Set the value to negative so Vm0 decreases in the understorey. -------------!
-         tlow_fun8 = - 1.d0 * exp(lnexplow8)
-         !---------------------------------------------------------------------------------!
-
+         select case (trait_plasticity_scheme)
+         case (-1,-2,0,1,2)
+             tlow_fun8 = 0.d0 ! no plasticity
+         case (3)
+             ! --- based on trait data at BCI, Panama ---!
+             tlow_fun8 = - 1.d0 * (5.59d-1 * log(Rdark258) + 8.2d-1) / dble(kplastic_ref_lai)
+         end select
 
          !----- Set kplastic for Vm0. -----------------------------------------------------!
          kplastic_rd0(ipft) = sngloff(tlow_fun8,tiny_num8)
@@ -8720,7 +8768,12 @@ subroutine init_derived_params_after_xml()
       !    (KN16).                                                                         !
       !------------------------------------------------------------------------------------!
       if (kplastic_SLA(ipft) == undef_real) then
-         kplastic_SLA(ipft) = 0.462 - 0.1239 * log(SLA(ipft))
+         select case (trait_plasticity_scheme)
+         case (-1,-2,0,1,2)
+            kplastic_SLA(ipft) = 0.462 - 0.1239 * log(SLA(ipft))
+         case (3)
+            kplastic_SLA(ipft) = (0.214 * log(1. / SLA(ipft) * 2000.) - 0.088) / kplastic_ref_lai
+        end select
       end if
       !------------------------------------------------------------------------------------!
 
@@ -8743,11 +8796,19 @@ subroutine init_derived_params_after_xml()
       !    Changing Environment, 357-383. Springer International Publishing, Cham,         !
       !    Switzerland. doi:10.1007/978-3-319-27422- 5 17.                                 !
       !------------------------------------------------------------------------------------!
-      if (kplastic_LL(ipft) == undef_real .and. leaf_turnover_rate(ipft) > 0.) then
-         kplastic_LL(ipft) = 0.2126 - 0.062 * log(12./leaf_turnover_rate(ipft))
-      elseif (kplastic_LL(ipft) == undef_real) then
-         kplastic_LL(ipft) = 0.0
-      end if
+      select case (trait_plasticity_scheme)
+      case (-1,-2,0,1,2)
+          if (kplastic_LL(ipft) == undef_real .and. leaf_turnover_rate(ipft) > 0.) then
+              kplastic_LL(ipft) = 0.2126 - 0.062 * log(12./leaf_turnover_rate(ipft))
+          elseif (kplastic_LL(ipft) == undef_real) then
+              kplastic_LL(ipft) = 0.0
+          end if
+      case (3)
+          ! relationship from BCI trait data
+          if (kplastic_LL(ipft) == undef_real) then
+              kplastic_LL(ipft) = -1.0 * (0.504 * log(Vcmax25(ipft) * SLA(ipft) / 2000.) - 0.401) / kplastic_ref_lai
+          end if
+      end select
       !------------------------------------------------------------------------------------!
 
 
