@@ -7780,6 +7780,7 @@ subroutine init_derived_params_after_xml()
    real                              :: wood_psi_swap
    real                              :: leaf_rwc_small
    real                              :: wood_rwc_small
+   real                              :: Rdark25
    real(kind=8)                      :: temp25C8
    real(kind=8)                      :: Vcmax258
    real(kind=8)                      :: Jmax258
@@ -8644,6 +8645,10 @@ subroutine init_derived_params_after_xml()
       !------------------------------------------------------------------------------------!
 
 
+      !------ Convert to single precision. ------------------------------------------------!
+      Rdark25    = sngloff(Rdark258,tiny_num8)
+      !------------------------------------------------------------------------------------!
+
 
       !------ Convert values to double precision to leverage the existing functions. ------!
       refval8      = dble(Jm0           (ipft))
@@ -8707,22 +8712,28 @@ subroutine init_derived_params_after_xml()
       !------------------------------------------------------------------------------------!
       if (kplastic_vm0(ipft) == undef_real) then
          !----- Use the "low" variables as placeholders for double precision. -------------!
-         select case (trait_plasticity_scheme)
-         case (-1,-2,0,1,2)
-            lnexplow8 = -2.788d0 + 1.439d-2 * Vcmax258
-            lnexplow8 = max(lnexp_min8,min(lnexp_max8,lnexplow8))
-            !---- Set the value to negative so Vm0 decreases in the understorey. ----------!
-            tlow_fun8 = - 1.d0 * exp(lnexplow8)
-            !------------------------------------------------------------------------------!
-         case (3)
-            ! ---- based on trait data at BCI, Panama  ---!
-            tlow_fun8 = - 1.d0 * (8.11d-1 * log(Vcmax258) - 2.22d0) / dble(kplastic_ref_lai)
-         end select
-
+         lnexplow8 = -2.788d0 + 1.439d-2 * Vcmax258
+         lnexplow8 = max(lnexp_min8,min(lnexp_max8,lnexplow8))
+         !---- Set the value to negative so Vm0 decreases in the understorey. -------------!
+         tlow_fun8 = - 1.d0 * exp(lnexplow8)
+         !---------------------------------------------------------------------------------!
 
          !----- Set kplastic for Vm0. -----------------------------------------------------!
          kplastic_vm0(ipft) = sngloff(tlow_fun8,tiny_num8)
          !---------------------------------------------------------------------------------!
+         
+         !---------------------------------------------------------------------------------!
+         ! rewrite plasticity for tropical trees based on BCI data if 
+         ! trait_plasticity_scheme is 3
+         !---------------------------------------------------------------------------------!
+         select case (trait_plasticity_scheme)
+         case (3)
+            if (is_tropical(ipft) .and. (.not. is_grass(ipft))) then
+                kplastic_vm0(ipft) = - 1.0 * (0.811 * log(Vcmax25(ipft)) - 2.22) / kplastic_ref_lai
+            endif
+         end select
+         !---------------------------------------------------------------------------------!
+
       end if
       !------------------------------------------------------------------------------------!
 
@@ -8735,16 +8746,20 @@ subroutine init_derived_params_after_xml()
       !                                                                                    !
       !------------------------------------------------------------------------------------!
       if (kplastic_rd0(ipft) == undef_real) then
-         select case (trait_plasticity_scheme)
-         case (-1,-2,0,1,2)
-             tlow_fun8 = 0.d0 ! no plasticity
-         case (3)
-             ! --- based on trait data at BCI, Panama ---!
-             tlow_fun8 = - 1.d0 * (5.59d-1 * log(Rdark258) + 8.2d-1) / dble(kplastic_ref_lai)
-         end select
+         !----- Set kplastic for Rd0. -----------------------------------------------------!
+         kplastic_rd0(ipft) = 0.0
+         !---------------------------------------------------------------------------------!
 
-         !----- Set kplastic for Vm0. -----------------------------------------------------!
-         kplastic_rd0(ipft) = sngloff(tlow_fun8,tiny_num8)
+         !---------------------------------------------------------------------------------!
+         ! rewrite plasticity for tropical trees based on BCI data if 
+         ! trait_plasticity_scheme is 3
+         !---------------------------------------------------------------------------------!
+         select case (trait_plasticity_scheme)
+         case (3)
+            if (is_tropical(ipft) .and. (.not. is_grass(ipft))) then
+                kplastic_rd0(ipft) = - 1.0 * (0.559 * log(Rdark25) - 0.82) / kplastic_ref_lai
+            endif
+         end select
          !---------------------------------------------------------------------------------!
       end if
       !------------------------------------------------------------------------------------!
@@ -8768,12 +8783,20 @@ subroutine init_derived_params_after_xml()
       !    (KN16).                                                                         !
       !------------------------------------------------------------------------------------!
       if (kplastic_SLA(ipft) == undef_real) then
+         kplastic_SLA(ipft) = 0.462 - 0.1239 * log(SLA(ipft))
+            
+         !---------------------------------------------------------------------------------!
+         ! rewrite plasticity for tropical trees based on BCI data if 
+         ! trait_plasticity_scheme is 3
+         !---------------------------------------------------------------------------------!
          select case (trait_plasticity_scheme)
-         case (-1,-2,0,1,2)
-            kplastic_SLA(ipft) = 0.462 - 0.1239 * log(SLA(ipft))
          case (3)
-            kplastic_SLA(ipft) = (0.214 * log(1. / SLA(ipft) * 2000.) - 0.088) / kplastic_ref_lai
-        end select
+            if (is_tropical(ipft) .and. (.not. is_grass(ipft))) then
+                kplastic_SLA(ipft) = (0.214 * log(1. / SLA(ipft) * 2000.) - 0.088)         &
+                                   / kplastic_ref_lai
+            endif
+         end select
+         !---------------------------------------------------------------------------------!
       end if
       !------------------------------------------------------------------------------------!
 
@@ -8796,19 +8819,25 @@ subroutine init_derived_params_after_xml()
       !    Changing Environment, 357-383. Springer International Publishing, Cham,         !
       !    Switzerland. doi:10.1007/978-3-319-27422- 5 17.                                 !
       !------------------------------------------------------------------------------------!
-      select case (trait_plasticity_scheme)
-      case (-1,-2,0,1,2)
-          if (kplastic_LL(ipft) == undef_real .and. leaf_turnover_rate(ipft) > 0.) then
-              kplastic_LL(ipft) = 0.2126 - 0.062 * log(12./leaf_turnover_rate(ipft))
-          elseif (kplastic_LL(ipft) == undef_real) then
-              kplastic_LL(ipft) = 0.0
-          end if
-      case (3)
-          ! relationship from BCI trait data
-          if (kplastic_LL(ipft) == undef_real) then
-              kplastic_LL(ipft) = -1.0 * (0.504 * log(Vcmax25(ipft) * SLA(ipft) / 2000.) - 0.401) / kplastic_ref_lai
-          end if
-      end select
+      if (kplastic_LL(ipft) == undef_real .and. leaf_turnover_rate(ipft) > 0.) then
+         kplastic_LL(ipft) = 0.2126 - 0.062 * log(12./leaf_turnover_rate(ipft))
+         
+         !---------------------------------------------------------------------------------!
+         ! rewrite plasticity for tropical trees based on BCI data if 
+         ! trait_plasticity_scheme is 3
+         !---------------------------------------------------------------------------------!
+         select case (trait_plasticity_scheme)
+         case (3)
+            if (is_tropical(ipft) .and. (.not. is_grass(ipft))) then
+                kplastic_LL(ipft) = -1.0 * (0.504 * log(Vcmax25(ipft) * SLA(ipft) / 2000.) &
+                                           - 0.401) / kplastic_ref_lai
+            endif
+         end select
+
+      elseif (kplastic_LL(ipft) == undef_real) then
+         kplastic_LL(ipft) = 0.0
+      end if
+
       !------------------------------------------------------------------------------------!
 
 
