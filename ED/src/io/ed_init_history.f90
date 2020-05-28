@@ -5251,10 +5251,6 @@ module ed_init_history
                         ,'WFLUX_GW                  ',dsetrank,iparallel,.true. ,foundvar)
       call hdf_getslab_r(cpatch%wflux_wl                                                   &
                         ,'WFLUX_WL                  ',dsetrank,iparallel,.true. ,foundvar)
-      call hdf_getslab_r(cpatch%last_gV                                                    &
-                        ,'LAST_GV                   ',dsetrank,iparallel,.true. ,foundvar)
-      call hdf_getslab_r(cpatch%last_gJ                                                    &
-                        ,'LAST_GJ                   ',dsetrank,iparallel,.true. ,foundvar)
       !----- Daily means. -----------------------------------------------------------------!
       if (writing_long) then
          call hdf_getslab_r(cpatch%dmean_nppleaf                                           &

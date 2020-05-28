@@ -428,7 +428,7 @@ module stable_cohorts
             ! welcome to modify this term in case leaf_psi shows strong oscillations from  !
             ! each timestep to another.                                                    !
             !------------------------------------------------------------------------------!
-            bleafhydro = size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft)
+            bleafhydro = size2bl(cpatch%dbh(ico),cpatch%hite(ico),cpatch%sla(ico),ipft)
             broothydro = q(ipft) * bleafhydro
             sap_frac   = dbh2sf(cpatch%dbh(ico),ipft)
             bsapwhydro = qsw(ipft) * cpatch%hite(ico) * bleafhydro

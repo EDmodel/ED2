@@ -369,7 +369,7 @@ module growth_balive
                      !---------------------------------------------------------------------!
                      !    New grasses may update height and "DBH" every day.               !
                      !---------------------------------------------------------------------!
-                     cpatch%hite(ico) = bl2h(cpatch%bleaf(ico), ipft)
+                     cpatch%hite(ico) = bl2h(cpatch%bleaf(ico), cpatch%sla(ico), ipft)
                      cpatch%dbh(ico)  = h2dbh(cpatch%hite(ico), ipft)
                      !---------------------------------------------------------------------!
                  else
@@ -498,7 +498,7 @@ module growth_balive
                   !----- Update bark thickness. -------------------------------------------!
                   cpatch%thbark(ico)  = size2xb( cpatch%dbh(ico),cpatch%hite(ico)          &
                                                , cpatch%bbarka(ico),cpatch%bbarkb(ico)     &
-                                               , cpatch%pft(ico) )
+                                               , cpatch%sla(ico),cpatch%pft(ico) )
                   !------------------------------------------------------------------------!
 
 
@@ -1305,7 +1305,7 @@ module growth_balive
          !     Maximum bleaf that the allometric relationship would allow.  If the plant   !
          ! is drought stressed (elongf<1), we down-regulate allocation to balive.          !
          !---------------------------------------------------------------------------------!
-         bleaf_max     = size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft)
+         bleaf_max     = size2bl(cpatch%dbh(ico),cpatch%hite(ico),cpatch%sla(ico),ipft)
          height_aim    = cpatch%hite(ico)
          !---------------------------------------------------------------------------------!
       end if
@@ -1369,7 +1369,8 @@ module growth_balive
             !        net growth (i.e. increment from the value of btissue before           !
             !        maintenance was applied) is the same every day.                       !
             !------------------------------------------------------------------------------!
-            if ( iallom == 3 .and. (.not. (is_grass(ipft) .and. igrass == 1)) ) then
+            if ( (iallom == 3 .or. iallom == 4)                                            &
+                .and. (.not. (is_grass(ipft) .and. igrass == 1)) ) then
                if (delta_bleaf >= tiny_num) then
                   gtf_bleaf = ( cpatch%leaf_maintenance(ico)                               &
                               + gr_tfact0 * (delta_bleaf - cpatch%leaf_maintenance(ico)) ) &
@@ -1951,7 +1952,7 @@ module growth_balive
          ! phenology_status=1 yet.                                                         !
          ! MLO - I don't see problems as long as phenology(grass) is evergreen.            !
          !---------------------------------------------------------------------------------!
-         bl_max = size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft)                           &
+         bl_max = size2bl(cpatch%dbh(ico),cpatch%hite(ico),cpatch%sla(ico),ipft)           &
                 * green_leaf_factor * cpatch%elongf(ico)
          bl_pot = cpatch%bleaf(ico) + npp_pot
 
@@ -2159,7 +2160,7 @@ module growth_balive
 
 
       !----- First, find the minimum possible scale for each pool. ------------------------!
-      bleaf_ok_min     = size2bl(min_dbh(ipft),hgt_min(ipft),ipft)
+      bleaf_ok_min     = size2bl(min_dbh(ipft),hgt_min(ipft),cpatch%sla(ico),ipft)
       broot_ok_min     = q(ipft) * bleaf_ok_min
       bsapwooda_ok_min =     agf_bs(ipft)  * qsw  (ipft) * cpatch%hite(ico) * bleaf_ok_min
       bsapwoodb_ok_min = (1.-agf_bs(ipft)) * qsw  (ipft) * cpatch%hite(ico) * bleaf_ok_min

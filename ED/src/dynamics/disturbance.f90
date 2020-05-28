@@ -3982,8 +3982,8 @@ module disturbance
       ! stress.                                                                            !
       !------------------------------------------------------------------------------------!
       call pheninit_balive_bstorage(mzg,cpatch%pft(nc),cpatch%krdepth(nc),cpatch%hite(nc)  &
-                                   ,cpatch%dbh(nc),csite%soil_water(:,np),ntext_soil       &
-                                   ,cpatch%paw_avg(nc),cpatch%elongf(nc)                   &
+                                   ,cpatch%dbh(nc),cpatch%sla(nc),csite%soil_water(:,np)   &
+                                   ,ntext_soil,cpatch%paw_avg(nc),cpatch%elongf(nc)        &
                                    ,cpatch%phenology_status(nc),cpatch%bleaf(nc)           &
                                    ,cpatch%broot(nc),cpatch%bsapwooda(nc)                  &
                                    ,cpatch%bsapwoodb(nc),cpatch%bbarka(nc)                 &
@@ -4012,7 +4012,7 @@ module disturbance
                                         ,cpatch%bsapwooda(nc),cpatch%bbarka(nc)            &
                                         ,cpatch%pft(nc))
       cpatch%thbark       (nc) = size2xb(cpatch%dbh(nc),cpatch%hite(nc),cpatch%bbarka(nc)  &
-                                        ,cpatch%bbarkb(nc),cpatch%pft(nc))
+                                        ,cpatch%bbarkb(nc),cpatch%sla(nc),cpatch%pft(nc))
       cpatch%leaf_temp    (nc) = csite%can_temp  (np)
       cpatch%leaf_temp_pv (nc) = csite%can_temp  (np)
       cpatch%leaf_water   (nc) = 0.0
@@ -4197,7 +4197,8 @@ module disturbance
             ! Lianas of 35m will be reduced to maxh, all
             cpatch%hite(ico)      = max(cpatch%hite(ico) * h_pruning_factor, 1.0)
             cpatch%dbh(ico)       = h2dbh (cpatch%hite(ico), ipft)
-            bleaf_max             = size2bl(cpatch%dbh(ico), cpatch%hite(ico), ipft)
+            bleaf_max             = size2bl(cpatch%dbh(ico), cpatch%hite(ico)              &
+                                           ,cpatch%sla(ico), ipft)
             cpatch%bleaf(ico)     = bleaf_max * cpatch%elongf(ico)
             cpatch%bdeada(ico)    = agf_bs(ipft)                                           &
                                   * size2bd(cpatch%dbh(ico), cpatch%hite(ico), ipft)

@@ -319,7 +319,9 @@ module ed_bigleaf_init
                         cpatch%pft      (1) = ipft
                         cpatch%hite     (1) = hgt_max(ipft)
                         cpatch%dbh      (1) = dbh_bigleaf(ipft)
-                        cpatch%bleaf    (1) = size2bl(cpatch%dbh(1),cpatch%hite(1),ipft)
+                        cpatch%sla      (1) = sla     (ipft)
+                        cpatch%bleaf    (1) = size2bl(cpatch%dbh(1),cpatch%hite(1)         &
+                                                     ,cpatch%sla(1),ipft)
                         bdeadx              = size2bd(cpatch%dbh(1),cpatch%hite(1),ipft)
                         cpatch%bdeada   (1) =       agf_bs(ipft)  * bdeadx
                         cpatch%bdeadb   (1) = (1. - agf_bs(ipft)) * bdeadx
@@ -333,7 +335,6 @@ module ed_bigleaf_init
                         cpatch%bbarkb   (1) = (1.0 - agf_bs(ipft)) * cpatch%bleaf(1)       &
                                             * qbark(ipft) * cpatch%hite(1)
                         cpatch%balive   (1) = ed_balive(cpatch,1)
-                        cpatch%sla      (1) = sla     (ipft)
                         cpatch%nplant   (1) = lai (ipft,ilu)                               &
                                             / ( cpatch%sla(1) * cpatch%bleaf(1)            &
                                               * csite%area(ipa) )
@@ -395,7 +396,7 @@ module ed_bigleaf_init
                                                    ,cpatch%bbarka(1),cpatch%pft(1))
                         cpatch%thbark(1)  = size2xb(cpatch%dbh(1),cpatch%hite(1)           &
                                                    ,cpatch%bbarka(1),cpatch%bbarkb(1)      &
-                                                   ,cpatch%pft(1))
+                                                   ,cpatch%sla(1),cpatch%pft(1))
                         !------------------------------------------------------------------!
 
 

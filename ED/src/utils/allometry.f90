@@ -36,13 +36,13 @@ module allometry
          !---------------------------------------------------------------------------------!
       elseif (is_tropical(ipft)) then
          select case (iallom)
-         case (0,1,3)
-            !----- Default ED-2.1 allometry. ----------------------------------------------!
-            h2dbh = exp((log(h)-b1Ht(ipft))/b2Ht(ipft))
-         case default
+         case (2)
             !----- Poorter et al. (2006) allometry. ---------------------------------------!
             h2dbh =  ( log(hgt_ref(ipft) / ( hgt_ref(ipft) - h ) ) / b1Ht(ipft) )          &
                ** ( 1.0 / b2Ht(ipft) )
+         case default
+            !----- Default ED-2.1 allometry. ----------------------------------------------!
+            h2dbh = exp((log(h)-b1Ht(ipft))/b2Ht(ipft))
          end select
       else ! Temperate
          h2dbh = log(1.0-(h-hgt_ref(ipft))/b1Ht(ipft))/b2Ht(ipft)
@@ -97,13 +97,13 @@ module allometry
             elseif (is_tropical(ipft)) then
                mdbh = min(dbh,dbh_crit(ipft))
                select case (iallom)
-               case (0,1,3)
-                  !----- Default ED-2.1 allometry. ----------------------------------------!
-                  dbh2h = exp (b1Ht(ipft) + b2Ht(ipft) * log(mdbh) )
-               case default
+               case (2)
                   !----- Weibull function. ------------------------------------------------!
                   lnexp = max(lnexp_min,min(lnexp_max,b1Ht(ipft) * mdbh ** b2Ht(ipft)))
                   dbh2h = hgt_ref(ipft) * (1. - exp(-lnexp))
+               case default
+                  !----- Default ED-2.1 allometry. ----------------------------------------!
+                  dbh2h = exp (b1Ht(ipft) + b2Ht(ipft) * log(mdbh) )
                end select
             else !----- Temperate PFT allometry. ------------------------------------------!
                lnexp = max(lnexp_min,min(lnexp_max,b2Ht(ipft) * dbh))
@@ -164,7 +164,8 @@ module allometry
          size2bd = 0.0
       else
          !----- Depending on the allometry, size means DBH or DBH^2 * Height. -------------!
-         if (iallom == 3 .and. is_tropical(ipft) .and. (.not. is_liana(ipft))) then
+         if ( (iallom == 3 .or. iallom == 4)                            &
+              .and. is_tropical(ipft) .and. (.not. is_liana(ipft))) then
             size = dbh * dbh * hite
          else
             size = dbh
@@ -292,11 +293,12 @@ module allometry
    !=======================================================================================!
    !=======================================================================================!
    !      This function computes the maximum leaf biomass [kgC/m2] given the size (either  !
-   ! height or DBH).  Trees would always use DBH as the starting point, but grasses may    !
-   ! use DBH (old style) or height (new style).  This replaces dbh2bl and h2bl with a      !
-   ! single generic function that should be used by all plants.                            !
+   ! height or DBH) and SLA (if leaf area based allometry is used).  Trees would always    !
+   ! use DBH as the starting point, but grasses may use DBH (old style) or height          !
+   ! (new style).  This replaces dbh2bl and h2bl with a single generic function that       !
+   ! should be used by all plants.                                                         !
    !---------------------------------------------------------------------------------------!
-   real function size2bl(dbh,hite,ipft)
+   real function size2bl(dbh,hite,sla_in,ipft)
       use pft_coms     , only : dbh_crit       & ! intent(in)
                               , C2B            & ! intent(in)
                               , b1Bl           & ! intent(in)
@@ -313,6 +315,7 @@ module allometry
       !----- Arguments --------------------------------------------------------------------!
       real          , intent(in) :: dbh
       real          , intent(in) :: hite
+      real          , intent(in) :: sla_in
       integer       , intent(in) :: ipft
       !----- Local variables --------------------------------------------------------------!
       real                       :: mdbh
@@ -338,7 +341,8 @@ module allometry
       !     Find leaf biomass depending on the allometry.  The new allometry uses dbh and  !
       ! height, whereas the old allometry uses dbh only.                                   !
       !------------------------------------------------------------------------------------!
-      if (iallom == 3 .and. is_tropical(ipft) .and. (.not. is_liana(ipft))) then
+      if ((iallom == 3 .or. iallom == 4)                                                  &
+          .and. is_tropical(ipft) .and. (.not. is_liana(ipft))) then
          size = mdbh * mdbh * hite
       else 
          size = mdbh
@@ -349,6 +353,13 @@ module allometry
       !----- Use the general functional form. ---------------------------------------------!
       size2bl = b1Bl(ipft) / C2B * size ** b2Bl(ipft)
       !------------------------------------------------------------------------------------!
+
+      !----- for iallom == 4, b1Bl and b2Bl represents leaf area based allometry, we need  !
+      ! to convert it to biomass using cohort-level SLA  !
+      if (iallom == 4 .and. is_tropical(ipft) .and. (.not. is_liana(ipft))) then
+          size2bl = size2bl * C2B / sla_in
+          !---- the unit of sla is m2 leaf /kgC
+      endif
 
       return
    end function size2bl
@@ -435,14 +446,16 @@ module allometry
    !      This function determines an effective DBH for grasses given their leaf biomass.  !
    ! DBH has no real meaning for grasses with the new allometry.                           !
    !---------------------------------------------------------------------------------------!
-   real function bl2dbh(bleaf,ipft)
+   real function bl2dbh(bleaf,sla_in,ipft)
       use pft_coms    , only : dbh_crit    & ! intent(in)
                              , l1DBH       & ! intent(in)
                              , l2DBH       ! ! intent(in)
+      use ed_misc_coms, only : iallom      ! ! intent(in)
       implicit none
 
       !----- Arguments --------------------------------------------------------------------!
       real   , intent(in) :: bleaf
+      real   , intent(in) :: sla_in
       integer, intent(in) :: ipft
       !----- Local variables --------------------------------------------------------------!
       real                :: mdbh
@@ -452,9 +465,15 @@ module allometry
       !------------------------------------------------------------------------------------!
       !      The inverse function works for both DBH- and DBH^2*Hgt-based allometric       !
       ! equations, because l1DBH and l2DBH already account for the different allometric    !
-      ! functions.                                                                         !
+      ! functions. However, for leaf-area-based allometry (IALLOM = 4), we need to multiply!
+      ! bleaf with sla_in to get leaf area because l1DBH and l2DBH are based on leaf area  !
       !------------------------------------------------------------------------------------!
-      mdbh = l1DBH(ipft) * bleaf ** l2DBH(ipft)
+      select case (iallom)
+      case (4)
+        mdbh = l1DBH(ipft) * (bleaf * sla_in) ** l2DBH(ipft)
+      case default
+        mdbh = l1DBH(ipft) * bleaf ** l2DBH(ipft)
+    end select
       !------------------------------------------------------------------------------------!
 
 
@@ -482,17 +501,18 @@ module allometry
    !=======================================================================================!
    !      This function determines the height for grasses given their leaf biomass.        !
    !---------------------------------------------------------------------------------------!
-   real function bl2h(bleaf,ipft)
+   real function bl2h(bleaf,sla_in,ipft)
       use pft_coms,      only:  hgt_max    ! ! intent(in)
       implicit none
       
       !----- Arguments --------------------------------------------------------------------!
       real   , intent(in)      :: bleaf
+      real   , intent(in)      :: sla_in
       integer, intent(in)      :: ipft
       !------------------------------------------------------------------------------------!
 
       !----- Use existing allometric equations to convert leaves to height. ---------------!
-      bl2h = min(hgt_max(ipft),dbh2h(ipft,bl2dbh(bleaf,ipft)))
+      bl2h = min(hgt_max(ipft),dbh2h(ipft,bl2dbh(bleaf,sla_in,ipft)))
       !------------------------------------------------------------------------------------!
 
       return
@@ -552,7 +572,7 @@ module allometry
       else
 
          !----- make this function generic to size, not just dbh. -------------------------!
-         loclai = sla * size2bl(dbh,hite,ipft) 
+         loclai = sla * size2bl(dbh,hite,sla,ipft) 
          !---------------------------------------------------------------------------------!
 
 
@@ -583,7 +603,8 @@ module allometry
 
 
          !----- Find the nominal crown area. ----------------------------------------------!
-         if (iallom == 3 .and. is_tropical(ipft) .and. (.not. is_liana(ipft))) then
+         if ( (iallom == 3 .or. iallom == 4)                            &
+             .and. is_tropical(ipft) .and. (.not. is_liana(ipft))) then
             size = mdbh * mdbh * hite
          else
             size = mdbh
@@ -718,7 +739,7 @@ module allometry
    !    This function computes bark thickness.  To obtain the actual thickness, we compare !
    ! the actual bark biomass with on-allometry bark biomass.                               !
    !---------------------------------------------------------------------------------------!
-   real function size2xb(dbh,hgt,bbarka,bbarkb,ipft)
+   real function size2xb(dbh,hgt,bbarka,bbarkb,sla_in,ipft)
       use pft_coms    , only : is_grass       & ! intent(in)
                              , is_liana       & ! intent(in)
                              , qbark          & ! intent(in)
@@ -734,6 +755,7 @@ module allometry
       real(kind=4), intent(in) :: hgt
       real(kind=4), intent(in) :: bbarka
       real(kind=4), intent(in) :: bbarkb
+      real(kind=4), intent(in) :: sla_in
       integer     , intent(in) :: ipft
       !----- Local variables. -------------------------------------------------------------!
       real(kind=4)             :: mdbh
@@ -760,7 +782,7 @@ module allometry
 
 
          !----- Find on-allometry bark biomass. -------------------------------------------!
-         bleaf_max = size2bl(mdbh,hgt,ipft) 
+         bleaf_max = size2bl(mdbh,hgt,sla_in,ipft) 
          bbark_max = qbark(ipft) * hgt * bleaf_max
          !---------------------------------------------------------------------------------!
 
@@ -869,7 +891,7 @@ module allometry
             !------------------------------------------------------------------------------!
             size     = hite
             !------------------------------------------------------------------------------!
-         case (3)
+         case (3,4)
             !------------------------------------------------------------------------------!
             !    Test allometry, similar to 2, but based on D*D*H.  The curve loosely fits !
             ! B18 for large trees, and Xiangtao's fit based on unpublished data from       !
@@ -1059,6 +1081,7 @@ module allometry
    real function size2be(dbh,hite,ipft)
       use pft_coms, only : q     & ! intent(in)
                          , qsw   & ! intent(in)
+                         , SLA   & ! intent(in)
                          , qbark ! ! intent(in)
       implicit none
 
@@ -1075,7 +1098,12 @@ module allometry
       !------------------------------------------------------------------------------------!
       !     Find potential leaf and heartwood biomass.                                     !
       !------------------------------------------------------------------------------------!
-      bleaf   = size2bl(dbh,hite,ipft)
+      bleaf   = size2bl(dbh,hite,SLA(ipft),ipft) 
+      !NOTE: here the canopy top SLA is used because size2be is only used in expand_bevery to create
+      !a look up table for biomass allometry. When generating the lut, we do not know the light
+      !environment and thus the trait plasticity in SLA. This can create biases in lut but the only
+      !effect is to slightly reduce fraction allocated to bdead at monthly scale. The total effect
+      !at annual scale should be very small.
       bdead   = size2bd(dbh,hite,ipft)
       size2be = bleaf * (1. + q(ipft) + (qsw(ipft)+qbark(ipft)) * hite) + bdead
       !------------------------------------------------------------------------------------!
@@ -1433,7 +1461,8 @@ module allometry
 
 
          !-----Find WAI. ------------------------------------------------------------------!
-         if (iallom == 3 .and. is_tropical(ipft) .and. (.not. is_liana(ipft))) then
+         if ( (iallom == 3 .or. iallom == 4)                            &
+              .and. is_tropical(ipft) .and. (.not. is_liana(ipft))) then
             size = mdbh * mdbh * cpatch%hite(ico)
          else
             size = mdbh

@@ -691,7 +691,7 @@ subroutine read_ed21_history_file
                            !---------------------------------------------------------------!
                            !     Initialise size and structural pools.                     !
                            !---------------------------------------------------------------!
-                           if (iallom == 3) then
+                           if ((iallom == 3 .or. iallom == 4)) then
                               !----- New allometry, initialise with DBH. ------------------!
                               cpatch%hite(ico)   = dbh2h (ipft,cpatch%dbh  (ico))
                               bdeadx             = size2bd(cpatch%dbh(ico)                 &
@@ -741,6 +741,7 @@ subroutine read_ed21_history_file
                            !---------------------------------------------------------------!
                            cpatch%bleaf(ico)     = size2bl( cpatch%dbh (ico)               &
                                                           , cpatch%hite(ico)               &
+                                                          , cpatch%sla (ico)               &
                                                           , ipft )
                            cpatch%broot   (ico)  = cpatch%bleaf(ico) * q(ipft)
                            cpatch%bsapwooda(ico) = agf_bs(ipft) * cpatch%bleaf(ico)        &
@@ -900,23 +901,6 @@ subroutine read_ed21_history_file
 
 
 
-                           !----- Compute the above-ground biomass. -----------------------!
-                           cpatch%agb    (ico) = ed_biomass(cpatch, ico)
-                           cpatch%basarea(ico) = pio4 * cpatch%dbh(ico) * cpatch%dbh(ico)
-                           cpatch%btimber(ico) = size2bt( cpatch%dbh      (ico)            &
-                                                        , cpatch%hite     (ico)            &
-                                                        , cpatch%bdeada   (ico)            &
-                                                        , cpatch%bsapwooda(ico)            &
-                                                        , cpatch%bbarka   (ico)            &
-                                                        , cpatch%pft      (ico) )
-                           cpatch%thbark(ico)  = size2xb( cpatch%dbh      (ico)            &
-                                                        , cpatch%hite     (ico)            &
-                                                        , cpatch%bbarka   (ico)            &
-                                                        , cpatch%bbarkb   (ico)            &
-                                                        , cpatch%pft      (ico) )
-
-
-
                            !---------------------------------------------------------------!
                            !     In case we are representing trait plasticity, update      !
                            ! traits (SLA, Vm0).  This must be done before calculating LAI. !
@@ -931,7 +915,26 @@ subroutine read_ed21_history_file
                                                         ,rd0(cpatch%pft(ico))              &
                                                         ,sla(cpatch%pft(ico)) )
                            end select
+
                            !---------------------------------------------------------------!
+                           !----- Compute the above-ground biomass. -----------------------!
+                           cpatch%agb    (ico) = ed_biomass(cpatch, ico)
+                           cpatch%basarea(ico) = pio4 * cpatch%dbh(ico) * cpatch%dbh(ico)
+                           cpatch%btimber(ico) = size2bt( cpatch%dbh      (ico)            &
+                                                        , cpatch%hite     (ico)            &
+                                                        , cpatch%bdeada   (ico)            &
+                                                        , cpatch%bsapwooda(ico)            &
+                                                        , cpatch%bbarka   (ico)            &
+                                                        , cpatch%pft      (ico) )
+                           cpatch%thbark(ico)  = size2xb( cpatch%dbh      (ico)            &
+                                                        , cpatch%hite     (ico)            &
+                                                        , cpatch%bbarka   (ico)            &
+                                                        , cpatch%bbarkb   (ico)            &
+                                                        , cpatch%sla      (ico)            &
+                                                        , cpatch%pft      (ico) )
+
+
+
 
 
                            !----- Assign LAI, WAI, and CAI --------------------------------!
@@ -2079,7 +2082,7 @@ subroutine read_ed21_history_unstruct
                            !---------------------------------------------------------------!
                            !     Initialise size and structural pools.                     !
                            !---------------------------------------------------------------!
-                           if (iallom == 3) then
+                           if (iallom == 3 .or. iallom == 4) then
                               !----- New allometry, initialise with DBH. ------------------!
                               cpatch%hite(ico)   = dbh2h (ipft,cpatch%dbh  (ico))
                               bdeadx             = size2bd(cpatch%dbh(ico)                 &
@@ -2128,6 +2131,7 @@ subroutine read_ed21_history_unstruct
                            !---------------------------------------------------------------!
                            cpatch%bleaf(ico)     = size2bl( cpatch%dbh (ico)               &
                                                           , cpatch%hite(ico)               &
+                                                          , cpatch%sla (ico)               &
                                                           , ipft )
                            cpatch%broot(ico)     = cpatch%bleaf(ico) * q(ipft)
                            cpatch%bsapwooda(ico) = agf_bs(ipft) * cpatch%bleaf(ico)        &
@@ -2286,24 +2290,6 @@ subroutine read_ed21_history_unstruct
                            !---------------------------------------------------------------!
 
 
-                           !----- Compute the above-ground biomass. -----------------------!
-                           cpatch%agb    (ico) = ed_biomass(cpatch, ico)
-                           cpatch%basarea(ico) = pio4 * cpatch%dbh(ico) * cpatch%dbh(ico)
-                           cpatch%btimber(ico) = size2bt( cpatch%dbh      (ico)            &
-                                                        , cpatch%hite     (ico)            &
-                                                        , cpatch%bdeada   (ico)            &
-                                                        , cpatch%bsapwooda(ico)            &
-                                                        , cpatch%bbarka   (ico)            &
-                                                        , cpatch%pft      (ico) )
-                           cpatch%thbark(ico)  = size2xb( cpatch%dbh      (ico)            &
-                                                        , cpatch%hite     (ico)            &
-                                                        , cpatch%bbarka   (ico)            &
-                                                        , cpatch%bbarkb   (ico)            &
-                                                        , cpatch%pft      (ico) )
-                           !---------------------------------------------------------------!
-
-
-
                            !---------------------------------------------------------------!
                            !     In case we are representing trait plasticity, update      !
                            ! traits (SLA, Vm0).  This must be done before calculating LAI. !
@@ -2318,7 +2304,27 @@ subroutine read_ed21_history_unstruct
                                                         ,rd0(cpatch%pft(ico))              &
                                                         ,sla(cpatch%pft(ico)) )
                            end select
+
                            !---------------------------------------------------------------!
+                           !----- Compute the above-ground biomass. -----------------------!
+                           cpatch%agb    (ico) = ed_biomass(cpatch, ico)
+                           cpatch%basarea(ico) = pio4 * cpatch%dbh(ico) * cpatch%dbh(ico)
+                           cpatch%btimber(ico) = size2bt( cpatch%dbh      (ico)            &
+                                                        , cpatch%hite     (ico)            &
+                                                        , cpatch%bdeada   (ico)            &
+                                                        , cpatch%bsapwooda(ico)            &
+                                                        , cpatch%bbarka   (ico)            &
+                                                        , cpatch%pft      (ico) )
+                           cpatch%thbark(ico)  = size2xb( cpatch%dbh      (ico)            &
+                                                        , cpatch%hite     (ico)            &
+                                                        , cpatch%bbarka   (ico)            &
+                                                        , cpatch%bbarkb   (ico)            &
+                                                        , cpatch%sla      (ico)            &
+                                                        , cpatch%pft      (ico) )
+                           !---------------------------------------------------------------!
+
+
+
 
 
                            !----- Assign LAI, WAI, and CAI --------------------------------!
@@ -3449,7 +3455,7 @@ subroutine read_ed21_polyclone
                            !---------------------------------------------------------------!
                            !     Initialise size and structural pools.                     !
                            !---------------------------------------------------------------!
-                           if (iallom == 3) then
+                           if (iallom == 3 .or. iallom == 4) then
                               !----- New allometry, initialise with DBH. ------------------!
                               cpatch%hite(ico)   = dbh2h (ipft,cpatch%dbh  (ico))
                               bdeadx             = size2bd(cpatch%dbh(ico)                 &
@@ -3499,6 +3505,7 @@ subroutine read_ed21_polyclone
                            !---------------------------------------------------------------!
                            cpatch%bleaf(ico)     = size2bl( cpatch%dbh (ico)               &
                                                           , cpatch%hite(ico)               &
+                                                          , cpatch%sla (ico)               &
                                                           , ipft )
                            cpatch%broot(ico)     = cpatch%bleaf(ico) * q(ipft)
                            cpatch%bsapwooda(ico) = agf_bs(ipft) * cpatch%bleaf(ico)        &
@@ -3657,21 +3664,6 @@ subroutine read_ed21_polyclone
                            !---------------------------------------------------------------!
 
 
-                           !----- Compute the above-ground biomass. -----------------------!
-                           cpatch%agb(ico)     = ed_biomass(cpatch, ico)
-                           cpatch%basarea(ico) = pio4 * cpatch%dbh(ico) * cpatch%dbh(ico)
-                           cpatch%btimber(ico) = size2bt( cpatch%dbh      (ico)            &
-                                                        , cpatch%hite     (ico)            &
-                                                        , cpatch%bdeada   (ico)            &
-                                                        , cpatch%bsapwooda(ico)            &
-                                                        , cpatch%bbarka   (ico)            &
-                                                        , cpatch%pft      (ico) )
-                           cpatch%thbark(ico)  = size2xb( cpatch%dbh      (ico)            &
-                                                        , cpatch%hite     (ico)            &
-                                                        , cpatch%bbarka   (ico)            &
-                                                        , cpatch%bbarkb   (ico)            &
-                                                        , cpatch%pft      (ico) )
-
                            !---------------------------------------------------------------!
                            !     In case we are representing trait plasticity, update      !
                            ! traits (SLA, Vm0).  This must be done before calculating LAI. !
@@ -3686,7 +3678,24 @@ subroutine read_ed21_polyclone
                                                         ,rd0(cpatch%pft(ico))              &
                                                         ,sla(cpatch%pft(ico)) )
                            end select
+
                            !---------------------------------------------------------------!
+                           !----- Compute the above-ground biomass. -----------------------!
+                           cpatch%agb(ico)     = ed_biomass(cpatch, ico)
+                           cpatch%basarea(ico) = pio4 * cpatch%dbh(ico) * cpatch%dbh(ico)
+                           cpatch%btimber(ico) = size2bt( cpatch%dbh      (ico)            &
+                                                        , cpatch%hite     (ico)            &
+                                                        , cpatch%bdeada   (ico)            &
+                                                        , cpatch%bsapwooda(ico)            &
+                                                        , cpatch%bbarka   (ico)            &
+                                                        , cpatch%pft      (ico) )
+                           cpatch%thbark(ico)  = size2xb( cpatch%dbh      (ico)            &
+                                                        , cpatch%hite     (ico)            &
+                                                        , cpatch%bbarka   (ico)            &
+                                                        , cpatch%bbarkb   (ico)            &
+                                                        , cpatch%sla      (ico)            &
+                                                        , cpatch%pft      (ico) )
+
 
 
                            !----- Assign LAI, WAI, and CAI --------------------------------!

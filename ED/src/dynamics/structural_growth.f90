@@ -1364,7 +1364,7 @@ module structural_growth
 
 
       !----- First, find the minimum possible scale for each pool. ------------------------!
-      bleaf_ok_min     = size2bl(min_dbh(ipft),hgt_min(ipft),ipft)
+      bleaf_ok_min     = size2bl(min_dbh(ipft),hgt_min(ipft),cpatch%sla(ico),ipft)
       bdead_ok_min     = size2bd(min_dbh(ipft),hgt_min(ipft),ipft)
       bdeada_ok_min    =     agf_bs(ipft)  * bdead_ok_min
       bdeadb_ok_min    = (1.-agf_bs(ipft)) * bdead_ok_min

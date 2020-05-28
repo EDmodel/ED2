@@ -253,8 +253,6 @@ module ed_type_init
       cpatch%wflux_gw_layer    (:,ico) = 0.
       cpatch%high_leaf_psi_days  (ico) = 0
       cpatch%low_leaf_psi_days   (ico) = 0
-      cpatch%last_gV             (ico) = 0.
-      cpatch%last_gJ             (ico) = 0.
       !------------------------------------------------------------------------------------!
 
 

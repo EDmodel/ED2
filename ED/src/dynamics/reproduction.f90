@@ -31,6 +31,7 @@ module reproduction
                                      , include_pft_fp              & ! intent(in)
                                      , q                           & ! intent(in)
                                      , qsw                         & ! intent(in)
+                                     , SLA                         & ! intent(in)
                                      , qbark                       & ! intent(in)
                                      , agf_bs                      & ! intent(in)
                                      , hgt_min                     & ! intent(in)
@@ -289,7 +290,7 @@ module reproduction
                         rectest%bdeadb    = ( 1.0 - agf_bs(ipft) ) * rec_bdead
 
                         call pheninit_balive_bstorage(nzg,rectest%pft,rectest%krdepth      &
-                                                     ,rectest%hite,rectest%dbh             &
+                                                     ,rectest%hite,rectest%dbh,SLA(ipft)   &
                                                      ,csite%soil_water(:,ipa)              &
                                                      ,cpoly%ntext_soil(:,isi)              &
                                                      ,rectest%paw_avg,rectest%elongf       &
@@ -505,6 +506,26 @@ module reproduction
                         !------------------------------------------------------------------!
 
 
+                        !------------------------------------------------------------------!
+                        !     Update plastic traits (SLA, Vm0).  This must be done before  !
+                        ! calculating LAI.                                                 !
+                        !------------------------------------------------------------------!
+                        select case (trait_plasticity_scheme)
+                        case (0) 
+                           !----- Trait plasticity is disabled, do nothing. ---------------!
+                           continue
+                           !---------------------------------------------------------------!
+                        case (-2,2,3) ! Update trait every month
+                           !----- Allow recruits to start adapted to their environment. ---!
+                           ipft = cpatch%pft(ico)
+                           call update_cohort_plastic_trait(cpatch,ico,.true.              &
+                                                           ,cpoly%llspan_toc(ipft,isi)     &
+                                                           ,cpoly%vm_bar_toc(ipft,isi)     &
+                                                           ,cpoly%rd_bar_toc(ipft,isi)     &
+                                                           ,cpoly%sla_toc   (ipft,isi) )
+                           !---------------------------------------------------------------!
+                        end select
+                        !------------------------------------------------------------------!
 
                         !------------------------------------------------------------------!
                         !    Compute initial AGB and Basal Area.  Their derivatives will   !
@@ -521,6 +542,7 @@ module reproduction
                                                           , cpatch%hite      (ico)         &
                                                           , cpatch%bbarka    (ico)         &
                                                           , cpatch%bbarkb    (ico)         &
+                                                          , cpatch%sla       (ico)         &
                                                           , cpatch%pft       (ico) )
                         cpatch%basarea  (ico) = pio4 * cpatch%dbh(ico)  * cpatch%dbh(ico)
                         cpatch%dagb_dt  (ico) = 0.0
@@ -542,26 +564,6 @@ module reproduction
 
 
 
-                        !------------------------------------------------------------------!
-                        !     Update plastic traits (SLA, Vm0).  This must be done before  !
-                        ! calculating LAI.                                                 !
-                        !------------------------------------------------------------------!
-                        select case (trait_plasticity_scheme)
-                        case (0) 
-                           !----- Trait plasticity is disabled, do nothing. ---------------!
-                           continue
-                           !---------------------------------------------------------------!
-                        case (-2,2,3) ! Update trait every month
-                           !----- Allow recruits to start adapted to their environment. ---!
-                           ipft = cpatch%pft(ico)
-                           call update_cohort_plastic_trait(cpatch,ico,.true.              &
-                                                           ,cpoly%llspan_toc(ipft,isi)     &
-                                                           ,cpoly%vm_bar_toc(ipft,isi)     &
-                                                           ,cpoly%rd_bar_toc(ipft,isi)     &
-                                                           ,cpoly%sla_toc   (ipft,isi) )
-                           !---------------------------------------------------------------!
-                        end select
-                        !------------------------------------------------------------------!
 
 
 
@@ -779,7 +781,8 @@ module reproduction
                         !    Will only reproduce/grow if on-allometry so dont' have to     !
                         ! worry about elongation factor.                                   !
                         !------------------------------------------------------------------!
-                        bleaf_plant     = size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft) 
+                        bleaf_plant     = size2bl(cpatch%dbh(ico),cpatch%hite(ico)         &
+                                                 ,cpatch%sla(ico),ipft) 
                         broot_plant     = bleaf_plant * q    (ipft)
                         bsapwood_plant  = bleaf_plant * qsw  (ipft) * cpatch%hite(ico)
                         bbark_plant     = bleaf_plant * qbark(ipft) * cpatch%hite(ico)

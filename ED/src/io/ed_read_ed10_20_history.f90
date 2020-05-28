@@ -895,7 +895,7 @@ subroutine read_ed10_ed20_history_file
                         ! pools.                                                           !
                         !------------------------------------------------------------------!
                         cpatch%bleaf(ic2)     = size2bl(cpatch%dbh(ic2),cpatch%hite(ic2)   &
-                                                       ,ipft(ic))
+                                                       ,cpatch%sla(ic2),ipft(ic))
                         cpatch%broot(ic2)     = cpatch%bleaf(ic2) * q(ipft(ic))
                         cpatch%bsapwooda(ic2) = agf_bs(ipft(ic))                           &
                                               * cpatch%bleaf(ic2)                          &
@@ -1006,6 +1006,7 @@ subroutine read_ed10_ed20_history_file
                                                      , cpatch%hite      (ic2)              &
                                                      , cpatch%bbarka    (ic2)              &
                                                      , cpatch%bbarkb    (ic2)              &
+                                                     , cpatch%sla       (ic2)              &
                                                      , cpatch%pft       (ic2) )
 
                         !----- Growth rates, start with zero. -----------------------------!

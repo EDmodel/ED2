@@ -429,7 +429,8 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
 
                  if((cpatch%bdeada(ico) + cpatch%bdeadb(ico)) > tiny(1.0)) then
                     if(is_grass(cpatch%pft(ico)) .and. igrass==1) then
-                       cpatch%hite(ico) = max( hgt_min(pft), bl2h(cpatch%bleaf(ico),pft))
+                       cpatch%hite(ico) = max( hgt_min(pft),                               &
+                                               bl2h(cpatch%bleaf(ico),cpatch%sla(ico),pft))
                        cpatch%dbh (ico) = h2dbh(cpatch%hite(ico),pft)
                     else
                        cpatch%dbh (ico) = bd2dbh(cpatch%pft(ico), cpatch%bdeada(ico)       &
@@ -451,7 +452,7 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
                                               ,cpatch%bbarka(ico),cpatch%pft(ico))
                  cpatch%thbark (ico) = size2xb(cpatch%dbh(ico),cpatch%hite(ico)            &
                                               ,cpatch%bbarka(ico),cpatch%bbarkb(ico)       &
-                                              ,cpatch%pft(ico))
+                                              ,cpatch%sla(ico),cpatch%pft(ico))
                  cpatch%agb(ico)     = ed_biomass(cpatch, ico)
                  !-------------------------------------------------------------------------!
                  !    Here we are leaving all water in the branches and twigs... Do not    !
@@ -952,7 +953,7 @@ end subroutine event_till
 !!$              cpatch%hite(ico)    = hgt_min(pft)
 !!$              cpatch%dbh(ico)     = h2dbh(hgt_min(pft),pft)
 !!$              cpatch%bdead(ico)   = size2bd(cpatch%dbh(ico),cpatch%hite(ico),pft)
-!!$              cpatch%bleaf(ico)   = size2bl(cpatch%dbh(ico),cpatch%hite(ico),pft)
+!!$              cpatch%bleaf(ico)   = size2bl(cpatch%dbh(ico),cpatch%hite(ico),cpatch%sla(ico),pft)
 !!$print*,cpatch%hite(ico),cpatch%dbh(ico),cpatch%bdead(ico),cpatch%bleaf(ico)
 !!$              cpatch%phenology_status(ico) = 0
 !!$              cpatch%balive(ico)  = cpatch%bleaf(ico)* &

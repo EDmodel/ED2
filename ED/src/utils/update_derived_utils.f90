@@ -112,8 +112,8 @@ module update_derived_utils
       !----- Get DBH and height -----------------------------------------------------------!
       if (is_grass(ipft) .and. igrass == 1) then
           !---- New grasses get dbh_effective and height from bleaf. ----------------------!
-          cpatch%dbh(ico)  = bl2dbh(cpatch%bleaf(ico), ipft)
-          cpatch%hite(ico) = bl2h  (cpatch%bleaf(ico), ipft)
+          cpatch%dbh(ico)  = bl2dbh(cpatch%bleaf(ico), cpatch%sla(ico), ipft)
+          cpatch%hite(ico) = bl2h  (cpatch%bleaf(ico), cpatch%sla(ico), ipft)
       else
           !---- Trees and old grasses get dbh from bdead. ---------------------------------!
           cpatch%dbh(ico)  = bd2dbh(ipft, cpatch%bdeada(ico), cpatch%bdeadb(ico))
@@ -148,7 +148,8 @@ module update_derived_utils
       if ((.not. is_grass(ipft)) .or. igrass /= 1) then
          select case (cpatch%phenology_status(ico))
          case (0)
-            bleaf_max = size2bl(cpatch%dbh(ico),cpatch%hite(ico),cpatch%pft(ico))
+            bleaf_max = size2bl(cpatch%dbh(ico),cpatch%hite(ico)                           &
+                               ,cpatch%sla(ico),cpatch%pft(ico))
             if (cpatch%bleaf(ico) < bleaf_max) cpatch%phenology_status(ico) = 1
          end select
       end if
@@ -185,7 +186,7 @@ module update_derived_utils
                                    ,cpatch%bsapwooda(ico),cpatch%bbarka(ico)               &
                                    ,cpatch%pft(ico))
       cpatch%thbark(ico)  = size2xb(cpatch%dbh(ico),cpatch%hite(ico),cpatch%bbarka(ico)    &
-                                   ,cpatch%bbarkb(ico),cpatch%pft(ico))
+                                   ,cpatch%bbarkb(ico),cpatch%sla(ico),cpatch%pft(ico))
       !------------------------------------------------------------------------------------!
 
 
@@ -274,7 +275,8 @@ module update_derived_utils
       if (ico > 1) then
          !----- Accumulate LAI from the top cohort to current cohort. ---------------------!
          do jco = 1,ico-1
-            bl_max      = size2bl(cpatch%dbh(jco),cpatch%hite(jco),cpatch%pft(jco))
+            bl_max      = size2bl(cpatch%dbh(jco),cpatch%hite(jco)                         &
+                                 ,cpatch%sla(jco),cpatch%pft(jco))
             max_cum_lai = max_cum_lai + bl_max * cpatch%sla(jco) * cpatch%nplant(jco)
          end do
          !---------------------------------------------------------------------------------!
@@ -382,7 +384,7 @@ module update_derived_utils
       ! allometry is used
       select case (iallom)
       case (4)
-        bl_max = size2bl(cpatch%dbh(ico),cpatch%hite(ico),cpatch%pft(ico))
+        bl_max = size2bl(cpatch%dbh(ico),cpatch%hite(ico),cpatch%sla(ico),cpatch%pft(ico))
 
         if (cpatch%bleaf(ico) > bl_max) then
             ! if the new bl_max is smaller than current bleaf, we need to dump
@@ -2155,7 +2157,7 @@ module update_derived_utils
          else
              !--use dbh for trees
              lai_pot = cpatch%nplant(ico) * cpatch%sla(ico)                                &
-                     * size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft)
+                     * size2bl(cpatch%dbh(ico),cpatch%hite(ico),cpatch%sla(ico),ipft)
          end if
          !---------------------------------------------------------------------------------!
 

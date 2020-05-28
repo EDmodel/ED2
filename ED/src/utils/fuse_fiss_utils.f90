@@ -569,7 +569,7 @@ module fuse_fiss_utils
             pat_lai_max = 0.0
             do ico=1,cpatch%ncohorts
                ipft        = cpatch%pft(ico)
-               bleaf_max   = size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft)
+               bleaf_max   = size2bl(cpatch%dbh(ico),cpatch%hite(ico),cpatch%sla(ico),ipft)
                pat_lai_max = pat_lai_max + cpatch%nplant(ico) * SLA(ipft) * bleaf_max
             end do
             !------------------------------------------------------------------------------!
@@ -772,7 +772,8 @@ module fuse_fiss_utils
          do ico = 1,cpatch%ncohorts
             ipft              = cpatch%pft(ico)
             laimax            = cpatch%nplant(ico) * cpatch%sla(ico)                       &
-                              * size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft)
+                              * size2bl(cpatch%dbh(ico),cpatch%hite(ico)                   &
+                                       ,cpatch%sla(ico),ipft)
             patch_laimax(ipa) = patch_laimax(ipa) + laimax * csite%area(ipa)
          end do
 
@@ -1064,10 +1065,12 @@ module fuse_fiss_utils
                else
                   !----- Trees or old grasses. Use on-allometry LAI. ----------------------!
                   donc_lai_max = cpatch%nplant(donc)                                       &
-                               * size2bl(cpatch%dbh(donc),cpatch%hite(donc),dpft)          &
+                               * size2bl(cpatch%dbh(donc),cpatch%hite(donc)                &
+                                        ,cpatch%sla(donc),dpft)                            &
                                * cpatch%sla(donc)
                   recc_lai_max = cpatch%nplant(recc)                                       &
-                               * size2bl(cpatch%dbh(recc),cpatch%hite(recc),rpft)          &
+                               * size2bl(cpatch%dbh(recc),cpatch%hite(recc)                &
+                                        ,cpatch%sla(recc),rpft)                            &
                                * cpatch%sla(recc)
                   !------------------------------------------------------------------------!
                end if
@@ -1118,7 +1121,8 @@ module fuse_fiss_utils
                   ! inside the donor loop because the receptor may change when we fuse     !
                   ! cohorts.                                                               !
                   !------------------------------------------------------------------------!
-                  recc_bleaf_max  = size2bl(cpatch%dbh(recc),cpatch%hite(recc),rpft)
+                  recc_bleaf_max  = size2bl(cpatch%dbh(recc),cpatch%hite(recc)             &
+                                           ,cpatch%sla(recc),rpft)
                   recc_bsapa_max  = agf_bs(rpft)                                           &
                                   * recc_bleaf_max * qsw  (rpft) * cpatch%hite(recc)
                   recc_bbarka_max = agf_bs(rpft)                                           &
@@ -1133,7 +1137,8 @@ module fuse_fiss_utils
                   !------------------------------------------------------------------------!
                   !    Find potential heat capacity -- Donor cohort.                       !
                   !------------------------------------------------------------------------!
-                  donc_bleaf_max  = size2bl(cpatch%dbh(donc),cpatch%hite(donc),dpft)
+                  donc_bleaf_max  = size2bl(cpatch%dbh(donc),cpatch%hite(donc)             &
+                                           ,cpatch%sla(donc),dpft)
                   donc_bsapa_max  = agf_bs(dpft)                                           &
                                   * donc_bleaf_max * qsw  (dpft) * cpatch%hite(donc)
                   donc_bbarka_max = agf_bs(dpft)                                           &
@@ -1477,10 +1482,10 @@ module fuse_fiss_utils
                       !--use dbh for trees
                       lai_max = ( cpatch%nplant(recc)                                      &
                                 * size2bl(cpatch%dbh(recc),cpatch%hite(recc)               &
-                                         ,cpatch%pft(recc))                                &
+                                         ,cpatch%sla(recc),cpatch%pft(recc))               &
                                 + cpatch%nplant(donc)                                      &
                                 * size2bl(cpatch%dbh(donc),cpatch%hite(donc)               &
-                                         ,cpatch%pft(donc)))                               &
+                                         ,cpatch%sla(donc),cpatch%pft(donc)))              &
                                 * cpatch%sla(recc)
                   end if
 
@@ -1744,7 +1749,7 @@ module fuse_fiss_utils
             ! (green_leaf_factor and SLA).                                                 !
             !------------------------------------------------------------------------------!
             bleaf_mp = green_leaf_factor(ipft)                                             &
-                     * size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft)
+                     * size2bl(cpatch%dbh(ico),cpatch%hite(ico),cpatch%sla(ico),ipft)
             tai_mp   = cpatch%nplant(ico) * bleaf_mp * cpatch%sla(ico) + cpatch%wai(ico)
             !------------------------------------------------------------------------------! 
 
@@ -1829,12 +1834,16 @@ module fuse_fiss_utils
                   if (is_grass(cpatch%pft(ico)) .and. igrass==1) then 
                      !----- Use bleaf for grass. ------------------------------------------!
                      cpatch%bleaf(ico)  = cpatch%bleaf(ico) * (1.-epsilon)
-                     cpatch%dbh  (ico)  = bl2dbh(cpatch%bleaf(ico), cpatch%pft(ico))
-                     cpatch%hite (ico)  = bl2h(cpatch%bleaf(ico), cpatch%pft(ico))
+                     cpatch%dbh  (ico)  = bl2dbh(cpatch%bleaf(ico), cpatch%sla(ico)        &
+                                                ,cpatch%pft(ico))
+                     cpatch%hite (ico)  = bl2h(cpatch%bleaf(ico), cpatch%sla(ico)          &
+                                              ,cpatch%pft(ico))
 
                      cpatch%bleaf(inew)  = cpatch%bleaf(inew) * (1.+epsilon)
-                     cpatch%dbh  (inew)  = bl2dbh(cpatch%bleaf(inew), cpatch%pft(inew))
-                     cpatch%hite (inew)  = bl2h  (cpatch%bleaf(inew), cpatch%pft(inew))
+                     cpatch%dbh  (inew)  = bl2dbh(cpatch%bleaf(inew), cpatch%sla(inew)     &
+                                                 ,cpatch%pft(inew))
+                     cpatch%hite (inew)  = bl2h  (cpatch%bleaf(inew), cpatch%sla(inew)     &
+                                                 ,cpatch%pft(inew))
                      !---------------------------------------------------------------------!
                   else
                      !-- use bdead for trees and old grasses. -----------------------------!
@@ -2168,8 +2177,8 @@ module fuse_fiss_utils
       !------------------------------------------------------------------------------------!
       if (is_grass(cpatch%pft(recc)) .and. igrass == 1) then
           !----- New grass scheme, use bleaf then find DBH and height. --------------------!
-          cpatch%dbh  (recc) = bl2dbh(cpatch%bleaf(recc), cpatch%pft(recc))
-          cpatch%hite (recc) = bl2h  (cpatch%bleaf(recc), cpatch%pft(recc))
+          cpatch%dbh  (recc) = bl2dbh(cpatch%bleaf(recc),cpatch%sla(recc),cpatch%pft(recc))
+          cpatch%hite (recc) = bl2h  (cpatch%bleaf(recc),cpatch%sla(recc),cpatch%pft(recc))
           !--------------------------------------------------------------------------------!
       else
           !----- Trees, or old grass scheme.  Use bdead then find DBH and height. ---------!
@@ -2211,7 +2220,7 @@ module fuse_fiss_utils
       !     Bark thickness is calculated based on the fused size and biomass.              !
       !------------------------------------------------------------------------------------!
       cpatch%thbark(recc) = size2xb(cpatch%dbh(recc),cpatch%hite(recc),cpatch%bbarka(recc) &
-                                   ,cpatch%bbarkb(recc),cpatch%pft(recc))
+                                   ,cpatch%bbarkb(recc),cpatch%sla(recc),cpatch%pft(recc))
       !------------------------------------------------------------------------------------!
 
 
@@ -2731,10 +2740,6 @@ module fuse_fiss_utils
       cpatch%low_leaf_psi_days(recc)  = nint(                                              &
                                         cpatch%low_leaf_psi_days(recc) * rnplant           &
                                       + cpatch%low_leaf_psi_days(donc) * dnplant)
-      cpatch%last_gJ(recc)  =   cpatch%last_gJ(recc) * rnplant                             &
-                            +   cpatch%last_gJ(recc) * dnplant
-      cpatch%last_gV(recc)  =   cpatch%last_gV(recc) * rnplant                             &
-                            +   cpatch%last_gV(recc) * dnplant
       !------------------------------------------------------------------------------------!
 
 

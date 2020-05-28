@@ -507,6 +507,7 @@ module phenology_aux
                   !------------------------------------------------------------------------!
                   call pheninit_balive_bstorage(nzg,cpatch%pft(ico),cpatch%krdepth(ico)    &
                                                ,cpatch%hite(ico),cpatch%dbh(ico)           &
+                                               ,cpatch%sla(ico)                            &
                                                ,csite%soil_water(:,ipa)                    &
                                                ,cpoly%ntext_soil(:,isi)                    &
                                                ,cpatch%paw_avg(ico),cpatch%elongf(ico)     &
@@ -595,7 +596,7 @@ module phenology_aux
    ! is found but it doesn't control the phenology, so we assign the biomass that matches  !
    ! the fully flushed leaves.                                                             !
    !---------------------------------------------------------------------------------------!
-   subroutine pheninit_balive_bstorage(mzg,ipft,kroot,height,dbh,soil_water,ntext_soil     &
+   subroutine pheninit_balive_bstorage(mzg,ipft,kroot,height,dbh,sla,soil_water,ntext_soil &
                                       ,paw_avg,elongf,phenology_status                     &
                                       ,bleaf,broot,bsapwooda,bsapwoodb,bbarka,bbarkb       &
                                       ,bstorage,cb,cb_lightmax,cb_moistmax,cb_mlmax        &
@@ -625,6 +626,7 @@ module phenology_aux
       integer                  , intent(in)  :: kroot             ! Level of rooting depth
       real                     , intent(in)  :: height            ! Height
       real                     , intent(in)  :: dbh               ! DBH
+      real                     , intent(in)  :: sla               ! SLA
       integer, dimension(mzg)  , intent(in)  :: ntext_soil        ! Soil texture
       real   , dimension(mzg)  , intent(in)  :: soil_water        ! Soil water
       real                     , intent(out) :: paw_avg           ! Pot. available water
@@ -711,7 +713,7 @@ module phenology_aux
 
 
       !----- Compute the biomass of living tissues. ---------------------------------------!
-      bleaf_max  = size2bl(dbh,height,ipft)
+      bleaf_max  = size2bl(dbh,height,sla,ipft)
       balive_max = bleaf_max * ( 1.0 + q(ipft) + ( qsw(ipft) + qbark(ipft) ) * height )
       bleaf      = bleaf_max * elongf
       broot      = bleaf_max * q    (ipft)

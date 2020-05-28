@@ -1,0 +1,85 @@
+./utils/allometry.f90:   real function size2bl(dbh,hite,sla_in,ipft)
+./utils/allometry.f90:      size2bl = b1Bl(ipft) / C2B * size ** b2Bl(ipft)
+./utils/allometry.f90:          size2bl = size2bl * C2B / sla_in
+./utils/allometry.f90:   end function size2bl
+./utils/allometry.f90:         loclai = sla * size2bl(dbh,hite,ipft) 
+./utils/allometry.f90:         bleaf_max = size2bl(mdbh,hgt,ipft) 
+./utils/allometry.f90:      bleaf   = size2bl(dbh,hite,ipft)
+./utils/update_derived_utils.f90:                                , size2bl                 & ! function
+./utils/update_derived_utils.f90:            bleaf_max = size2bl(cpatch%dbh(ico),cpatch%hite(ico),cpatch%pft(ico))
+./utils/update_derived_utils.f90:      use allometry      , only : size2bl                 ! ! function
+./utils/update_derived_utils.f90:            bl_max      = size2bl(cpatch%dbh(jco),cpatch%hite(jco),cpatch%pft(jco))
+./utils/update_derived_utils.f90:        bl_max = size2bl(cpatch%dbh(ico),cpatch%hite(ico),cpatch%pft(ico))
+./utils/update_derived_utils.f90:      use allometry            , only : size2bl    ! ! intent(in)
+./utils/update_derived_utils.f90:                     * size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft)
+./utils/stable_cohorts.f90:                                , size2bl                & ! function
+./utils/stable_cohorts.f90:            bleafhydro = size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft)
+./utils/fuse_fiss_utils.f90:      use allometry          , only : size2bl            ! ! function
+./utils/fuse_fiss_utils.f90:               bleaf_max   = size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft)
+./utils/fuse_fiss_utils.f90:      use allometry           , only : size2bl                       ! ! function
+./utils/fuse_fiss_utils.f90:                              * size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft)
+./utils/fuse_fiss_utils.f90:      use allometry           , only : size2bl             ! ! function
+./utils/fuse_fiss_utils.f90:                               * size2bl(cpatch%dbh(donc),cpatch%hite(donc),dpft)          &
+./utils/fuse_fiss_utils.f90:                               * size2bl(cpatch%dbh(recc),cpatch%hite(recc),rpft)          &
+./utils/fuse_fiss_utils.f90:                  recc_bleaf_max  = size2bl(cpatch%dbh(recc),cpatch%hite(recc),rpft)
+./utils/fuse_fiss_utils.f90:                  donc_bleaf_max  = size2bl(cpatch%dbh(donc),cpatch%hite(donc),dpft)
+./utils/fuse_fiss_utils.f90:      use allometry           , only : size2bl             ! ! function
+./utils/fuse_fiss_utils.f90:                                * size2bl(cpatch%dbh(recc),cpatch%hite(recc)               &
+./utils/fuse_fiss_utils.f90:                                * size2bl(cpatch%dbh(donc),cpatch%hite(donc)               &
+./utils/fuse_fiss_utils.f90:                                      , size2bl                       ! ! function
+./utils/fuse_fiss_utils.f90:                     * size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft)
+./dynamics/phenology_aux.f90:      use allometry      , only : size2bl             & ! function
+./dynamics/phenology_aux.f90:      bleaf_max  = size2bl(dbh,height,ipft)
+./dynamics/growth_balive.f90:      use allometry     , only : size2bl      & ! function
+./dynamics/growth_balive.f90:         bleaf_max     = size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft)
+./dynamics/growth_balive.f90:      use allometry     , only : size2bl       ! ! intent(in)
+./dynamics/growth_balive.f90:         bl_max = size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft)                           &
+./dynamics/growth_balive.f90:      use allometry    , only : size2bl            ! ! function
+./dynamics/growth_balive.f90:      bleaf_ok_min     = size2bl(min_dbh(ipft),hgt_min(ipft),ipft)
+./dynamics/phenology_driv.f90:                                , size2bl                  ! ! function
+./dynamics/phenology_driv.f90:               bl_max = elongf_try * size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft)
+./dynamics/phenology_driv.f90:               bl_full = size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft)
+./dynamics/phenology_driv.f90:                                    * size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft)
+./dynamics/phenology_driv.f90:                                    * size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft)       &
+./dynamics/phenology_driv.f90:      use allometry     , only : size2bl
+./dynamics/phenology_driv.f90:      bl_max        = green_leaf_factor * size2bl(dbh, height, pft)
+./dynamics/phenology_driv.f90:      use allometry      , only : size2bl                  ! ! function
+./dynamics/phenology_driv.f90:      bleaf_ok_min     = - tol_carbon_budget * size2bl(min_dbh(ipft),hgt_min(ipft),ipft)
+./dynamics/disturbance.f90:                                , size2bl                  & ! function
+./dynamics/disturbance.f90:            bleaf_max             = size2bl(cpatch%dbh(ico), cpatch%hite(ico), ipft)
+./dynamics/events.f90:!!$              cpatch%bleaf(ico)   = size2bl(cpatch%dbh(ico),cpatch%hite(ico),pft)
+./dynamics/reproduction.f90:      use allometry           , only : size2bl                     & ! function
+./dynamics/reproduction.f90:                        bleaf_plant     = size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft) 
+./dynamics/canopy_struct_dynamics.f90:                                  , size2bl              ! ! function
+./dynamics/canopy_struct_dynamics.f90:                          * dble(size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft))
+./dynamics/canopy_struct_dynamics.f90:                                     * size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft))
+./dynamics/structural_growth.f90:      use allometry           , only : size2bl                     ! ! function
+./dynamics/structural_growth.f90:      use allometry    , only : size2bl           & ! function
+./dynamics/structural_growth.f90:      bleaf_ok_min     = size2bl(min_dbh(ipft),hgt_min(ipft),ipft)
+./io/ed_read_ed10_20_history.f90:                                  , size2bl                     & ! function
+./io/ed_read_ed10_20_history.f90:                        cpatch%bleaf(ic2)     = size2bl(cpatch%dbh(ic2),cpatch%hite(ic2)   &
+./io/ed_read_ed21_history.f90:                                  , size2bl                     & ! function
+./io/ed_read_ed21_history.f90:                           cpatch%bleaf(ico)     = size2bl( cpatch%dbh (ico)               &
+./io/ed_read_ed21_history.f90:                                  , size2bl                     ! ! function
+./io/ed_read_ed21_history.f90:                           cpatch%bleaf(ico)     = size2bl( cpatch%dbh (ico)               &
+./io/ed_read_ed21_history.f90:                                  , size2bl                     ! ! function
+./io/ed_read_ed21_history.f90:                           cpatch%bleaf(ico)     = size2bl( cpatch%dbh (ico)               &
+./init/ed_bigleaf_init.f90:      use allometry      , only : size2bl              & ! function
+./init/ed_bigleaf_init.f90:                        cpatch%bleaf    (1) = size2bl(cpatch%dbh(1),cpatch%hite(1),ipft)
+./init/ed_nbg_init.f90:                                    , size2bl             & ! function
+./init/ed_nbg_init.f90:            cpatch%bleaf(ico)            = size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft)
+./init/ed_nbg_init.f90:                                    , size2bl             & ! function
+./init/ed_nbg_init.f90:            cpatch%bleaf(ico)            = size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft)
+./init/ed_nbg_init.f90:                                    , size2bl             & ! function
+./init/ed_nbg_init.f90:                  cpatch%bleaf(ico)            = size2bl(cpatch%dbh(ico),cpatch%hite(ico)  &
+./init/ed_params.f90:                             , size2bl               ! ! function
+./init/ed_params.f90:            ! and will be converted to leaf carbon using SLA in size2bl
+./init/ed_params.f90:         ! allometry is the same used in size2bl from Putz. I have dropped the intercept   !
+./init/ed_params.f90:         init_bleaf         = size2bl(dbh_bigleaf(ipft),hgt_max(ipft),ipft)
+./init/ed_params.f90:                                   , size2bl                   & ! function
+./init/ed_params.f90:      bleaf_crit  (ipft) = size2bl(dbh_crit(ipft),hgt_max(ipft),ipft)
+./init/ed_params.f90:      ! the size2bd and size2bl functions, and to be consistent, they cannot be            !
+./init/ed_params.f90:      bleaf_min    = size2bl(dbh,hgt_min(ipft),ipft) 
+./init/ed_params.f90:      bleaf_max    = size2bl(huge_dbh,huge_height,ipft)
+./init/ed_params.f90:      bleaf_bl     = size2bl(dbh_bigleaf(ipft),hgt_min(ipft),ipft) 
+./init/ed_params.f90:            bleaf_now              = size2bl(dbh_now,height_now,ipft)

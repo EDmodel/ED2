@@ -636,20 +636,6 @@ module ed_state_vars
 
 
       !------------------------------------------------------------------------------------!
-      !     The following variables are used for Katul's stomatal model.                   !
-      !------------------------------------------------------------------------------------!
-      real, pointer, dimension(:) :: last_gV
-      !< Optimized stomatal conductance under Rubisco-limited scenario using
-      !< Katul's stomatal model [umol/m2l/s]. This is used to speed up
-      !< optimization calculations
-      
-      real, pointer, dimension(:) :: last_gJ
-      !< Optimized stomatal conductance under Light-limited scenario using
-      !< Katul's stomatal model [umol/m2l/s]. This is used to speed up
-      !< optimization calculations
-
-
-      !------------------------------------------------------------------------------------!
       ! These are diagnostic variables, averaged over various time scales.                 !
       ! FMEAN -- averaged over FRQSUM (the least between FRQFAST, FRQSTATE and one day).   !
       ! DMEAN -- daily averages                                                            !
@@ -5702,8 +5688,6 @@ module ed_state_vars
       allocate(cpatch%high_leaf_psi_days           (                    ncohorts))
       allocate(cpatch%low_leaf_psi_days            (                    ncohorts))
 
-      allocate(cpatch%last_gV                      (                    ncohorts))
-      allocate(cpatch%last_gJ                      (                    ncohorts))
       allocate(cpatch%fmean_gpp                    (                    ncohorts))
       allocate(cpatch%fmean_npp                    (                    ncohorts))
       allocate(cpatch%fmean_leaf_resp              (                    ncohorts))
@@ -7887,8 +7871,6 @@ module ed_state_vars
       nullify(cpatch%wflux_wl                )
       nullify(cpatch%high_leaf_psi_days      )
       nullify(cpatch%low_leaf_psi_days       )
-      nullify(cpatch%last_gV                 )
-      nullify(cpatch%last_gJ                 )
 
       nullify(cpatch%fmean_gpp               )
       nullify(cpatch%fmean_npp               )
@@ -9052,8 +9034,6 @@ module ed_state_vars
 
       if(associated(cpatch%high_leaf_psi_days      )) deallocate(cpatch%high_leaf_psi_days      )
       if(associated(cpatch%low_leaf_psi_days       )) deallocate(cpatch%low_leaf_psi_days       )
-      if(associated(cpatch%last_gV                 )) deallocate(cpatch%last_gV                 )
-      if(associated(cpatch%last_gJ                 )) deallocate(cpatch%last_gJ                 )
 
       if(associated(cpatch%fmean_gpp               )) deallocate(cpatch%fmean_gpp               )
       if(associated(cpatch%fmean_npp               )) deallocate(cpatch%fmean_npp               )
@@ -11239,8 +11219,6 @@ module ed_state_vars
 
          opatch%high_leaf_psi_days      (oco) = ipatch%high_leaf_psi_days      (ico)
          opatch%low_leaf_psi_days       (oco) = ipatch%low_leaf_psi_days       (ico)
-         opatch%last_gV                 (oco) = ipatch%last_gV                 (ico)
-         opatch%last_gJ                 (oco) = ipatch%last_gJ                 (ico)
 
          opatch%fmean_gpp               (oco) = ipatch%fmean_gpp               (ico)
          opatch%fmean_npp               (oco) = ipatch%fmean_npp               (ico)
@@ -11974,8 +11952,6 @@ module ed_state_vars
 
       opatch%high_leaf_psi_days    (1:z) = pack(ipatch%high_leaf_psi_days        ,lmask)
       opatch%low_leaf_psi_days     (1:z) = pack(ipatch%low_leaf_psi_days         ,lmask)
-      opatch%last_gV               (1:z) = pack(ipatch%last_gV                   ,lmask)
-      opatch%last_gJ               (1:z) = pack(ipatch%last_gJ                   ,lmask)
       !------------------------------------------------------------------------------------!
 
 
@@ -29741,21 +29717,6 @@ module ed_state_vars
                                     '[kg/s]','icohort') 
       end if
 
-      if (associated(cpatch%last_gV)) then
-         nvar=nvar+1
-           call vtable_edio_r(npts,cpatch%last_gV,nvar,igr,init,cpatch%coglob_id, &
-           var_len,var_len_global,max_ptrs,'LAST_GV :41:hist') 
-         call metadata_edio(nvar,igr,'Optimized stom. cond. limited by Vcmax',  &
-            '[umol/m2l/s]','icohort') 
-      end if
-
-      if (associated(cpatch%last_gJ)) then
-         nvar=nvar+1
-           call vtable_edio_r(npts,cpatch%last_gJ,nvar,igr,init,cpatch%coglob_id, &
-           var_len,var_len_global,max_ptrs,'LAST_GJ :41:hist') 
-         call metadata_edio(nvar,igr,'Optimized stom. cond. limited by Jmax',  &
-            '[umol/m2l/s]','icohort') 
-      end if
 
       !------------------------------------------------------------------------------------!
 

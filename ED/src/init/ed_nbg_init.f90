@@ -302,8 +302,9 @@ module ed_nbg_init
             bdeadx                       = size2bd(cpatch%dbh(ico),cpatch%hite(ico),ipft)
             cpatch%bdeada(ico)           =       agf_bs(ipft)  * bdeadx
             cpatch%bdeadb(ico)           = (1. - agf_bs(ipft)) * bdeadx
-            cpatch%bleaf(ico)            = size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft)
             cpatch%sla(ico)              = sla(ipft)
+            cpatch%bleaf(ico)            = size2bl(cpatch%dbh(ico),cpatch%hite(ico)        &
+                                                  ,cpatch%sla(ico),ipft)
             cpatch%broot(ico)            = q(ipft) * cpatch%bleaf(ico)
             cpatch%bsapwooda(ico)        = agf_bs(ipft) * cpatch%bleaf(ico)                &
                                          * qsw(ipft) * cpatch%hite(ico)
@@ -364,7 +365,7 @@ module ed_nbg_init
                                          ,cpatch%bbarka(ico),cpatch%pft(ico))
             cpatch%thbark (ico) = size2xb(cpatch%dbh(ico),cpatch%hite(ico)                 &
                                          ,cpatch%bbarka(ico),cpatch%bbarkb(ico)            &
-                                         ,cpatch%pft(ico))
+                                         ,cpatch%sla(ico),cpatch%pft(ico))
             !------------------------------------------------------------------------------!
 
 
@@ -493,8 +494,9 @@ module ed_nbg_init
             bdeadx                       = size2bd(cpatch%dbh(ico),cpatch%hite(ico),ipft)
             cpatch%bdeada(ico)           =       agf_bs(ipft)  * bdeadx
             cpatch%bdeadb(ico)           = (1. - agf_bs(ipft)) * bdeadx
-            cpatch%bleaf(ico)            = size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft)
             cpatch%sla(ico)              = sla(ipft)
+            cpatch%bleaf(ico)            = size2bl(cpatch%dbh(ico),cpatch%hite(ico)        &
+                                                  ,cpatch%sla(ico),ipft)
             cpatch%broot(ico)            = q(ipft) * cpatch%bleaf(ico)
             cpatch%bsapwooda(ico)        = agf_bs(ipft) * cpatch%bleaf(ico)                &
                                          * qsw(ipft) * cpatch%hite(ico)
@@ -553,7 +555,7 @@ module ed_nbg_init
                                          ,cpatch%bbarka(ico),cpatch%pft(ico))
             cpatch%thbark (ico) = size2xb(cpatch%dbh(ico),cpatch%hite(ico)                 &
                                          ,cpatch%bbarka(ico),cpatch%bbarkb(ico)            &
-                                         ,cpatch%pft(ico))
+                                         ,cpatch%sla(ico),cpatch%pft(ico))
             !------------------------------------------------------------------------------!
 
             !----- Initialize other cohort-level variables. -------------------------------!
@@ -775,9 +777,9 @@ module ed_nbg_init
                                                         ,ipft)
                   cpatch%bdeada(ico)           =       agf_bs(ipft)  * bdeadx
                   cpatch%bdeadb(ico)           = (1. - agf_bs(ipft)) * bdeadx
-                  cpatch%bleaf(ico)            = size2bl(cpatch%dbh(ico),cpatch%hite(ico)  &
-                                                        ,ipft)
                   cpatch%sla(ico)              = sla(ipft)
+                  cpatch%bleaf(ico)            = size2bl(cpatch%dbh(ico),cpatch%hite(ico)  &
+                                                        ,cpatch%sla(ico),ipft)
                   cpatch%broot(ico)            = q(ipft) * cpatch%bleaf(ico)
                   cpatch%bsapwooda(ico)        = agf_bs(ipft) * cpatch%bleaf(ico)          &
                                                * qsw(ipft) * cpatch%hite(ico)
@@ -834,7 +836,7 @@ module ed_nbg_init
                                                ,cpatch%bbarka(ico),cpatch%pft(ico))
                   cpatch%thbark (ico) = size2xb(cpatch%dbh(ico),cpatch%hite(ico)           &
                                                ,cpatch%bbarka(ico),cpatch%bbarkb(ico)      &
-                                               ,cpatch%pft(ico))
+                                               ,cpatch%sla(ico),cpatch%pft(ico))
                   !------------------------------------------------------------------------!
 
 
