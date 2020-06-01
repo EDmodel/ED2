@@ -5472,6 +5472,17 @@ subroutine init_pft_hydro_params()
    !    drought performance and distribution. Funct. Ecol., 23: 93-102.                    !
    !    doi:10.1111/j.1365-2435.2008.01483.x (K09).                                        !
    !                                                                                       !
+   ! Lin, Y.-S., B. E. Medlyn, R. A. Duursma, I. C. Prentice, H. Wang, S. Baig, D. Eamus,  !
+   ! V. R. deDios, P. Mitchell, D. S. Ellsworth, M. O. de Beeck, G. Wallin, J. Uddling,    !
+   ! L. Tarvainen, M.-L. Linderson, L. A. Cernusak, J. B. Nippert, T. W. Ocheltree,        !
+   ! D. T. Tissue, N. K. Martin-StPaul, A. Rogers, J. M. Warren, P. De Angelis, K. Hikosaka!
+   !, Q. Han, Y. Onoda, T. E. Gimeno, C. V. M. Barton, J. Bennie, D. Bonal, A. Bosc, M. Low!
+   !, C. Macinins-Ng, A. Rey, L. Rowland, S. A. Setterfield, S. Tausz-Posch,               !
+   ! J. Zaragoza-Castells, M. S. J. Broadmeadow, J. E. Drake, M. Freeman, O. Ghannoum,     !
+   ! L. B. Hutley, J. W. Kelly, K. Kikuzawa, P. Kolari, K. Koyama, J.-M. Limousin, P. Meir,!
+   ! A. C. Lola da Costa, T. N. Mikkelsen, N. Salinas, W. Sun, and L. Wingate. 2015.       ! 
+   ! Optimal stomatal behaviour around the world. Nature Clim. Change 5:459–464. (L15)     !
+   !                                                                                       !
    ! Manzoni S, Vico G, Katul G, Fay PA, Polley W, Palmroth S , Porporato A. 2011.         !
    !    Optimizing stomatal conductance for maximum carbon gain under water stress: a      !
    !    meta-analysis across plant functional types and climates. Funct. Ecol., 25:        !
@@ -5788,9 +5799,32 @@ subroutine init_pft_hydro_params()
    !---------------------------------------------------------------------------------------!
 
 
-   !----- Parameters related with stomatal conductance, estimated from M11. ---------------!
-   stoma_lambda(:) = max( 3.0,(rho_bnd(:) - 0.25) * 15. + 3.)
-   stoma_beta  (:) = min(-0.1,(rho_bnd(:) - 0.25) * 1.5 - 1.0) / MPa2m
+   !----- Parameters related with stomatal conductance, estimated from L15 and M11. ---------------!
+
+   ! stoma_lambda has a unit of mol CO2 / mol H2O
+   ! 3e-3 in the model is equivalent to a g1 of 3 in L11
+   ! lambda ~ 1/sqrt(g1)
+   ! therefore, we convert PFT average g1 values in L11 to stoma_lambda
+   stoma_lambda(:) = merge( merge( 1.62                     &  ! C4 grass
+                                 , 4.5                      &  ! C3 grass
+                                 , photosyn_pathway(:) == 4)&
+                           ,merge( 3.77                     &  ! tropical trees
+                                 , merge( 2.35              & ! conifer trees
+                                        , 4.64              & ! temperate/boreal deciduous
+                                        ,is_conifer(:))     &
+                                 ,is_tropical(:))           &
+                           ,is_grass(:))
+   stoma_lambda = 3e-3 / (stoma_lambda / 3.) ** 2
+
+
+   ! stoma_beta is based on Table 2 in M11
+   stoma_beta(:) = merge( -1.1                              & ! Grass
+                          ,merge( -0.13                     & ! tropical trees
+                                , merge( -1.06              & ! conifer trees
+                                       , -1.34              & ! temperate/boreal deciduous
+                                       ,is_conifer(:))     &
+                                ,is_tropical(:))           &
+                          ,is_grass(:)) / MPa2m
    !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
