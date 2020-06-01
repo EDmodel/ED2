@@ -464,6 +464,7 @@ module rk4_copy_patch
          targetp%gpp         (ico) = dble(cpatch%gpp                (ico))
          targetp%leaf_resp   (ico) = dble(cpatch%leaf_respiration   (ico))
          targetp%root_resp   (ico) = dble(cpatch%root_respiration   (ico))
+         targetp%stem_resp   (ico) = dble(cpatch%stem_respiration   (ico))
          !---------------------------------------------------------------------------------!
       end do
       !------------------------------------------------------------------------------------!
@@ -805,6 +806,7 @@ module rk4_copy_patch
          targetp%gpp               (ico) = sourcep%gpp               (ico)
          targetp%leaf_resp         (ico) = sourcep%leaf_resp         (ico)
          targetp%root_resp         (ico) = sourcep%root_resp         (ico)
+         targetp%stem_resp         (ico) = sourcep%stem_resp         (ico)
       end do
 
       if (checkbudget) then

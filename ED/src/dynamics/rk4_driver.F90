@@ -28,6 +28,7 @@ module rk4_driver
       use budget_utils           , only : update_cbudget_committed   & ! function
                                         , compute_budget             ! ! function
       use soil_respiration       , only : soil_respiration_driver    ! ! sub-routine
+      use stem_resp_driv         , only : stem_respiration           ! ! function
       use photosyn_driv          , only : canopy_photosynthesis      ! ! sub-routine
       use rk4_misc               , only : sanity_check_veg_energy    ! ! sub-routine
       use rk4_copy_patch         , only : copy_rk4patch_init         ! ! sub-routine
@@ -259,6 +260,10 @@ module rk4_driver
                                             ,cpoly%ntext_soil(:,isi)                       &
                                             ,cpoly%leaf_aging_factor(:,isi)                &
                                             ,cpoly%green_leaf_factor(:,isi))
+                  !------------------------------------------------------------------------!
+
+                  !----- Compute stem respiration. ----------------------------------------!
+                  call stem_respiration(csite,ipa)
                   !------------------------------------------------------------------------!
 
 

@@ -1401,7 +1401,8 @@ module rk4_derivs
          !---------------------------------------------------------------------------------!
          !    Subtract the metabolic NPP of this cohort from patch-level NEE.              !
          !---------------------------------------------------------------------------------!
-         nee_tot = nee_tot - (initp%gpp(ico) - initp%leaf_resp(ico) - initp%root_resp(ico))
+         nee_tot = nee_tot - ( initp%gpp(ico) - initp%leaf_resp(ico)                       &
+                             - initp%root_resp(ico) - initp%stem_resp(ico))
          !---------------------------------------------------------------------------------!
 
 

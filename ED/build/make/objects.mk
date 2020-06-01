@@ -112,6 +112,7 @@ OBJ_MODEL =                        \
 	soil_coms.o                \
 	soil_respiration.o         \
 	stable_cohorts.o           \
+	stem_resp_driv.o           \
 	structural_growth.o        \
 	therm_lib.o                \
 	therm_lib8.o               \

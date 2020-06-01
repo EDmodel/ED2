@@ -291,6 +291,7 @@ module ed_type_init
       !------------------------------------------------------------------------------------!
       cpatch%today_leaf_resp       (ico) = 0.0
       cpatch%today_root_resp       (ico) = 0.0
+      cpatch%today_stem_resp       (ico) = 0.0
       cpatch%today_gpp             (ico) = 0.0
       cpatch%today_nppleaf         (ico) = 0.0
       cpatch%today_nppfroot        (ico) = 0.0
@@ -315,6 +316,7 @@ module ed_type_init
       cpatch%gpp                   (ico) = 0.0
       cpatch%leaf_respiration      (ico) = 0.0
       cpatch%root_respiration      (ico) = 0.0
+      cpatch%stem_respiration      (ico) = 0.0
       cpatch%leaf_growth_resp      (ico) = 0.0
       cpatch%root_growth_resp      (ico) = 0.0
       cpatch%sapa_growth_resp      (ico) = 0.0
@@ -400,6 +402,7 @@ module ed_type_init
       cpatch%fmean_npp               (ico) = 0.0
       cpatch%fmean_leaf_resp         (ico) = 0.0
       cpatch%fmean_root_resp         (ico) = 0.0
+      cpatch%fmean_stem_resp         (ico) = 0.0
       cpatch%fmean_leaf_growth_resp  (ico) = 0.0
       cpatch%fmean_root_growth_resp  (ico) = 0.0
       cpatch%fmean_sapa_growth_resp  (ico) = 0.0
@@ -503,6 +506,7 @@ module ed_type_init
          cpatch%dmean_npp               (ico) = 0.0
          cpatch%dmean_leaf_resp         (ico) = 0.0
          cpatch%dmean_root_resp         (ico) = 0.0
+         cpatch%dmean_stem_resp         (ico) = 0.0
          cpatch%dmean_leaf_growth_resp  (ico) = 0.0
          cpatch%dmean_root_growth_resp  (ico) = 0.0
          cpatch%dmean_sapa_growth_resp  (ico) = 0.0
@@ -589,6 +593,7 @@ module ed_type_init
          cpatch%mmean_npp                 (ico) = 0.0
          cpatch%mmean_leaf_resp           (ico) = 0.0
          cpatch%mmean_root_resp           (ico) = 0.0
+         cpatch%mmean_stem_resp           (ico) = 0.0
          cpatch%mmean_leaf_growth_resp    (ico) = 0.0
          cpatch%mmean_root_growth_resp    (ico) = 0.0
          cpatch%mmean_sapa_growth_resp    (ico) = 0.0
@@ -718,6 +723,7 @@ module ed_type_init
          cpatch%qmean_npp               (:,ico) = 0.0
          cpatch%qmean_leaf_resp         (:,ico) = 0.0
          cpatch%qmean_root_resp         (:,ico) = 0.0
+         cpatch%qmean_stem_resp         (:,ico) = 0.0
          cpatch%qmean_leaf_growth_resp  (:,ico) = 0.0
          cpatch%qmean_root_growth_resp  (:,ico) = 0.0
          cpatch%qmean_sapa_growth_resp  (:,ico) = 0.0
@@ -1979,6 +1985,7 @@ module ed_type_init
          cgrid%fmean_npp                  (ipy) = 0.0
          cgrid%fmean_leaf_resp            (ipy) = 0.0
          cgrid%fmean_root_resp            (ipy) = 0.0
+         cgrid%fmean_stem_resp            (ipy) = 0.0
          cgrid%fmean_leaf_growth_resp     (ipy) = 0.0
          cgrid%fmean_root_growth_resp     (ipy) = 0.0
          cgrid%fmean_sapa_growth_resp     (ipy) = 0.0
@@ -2156,6 +2163,7 @@ module ed_type_init
             cgrid%dmean_npp                  (ipy) = 0.0
             cgrid%dmean_leaf_resp            (ipy) = 0.0
             cgrid%dmean_root_resp            (ipy) = 0.0
+            cgrid%dmean_stem_resp            (ipy) = 0.0
             cgrid%dmean_leaf_growth_resp     (ipy) = 0.0
             cgrid%dmean_root_growth_resp     (ipy) = 0.0
             cgrid%dmean_sapa_growth_resp     (ipy) = 0.0
@@ -2312,6 +2320,7 @@ module ed_type_init
             cgrid%mmean_npp                  (ipy) = 0.0
             cgrid%mmean_leaf_resp            (ipy) = 0.0
             cgrid%mmean_root_resp            (ipy) = 0.0
+            cgrid%mmean_stem_resp            (ipy) = 0.0
             cgrid%mmean_leaf_growth_resp     (ipy) = 0.0
             cgrid%mmean_root_growth_resp     (ipy) = 0.0
             cgrid%mmean_sapa_growth_resp     (ipy) = 0.0
@@ -2553,6 +2562,7 @@ module ed_type_init
             cgrid%qmean_npp                (:,ipy) = 0.0
             cgrid%qmean_leaf_resp          (:,ipy) = 0.0
             cgrid%qmean_root_resp          (:,ipy) = 0.0
+            cgrid%qmean_stem_resp          (:,ipy) = 0.0
             cgrid%qmean_leaf_growth_resp   (:,ipy) = 0.0
             cgrid%qmean_root_growth_resp   (:,ipy) = 0.0
             cgrid%qmean_sapa_growth_resp   (:,ipy) = 0.0

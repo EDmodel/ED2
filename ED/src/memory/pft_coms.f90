@@ -314,6 +314,35 @@ module pft_coms
    real, dimension(n_pft) :: storage_turnover_rate 
 
    !---------------------------------------------------------------------------------------!
+   !    This variable sets the stem maintainence respiration rate per unit surface area    !
+   ! at the referenence temperature of 15C. Its units is umol_CO2/m2_stem_surface/s.       !
+   !---------------------------------------------------------------------------------------!
+   real, dimension(n_pft) :: stem_respiration_factor
+
+   !---------------------------------------------------------------------------------------!
+   !    This variable sets the scaling relationship of stem maintenance respiration rate   !
+   ! with plant size (DBH). Its units is /cm_DBH                                           !
+   !---------------------------------------------------------------------------------------!
+   real, dimension(n_pft) :: stem_resp_size_scaler
+
+   !----- Temperature [C] below which stem metabolic activity begins to rapidly decline. --!
+   real, dimension(n_pft) :: srf_low_temp 
+
+   !----- Temperature [C] above which stem metabolic activity begins to rapidly decline. --!
+   real, dimension(n_pft) :: srf_high_temp 
+
+   !----- Decay factors for the exponential correction. -----------------------------------!
+   real, dimension(n_pft) :: srf_decay_elow
+   real, dimension(n_pft) :: srf_decay_ehigh
+
+   !----- Exponent for Rr in the Arrhenius equation [K]. ----------------------------------!
+   real, dimension(n_pft) :: srf_hor 
+
+   !----- Base (Q10 term) for respiration in Collatz equation. ----------------------------!
+   real, dimension(n_pft) :: srf_q10
+
+
+   !---------------------------------------------------------------------------------------!
    !    This variable sets the contribution of roots to respiration at the reference       !
    ! temperature of 15C.  Its units is umol_CO2/kg_fine_roots/s.                           !
    !---------------------------------------------------------------------------------------!

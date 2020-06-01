@@ -125,6 +125,18 @@ module physiology_coms
    !< deciduous PFTs enough carbon to flush new leaves when growing season comes
    !---------------------------------------------------------------------------------------!
 
+   integer               :: istem_respiration_scheme
+   !---------------------------------------------------------------------------------------!
+   !< ISTEM_RESPIRATION_SCHEME -- Different methods to calculate respiration from stem metabolism.\n
+   !<                             0. No explicit stem respiration (default by ED2.2 and before) \n
+   !<                             1. Calculate stem respiration with stem surface area and 
+   !< per area respiration rate, which is a function of temperature and tree size based on
+   !< measurements on tropical trees by Chambers et al. (2004). Note that the calculation of
+   !< surface area uses WAI. So if IBRANCH_THERMO is set to 0. All branch surface areas will
+   !< be ignored.
+   !---------------------------------------------------------------------------------------!
+
+
    integer               :: istomata_scheme
    !---------------------------------------------------------------------------------------!
    !< ISTOMATA_SCHEME -- Which stomatal conductance model to use.\n

@@ -857,7 +857,9 @@ module growth_balive
          !---------------------------------------------------------------------------------!
 
          !----- Find the metabolic respiration, assumed to be the same for all NPP. -------!
-         metab_resp    = cpatch%today_leaf_resp(ico) + cpatch%today_root_resp(ico)
+         metab_resp    = cpatch%today_leaf_resp(ico)                                       & 
+                       + cpatch%today_root_resp(ico)                                       &
+                       + cpatch%today_stem_resp(ico)                                       
          !---------------------------------------------------------------------------------!
 
 
@@ -1119,28 +1121,29 @@ module growth_balive
 
          if (first_time(ipft)) then
             first_time(ipft) = .false.
-            write (unit=30+ipft,fmt='(a10,28(1x,a18))')                                    &
+            write (unit=30+ipft,fmt='(a10,29(1x,a18))')                                    &
                '      TIME','             PATCH','            COHORT','            NPLANT' &
                            ,'         TODAY_NPP','  LEAF_GROWTH_RESP','  ROOT_GROWTH_RESP' &
                            ,'  SAPA_GROWTH_RESP','  SAPB_GROWTH_RESP',' BARKA_GROWTH_RESP' &
                            ,' BARKB_GROWTH_RESP','         TODAY_GPP','TODAY_GPP_LIGHTMAX' &
                            ,'TODAY_GPP_MOISTMAX','   TODAY_GPP_MLMAX','   TODAY_LEAF_RESP' &
-                           ,'   TODAY_ROOT_RESP','TODAY_NPP_LIGHTMAX','TODAY_NPP_MOISTMAX' &
-                           ,'   TODAY_NPP_MLMAX','                CB','       CB_LIGHTMAX' &
-                           ,'       CB_MOISTMAX','          CB_MLMAX','  LEAF_MAINTENANCE' &
-                           ,'  ROOT_MAINTENANCE',' BARKA_MAINTENANCE',' BARKB_MAINTENANCE' &
-                           , ' STOR_MAINTENANCE'
+                           ,'   TODAY_ROOT_RESP','   TODAY_STEM_RESP','TODAY_NPP_LIGHTMAX' &
+                           ,'TODAY_NPP_MOISTMAX','   TODAY_NPP_MLMAX','                CB' &
+                           ,'       CB_LIGHTMAX','       CB_MOISTMAX','          CB_MLMAX' &
+                           ,'  LEAF_MAINTENANCE','  ROOT_MAINTENANCE',' BARKA_MAINTENANCE' &
+                           ,' BARKB_MAINTENANCE', ' STOR_MAINTENANCE'
          end if
 
-         write(unit=30+ipft,fmt='(2(i2.2,a1),i4.4,2(1x,i18),27(1x,es18.5))')               &
+         write(unit=30+ipft,fmt='(2(i2.2,a1),i4.4,2(1x,i18),28(1x,es18.5))')               &
               current_time%month,'/',current_time%date,'/',current_time%year               &
-             ,ipa,ico,cpatch%nplant(ico),npp_actual,cpatch%leaf_growth_resp(ico)            &
+             ,ipa,ico,cpatch%nplant(ico),npp_actual,cpatch%leaf_growth_resp(ico)           &
              ,cpatch%root_growth_resp(ico),cpatch%sapa_growth_resp(ico)                    &
              ,cpatch%sapb_growth_resp(ico),cpatch%barka_growth_resp(ico)                   &
              ,cpatch%barkb_growth_resp(ico),cpatch%today_gpp(ico)                          &
              ,cpatch%today_gpp_lightmax(ico),cpatch%today_gpp_moistmax(ico)                &
              ,cpatch%today_gpp_mlmax(ico),cpatch%today_leaf_resp(ico)                      &
-             ,cpatch%today_root_resp(ico),npp_lightmax,npp_moistmax,npp_mlmax              &
+             ,cpatch%today_root_resp(ico),cpatch%today_stem_resp(ico)                      &       
+             ,npp_lightmax,npp_moistmax,npp_mlmax                                          &
              ,cpatch%cb(13,ico),cpatch%cb_lightmax(13,ico),cpatch%cb_moistmax(13,ico)      &
              ,cpatch%cb_mlmax(13,ico),cpatch%leaf_maintenance(ico)                         &
              ,cpatch%root_maintenance(ico),cpatch%barka_maintenance(ico)                   &

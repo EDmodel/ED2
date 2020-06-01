@@ -144,6 +144,7 @@ module ename_coms
       integer                                           :: plant_hydro_scheme
       integer                                           :: istomata_scheme
       integer                                           :: istruct_growth_scheme
+      integer                                           :: istem_respiration_scheme
       integer                                           :: trait_plasticity_scheme
       integer                                           :: growth_resp_scheme
       integer                                           :: storage_resp_scheme
@@ -438,6 +439,7 @@ module ename_coms
       enl%plant_hydro_scheme        = undef_integer
       enl%istomata_scheme           = undef_integer
       enl%istruct_growth_scheme     = undef_integer
+      enl%istem_respiration_scheme  = undef_integer
       enl%trait_plasticity_scheme   = undef_integer
       enl%growth_resp_scheme        = undef_integer
       enl%storage_resp_scheme       = undef_integer

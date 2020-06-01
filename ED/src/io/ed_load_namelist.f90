@@ -97,6 +97,7 @@ subroutine copy_nl(copy_type)
                                    , plant_hydro_scheme        & ! intent(out)
                                    , istomata_scheme           & ! intent(out)
                                    , istruct_growth_scheme     & ! intent(out)
+                                   , istem_respiration_scheme  & ! intent(out)
                                    , trait_plasticity_scheme   & ! intent(out)
                                    , iddmort_scheme            & ! intent(out)
                                    , cbr_scheme                & ! intent(out)
@@ -426,6 +427,7 @@ subroutine copy_nl(copy_type)
       plant_hydro_scheme        = nl%plant_hydro_scheme
       istomata_scheme           = nl%istomata_scheme
       istruct_growth_scheme     = nl%istruct_growth_scheme
+      istem_respiration_scheme  = nl%istem_respiration_scheme
       trait_plasticity_scheme   = nl%trait_plasticity_scheme
       iddmort_scheme            = nl%iddmort_scheme
       cbr_scheme                = nl%cbr_scheme

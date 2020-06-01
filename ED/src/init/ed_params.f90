@@ -3517,7 +3517,7 @@ subroutine init_pft_alloc_params()
             b1Bl (ipft) = C2B * exp(nleaf(1)) * rho(ipft) / nleaf(3)
             b2Bl (ipft) = nleaf(2)
             !------------------------------------------------------------------------------!
-        case (3) ! TODO: add wood density based allometry
+        case (3) 
             !------------------------------------------------------------------------------!
             !    Allometry based on the BAAD data based (F15).  We only used leaves from   !
             ! wild tropical, flowering trees, and applied a stratified sample by DBH class !
@@ -4660,6 +4660,14 @@ subroutine init_pft_resp_params()
                              , rrf_decay_ehigh           & ! intent(out)
                              , rrf_hor                   & ! intent(out)
                              , rrf_q10                   & ! intent(out)
+                             , stem_respiration_factor   & ! intent(out)
+                             , stem_resp_size_scaler     & ! intent(out)
+                             , srf_low_temp              & ! intent(out)
+                             , srf_high_temp             & ! intent(out)
+                             , srf_decay_elow            & ! intent(out)
+                             , srf_decay_ehigh           & ! intent(out)
+                             , srf_hor                   & ! intent(out)
+                             , srf_q10                   & ! intent(out)
                              , f_labile_leaf             & ! intent(out)
                              , f_labile_stem             ! ! intent(out)
    use ed_misc_coms   , only : iallom                    & ! intent(out)
@@ -4829,6 +4837,21 @@ subroutine init_pft_resp_params()
    rrf_hor        (:) = undef_real
    rrf_q10        (:) = undef_real
    !---------------------------------------------------------------------------------------!
+
+   !---------------------------------------------------------------------------------------!
+   !     Initialise stem respiration terms with undefined, and attribute default values    !
+   ! only in case they are not defined through XML (check init_derived_params_after_xml).  !
+   !---------------------------------------------------------------------------------------!
+   stem_respiration_factor(:) = 10. ** (-0.672 - 0.19) / 2.2 ! umol_CO2/m2_stem_area/s from Chambers et al. 2004
+   stem_resp_size_scaler(:)   = 0.0041  ! cm_DBH -1, value based on troipcal trees
+   srf_low_temp   (:) = undef_real
+   srf_high_temp  (:) = undef_real
+   srf_decay_elow (:) = undef_real
+   srf_decay_ehigh(:) = undef_real
+   srf_hor        (:) = undef_real
+   srf_q10        (:) = undef_real
+   !---------------------------------------------------------------------------------------!
+
 
    return
 end subroutine init_pft_resp_params
@@ -7641,6 +7664,12 @@ subroutine init_derived_params_after_xml()
                                    , rrf_decay_ehigh           & ! intent(inout)
                                    , rrf_hor                   & ! intent(inout)
                                    , rrf_q10                   & ! intent(inout)
+                                   , srf_low_temp              & ! intent(inout)
+                                   , srf_high_temp             & ! intent(inout)
+                                   , srf_decay_elow            & ! intent(inout)
+                                   , srf_decay_ehigh           & ! intent(inout)
+                                   , srf_hor                   & ! intent(inout)
+                                   , srf_q10                   & ! intent(inout) 
                                    , bleaf_crit                & ! intent(inout)
                                    , d1DBH_small               & ! intent(out)
                                    , d2DBH_small               & ! intent(out)
@@ -8559,6 +8588,36 @@ subroutine init_derived_params_after_xml()
    !----- Base (Q10 term) for respiration in Collatz equation . ---------------------------!
    where (rrf_q10(:)       == undef_real)
       rrf_q10(:)       = rd_q10(:)
+   end where
+   !---------------------------------------------------------------------------------------!
+
+   !---------------------------------------------------------------------------------------!
+   !     In case stem respiration parameters have not been initialised through XML, we     !
+   ! assign the same numbers used for leaf respiration.                                    !
+   !---------------------------------------------------------------------------------------!
+   !----- Temperature [degC] below which stem metabolic activity rapidly declines. --------!
+   where (srf_low_temp(:)  == undef_real)
+      srf_low_temp(:)  = rd_low_temp(:)
+   end where
+   !----- Temperature [degC] above which stem metabolic activity rapidly declines. --------!
+   where (srf_high_temp(:) == undef_real)
+      srf_high_temp(:) = rd_high_temp(:)
+   end where
+   !----- Decay factor for the exponential correction. ------------------------------------!
+   where (srf_decay_elow(:)   == undef_real)
+      srf_decay_elow(:)   = rd_decay_elow(:)
+   end where
+   !----- Decay factor for the exponential correction. ------------------------------------!
+   where (srf_decay_ehigh(:)   == undef_real)
+      srf_decay_ehigh(:)  = rd_decay_ehigh(:)
+   end where
+   !----- Exponent for Rr in the Arrhenius equation [K]. ----------------------------------!
+   where (srf_hor(:)       == undef_real)
+      srf_hor(:)       = rd_hor(:)
+   end where
+   !----- Base (Q10 term) for respiration in Collatz equation . ---------------------------!
+   where (srf_q10(:)       == undef_real)
+      srf_q10(:)       = rd_q10(:)
    end where
    !---------------------------------------------------------------------------------------!
 

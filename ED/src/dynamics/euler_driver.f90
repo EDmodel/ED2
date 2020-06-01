@@ -23,6 +23,7 @@ module euler_driver
       use budget_utils           , only : update_cbudget_committed   & ! function
                                         , compute_budget             ! ! function
       use soil_respiration       , only : soil_respiration_driver    ! ! function
+      use stem_resp_driv         , only : stem_respiration           ! ! function
       use photosyn_driv          , only : canopy_photosynthesis      ! ! function
       use update_derived_utils   , only : update_patch_derived_props ! ! subroutine
       use rk4_integ_utils        , only : copy_met_2_rk4site         ! ! subroutine
@@ -232,6 +233,10 @@ module euler_driver
                   !------------------------------------------------------------------------!
 
 
+
+                  !----- Compute stem respiration. ----------------------------------------!
+                  call stem_respiration(csite,ipa)
+                  !------------------------------------------------------------------------!
 
                   !----- Compute root and heterotrophic respiration. ----------------------!
                   call soil_respiration_driver(csite,ipa,nzg,cpoly%ntext_soil(:,isi))

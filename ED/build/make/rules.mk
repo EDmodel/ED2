@@ -513,6 +513,11 @@ stable_cohorts.o : $(ED_UTILS)/stable_cohorts.f90
 	/bin/cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 
+stem_resp_driv.o : $(ED_DYNAMICS)/stem_resp_driv.f90
+	/bin/rm -f $(<F:.f90=.f90)
+	/bin/cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+
 structural_growth.o : $(ED_DYNAMICS)/structural_growth.f90
 	/bin/rm -f $(<F:.f90=.f90)
 	/bin/cp -f $< $(<F:.f90=.f90)

@@ -2309,6 +2309,9 @@ module fuse_fiss_utils
 
       cpatch%today_root_resp    (recc) = cpatch%today_root_resp    (recc)                  &
                                        + cpatch%today_root_resp    (donc)
+
+      cpatch%today_stem_resp    (recc) = cpatch%today_stem_resp    (recc)                  &
+                                       + cpatch%today_stem_resp    (donc)
       !------------------------------------------------------------------------------------!
 
 
@@ -2561,6 +2564,8 @@ module fuse_fiss_utils
                                     + cpatch%leaf_respiration(donc)
       cpatch%root_respiration(recc) = cpatch%root_respiration(recc)                        &
                                     + cpatch%root_respiration(donc)
+      cpatch%stem_respiration(recc) = cpatch%stem_respiration(recc)                        &
+                                    + cpatch%stem_respiration(donc)
       !------------------------------------------------------------------------------------!
 
 
@@ -2768,6 +2773,10 @@ module fuse_fiss_utils
          cpatch%fmean_root_resp         (recc) = cpatch%fmean_root_resp         (recc)     &
                                                * rnplant                                   &
                                                + cpatch%fmean_root_resp         (donc)     &
+                                               * dnplant
+         cpatch%fmean_stem_resp         (recc) = cpatch%fmean_stem_resp         (recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%fmean_stem_resp         (donc)     &
                                                * dnplant
          cpatch%fmean_leaf_growth_resp  (recc) = cpatch%fmean_leaf_growth_resp  (recc)     &
                                                * rnplant                                   &
@@ -3133,6 +3142,10 @@ module fuse_fiss_utils
          cpatch%dmean_root_resp         (recc) = cpatch%dmean_root_resp         (recc)     &
                                                * rnplant                                   &
                                                + cpatch%dmean_root_resp         (donc)     &
+                                               * dnplant
+         cpatch%dmean_stem_resp         (recc) = cpatch%dmean_stem_resp         (recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%dmean_stem_resp         (donc)     &
                                                * dnplant
          cpatch%dmean_leaf_growth_resp  (recc) = cpatch%dmean_leaf_growth_resp  (recc)     &
                                                * rnplant                                   &
@@ -3555,6 +3568,10 @@ module fuse_fiss_utils
          cpatch%mmean_root_resp         (recc) = cpatch%mmean_root_resp         (recc)     &
                                                * rnplant                                   &
                                                + cpatch%mmean_root_resp         (donc)     &
+                                               * dnplant
+         cpatch%mmean_stem_resp         (recc) = cpatch%mmean_stem_resp         (recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%mmean_stem_resp         (donc)     &
                                                * dnplant
          cpatch%mmean_leaf_growth_resp  (recc) = cpatch%mmean_leaf_growth_resp  (recc)     &
                                                * rnplant                                   &
@@ -4082,6 +4099,10 @@ module fuse_fiss_utils
          cpatch%qmean_root_resp         (:,recc) = cpatch%qmean_root_resp         (:,recc) &
                                                  * rnplant                                 &
                                                  + cpatch%qmean_root_resp         (:,donc) &
+                                                 * dnplant
+         cpatch%qmean_stem_resp         (:,recc) = cpatch%qmean_stem_resp         (:,recc) &
+                                                 * rnplant                                 &
+                                                 + cpatch%qmean_stem_resp         (:,donc) &
                                                  * dnplant
          cpatch%qmean_leaf_growth_resp  (:,recc) = cpatch%qmean_leaf_growth_resp  (:,recc) &
                                                  * rnplant                                 &

@@ -1917,9 +1917,11 @@ module update_derived_utils
          cpatch%today_gpp_mlmax    (ico) = cpatch%today_gpp_mlmax    (ico) * mult
          cpatch%today_leaf_resp    (ico) = cpatch%today_leaf_resp    (ico) * mult
          cpatch%today_root_resp    (ico) = cpatch%today_root_resp    (ico) * mult
+         cpatch%today_stem_resp    (ico) = cpatch%today_stem_resp    (ico) * mult
          cpatch%gpp                (ico) = cpatch%gpp                (ico) * mult
          cpatch%leaf_respiration   (ico) = cpatch%leaf_respiration   (ico) * mult
          cpatch%root_respiration   (ico) = cpatch%root_respiration   (ico) * mult
+         cpatch%stem_respiration   (ico) = cpatch%stem_respiration   (ico) * mult
          cpatch%leaf_water         (ico) = cpatch%leaf_water         (ico) * mult
          cpatch%leaf_water_im2     (ico) = cpatch%leaf_water_im2     (ico) * mult
          cpatch%leaf_hcap          (ico) = cpatch%leaf_hcap          (ico) * mult

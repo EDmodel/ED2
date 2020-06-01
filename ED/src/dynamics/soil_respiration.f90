@@ -4,6 +4,8 @@ module soil_respiration
    !=======================================================================================!
    !=======================================================================================!
    !     This subroutine computes the soil respiration terms (root and heterotrophic).     !
+   !     Warning: soil_respiration_driver should be called after photosynthesis and other  !
+   !     respiration subroutines because all the fluxes are summed here                    !
    !---------------------------------------------------------------------------------------!
    subroutine soil_respiration_driver(csite,ipa,mzg,ntext_soil)
 
@@ -226,7 +228,8 @@ module soil_respiration
          if (print_debug) then
             auto_C_resp = auto_C_resp                                                      &
                         + umols_2_kgCyr  * ( cpatch%leaf_respiration(ico)                  &
-                                           + cpatch%root_respiration(ico) )                &
+                                           + cpatch%root_respiration(ico)                  &
+                                           + cpatch%stem_respiration(ico) )                &
                         + cpatch%nplant(ico) * yr_day * ( cpatch%leaf_growth_resp  (ico)   &
                                                         + cpatch%root_growth_resp  (ico)   &
                                                         + cpatch%sapa_growth_resp  (ico)   &
