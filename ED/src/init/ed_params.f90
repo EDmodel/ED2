@@ -4868,42 +4868,46 @@ end subroutine init_pft_resp_params
 !     This subroutine assigns some PFT-dependent parameters that control mortality rates.  !
 !------------------------------------------------------------------------------------------!
 subroutine init_pft_mort_params()
-   use ed_max_dims , only : n_pft                      ! ! intent(in)
-   use pft_coms    , only : is_grass                   & ! intent(in)
-                          , is_tropical                & ! intent(in)
-                          , is_conifer                 & ! intent(in)
-                          , is_liana                   & ! intent(in)
-                          , mort0                      & ! intent(out)
-                          , mort1                      & ! intent(out)
-                          , mort2                      & ! intent(out)
-                          , mort3                      & ! intent(out)
-                          , cbr_severe_stress          & ! intent(out)
-                          , rho                        & ! intent(out)
-                          , seedling_mortality         & ! intent(out)
-                          , treefall_s_gtht            & ! intent(out)
-                          , treefall_s_ltht            & ! intent(out)
-                          , fire_s_min                 & ! intent(out)
-                          , fire_s_max                 & ! intent(out)
-                          , fire_s_inter               & ! intent(out)
-                          , fire_s_slope               & ! intent(out)
-                          , felling_s_ltharv           & ! intent(out)
-                          , felling_s_gtharv           & ! intent(out)
-                          , skid_s_ltharv              & ! intent(out)
-                          , skid_s_gtharv              & ! intent(out)
-                          , plant_min_temp             & ! intent(out)
-                          , frost_mort                 ! ! intent(out)
-   use consts_coms , only : t00                        & ! intent(in)
-                          , lnexp_max                  & ! intent(in)
-                          , onethird                   & ! intent(in)
-                          , twothirds                  ! ! intent(in)
-   use ed_misc_coms, only : ibigleaf                   & ! intent(in)
-                          , economics_scheme           ! ! intent(in)
-   use disturb_coms, only : include_fire               & ! intent(in)
-                          , time2canopy                & ! intent(in)
-                          , sl_skid_s_gtharv           & ! intent(in)
-                          , sl_skid_s_ltharv           & ! intent(in)
-                          , sl_felling_s_ltharv        & ! intent(in)
-                          , treefall_disturbance_rate  ! ! intent(in)
+   use ed_max_dims ,    only : n_pft                      ! ! intent(in)
+   use pft_coms    ,    only : is_grass                   & ! intent(in)
+                             , is_tropical                & ! intent(in)
+                             , is_conifer                 & ! intent(in)
+                             , is_liana                   & ! intent(in)
+                             , mort0                      & ! intent(out)
+                             , mort1                      & ! intent(out)
+                             , mort2                      & ! intent(out)
+                             , mort3                      & ! intent(out)
+                             , hydro_mort0                & ! intent(out)
+                             , hydro_mort1                & ! intent(out)
+                             , cbr_severe_stress          & ! intent(out)
+                             , rho                        & ! intent(out)
+                             , seedling_mortality         & ! intent(out)
+                             , treefall_s_gtht            & ! intent(out)
+                             , treefall_s_ltht            & ! intent(out)
+                             , fire_s_min                 & ! intent(out)
+                             , fire_s_max                 & ! intent(out)
+                             , fire_s_inter               & ! intent(out)
+                             , fire_s_slope               & ! intent(out)
+                             , felling_s_ltharv           & ! intent(out)
+                             , felling_s_gtharv           & ! intent(out)
+                             , skid_s_ltharv              & ! intent(out)
+                             , skid_s_gtharv              & ! intent(out)
+                             , plant_min_temp             & ! intent(out)
+                             , frost_mort                 ! ! intent(out)
+   use consts_coms ,    only : t00                        & ! intent(in)
+                             , lnexp_max                  & ! intent(in)
+                             , onethird                   & ! intent(in)
+                             , twothirds                  ! ! intent(in)
+   use ed_misc_coms,    only : ibigleaf                   & ! intent(in)
+                             , economics_scheme           ! ! intent(in)
+   use disturb_coms,    only : include_fire               & ! intent(in)
+                             , time2canopy                & ! intent(in)
+                             , sl_skid_s_gtharv           & ! intent(in)
+                             , sl_skid_s_ltharv           & ! intent(in)
+                             , sl_felling_s_ltharv        & ! intent(in)
+                             , treefall_disturbance_rate  ! ! intent(in)
+   use physiology_coms, only : carbon_mortality_scheme    & ! intent(in)
+                             , hydraulic_mortality_scheme ! ! intent(in)
    implicit none
 
    !----- Local variables. ----------------------------------------------------------------!
@@ -4973,7 +4977,7 @@ subroutine init_pft_mort_params()
    ! differences before changing these parameters.  Also, keep in mind that both           !
    ! approaches have caveats.                                                              !
    !                                                                                       !
-   !   ECONOMICS_SCHEME = 0                                                                !
+   !   CARBON_MORTALITY_SCHEME = 0                                                         !
    !  ----------------------                                                               !
    !     This follows ED-1 original formulation (M01):                                     !
    !                                                                                       !
@@ -4984,7 +4988,7 @@ subroutine init_pft_mort_params()
    ! term mort0 (typically negative) allows to offset the curve so mortality is not        !
    ! too high when carbon balance is still positive but low.                               !
    !                                                                                       !
-   !   ECONOMICS_SCHEME = 1                                                                !
+   !   CARBON_MORTALITY_SCHEME = 1                                                         !
    !  ----------------------                                                               !
    !     This follows the trait-dependent exponential model by C18:                        !
    !                                                                                       !
@@ -4996,6 +5000,16 @@ subroutine init_pft_mort_params()
    ! highly speculative.  Using CBAREL makes catastrophic mortality in case carbon balance !
    ! is negative.  Hazard rates are unbounded in this case, which may need to be           !
    ! revisited.                                                                            !
+   !                                                                                       !
+   !   CARBON_MORTALITY_SCHEME = 2                                                         !
+   !  ----------------------                                                               !
+   !     This follows the trait-dependent exponential model by C18:                        !
+   !                                                                                       !
+   !                     DD = mort1 * exp( - mort2 * annual grwoth rate)                   !
+   !                                                                                       !
+   !     This option uses the raw growth-based relationship reported in C18.of CB. Note    !
+   ! that the maximum mortality is bounded. However, if cohorts have no alive biomass      !
+   ! they will be flagged as inviable and removed in fuse_fiss_utils.                      !
    !                                                                                       !
    ! References:                                                                           !
    !                                                                                       !
@@ -5009,7 +5023,11 @@ subroutine init_pft_mort_params()
    !     hazards across 203 tropical tree species, Proc. Natl. Acad. Sci. U. S. A., 115    !
    !     (49), 12459-12464, Dec 2018.  doi:10.1073/pnas.1721040115 (C18).                  !
    !---------------------------------------------------------------------------------------!
-   select case (economics_scheme)
+   select case (carbon_mortality_scheme)
+   case (2)
+      mort0(:) = 0.0
+      mort1(:) = delta_c18   * alpha0_c18 * (rho_use(:)/rho_c18) ** alpha1_c18
+      mort2(:) = beta0_c18  * (rho_use(:)/rho_c18) ** beta1_c18
    case (1)
       rho_use(:) = merge(rho_c18                                                           &
                         ,rho(:)                                                            &
@@ -5049,8 +5067,8 @@ subroutine init_pft_mort_params()
       elseif (is_tropical(ipft) .and. is_conifer(ipft)) then
          mort3(ipft) = 0.00111 ! Based on TRY (but likely guesstimated).
       elseif (is_tropical(ipft)) then
-          select case (economics_scheme)
-          case (1)
+          select case (carbon_mortality_scheme)
+          case (1,2)
              !----- Updated parameters. ---------------------------------------------------!
              if (is_grass(ipft)) then
                 !--------------------------------------------------------------------------!
@@ -5114,7 +5132,9 @@ subroutine init_pft_mort_params()
    !  Default in ED-1.0 and ED-2.0 was to assume zero, an alternative is to assume maximum !
    !  mortality.                                                                           !
    !---------------------------------------------------------------------------------------!
-   select case (economics_scheme)
+   select case (carbon_mortality_scheme)
+   case (2)
+      cbr_severe_stress(:) = 0.0 ! not used in this case
    case (1)
       cbr_severe_stress(:) = mort0(:) - 1.0 / mort2(:) * log(extinct_mort/mort1(:))
    case default
@@ -5122,7 +5142,30 @@ subroutine init_pft_mort_params()
    end select
    !---------------------------------------------------------------------------------------!
 
-
+   !---------------------------------------------------------------------------------------!
+   !     The following variables control the hydraulic failure mortality rates. It is      !
+   ! highly experimental and assumes a log-linear relationship between mortality rates and !
+   ! percentage loss of conductance (PLC).                                                 !
+   ! Note that hydraulic failure mortality for grasses are set to be always zero because   !
+   ! they are treated with no stems in the model                                           !
+   !                                                                                       !
+   !---------------------------------------------------------------------------------------!
+   select case (hydraulic_mortality_scheme)
+   case (1)
+       ! Assume cohort will die in half month when PLC is 1. (100%, all conductance is lost)
+       ! and die in 1. year when PLC is 0.6 (Estimated from Adams et al. 2017 and 
+       ! Hammond et al. 2019)
+       hydro_mort0(:) = merge(0.0,24.0,is_grass(:))
+       hydro_mort1(:) = merge(1.0                                                          &
+                             ,log(hydro_mort0(:)) / -log(0.6)                              &
+                             ,is_grass(:))
+   case default
+       ! ED 2.2 default, no hydraulic failure mortality
+       hydro_mort0(:) = 0.0
+       hydro_mort1(:) = 1.0
+   end select
+       
+ 
    !---------------------------------------------------------------------------------------!
    !     Here we check whether we need to re-calculate the treefall disturbance rate so it !
    ! is consistent with the time to reach the canopy.                                      !
@@ -5402,6 +5445,7 @@ subroutine init_pft_hydro_params()
                              , is_conifer           & ! intent(in)
                              , is_liana             & ! intent(in)
                              , is_tropical          & ! intent(in)
+                             , photosyn_pathway     & ! intent(in)
                              , SLA                  & ! intent(in)
                              , rho                  & ! intent(in)
                              , Vm0                  & ! intent(in)

@@ -1215,6 +1215,8 @@ subroutine ed_opspec_misc
                                     , iddmort_scheme               & ! intent(in)
                                     , cbr_scheme                   & ! intent(in)
                                     , ddmort_const                 & ! intent(in)
+                                    , hydraulic_mortality_scheme   & ! intent(in)
+                                    , carbon_mortality_scheme      & ! intent(in)
                                     , n_plant_lim                  & ! intent(in)
                                     , vmfact_c3                    & ! intent(in)
                                     , vmfact_c4                    & ! intent(in)
@@ -1924,6 +1926,22 @@ end do
       write (reason,fmt='(a,1x,es12.5,a)')                                                 &
                     'Invalid DDMORT_CONST, it must be between 0 and 1.  Yours is set to'   &
                     ,ddmort_const,'...'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+   end if
+
+   if (hydraulic_mortality_scheme < 0 .or. hydraulic_mortality_scheme > 1) then
+      write (reason,fmt='(a,1x,i4,a)')                                                     &
+                    'Invalid HYDAULIC_MORTALITY_SCHEME, it must be between 0 and 1. Yours is set to'   &
+                    ,hydraulic_mortality_scheme,'...'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+   end if
+
+   if (carbon_mortality_scheme < 0 .or. carbon_mortality_scheme > 2) then
+      write (reason,fmt='(a,1x,i4,a)')                                                     &
+                    'Invalid CARBON_MORTALITY_SCHEME, it must be between 0 and 2. Yours is set to'   &
+                    ,carbon_mortality_scheme,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if

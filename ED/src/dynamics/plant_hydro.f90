@@ -1507,6 +1507,52 @@ module plant_hydro
    end subroutine psi2twe
    !=======================================================================================!
    !=======================================================================================!
+
+   !=======================================================================================!
+   !  SUBROUTINE: UPDATE_PLC
+   !> \breif update percentage loss of xylem conductance using daily minimum leaf psi
+   !> \details This subroutine is called at daily time scale in growth_balive.f90
+   !> Daily minimum leaf psi is used because upper branch, which has similar
+   !> water potential as leaf, should be the most vulnerable section along the hydraulic
+   !> pathway
+   !=======================================================================================!
+   subroutine update_plc(cpatch,ico)
+      use ed_state_vars,  only : patchtype             ! ! structure
+     use ed_misc_coms   , only : current_time          & ! intent(in)
+                               , simtime               ! ! structure
+      use physiology_coms,only : plant_hydro_scheme    ! ! intent(in)
+      use pft_coms,       only : wood_psi50            & ! intent(in)
+                               , wood_Kexp             ! ! intent(in)
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      type(patchtype), target       :: cpatch
+      integer        , intent(in)   :: ico
+      !----- Locals    --------------------------------------------------------------------!
+      real                          :: plc_today
+      integer                       :: ipft
+      real                          :: ndaysi
+      type(simtime)                 :: lastmonth
+      !------------------------------------------------------------------------------------!
+      
+      ! No need to update PLC if we are not tracking hydro-dynamics
+      if (plant_hydro_scheme == 0) return
+
+      call lastmonthdate(current_time,lastmonth,ndaysi)
+      ipft = cpatch%pft(ico)
+      
+      plc_today  =  max(0., 1. - 1. /                                         &
+                        (1. + (cpatch%dmin_leaf_psi(ico)                      &
+                        / wood_psi50(ipft)) ** wood_Kexp(ipft)))
+      cpatch%plc_monthly   (13,ico) = cpatch%plc_monthly   (13,ico) + plc_today / ndaysi
+
+    return
+
+   end subroutine update_plc
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
 end module plant_hydro
 
 !==========================================================================================!

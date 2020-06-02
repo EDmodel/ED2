@@ -279,8 +279,8 @@ module ed_state_vars
       !                  CR             CB                      CB      
 
       real, pointer,dimension(:,:) :: ddbh_monthly           !(13,ncohorts)
-      !<Monthly growth rates for past 12 months and the current month
-      !!(cm/plant) - if cohort has negative carbon balance, we generate pseudo
+      !<Annualized monthly growth rates for past 12 months and the current month
+      !!(cm/yr) - if cohort has negative carbon balance, we generate pseudo
       !!negative growth rates using the allometry. This is used for growth-based
       !!mortality calculations
       

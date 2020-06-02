@@ -57,7 +57,8 @@ module growth_balive
       use budget_utils        , only : reset_cbudget_committed    ! ! sub-routine
       use update_derived_utils, only : update_patch_derived_props ! ! sub-routine
       use plant_hydro         , only : rwc2tw                     & ! sub-routine
-                                     , twi2twe                    ! ! sub-routine
+                                     , twi2twe                    & ! sub-routine
+                                     , update_plc                 ! ! sub-routine
 
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
@@ -325,6 +326,12 @@ module growth_balive
                                              ,storage_maintenance,npp_actual,npp_pot )
                   !------------------------------------------------------------------------!
 
+                  !------------------------------------------------------------------------!
+                  !      Find the percentage loss of xylem conductance if applicable (used !
+                  ! to estimate hydraulic failure mortality).                              !
+                  !------------------------------------------------------------------------!
+                  call update_plc(cpatch,ico)
+                  !------------------------------------------------------------------------!
 
 
                   !------------------------------------------------------------------------!

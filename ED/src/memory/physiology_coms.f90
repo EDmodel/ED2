@@ -210,7 +210,28 @@ module physiology_coms
    integer              :: cbr_scheme
    !---------------------------------------------------------------------------------------!
 
+   integer               :: carbon_mortality_scheme
+   !---------------------------------------------------------------------------------------!
+   !< CARBON_MORTALITY_SCHEME - Different methods to calculate negative carbon balance
+   !< mortality.\n
+   !<                           0. (ED-2.2 default) ED-1 original formulation 
+   !<                              (Moorcroft et al. 2001)\n
+   !<                           1. (ED-2.2 Alternative) trait-dependent exponential model by 
+   !< Camac et al. 2018 but uses CB instead of growth
+   !<                           2. (ED-2.2 Alternative) trait-dependent exponential model by 
+   !< Camac et al. 2018 and use actual growth rates
+   !---------------------------------------------------------------------------------------!
 
+
+   integer               :: hydraulic_mortality_scheme
+   !---------------------------------------------------------------------------------------!
+   !< HYDRAULIC_MORTALITY_SCHEME - Different methods to calculate hydraulic failure
+   !< mortality.\n
+   !<                           0. (ED-2.2 default) No hydraulic failure mortality
+   !<                              (Moorcroft et al. 2001)\n
+   !<                           1. (Beta) hydraulic failure mortality based on monthly 
+   !< mean xylem percentage loss of conductance (PLC)
+   !---------------------------------------------------------------------------------------!
 
 
    !---------------------------------------------------------------------------------------!

@@ -426,6 +426,16 @@ module pft_coms
    real :: m3_slope
 
    !---------------------------------------------------------------------------------------!
+   !     This variable controls the hydraulic failure moratlity at reference PLC           !
+   !---------------------------------------------------------------------------------------!
+   real, dimension(n_pft) :: hydro_mort0
+   
+   !---------------------------------------------------------------------------------------!
+   !     This variable controls the sensitivity of hydrauilic failure mortality to PLC     !
+   !---------------------------------------------------------------------------------------!
+   real, dimension(n_pft) :: hydro_mort1
+
+   !---------------------------------------------------------------------------------------!
    !     This variable sets up the relative carbon balance when plants are experiencing    !
    ! severe stress (i.e., when the maximum carbon balance is negative due to severe light  !
    ! or water stress).                                                                     !

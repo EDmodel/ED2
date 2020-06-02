@@ -174,6 +174,8 @@ module ename_coms
       integer                                           :: iddmort_scheme
       integer                                           :: cbr_scheme
       real                                              :: ddmort_const
+      integer                                           :: carbon_mortality_scheme
+      integer                                           :: hydraulic_mortality_scheme
       real                                              :: vmfact_c3
       real                                              :: vmfact_c4
       real                                              :: mphoto_trc3
@@ -469,6 +471,8 @@ module ename_coms
       enl%iddmort_scheme            = undef_integer
       enl%cbr_scheme                = undef_integer
       enl%ddmort_const              = undef_real
+      enl%carbon_mortality_scheme   = undef_real
+      enl%hydraulic_mortality_scheme= undef_real
       enl%vmfact_c3                 = undef_real
       enl%vmfact_c4                 = undef_real
       enl%mphoto_trc3               = undef_real

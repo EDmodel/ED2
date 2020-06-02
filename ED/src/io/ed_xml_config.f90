@@ -581,6 +581,10 @@ recursive subroutine read_ed_xml_config(filename)
            if(texist) mort2(myPFT) = sngloff(rval,tiny_offset)
            call getConfigREAL  ('mort3','pft',i,rval,texist)
            if(texist) mort3(myPFT) = sngloff(rval,tiny_offset)
+           call getConfigREAL  ('hydro_mort0','pft',i,rval,texist)
+           if(texist) hydro_mort0(myPFT) = sngloff(rval,tiny_offset)
+           call getConfigREAL  ('hydro_mort1','pft',i,rval,texist)
+           if(texist) hydro_mort1(myPFT) = sngloff(rval,tiny_offset)
            call getConfigREAL  ('cbr_severe_stress','pft',i,rval,texist)
            if(texist) cbr_severe_stress(myPFT) = sngloff(rval,tiny_offset)
            call getConfigREAL  ('seedling_mortality','pft',i,rval,texist)
@@ -1553,6 +1557,12 @@ recursive subroutine read_ed_xml_config(filename)
         call getConfigINT  ('trait_plasticity_scheme','physiology',i,ival,texist)
         if(texist) trait_plasticity_scheme = ival
 
+        call getConfigINT  ('carbon_mortality_scheme','physiology',i,ival,texist)
+        if(texist) carbon_mortality_scheme = ival
+
+        call getConfigINT  ('hydraulic_mortality_scheme','physiology',i,ival,texist)
+        if(texist) hydraulic_mortality_scheme = ival
+
         call libxml2f90__ll_selecttag('UP','config',1) !move back up to top level
      enddo
   endif
@@ -2028,6 +2038,8 @@ subroutine write_ed_xml_config
         call putConfigREAL("mort1",mort1(i))
         call putConfigREAL("mort2",mort2(i))
         call putConfigREAL("mort3",mort3(i))
+        call putConfigREAL("hydro_mort0",hydro_mort0(i))
+        call putConfigREAL("hydro_mort1",hydro_mort1(i))
         call putConfigREAL("cbr_severe_stress",cbr_severe_stress(i))
         call putConfigREAL("seedling_mortality",seedling_mortality(i))
 
@@ -2443,6 +2455,8 @@ subroutine write_ed_xml_config
      call putConfigINT("istruct_growth_scheme",istruct_growth_scheme)
      call putConfigINT("istem_respiration_scheme",istem_respiration_scheme)
      call putConfigINT("trait_plasticity_scheme",trait_plasticity_scheme)
+     call putConfigINT("carbon_mortality_scheme",carbon_mortality_scheme)
+     call putConfigINT("hydraulic_mortality_scheme",hydraulic_mortality_scheme)
   call libxml2f90_ll_closetag("physiology")
 
   !************   INITIAL CONDITIONS  *****************

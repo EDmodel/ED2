@@ -593,7 +593,10 @@ module structural_growth
                   cpatch%cb_mlmax    (prev_month,ico) = cpatch%cb_mlmax    (13,ico)
                   !------------------------------------------------------------------------!
 
-
+                  !----- Update monhtly average PLC for hydraulic  mortality. -------------!
+                  cpatch%plc_monthly(prev_month,ico) = cpatch%plc_monthly(13,ico)
+                  cpatch%plc_monthly(13,ico) = 0.0
+                  !------------------------------------------------------------------------!
 
                   !----- If monthly files are written, save the current carbon balance. ---!
                   if (associated(cpatch%mmean_cb)) then
@@ -736,6 +739,9 @@ module structural_growth
                   !------------------------------------------------------------------------!
 
 
+                  !----- Record monthly diameter growth  ----------------------------------!
+                  cpatch%ddbh_monthly(prev_month,ico) = cpatch%ddbh_dt(ico) !cm/yr
+                  !------------------------------------------------------------------------!
 
 
                   !------------------------------------------------------------------------!
