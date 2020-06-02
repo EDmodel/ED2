@@ -1825,46 +1825,55 @@ end do
 
    !---------------------------------------------------------------------------------------!
    !     Verification of radint and raslp depends on the ECONOMICS_SCHEME settings, as the !
-   ! model may be linear or log-linear.                                                    !
+   ! model may be linear or log-linear.  Don't bother checking if IPHEN_SCHEME is not 3.   !
    !---------------------------------------------------------------------------------------!
-   select case (economics_scheme)
-   case (1)
-      !------ Settings for the log-linear model. ------------------------------------------!
-      if (radint < 1.e-6 .or. radint > 100.0) then
-         write (reason,fmt='(a,1x,i5,1x,a,1x,es12.5,a)')                                   &
-                        'Invalid RADINT.  When ECONOMICS_SCHEME is',economics_scheme       &
-                       ,' it must be between 1.e-6 and 100. Yours is set to'               &
-                       ,radint,'...'
-         call opspec_fatal(reason,'opspec_misc')
-         ifaterr = ifaterr +1
-      end if
-      if (radslp < 0.01 .or. radslp > 5.0) then
-         write (reason,fmt='(a,1x,i5,1x,a,1x,es12.5,a)')                                   &
-                        'Invalid RADSLP.  When ECONOMICS_SCHEME is',economics_scheme       &
-                       ,' it must be between 0.01 and 5. Yours is set to'                  &
-                       ,radslp,'...'
-         call opspec_fatal(reason,'opspec_misc')
-         ifaterr = ifaterr +1
-      end if
-      !------------------------------------------------------------------------------------!
-   case default
-      !------ Settings for the original scheme (linear model). ----------------------------!
-      if (radint < -100.0 .or. radint > 100.0) then
-         write (reason,fmt='(a,1x,i5,1x,a,1x,es12.5,a)')                                   &
-                        'Invalid RADINT.  When ECONOMICS_SCHEME is',economics_scheme       &
-                       ,' it must be between -100 and 100. Yours is set to'                &
-                       ,radint,'...'
-         call opspec_fatal(reason,'opspec_misc')
-         ifaterr = ifaterr +1
-      end if
-      if (radslp < 0.0 .or. radslp > 1.0) then
-         write (reason,fmt='(a,1x,i5,1x,a,1x,es12.5,a)')                                   &
-                        'Invalid RADSLP.  When ECONOMICS_SCHEME is',economics_scheme       &
-                       ,' it must be between 0 and 1. Yours is set to'                     &
-                       ,radslp,'...'
-         call opspec_fatal(reason,'opspec_misc')
-         ifaterr = ifaterr +1
-      end if
+   select case (iphen_scheme)
+   case (3)
+      !----- Light-driven phenology is enabled.  Check settings. --------------------------!
+      select case (economics_scheme)
+      case (1)
+         !------ Settings for the log-linear model. ---------------------------------------!
+         if (radint < 1.e-6 .or. radint > 100.0) then
+            write (reason,fmt='(2(a,1x,i5,1x),a,1x,es12.5,a)')                             &
+                           'Invalid RADINT.  When IPHEN_SCHEME is ',iphen_scheme           &
+                          ,' and ECONOMICS_SCHEME is',economics_scheme                     &
+                          ,' it must be between 1.e-6 and 100. Yours is set to'            &
+                          ,radint,'...'
+            call opspec_fatal(reason,'opspec_misc')
+            ifaterr = ifaterr +1
+         end if
+         if (radslp < 0.01 .or. radslp > 5.0) then
+            write (reason,fmt='(2(a,1x,i5,1x),a,1x,es12.5,a)')                             &
+                           'Invalid RADSLP.  When IPHEN_SCHEME is ',iphen_scheme           &
+                          ,' and ECONOMICS_SCHEME is',economics_scheme                     &
+                          ,' it must be between 0.01 and 5. Yours is set to'               &
+                          ,radslp,'...'
+            call opspec_fatal(reason,'opspec_misc')
+            ifaterr = ifaterr +1
+         end if
+         !---------------------------------------------------------------------------------!
+      case default
+         !------ Settings for the original scheme (linear model). -------------------------!
+         if (radint < -100.0 .or. radint > 100.0) then
+            write (reason,fmt='(2(a,1x,i5,1x),a,1x,es12.5,a)')                             &
+                           'Invalid RADINT.  When IPHEN_SCHEME is ',iphen_scheme           &
+                          ,' and ECONOMICS_SCHEME is',economics_scheme                     &
+                          ,' it must be between -100 and 100. Yours is set to'             &
+                          ,radint,'...'
+            call opspec_fatal(reason,'opspec_misc')
+            ifaterr = ifaterr +1
+         end if
+         if (radslp < 0.0 .or. radslp > 1.0) then
+            write (reason,fmt='(2(a,1x,i5,1x),a,1x,es12.5,a)')                             &
+                           'Invalid RADSLP.  When IPHEN_SCHEME is ',iphen_scheme           &
+                          ,' and ECONOMICS_SCHEME is',economics_scheme                     &
+                          ,' it must be between 0 and 1. Yours is set to'                  &
+                          ,radslp,'...'
+            call opspec_fatal(reason,'opspec_misc')
+            ifaterr = ifaterr +1
+         end if
+         !---------------------------------------------------------------------------------!
+      end select
       !------------------------------------------------------------------------------------!
    end select
    !---------------------------------------------------------------------------------------!
