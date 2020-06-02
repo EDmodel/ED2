@@ -2250,6 +2250,18 @@ module fuse_fiss_utils
       end do
       !------------------------------------------------------------------------------------!
 
+      !------------------------------------------------------------------------------------!
+      !     Growth and PLC history should be scaled by biomass. Here, we use basal area    !
+      !------------------------------------------------------------------------------------!
+      do imon = 1,13
+         cpatch%ddbh_monthly(imon,recc) = cpatch%ddbh_monthly (imon,recc) * rba            &
+                                        + cpatch%ddbh_monthly (imon,donc) * dba
+         cpatch%plc_monthly(imon,recc)  = cpatch%plc_monthly  (imon,recc) * rba            &
+                                        + cpatch%plc_monthly  (imon,donc) * dba
+      end do
+      !------------------------------------------------------------------------------------!
+
+
 
 
       !------------------------------------------------------------------------------------!

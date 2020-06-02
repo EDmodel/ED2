@@ -278,6 +278,16 @@ module ed_state_vars
       !                 ----   = k ------------- + (1 - k) -------------
       !                  CR             CB                      CB      
 
+      real, pointer,dimension(:,:) :: ddbh_monthly           !(13,ncohorts)
+      !<Monthly growth rates for past 12 months and the current month
+      !!(cm/plant) - if cohort has negative carbon balance, we generate pseudo
+      !!negative growth rates using the allometry. This is used for growth-based
+      !!mortality calculations
+      
+      real, pointer,dimension(:,:) :: plc_monthly            !(13,ncohorts)
+      !<Monthly percentage loss of xylem conductance for past 12 months and the
+      !! current month - This is used for hydraulic failure mortality
+
       real ,pointer,dimension(:) :: leaf_energy
       !<Leaf internal energy (J/m2 ground)
 
@@ -5581,6 +5591,8 @@ module ed_state_vars
       allocate(cpatch%cb_moistmax                  (                 13,ncohorts))
       allocate(cpatch%cb_mlmax                     (                 13,ncohorts))
       allocate(cpatch%cbr_bar                      (                    ncohorts))
+      allocate(cpatch%ddbh_monthly                 (                 13,ncohorts))
+      allocate(cpatch%plc_monthly                  (                 13,ncohorts))
       allocate(cpatch%leaf_energy                  (                    ncohorts))
       allocate(cpatch%leaf_temp                    (                    ncohorts))
       allocate(cpatch%leaf_vpdef                   (                    ncohorts))
@@ -7778,6 +7790,8 @@ module ed_state_vars
       nullify(cpatch%cb_moistmax             )
       nullify(cpatch%cb_mlmax                )
       nullify(cpatch%cbr_bar                 )
+      nullify(cpatch%ddbh_monthly            )
+      nullify(cpatch%plc_monthly             )
       nullify(cpatch%leaf_energy             )
       nullify(cpatch%leaf_temp               )
       nullify(cpatch%leaf_vpdef              )
@@ -8945,6 +8959,8 @@ module ed_state_vars
       if(associated(cpatch%cb_moistmax             )) deallocate(cpatch%cb_moistmax             )
       if(associated(cpatch%cb_mlmax                )) deallocate(cpatch%cb_mlmax                )
       if(associated(cpatch%cbr_bar                 )) deallocate(cpatch%cbr_bar                 )
+      if(associated(cpatch%ddbh_monthly            )) deallocate(cpatch%ddbh_monthly            )
+      if(associated(cpatch%plc_monthly             )) deallocate(cpatch%plc_monthly             )
       if(associated(cpatch%leaf_energy             )) deallocate(cpatch%leaf_energy             )
       if(associated(cpatch%leaf_temp               )) deallocate(cpatch%leaf_temp               )
       if(associated(cpatch%leaf_vpdef              )) deallocate(cpatch%leaf_vpdef              )
@@ -11357,6 +11373,12 @@ module ed_state_vars
          end do
          !---------------------------------------------------------------------------------!
 
+         !------ Mortality auxiliary variables. -------------------------------------------!
+         do m=1,13
+            opatch%ddbh_monthly(m,oco) = ipatch%ddbh_monthly(m,ico)
+            opatch%plc_monthly(m,oco)  = ipatch%plc_monthly(m,ico)
+         end do
+         !---------------------------------------------------------------------------------!
 
          !------ Mortality variables. -----------------------------------------------------!
          do m=1,n_mort
@@ -12016,6 +12038,14 @@ module ed_state_vars
          opatch%cb_lightmax(m,1:z) = pack(ipatch%cb_lightmax  (m,:),lmask)
          opatch%cb_moistmax(m,1:z) = pack(ipatch%cb_moistmax  (m,:),lmask)
          opatch%cb_mlmax   (m,1:z) = pack(ipatch%cb_mlmax     (m,:),lmask)
+      end do
+      !------------------------------------------------------------------------------------!
+
+
+      !------ Mortality auxiliary variables. ----------------------------------------------!
+      do m=1,13
+         opatch%ddbh_monthly(m,1:z) = pack(ipatch%ddbh_monthly  (m,:),lmask)
+         opatch%plc_monthly(m,1:z)  = pack(ipatch%plc_monthly  (m,:),lmask)
       end do
       !------------------------------------------------------------------------------------!
 
@@ -33882,6 +33912,24 @@ module ed_state_vars
                            ,'CB_MOISTMAX :491:hist:mont:dcyc:year') 
          call metadata_edio(nvar,igr,'Full moisture carbon balance last 12 months+current' &
                            ,'[kgC/plant]','13 - icohort') 
+      end if
+
+      if (associated(cpatch%ddbh_monthly)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cpatch%ddbh_monthly,nvar,igr,init,cpatch%coglob_id         &
+                           ,var_len,var_len_global,max_ptrs                                &
+                           ,'DDBH_MONTHLY :491:hist:mont:dcyc:year') 
+         call metadata_edio(nvar,igr,'Monthly DBH growth last 12 months+current' &
+                           ,'[cm/month]','13 - icohort') 
+      end if
+
+      if (associated(cpatch%plc_monthly)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cpatch%plc_monthly,nvar,igr,init,cpatch%coglob_id         &
+                           ,var_len,var_len_global,max_ptrs                                &
+                           ,'PLC_MONTHLY :491:hist:mont:dcyc:year') 
+         call metadata_edio(nvar,igr,'Monthly average loss of xylem conductance last 12 months+current' &
+                           ,'[1]','13 - icohort') 
       end if
 
       if (associated(cpatch%cb_mlmax)) then

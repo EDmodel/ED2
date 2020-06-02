@@ -45,7 +45,7 @@ module mortality
 
 
       !----- Assume happy end, all plants survive... --------------------------------------!
-      cpatch%mort_rate(1:4,ico) = 0.0
+      cpatch%mort_rate(1:5,ico) = 0.0
       ipft = cpatch%pft(ico)
 
       !------------------------------------------------------------------------------------!
@@ -107,11 +107,11 @@ module mortality
 
 
       !------------------------------------------------------------------------------------!
-      ! 5. Disturbance rate mortality.  This is not used by the cohort dynamics, instead   !
+      ! 6. Disturbance rate mortality.  This is not used by the cohort dynamics, instead   !
       !    this is just to account for the lost density due to the patch creation.  This   !
       !    mortality will be determined by the disturbance_mortality subroutine, not here. !
       !------------------------------------------------------------------------------------!
-      !cpatch%mort_rate(5,ico) = TBD
+      !cpatch%mort_rate(6,ico) = TBD
       !------------------------------------------------------------------------------------!
 
       return
@@ -187,9 +187,9 @@ module mortality
       !------------------------------------------------------------------------------------!
       do ico=1,cpatch%ncohorts
          if ( a_factor(ico) < almost_one ) then
-            cpatch%mort_rate(5,ico) = log( 1.0 / (1.0 - a_factor(ico)) )
+            cpatch%mort_rate(6,ico) = log( 1.0 / (1.0 - a_factor(ico)) )
          else
-            cpatch%mort_rate(5,ico) = lnexp_max
+            cpatch%mort_rate(6,ico) = lnexp_max
          end if
       end do
       !------------------------------------------------------------------------------------!

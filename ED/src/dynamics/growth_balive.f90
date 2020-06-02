@@ -437,7 +437,7 @@ module growth_balive
                   !------------------------------------------------------------------------!
                   call mortality_rates(cpatch,ico,csite%avg_daily_temp(ipa),csite%age(ipa) &
                                       ,csite%dist_type(ipa))
-                  dlnndt   = - sum(cpatch%mort_rate(1:4,ico))
+                  dlnndt   = - sum(cpatch%mort_rate(1:5,ico))
                   !------------------------------------------------------------------------!
 
                   !----- Update monthly mortality rates [1/month]. ------------------------!

@@ -5736,6 +5736,10 @@ module ed_init_history
                         ,'CB_MOISTMAX               ',dsetrank,iparallel,.true. ,foundvar)
       call hdf_getslab_r(cpatch%cb_mlmax                                                   &
                         ,'CB_MLMAX                  ',dsetrank,iparallel,.true. ,foundvar)
+      call hdf_getslab_r(cpatch%ddbh_monthly                                               &
+                        ,'DDBH_MONTHLY              ',dsetrank,iparallel,.true. ,foundvar)
+      call hdf_getslab_r(cpatch%plc_monthly                                                &
+                        ,'PLC_MONTHLY               ',dsetrank,iparallel,.true. ,foundvar)
       !------------------------------------------------------------------------------------!
       !------------------------------------------------------------------------------------!
       !------------------------------------------------------------------------------------!

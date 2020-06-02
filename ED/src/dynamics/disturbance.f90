@@ -356,7 +356,7 @@ module disturbance
             resetdist: do ipa=1,onsp
                cpatch => csite%patch(ipa)
                do ico=1,cpatch%ncohorts
-                  cpatch%mort_rate(5,ico) = 0.0
+                  cpatch%mort_rate(6,ico) = 0.0
                end do
             end do resetdist
             !------------------------------------------------------------------------------!
@@ -3428,7 +3428,7 @@ module disturbance
             !------------------------------------------------------------------------------!
 
             !----- Make mortality rate due to disturbance zero to avoid double counting. --!
-            tpatch%mort_rate(5,nco) = 0.0
+            tpatch%mort_rate(6,nco) = 0.0
             !------------------------------------------------------------------------------!
          end if
          !---------------------------------------------------------------------------------!
