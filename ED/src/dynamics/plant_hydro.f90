@@ -190,11 +190,11 @@ module plant_hydro
 
             track_hydraulics = cpatch%leaf_resolvable(ico) .or.                            &
                               (cpatch%wood_resolvable(ico) .and.                           & 
-                               .not. (cpatch%elongf(ico) == 1 .and.                        &
-                                      cpatch%leaf_resolvable(ico) == .false.))
+                               .not. (cpatch%elongf(ico) == 1.0 .and.                      &
+                                      .not. cpatch%leaf_resolvable(ico) ))
 
 
-            if (cpatch%leaf_resolvable(ico) .or. cpatch%wood_resolvable(ico)) then
+            if (track_hydraulics) then
                !----- Prepare input for plant water flux calculations. --------------------!
                sap_frac    = dbh2sf(cpatch%dbh(ico),ipft)                    ! m2
                sap_area    = sap_frac * pio4 * (cpatch%dbh(ico) / 100.) ** 2 ! m2
