@@ -1276,7 +1276,7 @@ $ED_NL
    !                            1. (Beta) hydraulic failure mortality based on monthly     !
    !                               mean xylem percentage loss of conductance (PLC)         !
    !---------------------------------------------------------------------------------------!
-   NL%HYDRAULIC_MORTALITY_SCHEME
+   NL%HYDRAULIC_MORTALITY_SCHEME = 0
 
    !---------------------------------------------------------------------------------------!
    !  These variables will be eventually removed from ED2IN, use the XML initialisation    !
