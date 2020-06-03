@@ -2088,7 +2088,7 @@ subroutine init_phen_coms
    !     Before plants drop their leaves, they retain this fraction of their leaf carbon   !
    ! and nitrogen and put it into storage.                                                 !
    !---------------------------------------------------------------------------------------!
-   retained_carbon_fraction = 0.5
+   retained_carbon_fraction = 0.5  ! XX-> Meta-analysis from Vergutz et al. 2012 reports ~0.25
    !---------------------------------------------------------------------------------------!
 
 
@@ -6013,6 +6013,7 @@ subroutine init_pft_phen_params()
                              , is_tropical          & ! intent(in)
                              , high_psi_threshold   & ! intent(out)
                              , low_psi_threshold    & ! intent(out)
+                             , storage_reflush_times& ! intent(out)
                              , leaf_shed_rate       & ! intent(out)
                              , leaf_grow_rate       ! ! intent(out)
    use ed_max_dims    , only : n_pft                ! ! intent(in)
@@ -6068,6 +6069,12 @@ subroutine init_pft_phen_params()
    !---------------------------------------------------------------------------------------!
 
 
+   !---------------------------------------------------------------------------------------!
+   !     Storage Reserves to reflush leaves and fine roots                                 !
+   ! set it to be 2. if run with hydraulics-driven drought phenology                       !
+   ! set it to be 0 otherwise (default)                                                    !
+   !---------------------------------------------------------------------------------------!
+   storage_reflush_times(:) = merge(2.0,0.0,phenology(:) == 5)
 
    !---------------------------------------------------------------------------------------!
    !     Phenology-related parameters for phenology(ipft) = 5.                             !

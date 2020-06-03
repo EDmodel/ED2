@@ -862,6 +862,9 @@ module pft_coms
    real   , dimension(n_pft) :: r_fract
    !----- Curvature term for asymptote. ---------------------------------------------------!
    real   , dimension(n_pft) :: r_cv50
+   !----- How much carbon plants decide to save in bstorage from growth and reproduction --!
+   !----- In terms of times to reflush the whole canopy and fine roots                   --!
+   real   , dimension(n_pft) :: storage_reflush_times
    !----- External input of seeds [kgC/m2/year]. ------------------------------------------!
    real   , dimension(n_pft) :: seed_rain
    !----- Fraction of seed dispersal that is gridcell-wide. -------------------------------!

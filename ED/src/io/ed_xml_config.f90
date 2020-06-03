@@ -860,6 +860,8 @@ recursive subroutine read_ed_xml_config(filename)
            if(texist) nonlocal_dispersal(myPFT) = sngloff(rval,tiny_offset)
            call getConfigREAL  ('repro_min_h','pft',i,rval,texist)
            if(texist) repro_min_h(myPFT) = sngloff(rval,tiny_offset)
+           call getConfigREAL  ('storage_reflush_times','pft',i,rval,texist)
+           if(texist) storage_reflush_times(myPFT) = sngloff(rval,tiny_offset)
 
 !!! OTHER / derived
            call getConfigREAL  ('seed_rain','pft',i,rval,texist)
@@ -2188,6 +2190,7 @@ subroutine write_ed_xml_config
         call putConfigREAL("nonlocal_dispersal",nonlocal_dispersal(i))
         call putConfigREAL("repro_min_h",repro_min_h(i))
         call putConfigREAL("min_recruit_size",min_recruit_size(i))
+        call putConfigREAL("storage_reflush_times", storage_reflush_times(i))
 
      !! OTHER
         call putConfigREAL("seed_rain",        seed_rain(i))

@@ -27,6 +27,8 @@ module structural_growth
                                      , negligible_nplant           & ! intent(in)
                                      , is_grass                    & ! intent(in)
                                      , agf_bs                      & ! intent(in)
+                                     , q                           & ! intent(in)
+                                     , storage_reflush_times       & ! intent(in)
                                      , is_liana                    & ! intent(in)
                                      , cbr_severe_stress           & ! intent(in)
                                      , h_edge                      & ! intent(in)
@@ -99,6 +101,7 @@ module structural_growth
       real                          :: dbh_in
       real                          :: nplant_in
       real                          :: bstorage_in
+      real                          :: bstorage_reserve
       real                          :: agb_in
       real                          :: lai_in
       real                          :: wai_in
@@ -378,6 +381,11 @@ module structural_growth
                   cpatch%monthly_dlnndt(ico) = 0.0
                   !------------------------------------------------------------------------!
 
+                  !----- Calculate bstorage reserved for future refulushing needs ---------!
+                  bstorage_reserve = (1.0 + q(ipft)) * storage_reflush_times(ipft)         &
+                                   * size2bl(cpatch%dbh(ico),cpatch%hite(ico)              &
+                                            ,cpatch%sla(ico),ipft)
+                  !------------------------------------------------------------------------!
 
 
                   !----- Determine how to distribute what is in bstorage. -----------------!
@@ -385,10 +393,10 @@ module structural_growth
                                                   ,cpatch%dbh(ico),cgrid%lat(ipy)          &
                                                   ,cpatch%phenology_status(ico)            &
                                                   ,cpatch%elongf(ico)                      &
-                                                  ,bdeada_in,bdeadb_in, bstorage_in, maxh  &
+                                                  ,bdeada_in,bdeadb_in, bstorage_in        &
+                                                  ,bstorage_reserve, maxh                  &
                                                   ,f_bseeds,f_growth,f_bstorage)
                   !------------------------------------------------------------------------!
-
 
 
                   !------------------------------------------------------------------------!
@@ -891,7 +899,8 @@ module structural_growth
    ! (structural) biomass.                                                                 !
    !---------------------------------------------------------------------------------------!
    subroutine plant_structural_allocation(ipft,hite,dbh,lat,phen_status,elongf,bdeada      &
-                                         ,bdeadb,bstorage,maxh,f_bseeds,f_growth,f_bstorage)
+                                         ,bdeadb,bstorage,bstorage_reserve,maxh            &
+                                         ,f_bseeds,f_growth,f_bstorage)
       use pft_coms      , only : phenology      & ! intent(in)
                                , repro_min_h    & ! intent(in)
                                , repro_min_dbh  & ! intent(in)
@@ -919,6 +928,7 @@ module structural_growth
       real   , intent(in)  :: bdeada     !> Current dead biomass
       real   , intent(in)  :: bdeadb     !> Current dead biomass
       real   , intent(in)  :: bstorage   !> Current storage pool
+      real   , intent(in)  :: bstorage_reserve !> Target bstorage reserve for reflushing
       real   , intent(in)  :: maxh       !> Height of the tallest cohort in the patch
       integer, intent(in)  :: phen_status
       real   , intent(in)  :: elongf     !> Elongation factor
@@ -958,6 +968,20 @@ module structural_growth
          first_time = .false.
       end if
       !------------------------------------------------------------------------------------!
+
+      
+      !------------------------------------------------------------------------------------!
+      ! Check whether plants want to reserve bstorage for reflushing leaves and roots      !
+      !------------------------------------------------------------------------------------!
+      if (bstorage <= bstorage_reserve) then
+          ! plants want to save bstorage for potential future needs
+          f_bseeds = 0.0
+          f_growth = 0.0
+          f_bstorage = 1.0 - f_growth - f_bseeds
+          return
+      endif
+      !------------------------------------------------------------------------------------!
+
 
 
       !----- Check whether this is late spring... -----------------------------------------!
@@ -1128,7 +1152,15 @@ module structural_growth
       !------------------------------------------------------------------------------------!
       if (f_bseeds < r_tol_trunc) f_bseeds = 0.0
       if (f_growth < r_tol_trunc) f_growth = 0.0
-      f_bstorage = 1.0 - f_growth - f_bseeds
+
+      ! plants will save bstorage_reserve as mobile carbon supply for potential reflushing
+      ! we take the maximum of the residual of f_bseeds and f_growth and bstorage_reserve 
+      ! / bstorage to maintain compatibility with previous versions (bstorage_reserve = 0.)
+      f_bstorage = max(1.0 - f_bseeds - f_growth, bstorage_reserve / bstorage)
+
+      ! we need to modify f_bseeds and f_growth accordingly
+      f_bseeds = f_bseeds / (f_bseeds + f_growth) * (1.0 - f_bstorage)
+      f_growth = f_growth / (f_bseeds + f_growth) * (1.0 - f_bstorage)
       !------------------------------------------------------------------------------------!
 
 
