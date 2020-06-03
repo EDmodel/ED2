@@ -122,18 +122,18 @@ subroutine ed_init_atm()
    end do
    !---------------------------------------------------------------------------------------!
 
+   !---------------------------------------------------------------------------------------!
+   !     If this is a standard ED2 restart, we will read these fields in from a history    !
+   ! file and therefore not worry about setting them here.                                 !
+   !---------------------------------------------------------------------------------------!
+   if (trim(runtype) == 'HISTORY' ) return
+   !---------------------------------------------------------------------------------------!
+
 
    !---------------------------------------------------------------------------------------!
    gridloop: do igr = 1,ngrids
       
       cgrid => edgrid_g(igr)
-
-      !------------------------------------------------------------------------------------!
-      !     If this is a standard ED2 restart, we will read these fields in from a history !
-      ! file and therefore not worry about setting them here.                              !
-      !------------------------------------------------------------------------------------!
-      if (trim(runtype) == 'HISTORY' ) return
-      !------------------------------------------------------------------------------------!
 
       !----- Loop over polygons, sites and patches. ---------------------------------------!
       polyloop1: do ipy = 1,cgrid%npolygons

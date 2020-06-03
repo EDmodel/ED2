@@ -260,6 +260,7 @@ loaded.package[["randomForest"]] = discreet.require(randomForest)
 loaded.package[["raster"      ]] = discreet.require(raster      )
 loaded.package[["rgdal"       ]] = discreet.require(rgdal       )
 loaded.package[["rgeos"       ]] = discreet.require(rgeos       )
+loaded.package[["rlas"        ]] = discreet.require(rlas        )
 loaded.package[["robustbase"  ]] = discreet.require(robustbase  )
 loaded.package[["rworldmap"   ]] = discreet.require(rworldmap   )
 loaded.package[["RSEIS"       ]] = discreet.require(RSEIS       )
@@ -292,6 +293,17 @@ if (! all(loaded.package)){
 #------------------------------------------------------------------------------------------#
 envir = as.environment("package:boot")
 try(unlockBinding("grav",envir),silent=TRUE)
+#------------------------------------------------------------------------------------------#
+
+
+
+#------------------------------------------------------------------------------------------#
+#  SHADY BUSINESS...  We must unlock read.las from package rlas and replace by our         #
+#                     function, which calls rlas::read.las but returns data in a slightly  #
+#                     different format.                                                    #
+#------------------------------------------------------------------------------------------#
+envir = as.environment("package:rlas")
+try(unlockBinding("read.las",envir),silent=TRUE)
 #------------------------------------------------------------------------------------------#
 
 

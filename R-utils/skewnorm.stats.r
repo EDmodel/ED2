@@ -87,7 +87,7 @@ sn.stats <<- function(x,na.rm=FALSE,method=c("MPLE","MLE"),maxit=9999){
 # the distribution is not skewed, location parameter becomes the mean.                     #
 #------------------------------------------------------------------------------------------#
 sn.location <<- function(x,na.rm=FALSE,maxit=9999){
-   ans = sn.stats(x,na.rm,maxit)["location"]
+   ans = sn.stats(x=x,na.rm=na.rm,maxit=maxit)["location"]
    #---------------------------------------------------------------------------------------#
    #     Return the answer.                                                                #
    #---------------------------------------------------------------------------------------#
@@ -108,7 +108,7 @@ sn.location <<- function(x,na.rm=FALSE,maxit=9999){
 # the distribution is not skewed, scale parameter becomes the standard deviation.          #
 #------------------------------------------------------------------------------------------#
 sn.scale <<- function(x,na.rm=FALSE,maxit=9999){
-   ans = sn.stats(x,na.rm,maxit)["scale"]
+   ans = sn.stats(x=x,na.rm=na.rm,maxit=maxit)["scale"]
 
 
    #---------------------------------------------------------------------------------------#
@@ -131,7 +131,7 @@ sn.scale <<- function(x,na.rm=FALSE,maxit=9999){
 # the distribution is not skewed, shape parameter becomes 0.                               #
 #------------------------------------------------------------------------------------------#
 sn.shape <<- function(x,na.rm=FALSE,maxit=9999){
-   ans = sn.stats(x,na.rm,maxit)["shape"]
+   ans = sn.stats(x=x,na.rm=na.rm,maxit=maxit)["shape"]
 
 
    #---------------------------------------------------------------------------------------#
@@ -154,7 +154,7 @@ sn.shape <<- function(x,na.rm=FALSE,maxit=9999){
 # the distribution is not skewed, location parameter becomes the standard deviation.       #
 #------------------------------------------------------------------------------------------#
 sn.converged <<- function(x,na.rm=FALSE){
-   ans = sn.stats(x,na.rm,maxit)["gaussian"] == 0
+   ans = sn.stats(x=x,na.rm=na.rm,maxit=maxit)["gaussian"] == 0
 
 
    #---------------------------------------------------------------------------------------#

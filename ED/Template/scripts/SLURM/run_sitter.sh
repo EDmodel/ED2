@@ -635,6 +635,12 @@ do
          metcycf=2003
          imetavg=3
          ;;
+      Laegern)
+         metdriverdb="${fullscen}/Laegern/Laegern_HEADER"
+         metcyc1=2006
+         metcycf=2016
+         imetavg=1
+         ;;
       Manaus_Km34)
          metdriverdb="${fullscen}/Manaus_Km34/Manaus_Km34_HEADER"
          metcyc1=1999
@@ -734,13 +740,13 @@ do
       Tanguro_Burn)
          metdriverdb="${fullscen}/Tanguro_Burn/Tanguro_Burn_HEADER"
          metcyc1=2008
-         metcycf=2017
+         metcycf=2018
          imetavg=1
          ;;
       Tanguro_Ctrl)
          metdriverdb="${fullscen}/Tanguro_Ctrl/Tanguro_Ctrl_HEADER"
          metcyc1=2008
-         metcycf=2017
+         metcycf=2018
          imetavg=1
          ;;
       Tonzi)

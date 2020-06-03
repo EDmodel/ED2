@@ -93,3 +93,69 @@ iylgnbu <<- function(n,sat=1.00){
    return(mycolsch)
 }#end function iylgnbu
 #------------------------------------------------------------------------------------------#
+
+
+
+
+#------------------------------------------------------------------------------------------#
+#   Function that re-creates QGIS "BuGn" colour scheme.                                    #
+#------------------------------------------------------------------------------------------#
+bugn <<- function(n,sat=1.00){
+   rrr   = c( 194, 122,  99,  51,  17,   0)*sat #- Red ------------------------------------#
+   ggg   = c( 210, 177, 166, 128,  89,  51)*sat #- Green ----------------------------------#
+   bbb   = c( 242, 204, 166, 102,  41,   0)*sat #- Blue -----------------------------------#
+   pivot = round(seq(from=1,to=n,by=(n-1)/(length(rrr)-1)),digits=0)
+
+   red   = pmax(0,pmin(255,as.integer(spline(x=pivot,y=rrr,n=n)$y)))
+   green = pmax(0,pmin(255,as.integer(spline(x=pivot,y=ggg,n=n)$y)))
+   blue  = pmax(0,pmin(255,as.integer(spline(x=pivot,y=bbb,n=n)$y)))
+
+   mycolsch = rgb(r=red,g=green,b=blue,maxColorValue=255)
+   return(mycolsch)
+}#end function bugn
+#------------------------------------------------------------------------------------------#
+
+
+
+
+#------------------------------------------------------------------------------------------#
+#   Function that re-creates QGIS "BuGn" colour scheme, but in inverse order.              #
+#------------------------------------------------------------------------------------------#
+ibugn <<- function(n,sat=1.00){
+   mycolsch = rev(bugn(n,sat=sat))
+   return(mycolsch)
+}#end function ibugn
+#------------------------------------------------------------------------------------------#
+
+
+
+
+#------------------------------------------------------------------------------------------#
+#   Function that re-creates QGIS "OrRd" colour scheme.                                    #
+#------------------------------------------------------------------------------------------#
+orrd <<- function(n,sat=1.00){
+   rrr   = c( 254, 254, 242, 204, 166, 128)*sat #- Red ------------------------------------#
+   ggg   = c( 250, 231, 187, 117,  52,   0)*sat #- Green ----------------------------------#
+   bbb   = c( 228, 183, 131,  73,  30,   0)*sat #- Blue -----------------------------------#
+   pivot = round(seq(from=1,to=n,by=(n-1)/(length(rrr)-1)),digits=0)
+
+   red   = pmax(0,pmin(255,as.integer(spline(x=pivot,y=rrr,n=n)$y)))
+   green = pmax(0,pmin(255,as.integer(spline(x=pivot,y=ggg,n=n)$y)))
+   blue  = pmax(0,pmin(255,as.integer(spline(x=pivot,y=bbb,n=n)$y)))
+
+   mycolsch = rgb(r=red,g=green,b=blue,maxColorValue=255)
+   return(mycolsch)
+}#end function orrd
+#------------------------------------------------------------------------------------------#
+
+
+
+
+#------------------------------------------------------------------------------------------#
+#   Function that re-creates QGIS "OrRd" colour scheme, but in inverse order.              #
+#------------------------------------------------------------------------------------------#
+iorrd <<- function(n,sat=1.00){
+   mycolsch = rev(bugn(n,sat=sat))
+   return(mycolsch)
+}#end function iorrd
+#------------------------------------------------------------------------------------------#

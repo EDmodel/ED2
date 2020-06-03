@@ -905,10 +905,17 @@ $ED_NL
 
    !---------------------------------------------------------------------------------------!
    !     Parameters that control the phenology response to radiation, used only when       !
-   ! IPHEN_SCHEME = 3.                                                                     !
+   ! IPHEN_SCHEME = 3.  The meaning depends on ECONOMICS_SCHEME.                           !
    !                                                                                       !
-   ! RADINT -- Intercept                                                                   !
-   ! RADSLP -- Slope.                                                                      !
+   ! If ECONOMICS_SCHEME is 0 (default).                                                   !
+   !    RADINT -- Intercept                                                                !
+   !    RADSLP -- Slope.                                                                   !
+   !    TurnoverAmplitude = RADINT + RADSLP * rshort                                       !
+   !                                                                                       !
+   ! If ECONOMICS_SCHEME is 1 (log-linear model).                                          !
+   !    RADINT -- Multiplier.                                                              !
+   !    RADSLP -- Exponent.                                                                !
+   !    TurnoverAmplitude = RADINT * rshort ** RADSLP                                      !
    !---------------------------------------------------------------------------------------!
    NL%RADINT          = -11.3868
    NL%RADSLP          = 0.0824

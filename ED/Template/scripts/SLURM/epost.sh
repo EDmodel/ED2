@@ -667,6 +667,13 @@ echo "echo \"\""                                                               >
 echo "echo \"\""                                                               >> ${sbatch}
 echo "echo \"\""                                                               >> ${sbatch}
 echo ""                                                                        >> ${sbatch}
+echo ""                                                                        >> ${sbatch}
+echo "#--- Define home in case home is not set"                                >> ${sbatch}
+echo "if [[ \"x\${HOME}\" == \"x\" ]]"                                         >> ${sbatch}
+echo "then"                                                                    >> ${sbatch}
+echo "   export HOME=\$(echo ~)"                                               >> ${sbatch}
+echo "fi"                                                                      >> ${sbatch}
+echo ""                                                                        >> ${sbatch}
 echo "#--- Load modules and settings."                                         >> ${sbatch}
 echo ". \${HOME}/.bashrc ${optsrc}"                                            >> ${sbatch}
 echo ""                                                                        >> ${sbatch}
@@ -878,6 +885,10 @@ do
       eftyeara=1999
       eftyearz=2003
       ;;
+   l[0-5][0-3])
+      eftyeara=2006
+      eftyearz=2016
+      ;;
    m34)
       eftyeara=1999
       eftyearz=2006
@@ -920,7 +931,7 @@ do
       ;;
    tb0|tbx)
       eftyeara=2014
-      eftyearz=2017
+      eftyearz=2018
       ;;
    hvd)
       eftyeara=1992
@@ -1008,6 +1019,10 @@ do
          Sheffield|WFDEI*|ERAINT*|MERRA2*|PGMF3*)
             thisyeara=${metcyca}
             thisyearz=${metcycz}
+            ;;
+         Tanguro_*)
+            thisyeara=2014
+            thisyearz=2018
             ;;
          *)
             thisyeara=${metcyca}
@@ -1284,6 +1299,13 @@ do
       echo "yeara=${thisyeara}"                                          >> ${epostsh}
       echo "yearz=${thisyearz}"                                          >> ${epostsh}
       echo ""                                                            >> ${epostsh}
+      echo ""                                                            >> ${epostsh}
+      echo "#--- Define home in case home is not set"                    >> ${epostsh}
+      echo "if [[ \"x\${HOME}\" == \"x\" ]]"                             >> ${epostsh}
+      echo "then"                                                        >> ${epostsh}
+      echo "   export HOME=\$(echo ~)"                                   >> ${epostsh}
+      echo "fi"                                                          >> ${epostsh}
+      echo ""                                                            >> ${epostsh}
       echo ". \${HOME}/.bashrc"                                          >> ${epostsh}
       echo ""                                                            >> ${epostsh}
       echo "cd \${main}"                                                 >> ${epostsh}
@@ -1299,14 +1321,29 @@ do
       echo "   ${epostexe}"                                              >> ${epostsh}
       echo "done"                                                        >> ${epostsh}
       #------------------------------------------------------------------------------------#
-
-      #----- The command becomes the shell script, not the R script. ----------------------#
-      epostcomm=${epostsh}
-      #------------------------------------------------------------------------------------#
       ;;
    *)
-      #----- Use the general command to submit job. ---------------------------------------#
-      epostcomm=${epostexe}
+      #----- Create script that will run R until all files have been read. ----------------#
+      epostsh="${here}/${polyname}/exec_$(basename ${rscript} .r).sh"
+      rm -fr ${epostsh}
+      touch ${epostsh}
+      chmod u+x ${epostsh}
+      echo "#!/bin/bash"                                                 >> ${epostsh}
+      echo "main=\"${here}/${polyname}\""                                >> ${epostsh}
+      echo ""                                                            >> ${epostsh}
+      echo ""                                                            >> ${epostsh}
+      echo "#--- Define home in case home is not set"                    >> ${epostsh}
+      echo "if [[ \"x\${HOME}\" == \"x\" ]]"                             >> ${epostsh}
+      echo "then"                                                        >> ${epostsh}
+      echo "   export HOME=\$(echo ~)"                                   >> ${epostsh}
+      echo "fi"                                                          >> ${epostsh}
+      echo ""                                                            >> ${epostsh}
+      echo ". \${HOME}/.bashrc"                                          >> ${epostsh}
+      echo ""                                                            >> ${epostsh}
+      echo "cd \${main}"                                                 >> ${epostsh}
+      echo ""                                                            >> ${epostsh}
+      echo "${epostexe}"                                                 >> ${epostsh}
+      echo ""                                                            >> ${epostsh}
       #------------------------------------------------------------------------------------#
       ;;
    esac
@@ -1333,7 +1370,7 @@ do
       srun="${srun} --chdir=\${here}/${polyname}"
       srun="${srun} --output=\${here}/${polyname}/${epoststo}"
       srun="${srun} --error=\${here}/${polyname}/${epostste}"
-      echo "${srun} ${epostcomm} &" >> ${sbatch}
+      echo "${srun} ${epostsh} &" >> ${sbatch}
       #------------------------------------------------------------------------------------#
    fi
    #---------------------------------------------------------------------------------------#

@@ -39,9 +39,12 @@ module fuse_fiss_utils
       logical                                    :: sorted    ! Patch is already sorted
       logical        , dimension(:), allocatable :: attop     ! Top cohorts, for tie-break
       !------------------------------------------------------------------------------------!
-      
+
+
+
       !----- No need to sort an empty patch or a patch with a single cohort. --------------!
       if (cpatch%ncohorts < 2) return
+      !------------------------------------------------------------------------------------!
 
 
       !------------------------------------------------------------------------------------!
@@ -64,9 +67,11 @@ module fuse_fiss_utils
       nullify(temppatch)
       allocate(temppatch)
       call allocate_patchtype(temppatch,cpatch%ncohorts)
+      !------------------------------------------------------------------------------------!
 
       !----- Allocate the logical flag for tie-breaking. ----------------------------------!
       allocate(attop(cpatch%ncohorts))
+      !------------------------------------------------------------------------------------!
 
       ico = 0
       !---- Loop until all cohorts were sorted. -------------------------------------------!
@@ -2560,17 +2565,14 @@ module fuse_fiss_utils
 
 
       !------------------------------------------------------------------------------------!
-      !    Light-phenology characteristics.  To conserve maintenance costs, turnover must  !
-      ! be scaled with leaf biomass (but note that the scaling must be applied to turnover !
-      ! instead of leaf lifespan).  For consistency, we also scale the turnover amplitude  !
-      ! with leaf biomass.  Likewise, SLA is in (m2/kgC)leaf so it must be scaled with     !
-      ! leaf biomass.  Carboxylation rate (vm_bar) ia in umol/m2leaf/s, so it must be      !
-      ! scaled with LAI.                                                                   !
+      !    Light-phenology characteristics.  To conserve maintenance costs, leaf longevity !
+      !  must be scaled with leaf biomass (but note that the scaling must be applied to    !
+      !  turnover instead of leaf lifespan).  Likewise, SLA is in m2_leaf/kgC, so it must  !
+      ! be scaled with leaf biomass.  Carboxylation rate (vm_bar) is in umol/m2_leaf/s, so !
+      ! it must be scaled with LAI.                                                        !
       !                                                                                    !
       ! MLO -> XX. The SLA scaling with bleaf is numerically equivalent to your changes.   !
       !------------------------------------------------------------------------------------!
-      cpatch%turnover_amp(recc) = cpatch%turnover_amp(recc) * rbleaf                       &
-                                + cpatch%turnover_amp(donc) * dbleaf
       cpatch%sla         (recc) = cpatch%sla         (recc) * rbleaf                       &
                                 + cpatch%sla         (donc) * dbleaf
       cpatch%vm_bar      (recc) = cpatch%vm_bar      (recc) * rlai                         &
@@ -2604,7 +2606,6 @@ module fuse_fiss_utils
                                   + cpatch%leaf_water_im2(donc)
       cpatch%wood_water_im2(recc) = cpatch%wood_water_im2(recc)                            &
                                   + cpatch%wood_water_im2(donc)
-
       cpatch%wflux_gw      (recc) = cpatch%wflux_gw     (recc) * rnplant                   &
                                   + cpatch%wflux_gw     (donc) * dnplant
       cpatch%wflux_wl      (recc) = cpatch%wflux_wl     (recc) * rnplant                   &
@@ -3729,6 +3730,40 @@ module fuse_fiss_utils
          !---------------------------------------------------------------------------------!
          cpatch%mmean_wood_gbw        (recc) = cpatch%mmean_wood_gbw        (recc) * rwai  &
                                              + cpatch%mmean_wood_gbw        (donc) * dwai
+         !---------------------------------------------------------------------------------!
+
+
+
+
+         !---------------------------------------------------------------------------------!
+         !     Light-phenology characteristics.  To conserve maintenance costs, leaf       !
+         !  longevity must be scaled with leaf biomass (but note that the scaling must be  !
+         !  applied to turnover instead of leaf lifespan).  Likewise, SLA is in            !
+         !  m2_leaf/kgC, so it must be scaled with leaf biomass.  Carboxylation rate       !
+         !  (vm_bar) is in umol/m2_leaf/s, so it must be scaled with LAI.                  !
+         !---------------------------------------------------------------------------------!
+         cpatch%mmean_sla             (recc) = cpatch%mmean_sla         (recc) * rbleaf    &
+                                             + cpatch%mmean_sla         (donc) * dbleaf
+         cpatch%mmean_vm_bar          (recc) = cpatch%mmean_vm_bar      (recc) * rlai      &
+                                             + cpatch%mmean_vm_bar      (donc) * dlai
+         !------ For Life span, we must check whether they are non-zero. ------------------!
+         if ( abs(cpatch%mmean_llspan(recc)*cpatch%mmean_llspan(donc)) > tiny_num ) then
+            !------------------------------------------------------------------------------!
+            !     The denominator weights are not inadvertenly swapped.  This happens      !
+            ! because we are linearly scaling turnover, not leaf life span, to ensure that !
+            ! maintenance costs are consistent.                                            !
+            !------------------------------------------------------------------------------!
+            cpatch%mmean_llspan(recc) =   cpatch%mmean_llspan(recc)                        &
+                                      *   cpatch%mmean_llspan(donc)                        &
+                                      / ( cpatch%mmean_llspan(recc) * dbleaf               &
+                                        + cpatch%mmean_llspan(donc) * rbleaf )
+            !------------------------------------------------------------------------------!
+         else
+            !------ This only happens when both are zero, so it really doesn't matter. ----!
+            cpatch%mmean_llspan(recc) = cpatch%mmean_llspan(recc) * rbleaf                 &
+                                      + cpatch%mmean_llspan(donc) * dbleaf
+            !------------------------------------------------------------------------------!
+         end if
          !---------------------------------------------------------------------------------!
 
 
@@ -6747,7 +6782,8 @@ module fuse_fiss_utils
                                      , writing_eorq                  & ! intent(in)
                                      , writing_dcyc                  & ! intent(in)
                                      , ndcycle                       & ! intent(in)
-                                     , frqsum                        ! ! intent(in)
+                                     , frqsum                        & ! intent(in)
+                                     , frqsumi                       ! ! intent(in)
       use consts_coms         , only : wdns                          & ! intent(in)
                                      , rdry                          ! ! intent(in)
       use fusion_fission_coms , only : ifusion                       & ! intent(in)
@@ -6785,22 +6821,26 @@ module fuse_fiss_utils
       real                                 :: rawgt             ! Weight for receptor patch
       real                                 :: dawgt             ! Weight for donor patch
       !----- The following variables are for conserving canopy air space. -----------------!
-      real  :: can_depth_donp    !< Old canopy depth         (donor   )    [          J/kg]
-      real  :: can_depth_recp    !< Old canopy depth         (receptor)    [          J/kg]
-      real  :: can_enthalpy_donp !< Specific enthalpy        (donor   )    [          J/kg]
-      real  :: can_enthalpy_recp !< Specific enthalpy        (receptor)    [          J/kg]
-      real  :: can_rvap_recp     !< Water mixing ratio       (receptor)    [         kg/kg]
-      real  :: can_exner_recp    !< Exner function           (receptor)    [        J/kg/K]
-      real  :: cb_enthalpy_donp  !< Total enthalpy           (donor   )    [          J/m2]
-      real  :: cb_enthalpy_recp  !< Total enthalpy           (receptor)    [          J/m2]
-      real  :: cb_mass_donp      !< Total water mass         (donor   )    [     kg_air/m2]
-      real  :: cb_mass_recp      !< Total water mass         (receptor)    [     kg_air/m2]
-      real  :: cb_molar_donp     !< Total water molar count  (donor   )    [mol_dry_air/m2]
-      real  :: cb_molar_recp     !< Total water molar count  (receptor)    [mol_dry_air/m2]
-      real  :: cb_water_donp     !< Total water mass         (donor   )    [     kg_h2o/m2]
-      real  :: cb_water_recp     !< Total water mass         (receptor)    [     kg_h2o/m2]
-      real  :: cb_co2_donp       !< Total CO2 mass           (donor   )    [     kg_co2/m2]
-      real  :: cb_co2_recp       !< Total CO2 mass           (receptor)    [     kg_co2/m2]
+      real  :: can_depth0_donp         !< Old can. depth, mass  (donor   ) [          J/kg]
+      real  :: can_depth0_recp         !< Old can. depth, mass  (receptor) [          J/kg]
+      real  :: can_enthalpy_donp       !< Specific enthalpy     (donor   ) [          J/kg]
+      real  :: can_enthalpy_recp       !< Specific enthalpy     (receptor) [          J/kg]
+      real  :: can_rvap_recp           !< Water mixing ratio    (receptor) [         kg/kg]
+      real  :: can_exner_recp          !< Exner function        (receptor) [        J/kg/K]
+      real  :: cb_enthalpy_donp        !< Total enthalpy        (donor   ) [          J/m2]
+      real  :: cb_enthalpy_recp        !< Total enthalpy        (receptor) [          J/m2]
+      real  :: cb_mass_donp            !< Total air mass        (donor   ) [     kg_air/m2]
+      real  :: cb_mass_recp            !< Total air mass        (receptor) [     kg_air/m2]
+      real  :: cb_molar_donp           !< Total dry molar count (donor   ) [mol_dry_air/m2]
+      real  :: cb_molar_recp           !< Total dry molar count (receptor) [mol_dry_air/m2]
+      real  :: cb_water_donp           !< Total water mass      (donor   ) [     kg_h2o/m2]
+      real  :: cb_water_recp           !< Total water mass      (receptor) [     kg_h2o/m2]
+      real  :: cb_co2_donp             !< Total CO2 mass        (donor   ) [     kg_co2/m2]
+      real  :: cb_co2_recp             !< Total CO2 mass        (receptor) [     kg_co2/m2]
+      real  :: rbudget_zcaneffect_recp !< Dz effect, mass (rho) (receptor) [   kg_air/m2/s]
+      real  :: rbudget_zcaneffect_donp !< Dz effect, mass (rho) (donor   ) [   kg_air/m2/s]
+      real  :: dbudget_zcaneffect_recp !< Dz effect, molar cnt  (receptor) [mol_d_air/m2/s]
+      real  :: dbudget_zcaneffect_donp !< Dz effect, molar cnt  (donor   ) [mol_d_air/m2/s]
       !------------------------------------------------------------------------------------!
 
 
@@ -6953,10 +6993,12 @@ module fuse_fiss_utils
       ! is going to be the weighted average (in case it is slightly different, we correct  !
       ! it later in the subroutine).  Importantly, we must use the canopy depth from       !
       ! "before" the vegetation dynamics if we want to track conservation, and the         !
-      ! zcaneffect variables have not yet been applied to storage.  In the case we are not !
+      ! zcaneffect variables have not yet been applied to storage, and also determine the  !
+      ! zcaneffect on total mass ("mbudget_zcaneffect") and total dry-air molar count      !
+      ! ("dbudget_zcaneffect"), which will be used after fusion.  In the case we are not   !
       ! checking the budget, we cannot determine the previous height so we use the current !
       ! depth instead.  This may lead to slightly different results if running with budget !
-      ! check or not                                                                       !
+      ! check or not.                                                                      !
       !                                                                                    !
       !    For the time being this is only applied to the instantaneous (state) variables  !
       ! because these are the ones that are used in the budget assessment sub-routines.    !
@@ -6964,47 +7006,185 @@ module fuse_fiss_utils
       ! same approach, we use the simpler fusion for the time being.                       !
       !------------------------------------------------------------------------------------!
       if (checkbudget) then
-         can_depth_donp = csite%can_depth(donp)                                            &
-                        - frqsum * csite%wbudget_zcaneffect(donp)                          &
-                        / ( csite%can_rhos(donp) * csite%can_shv(donp) )
-         can_depth_recp = csite%can_depth(recp)                                            &
-                        - frqsum * csite%wbudget_zcaneffect(recp)                          &
-                        / ( csite%can_rhos(recp) * csite%can_shv(recp) )
+         !------ Previous canopy depth. Use water budget to define it. --------------------!
+         can_depth0_donp         = csite%can_depth(donp)                                   &
+                                 - frqsum * csite%wbudget_zcaneffect(donp)                 &
+                                 / ( csite%can_rhos(donp) * csite%can_shv(donp) )
+         can_depth0_recp         = csite%can_depth(recp)                                   &
+                                 - frqsum * csite%wbudget_zcaneffect(recp)                 &
+                                 / ( csite%can_rhos(recp) * csite%can_shv(recp) )
+         !------ Canopy change effect on total mass. --------------------------------------!
+         rbudget_zcaneffect_donp = csite%can_rhos(donp)                                    &
+                                 * (csite%can_depth(donp) - can_depth0_donp) * frqsumi
+         rbudget_zcaneffect_recp = csite%can_rhos(recp)                                    &
+                                 * (csite%can_depth(recp) - can_depth0_recp) * frqsumi
+         !------ Canopy change effect on dry-air molar count. -----------------------------!
+         dbudget_zcaneffect_donp = csite%can_dmol(donp)                                    &
+                                 * (csite%can_depth(donp) - can_depth0_donp) * frqsumi
+         dbudget_zcaneffect_recp = csite%can_dmol(recp)                                    &
+                                 * (csite%can_depth(recp) - can_depth0_recp) * frqsumi
+         !---------------------------------------------------------------------------------!
       else
-         can_depth_donp = csite%can_depth(donp)
-         can_depth_recp = csite%can_depth(recp)
+         !------ Previous depth can't be determined. --------------------------------------!
+         can_depth0_donp         = csite%can_depth(donp)
+         can_depth0_recp         = csite%can_depth(recp)
+         rbudget_zcaneffect_donp = 0.0
+         rbudget_zcaneffect_recp = 0.0
+         dbudget_zcaneffect_donp = 0.0
+         dbudget_zcaneffect_recp = 0.0
+         !---------------------------------------------------------------------------------!
       end if
       !------ Find the specific enthalpy of receptor and donor patch [J/kg]. --------------!
       can_enthalpy_donp = tq2enthalpy(csite%can_temp(donp),csite%can_shv (donp),.true.)
       can_enthalpy_recp = tq2enthalpy(csite%can_temp(recp),csite%can_shv (recp),.true.)
       !------ Find the total canopy air space mass [kg_air/m2]. ---------------------------!
-      cb_mass_donp             = csite%can_rhos(donp) * can_depth_donp
-      cb_mass_recp             = csite%can_rhos(recp) * can_depth_recp
+      cb_mass_donp      = csite%can_rhos(donp) * can_depth0_donp
+      cb_mass_recp      = csite%can_rhos(recp) * can_depth0_recp
       !------ Find the molar count of dry air in the canopy air space [mol_dry_air/m2]. ---!
-      cb_molar_donp            = csite%can_dmol(donp) * can_depth_donp
-      cb_molar_recp            = csite%can_dmol(recp) * can_depth_recp
+      cb_molar_donp     = csite%can_dmol(donp) * can_depth0_donp
+      cb_molar_recp     = csite%can_dmol(recp) * can_depth0_recp
       !------ Find the bulk enthalpy of receptor and donor patch [J/m2]. ------------------!
-      cb_enthalpy_donp         = cb_mass_donp * can_enthalpy_donp
-      cb_enthalpy_recp         = cb_mass_recp * can_enthalpy_recp
+      cb_enthalpy_donp  = cb_mass_donp * can_enthalpy_donp
+      cb_enthalpy_recp  = cb_mass_recp * can_enthalpy_recp
       !------ Find the total water mass [kg_h2o/m2]. --------------------------------------!
-      cb_water_donp            = cb_mass_donp * csite%can_shv(donp)
-      cb_water_recp            = cb_mass_recp * csite%can_shv(recp)
+      cb_water_donp     = cb_mass_donp * csite%can_shv(donp)
+      cb_water_recp     = cb_mass_recp * csite%can_shv(recp)
       !------ Find the total CO2 mass [kg_co2/m2]. ----------------------------------------!
-      cb_co2_donp              = cb_molar_donp * csite%can_co2(donp)
-      cb_co2_recp              = cb_molar_recp * csite%can_co2(recp)
+      cb_co2_donp       = cb_molar_donp * csite%can_co2(donp)
+      cb_co2_recp       = cb_molar_recp * csite%can_co2(recp)
       !------ Find the total properties (X/m2) of the fused patch. ------------------------!
-      cb_enthalpy_recp         = cb_enthalpy_donp * dawgt + cb_enthalpy_recp * rawgt
-      cb_mass_recp             = cb_mass_donp     * dawgt + cb_mass_recp     * rawgt
-      cb_molar_recp            = cb_molar_donp    * dawgt + cb_molar_recp    * rawgt
-      cb_water_recp            = cb_water_donp    * dawgt + cb_water_recp    * rawgt
-      cb_co2_recp              = cb_co2_donp      * dawgt + cb_co2_recp      * rawgt
+      cb_enthalpy_recp  = cb_enthalpy_donp * dawgt + cb_enthalpy_recp * rawgt
+      cb_mass_recp      = cb_mass_donp     * dawgt + cb_mass_recp     * rawgt
+      cb_molar_recp     = cb_molar_donp    * dawgt + cb_molar_recp    * rawgt
+      cb_water_recp     = cb_water_donp    * dawgt + cb_water_recp    * rawgt
+      cb_co2_recp       = cb_co2_donp      * dawgt + cb_co2_recp      * rawgt
+      !------------------------------------------------------------------------------------!
+
+
+
+
+
+ 
+
+
+      !------------------------------------------------------------------------------------!
+      !     Budget variables.                                                              !
+      !------------------------------------------------------------------------------------!
+      csite%co2budget_initialstorage(recp) = csite%co2budget_initialstorage(donp) * dawgt  &
+                                           + csite%co2budget_initialstorage(recp) * rawgt
+      csite%co2budget_residual      (recp) = csite%co2budget_residual      (donp) * dawgt  &
+                                           + csite%co2budget_residual      (recp) * rawgt
+      csite%co2budget_loss2atm      (recp) = csite%co2budget_loss2atm      (donp) * dawgt  &
+                                           + csite%co2budget_loss2atm      (recp) * rawgt
+      csite%co2budget_denseffect    (recp) = csite%co2budget_denseffect    (donp) * dawgt  &
+                                           + csite%co2budget_denseffect    (recp) * rawgt
+      csite%co2budget_zcaneffect    (recp) = csite%co2budget_zcaneffect    (donp) * dawgt  &
+                                           + csite%co2budget_zcaneffect    (recp) * rawgt
+      csite%co2budget_gpp           (recp) = csite%co2budget_gpp           (donp) * dawgt  &
+                                           + csite%co2budget_gpp           (recp) * rawgt
+      csite%co2budget_plresp        (recp) = csite%co2budget_plresp        (donp) * dawgt  &
+                                           + csite%co2budget_plresp        (recp) * rawgt
+      csite%co2budget_rh            (recp) = csite%co2budget_rh            (donp) * dawgt  &
+                                           + csite%co2budget_rh            (recp) * rawgt
+      csite%cbudget_initialstorage  (recp) = csite%cbudget_initialstorage  (donp) * dawgt  &
+                                           + csite%cbudget_initialstorage  (recp) * rawgt
+      csite%cbudget_residual        (recp) = csite%cbudget_residual        (donp) * dawgt  &
+                                           + csite%cbudget_residual        (recp) * rawgt
+      csite%cbudget_loss2atm        (recp) = csite%cbudget_loss2atm        (donp) * dawgt  &
+                                           + csite%cbudget_loss2atm        (recp) * rawgt
+      csite%cbudget_committed       (recp) = csite%cbudget_committed       (donp) * dawgt  &
+                                           + csite%cbudget_committed       (recp) * rawgt
+      csite%cbudget_denseffect      (recp) = csite%cbudget_denseffect      (donp) * dawgt  &
+                                           + csite%cbudget_denseffect      (recp) * rawgt
+      csite%cbudget_zcaneffect      (recp) = csite%cbudget_zcaneffect      (donp) * dawgt  &
+                                           + csite%cbudget_zcaneffect      (recp) * rawgt
+      csite%cbudget_loss2yield      (recp) = csite%cbudget_loss2yield      (donp) * dawgt  &
+                                           + csite%cbudget_loss2yield      (recp) * rawgt
+      csite%cbudget_seedrain        (recp) = csite%cbudget_seedrain        (donp) * dawgt  &
+                                           + csite%cbudget_seedrain        (recp) * rawgt
+      csite%ebudget_initialstorage  (recp) = csite%ebudget_initialstorage  (donp) * dawgt  &
+                                           + csite%ebudget_initialstorage  (recp) * rawgt
+      csite%ebudget_residual        (recp) = csite%ebudget_residual        (donp) * dawgt  &
+                                           + csite%ebudget_residual        (recp) * rawgt
+      csite%ebudget_netrad          (recp) = csite%ebudget_netrad          (donp) * dawgt  &
+                                           + csite%ebudget_netrad          (recp) * rawgt
+      csite%ebudget_loss2atm        (recp) = csite%ebudget_loss2atm        (donp) * dawgt  &
+                                           + csite%ebudget_loss2atm        (recp) * rawgt
+      csite%ebudget_denseffect      (recp) = csite%ebudget_denseffect      (donp) * dawgt  &
+                                           + csite%ebudget_denseffect      (recp) * rawgt
+      csite%ebudget_prsseffect      (recp) = csite%ebudget_prsseffect      (donp) * dawgt  &
+                                           + csite%ebudget_prsseffect      (recp) * rawgt
+      csite%ebudget_hcapeffect      (recp) = csite%ebudget_hcapeffect      (donp) * dawgt  &
+                                           + csite%ebudget_hcapeffect      (recp) * rawgt
+      csite%ebudget_wcapeffect      (recp) = csite%ebudget_wcapeffect      (donp) * dawgt  &
+                                           + csite%ebudget_wcapeffect      (recp) * rawgt
+      csite%ebudget_zcaneffect      (recp) = csite%ebudget_zcaneffect      (donp) * dawgt  &
+                                           + csite%ebudget_zcaneffect      (recp) * rawgt
+      csite%ebudget_pheneffect      (recp) = csite%ebudget_pheneffect      (donp) * dawgt  &
+                                           + csite%ebudget_pheneffect      (recp) * rawgt
+      csite%ebudget_loss2runoff     (recp) = csite%ebudget_loss2runoff     (donp) * dawgt  &
+                                           + csite%ebudget_loss2runoff     (recp) * rawgt
+      csite%ebudget_loss2drainage   (recp) = csite%ebudget_loss2drainage   (donp) * dawgt  &
+                                           + csite%ebudget_loss2drainage   (recp) * rawgt
+      csite%ebudget_precipgain      (recp) = csite%ebudget_precipgain      (donp) * dawgt  &
+                                           + csite%ebudget_precipgain      (recp) * rawgt
+      csite%wbudget_initialstorage  (recp) = csite%wbudget_initialstorage  (donp) * dawgt  &
+                                           + csite%wbudget_initialstorage  (recp) * rawgt
+      csite%wbudget_residual        (recp) = csite%wbudget_residual        (donp) * dawgt  &
+                                           + csite%wbudget_residual        (recp) * rawgt
+      csite%wbudget_loss2atm        (recp) = csite%wbudget_loss2atm        (donp) * dawgt  &
+                                           + csite%wbudget_loss2atm        (recp) * rawgt
+      csite%wbudget_denseffect      (recp) = csite%wbudget_denseffect      (donp) * dawgt  &
+                                           + csite%wbudget_denseffect      (recp) * rawgt
+      csite%wbudget_wcapeffect      (recp) = csite%wbudget_wcapeffect      (donp) * dawgt  &
+                                           + csite%wbudget_wcapeffect      (recp) * rawgt
+      csite%wbudget_zcaneffect      (recp) = csite%wbudget_zcaneffect      (donp) * dawgt  &
+                                           + csite%wbudget_zcaneffect      (recp) * rawgt
+      csite%wbudget_pheneffect      (recp) = csite%wbudget_pheneffect      (donp) * dawgt  &
+                                           + csite%wbudget_pheneffect      (recp) * rawgt
+      csite%wbudget_loss2runoff     (recp) = csite%wbudget_loss2runoff     (donp) * dawgt  &
+                                           + csite%wbudget_loss2runoff     (recp) * rawgt
+      csite%wbudget_loss2drainage   (recp) = csite%wbudget_loss2drainage   (donp) * dawgt  &
+                                           + csite%wbudget_loss2drainage   (recp) * rawgt
+      csite%wbudget_precipgain      (recp) = csite%wbudget_precipgain      (donp) * dawgt  &
+                                           + csite%wbudget_precipgain      (recp) * rawgt
+      !------ Additional budget variables for conserving canopy-air space. ----------------!
+      if (checkbudget) then
+         rbudget_zcaneffect_recp           = rbudget_zcaneffect_donp              * dawgt  &
+                                           + rbudget_zcaneffect_recp              * rawgt
+         dbudget_zcaneffect_recp           = dbudget_zcaneffect_donp              * dawgt  &
+                                           + dbudget_zcaneffect_recp              * rawgt
+      end if
+      !------------------------------------------------------------------------------------!
+
+
+
+
       !------ Find the fused canopy depth using the regular weighting average. ------------!
-      can_depth_recp           = can_depth_donp   * dawgt + can_depth_recp   * rawgt
       csite%can_depth  (recp)  = csite%can_depth(donp) * dawgt                             &
                                + csite%can_depth(recp) * rawgt
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !      Because the fused patch should already contain the zcan effect, we add the    !
+      ! zcan effect back to the total masses.                                              !
+      !------------------------------------------------------------------------------------!
+      if (checkbudget) then
+         cb_mass_recp     = cb_mass_recp     + frqsum * rbudget_zcaneffect_recp
+         cb_molar_recp    = cb_molar_recp    + frqsum * dbudget_zcaneffect_recp
+         cb_co2_recp      = cb_co2_recp      + frqsum * csite%co2budget_zcaneffect(recp)
+         cb_water_recp    = cb_water_recp    + frqsum * csite%wbudget_zcaneffect  (recp)
+         cb_enthalpy_recp = cb_enthalpy_recp + frqsum * csite%ebudget_zcaneffect  (recp)
+      end if
+      !------------------------------------------------------------------------------------!
+
+
+
       !------ Find air density and the specific properties. -------------------------------!
-      csite%can_rhos   (recp)  = cb_mass_recp     / can_depth_recp
-      csite%can_dmol   (recp)  = cb_molar_recp    / can_depth_recp
+      csite%can_rhos   (recp)  = cb_mass_recp     / csite%can_depth(recp)
+      csite%can_dmol   (recp)  = cb_molar_recp    / csite%can_depth(recp)
       can_enthalpy_recp        = cb_enthalpy_recp / cb_mass_recp
       csite%can_shv    (recp)  = cb_water_recp    / cb_mass_recp
       csite%can_co2    (recp)  = cb_co2_recp      / cb_molar_recp
@@ -7031,6 +7211,23 @@ module fuse_fiss_utils
       csite%can_temp_pv (recp) = csite%can_temp_pv(donp) * dawgt                           &
                                + csite%can_temp_pv(recp) * rawgt
       !------------------------------------------------------------------------------------!
+
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Committed respiration.  These variables are used to release storage and growth !
+      ! respiration to the canopy air space.  Cohort variables cannot be used because      !
+      ! these are committed emissions that should be honoured even if the cohort is        !
+      ! terminated, to ensure carbon conservation.                                         !
+      !------------------------------------------------------------------------------------!
+      csite%commit_storage_resp    (recp)  = csite%commit_storage_resp     (donp) * dawgt  &
+                                           + csite%commit_storage_resp     (recp) * rawgt
+      csite%commit_growth_resp     (recp)  = csite%commit_growth_resp      (donp) * dawgt  &
+                                           + csite%commit_growth_resp      (recp) * rawgt
+      !------------------------------------------------------------------------------------!
+
+
 
 
 
@@ -7158,104 +7355,8 @@ module fuse_fiss_utils
       !------------------------------------------------------------------------------------!
 
 
- 
 
 
-      !------------------------------------------------------------------------------------!
-      !     Budget variables.                                                              !
-      !------------------------------------------------------------------------------------!
-      csite%co2budget_initialstorage(recp) = csite%co2budget_initialstorage(donp) * dawgt  &
-                                           + csite%co2budget_initialstorage(recp) * rawgt
-      csite%co2budget_residual      (recp) = csite%co2budget_residual      (donp) * dawgt  &
-                                           + csite%co2budget_residual      (recp) * rawgt
-      csite%co2budget_loss2atm      (recp) = csite%co2budget_loss2atm      (donp) * dawgt  &
-                                           + csite%co2budget_loss2atm      (recp) * rawgt
-      csite%co2budget_denseffect    (recp) = csite%co2budget_denseffect    (donp) * dawgt  &
-                                           + csite%co2budget_denseffect    (recp) * rawgt
-      csite%co2budget_zcaneffect    (recp) = csite%co2budget_zcaneffect    (donp) * dawgt  &
-                                           + csite%co2budget_zcaneffect    (recp) * rawgt
-      csite%co2budget_gpp           (recp) = csite%co2budget_gpp           (donp) * dawgt  &
-                                           + csite%co2budget_gpp           (recp) * rawgt
-      csite%co2budget_plresp        (recp) = csite%co2budget_plresp        (donp) * dawgt  &
-                                           + csite%co2budget_plresp        (recp) * rawgt
-      csite%co2budget_rh            (recp) = csite%co2budget_rh            (donp) * dawgt  &
-                                           + csite%co2budget_rh            (recp) * rawgt
-      csite%cbudget_initialstorage  (recp) = csite%cbudget_initialstorage  (donp) * dawgt  &
-                                           + csite%cbudget_initialstorage  (recp) * rawgt
-      csite%cbudget_residual        (recp) = csite%cbudget_residual        (donp) * dawgt  &
-                                           + csite%cbudget_residual        (recp) * rawgt
-      csite%cbudget_loss2atm        (recp) = csite%cbudget_loss2atm        (donp) * dawgt  &
-                                           + csite%cbudget_loss2atm        (recp) * rawgt
-      csite%cbudget_committed       (recp) = csite%cbudget_committed       (donp) * dawgt  &
-                                           + csite%cbudget_committed       (recp) * rawgt
-      csite%cbudget_denseffect      (recp) = csite%cbudget_denseffect      (donp) * dawgt  &
-                                           + csite%cbudget_denseffect      (recp) * rawgt
-      csite%cbudget_zcaneffect      (recp) = csite%cbudget_zcaneffect      (donp) * dawgt  &
-                                           + csite%cbudget_zcaneffect      (recp) * rawgt
-      csite%cbudget_loss2yield      (recp) = csite%cbudget_loss2yield      (donp) * dawgt  &
-                                           + csite%cbudget_loss2yield      (recp) * rawgt
-      csite%cbudget_seedrain        (recp) = csite%cbudget_seedrain        (donp) * dawgt  &
-                                           + csite%cbudget_seedrain        (recp) * rawgt
-      csite%ebudget_initialstorage  (recp) = csite%ebudget_initialstorage  (donp) * dawgt  &
-                                           + csite%ebudget_initialstorage  (recp) * rawgt
-      csite%ebudget_residual        (recp) = csite%ebudget_residual        (donp) * dawgt  &
-                                           + csite%ebudget_residual        (recp) * rawgt
-      csite%ebudget_netrad          (recp) = csite%ebudget_netrad          (donp) * dawgt  &
-                                           + csite%ebudget_netrad          (recp) * rawgt
-      csite%ebudget_loss2atm        (recp) = csite%ebudget_loss2atm        (donp) * dawgt  &
-                                           + csite%ebudget_loss2atm        (recp) * rawgt
-      csite%ebudget_denseffect      (recp) = csite%ebudget_denseffect      (donp) * dawgt  &
-                                           + csite%ebudget_denseffect      (recp) * rawgt
-      csite%ebudget_prsseffect      (recp) = csite%ebudget_prsseffect      (donp) * dawgt  &
-                                           + csite%ebudget_prsseffect      (recp) * rawgt
-      csite%ebudget_hcapeffect      (recp) = csite%ebudget_hcapeffect      (donp) * dawgt  &
-                                           + csite%ebudget_hcapeffect      (recp) * rawgt
-      csite%ebudget_wcapeffect      (recp) = csite%ebudget_wcapeffect      (donp) * dawgt  &
-                                           + csite%ebudget_wcapeffect      (recp) * rawgt
-      csite%ebudget_zcaneffect      (recp) = csite%ebudget_zcaneffect      (donp) * dawgt  &
-                                           + csite%ebudget_zcaneffect      (recp) * rawgt
-      csite%ebudget_pheneffect      (recp) = csite%ebudget_pheneffect      (donp) * dawgt  &
-                                           + csite%ebudget_pheneffect      (recp) * rawgt
-      csite%ebudget_loss2runoff     (recp) = csite%ebudget_loss2runoff     (donp) * dawgt  &
-                                           + csite%ebudget_loss2runoff     (recp) * rawgt
-      csite%ebudget_loss2drainage   (recp) = csite%ebudget_loss2drainage   (donp) * dawgt  &
-                                           + csite%ebudget_loss2drainage   (recp) * rawgt
-      csite%ebudget_precipgain      (recp) = csite%ebudget_precipgain      (donp) * dawgt  &
-                                           + csite%ebudget_precipgain      (recp) * rawgt
-      csite%wbudget_initialstorage  (recp) = csite%wbudget_initialstorage  (donp) * dawgt  &
-                                           + csite%wbudget_initialstorage  (recp) * rawgt
-      csite%wbudget_residual        (recp) = csite%wbudget_residual        (donp) * dawgt  &
-                                           + csite%wbudget_residual        (recp) * rawgt
-      csite%wbudget_loss2atm        (recp) = csite%wbudget_loss2atm        (donp) * dawgt  &
-                                           + csite%wbudget_loss2atm        (recp) * rawgt
-      csite%wbudget_denseffect      (recp) = csite%wbudget_denseffect      (donp) * dawgt  &
-                                           + csite%wbudget_denseffect      (recp) * rawgt
-      csite%wbudget_wcapeffect      (recp) = csite%wbudget_wcapeffect      (donp) * dawgt  &
-                                           + csite%wbudget_wcapeffect      (recp) * rawgt
-      csite%wbudget_zcaneffect      (recp) = csite%wbudget_zcaneffect      (donp) * dawgt  &
-                                           + csite%wbudget_zcaneffect      (recp) * rawgt
-      csite%wbudget_pheneffect      (recp) = csite%wbudget_pheneffect      (donp) * dawgt  &
-                                           + csite%wbudget_pheneffect      (recp) * rawgt
-      csite%wbudget_loss2runoff     (recp) = csite%wbudget_loss2runoff     (donp) * dawgt  &
-                                           + csite%wbudget_loss2runoff     (recp) * rawgt
-      csite%wbudget_loss2drainage   (recp) = csite%wbudget_loss2drainage   (donp) * dawgt  &
-                                           + csite%wbudget_loss2drainage   (recp) * rawgt
-      csite%wbudget_precipgain      (recp) = csite%wbudget_precipgain      (donp) * dawgt  &
-                                           + csite%wbudget_precipgain      (recp) * rawgt
-      !------------------------------------------------------------------------------------!
-
-
-      !------------------------------------------------------------------------------------!
-      !     Committed respiration.  These variables are used to release storage and growth !
-      ! respiration to the canopy air space.  Cohort variables cannot be used because      !
-      ! these are committed emissions that should be honoured even if the cohort is        !
-      ! terminated, to ensure carbon conservation.                                         !
-      !------------------------------------------------------------------------------------!
-      csite%commit_storage_resp    (recp)  = csite%commit_storage_resp     (donp) * dawgt  &
-                                           + csite%commit_storage_resp     (recp) * rawgt
-      csite%commit_growth_resp     (recp)  = csite%commit_growth_resp      (donp) * dawgt  &
-                                           + csite%commit_growth_resp      (recp) * rawgt
-      !------------------------------------------------------------------------------------!
 
 
       !------------------------------------------------------------------------------------!
@@ -7936,6 +8037,14 @@ module fuse_fiss_utils
                                               + csite%mmean_struct_soil_n  (recp) * rawgt
             csite%mmean_mineral_soil_n (recp) = csite%mmean_mineral_soil_n (donp) * dawgt  &
                                               + csite%mmean_mineral_soil_n (recp) * rawgt
+            csite%mmean_fgc_in         (recp) = csite%mmean_fgc_in         (donp) * dawgt  &
+                                              + csite%mmean_fgc_in         (recp) * rawgt
+            csite%mmean_fsc_in         (recp) = csite%mmean_fsc_in         (donp) * dawgt  &
+                                              + csite%mmean_fsc_in         (recp) * rawgt
+            csite%mmean_stgc_in        (recp) = csite%mmean_stgc_in        (donp) * dawgt  &
+                                              + csite%mmean_stgc_in        (recp) * rawgt
+            csite%mmean_stsc_in        (recp) = csite%mmean_stsc_in        (donp) * dawgt  &
+                                              + csite%mmean_stsc_in        (recp) * rawgt
             csite%mmean_A_decomp       (recp) = csite%mmean_A_decomp       (donp) * dawgt  &
                                               + csite%mmean_A_decomp       (recp) * rawgt
             csite%mmean_B_decomp       (recp) = csite%mmean_B_decomp       (donp) * dawgt  &

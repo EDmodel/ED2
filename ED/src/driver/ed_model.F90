@@ -92,6 +92,7 @@ subroutine ed_model()
    use budget_utils        , only : ed_init_budget              ! ! intent(in)
    use vegetation_dynamics , only : veg_dynamics_driver         ! ! sub-routine
    use ed_type_init        , only : ed_init_viable              ! ! sub-routine
+   use soil_respiration    , only : zero_litter_inputs          ! ! sub-routine
    implicit none
    !----- Common blocks. ------------------------------------------------------------------!
 #if defined(RAMS_MPI)
@@ -189,7 +190,10 @@ subroutine ed_model()
    !---------------------------------------------------------------------------------------!
    !      If this is not a history restart, then zero out the long term diagnostics.       !
    !---------------------------------------------------------------------------------------!
-   if (trim(runtype) /= 'HISTORY') then
+   select case (trim(runtype))
+   case ('HISTORY')
+      continue
+   case default
 
       do ifm=1,ngrids
          if (writing_long) call zero_ed_dmean_vars(edgrid_g(ifm))
@@ -202,7 +206,7 @@ subroutine ed_model()
          call update_ed_yearly_vars(edgrid_g(ifm))
       end do
       !------------------------------------------------------------------------------------!
-   end if
+   end select
    !---------------------------------------------------------------------------------------!
 
 
@@ -230,15 +234,34 @@ subroutine ed_model()
 
 
    !---------------------------------------------------------------------------------------!
-   !      Last, we initialise the budget variables and set all cohorts to be viable.  In   !
-   ! case this is a history initialisation, subroutine init_ed_cohorts_vars is not called, !
-   ! and the variable is never properly initialised, and likely set to .false. by default, !
-   ! which causes all cohorts to disappear.                                                !
+   !      Here we must initialise or reset a group of variables.                           !
+   ! 1.  Variable is_viable must be set to .true..  This variable is not saved in          !
+   !     ed_init_history, and the default is .false., which would eliminate all cohorts.   !
+   ! 2.  In the case of a initial simulation, we must reset all budget fluxes and set all  !
+   !     budget stocks.  This should not be done in HISTORY initialisation, all variables  !
+   !     should be read from history.                                                      !
+   ! 3.  Litter inputs must be reset in the HISTORY initialisation, in case the history    !
+   !     file is at midnight UTC (daily time step).  These variables are normally reset    !
+   !     after writing the output so they are meaningful in the output.  Because history   !
+   !     files are written before the inputs are reset, the inputs would be double-counted !
+   !     in the second day of simulation.                                                  !
    !---------------------------------------------------------------------------------------!
-   do ifm=1,ngrids
-      call ed_init_budget(edgrid_g(ifm),.true.)
-      call ed_init_viable(edgrid_g(ifm))
-   end do
+   select case (trim(runtype))
+   case ('INITIAL')
+      do ifm=1,ngrids
+         call ed_init_budget(edgrid_g(ifm),.true.)
+         call ed_init_viable(edgrid_g(ifm))
+      end do
+   case ('HISTORY')
+      new_day         = current_time%time < dtlsm
+      do ifm=1,ngrids
+         call flag_stable_cohorts(edgrid_g(ifm),.true.)
+         call ed_init_viable(edgrid_g(ifm))      
+         if (new_day) then
+            call zero_litter_inputs(edgrid_g(ifm))
+         end if
+      end do
+   end select
    !---------------------------------------------------------------------------------------!
 
 
@@ -280,7 +303,7 @@ subroutine ed_model()
 
       !----- Define which cohorts are to be solved prognostically. ------------------------!
       do ifm=1,ngrids
-         call flag_stable_cohorts(edgrid_g(ifm))
+         call flag_stable_cohorts(edgrid_g(ifm),.false.)
       end do
       !------------------------------------------------------------------------------------!
 
@@ -534,6 +557,18 @@ subroutine ed_model()
       if (reset_time) then
          do ifm=1,ngrids
             call zero_ed_fmean_vars(edgrid_g(ifm))
+         end do
+      end if
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !      Reset inputs to soil carbon.                                                  !
+      !------------------------------------------------------------------------------------!
+      if (new_day) then
+         do ifm=1,ngrids
+            call zero_litter_inputs(edgrid_g(ifm))
          end do
       end if
       !------------------------------------------------------------------------------------!

@@ -725,7 +725,7 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
                                                    ,"Rates and storage"
                                                    )#end names
                                        )#end list
-   #----- Density-dependent mortality. ----------------------------------------------------#
+   #----- Respiration scheme mortality. ---------------------------------------------------#
    flagvar[["resp.scheme"]]     = list( descr  = "Respiration method"
                                        , numeric = TRUE
                                        , values = c(0,1)
@@ -812,10 +812,11 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
                                        )#end list
    flagvar[["met.forcing"]]      = list( descr  = "Meteorological forcing"
                                        , numeric = FALSE
-                                       , values = c("eft","shr","wmo")
+                                       , values = c("eft","shr","wmo","rag")
                                        , names  = c("Eddy flux tower"
                                                    ,"Sub-hourly"
                                                    ,"WMO-based"
+                                                   ,"Average rainfall"
                                                    )#end names
                                        )#end list
    flagvar[["init.mode"]]        = list( descr  = "Initial Cond.:"
@@ -889,12 +890,30 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
                                        , values = c(0,1,2)
                                        , names  = c("OFF","ON","Logging")
                                        )#end list
+   flagvar[["decomp.scheme"]]    = list( descr  = "Decomposition"
+                                       , numeric = TRUE
+                                       , values = c(0,1,2,3,4,5)
+                                       , names  = c( "Moorcroft et al. (2001)"
+                                                   , "Lloyd and Taylor (1994)"
+                                                   , "Longo et al. (2019)"
+                                                   , "Moorcroft+Moyano"
+                                                   , "Lloyd_Taylor+Moyano"
+                                                   , "Bolker et al. (1998)"
+                                                   )#end c
+                                       )#end list
    flagvar[["ihydro"       ]]    = list( descr  = "Plant hydraulics"
                                        , numeric = TRUE
                                        , values = c(0,1,2)
                                        , names  = c( "Static"
                                                    , "Xu/Christoffersen"
                                                    , "Xu et al (2016)"
+                                                   )#end c
+                                       )#end list
+   flagvar[["hydrodyn.set" ]]    = list( descr  = "Plant hydrodynamics set"
+                                       , numeric = TRUE
+                                       , values = c(0,1)
+                                       , names  = c( "Off"
+                                                   , "Xu/Christoffersen"
                                                    )#end c
                                        )#end list
    flagvar[["ianth.dataset"]]    = list( descr  = "LULCC dataset"
@@ -1049,7 +1068,7 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
                                      , unit  = "m"                     
                                      , fmt   = "%.1f"          
                                      , off   =    0.0
-                                     , mult  =    0.1  )
+                                     , mult  =    0.01 )
    numvar[["atm.co2"        ]] = list( descr = "Air CO2"                    
                                      , unit  = "umol/mol"              
                                      , fmt   = "%.0f"          
@@ -1275,6 +1294,11 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
                                      , fmt   = "%.3f"
                                      , off   = 0.0
                                      , mult  = 0.001)
+   numvar[["simul"   ]]        = list( descr = "Simulation"
+                                     , unit  = ""
+                                     , fmt   = "%4.4i"
+                                     , off   = 0.0
+                                     , mult  = 1.0)
    #---------------------------------------------------------------------------------------#
 
 
@@ -1300,6 +1324,11 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
          nparms = 1
          param  = c("version")
          na     = c(      6)
+         nz     = c(      9)
+      }else if (lenici == 9){
+         nparms = 1
+         param  = c("simul")
+         na     = c(      7)
          nz     = c(      9)
       }else if (lenici == 10){
          nparms = 1
@@ -1436,6 +1465,11 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
          param  = c("iszpft","iphen.scheme")
          na     = c(      12,            20)
          nz     = c(      13,            22)
+      }else if (lenici == 22 && grepl(pattern="istext",x=ici)){
+         nparms = 2
+         param  = c("isoil.text","iphen.scheme")
+         na     = c(          12,            20)
+         nz     = c(          13,            22)
       }else if (lenici == 22 && grepl(pattern="iallom",x=ici)){
          nparms = 2
          param  = c("iallom","igrass")
@@ -1451,11 +1485,16 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
          param  = c("ihrzrad","include.fire")
          na     = c(       13,            21)
          nz     = c(       14,            22)
-      }else if (lenici == 23){
+      }else if (lenici == 23 && grepl(pattern="iustar",x=ici)){
          nparms = 2
          param  = c("iustar","icanturb")
          na     = c(      12,        22)
          nz     = c(      13,        23)
+      }else if (lenici == 23 && grepl(pattern="idecomp",x=ici)){
+         nparms = 2
+         param  = c("decomp.scheme","iphen.scheme")
+         na     = c(             13,            21)
+         nz     = c(             14,            23)
       }else if (lenici == 24 && grepl(pattern="ihydro",x=ici)){
          nparms = 2
          param  = c("ihydro","ivegt.dynamics")
@@ -1476,6 +1515,11 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
          param  = c("iallom","iphysiol")
          na     = c(      12,      23)
          nz     = c(      13,      24)
+      }else if (lenici == 25 && grepl(pattern="cotwo",x=ici)){
+         nparms = 2
+         param  = c("soil.depth","atm.co2")
+         na     = c(          12,       22)
+         nz     = c(          15,       25)
       }else if (lenici == 25){
          nparms = 3
          param  = c("iphen.scheme","d0","include.fire")
@@ -1486,7 +1530,12 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
          param  = c("ianth.disturb","logging.type", "bharvest")
          na     = c(             11,            14,         23)
          nz     = c(             12,            16,         26)
-      }else if (lenici == 27){
+      }else if (lenici == 27 && grepl(pattern="idecomp",x=ici)){
+         nparms = 3
+         param  = c("met.forcing","decomp.scheme","iphen.scheme")
+         na     = c(            6,             17,            25)
+         nz     = c(            8,             18,            27)
+      }else if (lenici == 27 && grepl(pattern="ihrzrad",x=ici)){
          nparms = 2
          param  = c("ivegt.dynamics","ihrzrad")
          na     = c(             16,        26)
@@ -1546,6 +1595,11 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
          param  = c("include.fire","ianth.disturb","ianth.dataset","isoil.text")
          na     = c(            11,             19,             22,          34)
          nz     = c(            12,             20,             28,          35)
+      }else if (lenici == 36 && grepl(pattern="idecomp",x=ici)){
+         nparms = 3
+         param  = c("ivegt.dynamics","decomp.scheme","hydrodyn.set")
+         na     = c(              14,             24,            35)
+         nz     = c(              15,             25,            36)
       }else if (lenici == 36){
          nparms = 3
          param  = c("iustar","icanturb","topsoil")
@@ -1683,7 +1737,7 @@ poitmp[[u]] = list( short           = "allpahuayo"
                   , alt             = 143.
                   , wmo             = NA
                   , isoilflg        = 2
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = 0.937
                   , clay            = 0.026
                   , depth           = "D"
@@ -1704,7 +1758,7 @@ poitmp[[u]] = list( short           = "alta_floresta"
                   , alt             = 269.
                   , wmo             = 82965
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -1725,7 +1779,7 @@ poitmp[[u]] = list( short           = "andiroba"
                   , alt             = 122       # 105.
                   , wmo             = NA
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "H"
@@ -1746,7 +1800,7 @@ poitmp[[u]] = list( short           = "angra_dos_reis"
                   , alt             = 4.
                   , wmo             = NA
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -1767,7 +1821,7 @@ poitmp[[u]] = list( short           = "araguaiana"
                   , alt             = 284.
                   , wmo             = NA
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -1788,7 +1842,7 @@ poitmp[[u]] = list( short           = "araracuara"
                   , alt             = 243
                   , wmo             = NA
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -1809,7 +1863,7 @@ poitmp[[u]] = list( short           = "asuncion"
                   , alt             = 127
                   , wmo             = NA
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -1830,7 +1884,7 @@ poitmp[[u]] = list( short           = "bananal"
                   , alt             = 173
                   , wmo             = NA
                   , isoilflg        = 2
-                  , ntext           = 8
+                  , istext          = 8
                   , sand            = 0.240
                   , clay            = 0.370
                   , depth           = "C"
@@ -1851,7 +1905,7 @@ poitmp[[u]] = list( short           = "barro_colorado"
                   , alt             = 145
                   , wmo             = NA
                   , isoilflg        = 2
-                  , ntext           = 17
+                  , istext          = 17
                   , sand            = 0.200
                   , clay            = 0.420
                   , depth           = "D"
@@ -1872,7 +1926,7 @@ poitmp[[u]] = list( short           = "belem"
                   , alt             = 15
                   , wmo             = 82193
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -1893,7 +1947,7 @@ poitmp[[u]] = list( short           = "belo_horizonte"
                   , alt             = NA
                   , wmo             = 83566
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -1914,7 +1968,7 @@ poitmp[[u]] = list( short           = "belterra"
                   , alt             = 171
                   , wmo             = NA
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -1935,7 +1989,7 @@ poitmp[[u]] = list( short           = "benjamin_constant"
                   , alt             = 65
                   , wmo             = NA
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -1956,7 +2010,7 @@ poitmp[[u]] = list( short           = "blumenau"
                   , alt             = 15
                   , wmo             = NA
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -1977,7 +2031,7 @@ poitmp[[u]] = list( short           = "boa_vista"
                   , alt             = 82
                   , wmo             = 82022
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -1998,7 +2052,7 @@ poitmp[[u]] = list( short           = "bogota"
                   , alt             = 2556
                   , wmo             = 80222
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -2019,7 +2073,7 @@ poitmp[[u]] = list( short           = "bom_jesus"
                   , alt             = 440
                   , wmo             = 83288
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -2040,7 +2094,7 @@ poitmp[[u]] = list( short           = "bonal"
                   , alt             = 165.
                   , wmo             = NA
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "H"
@@ -2061,7 +2115,7 @@ poitmp[[u]] = list( short           = "brasilia"
                   , alt             = 1023
                   , wmo             = 83378
                   , isoilflg        = 2
-                  , ntext           = 17
+                  , istext          = 17
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "H"
@@ -2082,7 +2136,7 @@ poitmp[[u]] = list( short           = "bridgetown"
                   , alt             = 56
                   , wmo             = 78954
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -2103,7 +2157,7 @@ poitmp[[u]] = list( short           = "cabo_frio"
                   , alt             = 6
                   , wmo             = NA
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -2124,7 +2178,7 @@ poitmp[[u]] = list( short           = "cacoal_grande"
                   , alt             = 11
                   , wmo             = NA
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -2145,7 +2199,7 @@ poitmp[[u]] = list( short           = "caico"
                   , alt             = 176
                   , wmo             = 82690
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -2166,7 +2220,7 @@ poitmp[[u]] = list( short           = "cajazeiras"
                   , alt             = 306
                   , wmo             = NA
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -2187,7 +2241,7 @@ poitmp[[u]] = list( short           = "calabozo"
                   , alt             = 109
                   , wmo             = NA
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -2208,7 +2262,7 @@ poitmp[[u]] = list( short           = "campo_grande"
                   , alt             = 677
                   , wmo             = 83612
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -2229,7 +2283,7 @@ poitmp[[u]] = list( short           = "canarana"
                   , alt             = 395
                   , wmo             = NA
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -2250,7 +2304,7 @@ poitmp[[u]] = list( short           = "carajas"
                   , alt             = NA
                   , wmo             = NA
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -2271,7 +2325,7 @@ poitmp[[u]] = list( short           = "cardoso"
                   , alt             = NA
                   , wmo             = NA
                   , isoilflg        = 2
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = 0.950
                   , clay            = 0.010
                   , depth           = "C"
@@ -2292,7 +2346,7 @@ poitmp[[u]] = list( short           = "carolina"
                   , alt             = 193.
                   , wmo             = 82765
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -2313,7 +2367,7 @@ poitmp[[u]] = list( short           = "cauaxi"
                   , alt             = 122     # 140
                   , wmo             = NA
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.00
                   , clay            = -1.00
                   , depth           = "H"
@@ -2334,7 +2388,7 @@ poitmp[[u]] = list( short           = "cauaxi_und"
                   , alt             = 140
                   , wmo             = NA
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.00
                   , clay            = -1.00
                   , depth           = "H"
@@ -2355,7 +2409,7 @@ poitmp[[u]] = list( short           = "cauaxi_ril"
                   , alt             = 140
                   , wmo             = NA
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.00
                   , clay            = -1.00
                   , depth           = "H"
@@ -2376,7 +2430,7 @@ poitmp[[u]] = list( short           = "caxiuana"
                   , alt             = NA
                   , wmo             = NA
                   , isoilflg        = 2
-                  , ntext           = 16
+                  , istext          = 16
                   , sand            = 0.380
                   , clay            = 0.440
                   , depth           = "D"
@@ -2397,7 +2451,7 @@ poitmp[[u]] = list( short           = "cayenne"
                   , alt             = 105.
                   , wmo             = 81405
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -2418,7 +2472,7 @@ poitmp[[u]] = list( short           = "chaiten"
                   , alt             = NA
                   , wmo             = NA
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -2439,7 +2493,7 @@ poitmp[[u]] = list( short           = "ciudad_bolivar"
                   , alt             = 48
                   , wmo             = 80444
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -2460,7 +2514,7 @@ poitmp[[u]] = list( short           = "ciudad_guayana"
                   , alt             = NA
                   , wmo             = NA
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -2481,7 +2535,7 @@ poitmp[[u]] = list( short           = "cochabamba"
                   , alt             = NA
                   , wmo             = NA
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -2502,7 +2556,7 @@ poitmp[[u]] = list( short           = "cuiaba"
                   , alt             = 185
                   , wmo             = 83362
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -2523,7 +2577,7 @@ poitmp[[u]] = list( short           = "curacao"
                   , alt             = 9
                   , wmo             = 78988
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -2544,7 +2598,7 @@ poitmp[[u]] = list( short           = "curitiba"
                   , alt             = 908
                   , wmo             = 83840
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -2565,7 +2619,7 @@ poitmp[[u]] = list( short           = "curua_una"
                   , alt             = 19
                   , wmo             = NA
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -2586,7 +2640,7 @@ poitmp[[u]] = list( short           = "cruzeiro_do_sul"
                   , alt             = 170
                   , wmo             = 82705
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -2607,7 +2661,7 @@ poitmp[[u]] = list( short           = "diamantino"
                   , alt             = NA
                   , wmo             = NA
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -2628,7 +2682,7 @@ poitmp[[u]] = list( short           = "douglas_tnf"
                   , alt             = 198.
                   , wmo             = NA
                   , isoilflg        = 2
-                  , ntext           = 16
+                  , istext          = 16
                   , sand            = 0.390
                   , clay            = 0.590
                   , depth           = "H"
@@ -2649,7 +2703,7 @@ poitmp[[u]] = list( short           = "dourados"
                   , alt             = NA
                   , wmo             = NA
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -2670,7 +2724,7 @@ poitmp[[u]] = list( short           = "ducke"
                   , alt             = 117
                   , wmo             = NA
                   , isoilflg        = 2
-                  , ntext           = 8
+                  , istext          = 8
                   , sand            = 0.433
                   , clay            = 0.366
                   , depth           = "F"
@@ -2691,7 +2745,7 @@ poitmp[[u]] = list( short           = "east_belterra"
                   , alt             = 147
                   , wmo             = NA
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -2712,7 +2766,7 @@ poitmp[[u]] = list( short           = "east_feliz_natal"
                   , alt             = 336
                   , wmo             = NA
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -2733,7 +2787,7 @@ poitmp[[u]] = list( short           = "east_sao_felix"
                   , alt             = 224
                   , wmo             = NA
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -2754,7 +2808,7 @@ poitmp[[u]] = list( short           = "el_triunfo"
                   , alt             = NA
                   , wmo             = NA
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -2775,7 +2829,7 @@ poitmp[[u]] = list( short           = "el_zafire"
                   , alt             = NA
                   , wmo             = NA
                   , isoilflg        = 2
-                  , ntext           = 2
+                  , istext          = 2
                   , sand            = 0.748
                   , clay            = 0.006
                   , depth           = "B"
@@ -2796,7 +2850,7 @@ poitmp[[u]] = list( short           = "emas"
                   , alt             = 848
                   , wmo             = NA
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -2817,7 +2871,7 @@ poitmp[[u]] = list( short           = "erechim"
                   , alt             = NA
                   , wmo             = NA
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -2838,7 +2892,7 @@ poitmp[[u]] = list( short           = "eunapolis"
                   , alt             = NA
                   , wmo             = NA
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -2859,7 +2913,7 @@ poitmp[[u]] = list( short           = "fazendans"
                   , alt             = NA
                   , wmo             = NA
                   , isoilflg        = 2
-                  , ntext           = 2
+                  , istext          = 2
                   , sand            = 0.800
                   , clay            = 0.100
                   , depth           = "G"
@@ -2880,7 +2934,7 @@ poitmp[[u]] = list( short           = "feliz_natal"
                   , alt             = 350.
                   , wmo             = NA
                   , isoilflg        = 2
-                  , ntext           = 6
+                  , istext          = 6
                   , sand            = 0.641
                   , clay            = 0.247
                   , depth           = "I"
@@ -2901,7 +2955,7 @@ poitmp[[u]] = list( short           = "floriano"
                   , alt             = 123
                   , wmo             = 82678
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -2922,7 +2976,7 @@ poitmp[[u]] = list( short           = "fortaleza"
                   , alt             = 26
                   , wmo             = 82397
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -2943,7 +2997,7 @@ poitmp[[u]] = list( short           = "guarana"
                   , alt             = 138
                   , wmo             = NA
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -2964,7 +3018,7 @@ poitmp[[u]] = list( short           = "harvard"
                   , alt             = NA
                   , wmo             = NA
                   , isoilflg        = 2
-                  , ntext           = 2
+                  , istext          = 2
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "E"
@@ -2985,7 +3039,7 @@ poitmp[[u]] = list( short           = "humaita"
                   , alt             = 172.
                   , wmo             = NA
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -3006,7 +3060,7 @@ poitmp[[u]] = list( short           = "iguape"
                   , alt             = NA
                   , wmo             = NA
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -3027,7 +3081,7 @@ poitmp[[u]] = list( short           = "imperatriz"
                   , alt             = NA
                   , wmo             = NA
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -3048,7 +3102,7 @@ poitmp[[u]] = list( short           = "iquique"
                   , alt             = NA
                   , wmo             = NA
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -3069,7 +3123,7 @@ poitmp[[u]] = list( short           = "iquitos"
                   , alt             = 125
                   , wmo             = 84378
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -3090,7 +3144,7 @@ poitmp[[u]] = list( short           = "itabaiana"
                   , alt             = NA
                   , wmo             = NA
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -3111,7 +3165,7 @@ poitmp[[u]] = list( short           = "itapeva"
                   , alt             = NA
                   , wmo             = NA
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -3132,7 +3186,7 @@ poitmp[[u]] = list( short           = "itirapina"
                   , alt             = 810
                   , wmo             = NA
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -3153,7 +3207,7 @@ poitmp[[u]] = list( short           = "jacareacanga"
                   , alt             = NA
                   , wmo             = NA
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -3174,7 +3228,7 @@ poitmp[[u]] = list( short           = "jamaraqua"
                   , alt             = 15
                   , wmo             = NA
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -3195,7 +3249,7 @@ poitmp[[u]] = list( short           = "jamari"
                   , alt             = 112.
                   , wmo             = NA
                   , isoilflg        = 2
-                  , ntext           = 6
+                  , istext          = 6
                   , sand            = 0.458
                   , clay            = 0.328
                   , depth           = "I"
@@ -3216,7 +3270,7 @@ poitmp[[u]] = list( short           = "jiparana"
                   , alt             = NA
                   , wmo             = NA
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -3237,7 +3291,7 @@ poitmp[[u]] = list( short           = "joao_pessoa"
                   , alt             = NA
                   , wmo             = NA
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -3258,7 +3312,7 @@ poitmp[[u]] = list( short           = "joinville"
                   , alt             = 48
                   , wmo             = 83905
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -3279,7 +3333,7 @@ poitmp[[u]] = list( short           = "kenia"
                   , alt             = NA
                   , wmo             = NA
                   , isoilflg        = 2
-                  , ntext           = 3
+                  , istext          = 3
                   , sand            = 0.760
                   , clay            = 0.160
                   , depth           = "D"
@@ -3300,7 +3354,7 @@ poitmp[[u]] = list( short           = "las_gaviotas"
                   , alt             = 167
                   , wmo             = 80241
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -3313,6 +3367,510 @@ poitmp[[u]] = list( short           = "las_gaviotas"
                   , iphen           = -1
                   )#end list
 u           = u + 1
+poitmp[[u]] = list( short           = "laegern"
+                  , longname        = "Laegern, CHE"
+                  , iata            = "lae"
+                  , lon             = 8.397
+                  , lat             = 47.482
+                  , alt             = 853
+                  , wmo             = NA
+                  , isoilflg        = 2
+                  , istext          = 8
+                  , sand            = -1.000
+                  , clay            = -1.000
+                  , depth           = "Y"
+                  , isoilbc         = 0
+                  , sldrain         = 90.
+                  , scolour         = 14
+                  , met.driver      = "Laegern"
+                  , yeara           = 2006
+                  , yearz           = 2016
+                  , iphen           = -1
+                  )#end list
+u           = u + 1
+poitmp[[u]] = list( short           = "laegern_r0"
+                  , longname        = "Laegern Region 0, CHE"
+                  , iata            = "l00"
+                  , lon             = 8.397
+                  , lat             = 47.482
+                  , alt             = 853
+                  , wmo             = NA
+                  , isoilflg        = 2
+                  , istext          = 8
+                  , sand            = -1.000
+                  , clay            = -1.000
+                  , depth           = "Y"
+                  , isoilbc         = 0
+                  , sldrain         = 90.
+                  , scolour         = 14
+                  , met.driver      = "Laegern"
+                  , yeara           = 2006
+                  , yearz           = 2016
+                  , iphen           = -1
+                  )#end list
+u           = u + 1
+poitmp[[u]] = list( short           = "laegern_r0s1"
+                  , longname        = "Laegern Region 0, Site 1, CHE"
+                  , iata            = "l01"
+                  , lon             = 8.397
+                  , lat             = 47.482
+                  , alt             = 853
+                  , wmo             = NA
+                  , isoilflg        = 2
+                  , istext          = 8
+                  , sand            = -1.000
+                  , clay            = -1.000
+                  , depth           = "Y"
+                  , isoilbc         = 0
+                  , sldrain         = 90.
+                  , scolour         = 14
+                  , met.driver      = "Laegern"
+                  , yeara           = 2006
+                  , yearz           = 2016
+                  , iphen           = -1
+                  )#end list
+u           = u + 1
+poitmp[[u]] = list( short           = "laegern_r0s2"
+                  , longname        = "Laegern Region 0, Site 2, CHE"
+                  , iata            = "l02"
+                  , lon             = 8.397
+                  , lat             = 47.482
+                  , alt             = 853
+                  , wmo             = NA
+                  , isoilflg        = 2
+                  , istext          = 8
+                  , sand            = -1.000
+                  , clay            = -1.000
+                  , depth           = "Y"
+                  , isoilbc         = 0
+                  , sldrain         = 90.
+                  , scolour         = 14
+                  , met.driver      = "Laegern"
+                  , yeara           = 2006
+                  , yearz           = 2016
+                  , iphen           = -1
+                  )#end list
+u           = u + 1
+poitmp[[u]] = list( short           = "laegern_r1"
+                  , longname        = "Laegern Region 1, CHE"
+                  , iata            = "l10"
+                  , lon             = 8.397
+                  , lat             = 47.482
+                  , alt             = 853
+                  , wmo             = NA
+                  , isoilflg        = 2
+                  , istext          = 8
+                  , sand            = -1.000
+                  , clay            = -1.000
+                  , depth           = "U"
+                  , isoilbc         = 0
+                  , sldrain         = 90.
+                  , scolour         = 14
+                  , met.driver      = "Laegern"
+                  , yeara           = 2006
+                  , yearz           = 2016
+                  , iphen           = -1
+                  )#end list
+u           = u + 1
+poitmp[[u]] = list( short           = "laegern_r1s1"
+                  , longname        = "Laegern Region 1, Site 1, CHE"
+                  , iata            = "l11"
+                  , lon             = 8.397
+                  , lat             = 47.482
+                  , alt             = 853
+                  , wmo             = NA
+                  , isoilflg        = 2
+                  , istext          = 8
+                  , sand            = -1.000
+                  , clay            = -1.000
+                  , depth           = "U"
+                  , isoilbc         = 0
+                  , sldrain         = 90.
+                  , scolour         = 14
+                  , met.driver      = "Laegern"
+                  , yeara           = 2006
+                  , yearz           = 2016
+                  , iphen           = -1
+                  )#end list
+u           = u + 1
+poitmp[[u]] = list( short           = "laegern_r1s2"
+                  , longname        = "Laegern Region 1, Site 2, CHE"
+                  , iata            = "l12"
+                  , lon             = 8.397
+                  , lat             = 47.482
+                  , alt             = 853
+                  , wmo             = NA
+                  , isoilflg        = 2
+                  , istext          = 8
+                  , sand            = -1.000
+                  , clay            = -1.000
+                  , depth           = "U"
+                  , isoilbc         = 0
+                  , sldrain         = 90.
+                  , scolour         = 14
+                  , met.driver      = "Laegern"
+                  , yeara           = 2006
+                  , yearz           = 2016
+                  , iphen           = -1
+                  )#end list
+u           = u + 1
+poitmp[[u]] = list( short           = "laegern_r1s3"
+                  , longname        = "Laegern Region 1, Site 3, CHE"
+                  , iata            = "l13"
+                  , lon             = 8.397
+                  , lat             = 47.482
+                  , alt             = 853
+                  , wmo             = NA
+                  , isoilflg        = 2
+                  , istext          = 8
+                  , sand            = -1.000
+                  , clay            = -1.000
+                  , depth           = "U"
+                  , isoilbc         = 0
+                  , sldrain         = 90.
+                  , scolour         = 14
+                  , met.driver      = "Laegern"
+                  , yeara           = 2006
+                  , yearz           = 2016
+                  , iphen           = -1
+                  )#end list
+u           = u + 1
+poitmp[[u]] = list( short           = "laegern_r2"
+                  , longname        = "Laegern Region 2, CHE"
+                  , iata            = "l20"
+                  , lon             = 8.397
+                  , lat             = 47.482
+                  , alt             = 853
+                  , wmo             = NA
+                  , isoilflg        = 2
+                  , istext          = 8
+                  , sand            = -1.000
+                  , clay            = -1.000
+                  , depth           = "V"
+                  , isoilbc         = 0
+                  , sldrain         = 90.
+                  , scolour         = 14
+                  , met.driver      = "Laegern"
+                  , yeara           = 2006
+                  , yearz           = 2016
+                  , iphen           = -1
+                  )#end list
+u           = u + 1
+poitmp[[u]] = list( short           = "laegern_r2s1"
+                  , longname        = "Laegern Region 2, Site 1, CHE"
+                  , iata            = "l21"
+                  , lon             = 8.397
+                  , lat             = 47.482
+                  , alt             = 853
+                  , wmo             = NA
+                  , isoilflg        = 2
+                  , istext          = 8
+                  , sand            = -1.000
+                  , clay            = -1.000
+                  , depth           = "V"
+                  , isoilbc         = 0
+                  , sldrain         = 90.
+                  , scolour         = 14
+                  , met.driver      = "Laegern"
+                  , yeara           = 2006
+                  , yearz           = 2016
+                  , iphen           = -1
+                  )#end list
+u           = u + 1
+poitmp[[u]] = list( short           = "laegern_r2s2"
+                  , longname        = "Laegern Region 2, Site 2, CHE"
+                  , iata            = "l22"
+                  , lon             = 8.397
+                  , lat             = 47.482
+                  , alt             = 853
+                  , wmo             = NA
+                  , isoilflg        = 2
+                  , istext          = 8
+                  , sand            = -1.000
+                  , clay            = -1.000
+                  , depth           = "V"
+                  , isoilbc         = 0
+                  , sldrain         = 90.
+                  , scolour         = 14
+                  , met.driver      = "Laegern"
+                  , yeara           = 2006
+                  , yearz           = 2016
+                  , iphen           = -1
+                  )#end list
+u           = u + 1
+poitmp[[u]] = list( short           = "laegern_r2s3"
+                  , longname        = "Laegern Region 2, Site 3, CHE"
+                  , iata            = "l23"
+                  , lon             = 8.397
+                  , lat             = 47.482
+                  , alt             = 853
+                  , wmo             = NA
+                  , isoilflg        = 2
+                  , istext          = 8
+                  , sand            = -1.000
+                  , clay            = -1.000
+                  , depth           = "V"
+                  , isoilbc         = 0
+                  , sldrain         = 90.
+                  , scolour         = 14
+                  , met.driver      = "Laegern"
+                  , yeara           = 2006
+                  , yearz           = 2016
+                  , iphen           = -1
+                  )#end list
+u           = u + 1
+poitmp[[u]] = list( short           = "laegern_r3"
+                  , longname        = "Laegern Region 3, CHE"
+                  , iata            = "l30"
+                  , lon             = 8.397
+                  , lat             = 47.482
+                  , alt             = 853
+                  , wmo             = NA
+                  , isoilflg        = 2
+                  , istext          = 5
+                  , sand            = -1.000
+                  , clay            = -1.000
+                  , depth           = "X"
+                  , isoilbc         = 0
+                  , sldrain         = 90.
+                  , scolour         = 14
+                  , met.driver      = "Laegern"
+                  , yeara           = 2006
+                  , yearz           = 2016
+                  , iphen           = -1
+                  )#end list
+u           = u + 1
+poitmp[[u]] = list( short           = "laegern_r3s1"
+                  , longname        = "Laegern Region 3, Site 1, CHE"
+                  , iata            = "l31"
+                  , lon             = 8.397
+                  , lat             = 47.482
+                  , alt             = 853
+                  , wmo             = NA
+                  , isoilflg        = 2
+                  , istext          = 5
+                  , sand            = -1.000
+                  , clay            = -1.000
+                  , depth           = "X"
+                  , isoilbc         = 0
+                  , sldrain         = 90.
+                  , scolour         = 14
+                  , met.driver      = "Laegern"
+                  , yeara           = 2006
+                  , yearz           = 2016
+                  , iphen           = -1
+                  )#end list
+u           = u + 1
+poitmp[[u]] = list( short           = "laegern_r3s2"
+                  , longname        = "Laegern Region 3, Site 2, CHE"
+                  , iata            = "l32"
+                  , lon             = 8.397
+                  , lat             = 47.482
+                  , alt             = 853
+                  , wmo             = NA
+                  , isoilflg        = 2
+                  , istext          = 5
+                  , sand            = -1.000
+                  , clay            = -1.000
+                  , depth           = "X"
+                  , isoilbc         = 0
+                  , sldrain         = 90.
+                  , scolour         = 14
+                  , met.driver      = "Laegern"
+                  , yeara           = 2006
+                  , yearz           = 2016
+                  , iphen           = -1
+                  )#end list
+u           = u + 1
+poitmp[[u]] = list( short           = "laegern_r3s3"
+                  , longname        = "Laegern Region 3, Site 3, CHE"
+                  , iata            = "l33"
+                  , lon             = 8.397
+                  , lat             = 47.482
+                  , alt             = 853
+                  , wmo             = NA
+                  , isoilflg        = 2
+                  , istext          = 5
+                  , sand            = -1.000
+                  , clay            = -1.000
+                  , depth           = "X"
+                  , isoilbc         = 0
+                  , sldrain         = 90.
+                  , scolour         = 14
+                  , met.driver      = "Laegern"
+                  , yeara           = 2006
+                  , yearz           = 2016
+                  , iphen           = -1
+                  )#end list
+u           = u + 1
+poitmp[[u]] = list( short           = "laegern_r4"
+                  , longname        = "Laegern Region 4, CHE"
+                  , iata            = "l40"
+                  , lon             = 8.397
+                  , lat             = 47.482
+                  , alt             = 853
+                  , wmo             = NA
+                  , isoilflg        = 2
+                  , istext          = 3
+                  , sand            = -1.000
+                  , clay            = -1.000
+                  , depth           = "W"
+                  , isoilbc         = 0
+                  , sldrain         = 90.
+                  , scolour         = 14
+                  , met.driver      = "Laegern"
+                  , yeara           = 2006
+                  , yearz           = 2016
+                  , iphen           = -1
+                  )#end list
+u           = u + 1
+poitmp[[u]] = list( short           = "laegern_r4s1"
+                  , longname        = "Laegern Region 4, Site 1, CHE"
+                  , iata            = "l41"
+                  , lon             = 8.397
+                  , lat             = 47.482
+                  , alt             = 853
+                  , wmo             = NA
+                  , isoilflg        = 2
+                  , istext          = 3
+                  , sand            = -1.000
+                  , clay            = -1.000
+                  , depth           = "W"
+                  , isoilbc         = 0
+                  , sldrain         = 90.
+                  , scolour         = 14
+                  , met.driver      = "Laegern"
+                  , yeara           = 2006
+                  , yearz           = 2016
+                  , iphen           = -1
+                  )#end list
+u           = u + 1
+poitmp[[u]] = list( short           = "laegern_r4s2"
+                  , longname        = "Laegern Region 4, Site 2, CHE"
+                  , iata            = "l42"
+                  , lon             = 8.397
+                  , lat             = 47.482
+                  , alt             = 853
+                  , wmo             = NA
+                  , isoilflg        = 2
+                  , istext          = 3
+                  , sand            = -1.000
+                  , clay            = -1.000
+                  , depth           = "W"
+                  , isoilbc         = 0
+                  , sldrain         = 90.
+                  , scolour         = 14
+                  , met.driver      = "Laegern"
+                  , yeara           = 2006
+                  , yearz           = 2016
+                  , iphen           = -1
+                  )#end list
+u           = u + 1
+poitmp[[u]] = list( short           = "laegern_r4s3"
+                  , longname        = "Laegern Region 4, Site 2, CHE"
+                  , iata            = "l43"
+                  , lon             = 8.397
+                  , lat             = 47.482
+                  , alt             = 853
+                  , wmo             = NA
+                  , isoilflg        = 2
+                  , istext          = 3
+                  , sand            = -1.000
+                  , clay            = -1.000
+                  , depth           = "W"
+                  , isoilbc         = 0
+                  , sldrain         = 90.
+                  , scolour         = 14
+                  , met.driver      = "Laegern"
+                  , yeara           = 2006
+                  , yearz           = 2016
+                  , iphen           = -1
+                  )#end list
+u           = u + 1
+poitmp[[u]] = list( short           = "laegern_r5"
+                  , longname        = "Laegern Region 5, CHE"
+                  , iata            = "l50"
+                  , lon             = 8.397
+                  , lat             = 47.482
+                  , alt             = 853
+                  , wmo             = NA
+                  , isoilflg        = 2
+                  , istext          = 3
+                  , sand            = -1.000
+                  , clay            = -1.000
+                  , depth           = "Z"
+                  , isoilbc         = 0
+                  , sldrain         = 90.
+                  , scolour         = 14
+                  , met.driver      = "Laegern"
+                  , yeara           = 2006
+                  , yearz           = 2016
+                  , iphen           = -1
+                  )#end list
+u           = u + 1
+poitmp[[u]] = list( short           = "laegern_r5s1"
+                  , longname        = "Laegern Region 5, Site 1, CHE"
+                  , iata            = "l51"
+                  , lon             = 8.397
+                  , lat             = 47.482
+                  , alt             = 853
+                  , wmo             = NA
+                  , isoilflg        = 2
+                  , istext          = 3
+                  , sand            = -1.000
+                  , clay            = -1.000
+                  , depth           = "Z"
+                  , isoilbc         = 0
+                  , sldrain         = 90.
+                  , scolour         = 14
+                  , met.driver      = "Laegern"
+                  , yeara           = 2006
+                  , yearz           = 2016
+                  , iphen           = -1
+                  )#end list
+u           = u + 1
+poitmp[[u]] = list( short           = "laegern_r5s2"
+                  , longname        = "Laegern Region 5, Site 2, CHE"
+                  , iata            = "l52"
+                  , lon             = 8.397
+                  , lat             = 47.482
+                  , alt             = 853
+                  , wmo             = NA
+                  , isoilflg        = 2
+                  , istext          = 3
+                  , sand            = -1.000
+                  , clay            = -1.000
+                  , depth           = "Z"
+                  , isoilbc         = 0
+                  , sldrain         = 90.
+                  , scolour         = 14
+                  , met.driver      = "Laegern"
+                  , yeara           = 2006
+                  , yearz           = 2016
+                  , iphen           = -1
+                  )#end list
+u           = u + 1
+poitmp[[u]] = list( short           = "laegern_r5s3"
+                  , longname        = "Laegern Region 5, Site 3, CHE"
+                  , iata            = "l53"
+                  , lon             = 8.397
+                  , lat             = 47.482
+                  , alt             = 853
+                  , wmo             = NA
+                  , isoilflg        = 2
+                  , istext          = 3
+                  , sand            = -1.000
+                  , clay            = -1.000
+                  , depth           = "Z"
+                  , isoilbc         = 0
+                  , sldrain         = 90.
+                  , scolour         = 14
+                  , met.driver      = "Laegern"
+                  , yeara           = 2006
+                  , yearz           = 2016
+                  , iphen           = -1
+                  )#end list
+u           = u + 1
 poitmp[[u]] = list( short           = "la_esmeralda"      
                   , longname        = "La Esmeralda, VEN"           
                   , iata            = "lfe"
@@ -3321,7 +3879,7 @@ poitmp[[u]] = list( short           = "la_esmeralda"
                   , alt             = NA
                   , wmo             = NA
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -3342,7 +3900,7 @@ poitmp[[u]] = list( short           = "la_lorena"
                   , alt             = NA
                   , wmo             = NA
                   , isoilflg        = 2
-                  , ntext           = 9
+                  , istext          = 9
                   , sand            = 0.380
                   , clay            = 0.310
                   , depth           = "A"
@@ -3363,7 +3921,7 @@ poitmp[[u]] = list( short           = "la_planada"
                   , alt             = NA
                   , wmo             = NA
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "H"
@@ -3384,7 +3942,7 @@ poitmp[[u]] = list( short           = "la_selva"
                   , alt             = NA
                   , wmo             = NA
                   , isoilflg        = 2
-                  , ntext           = 8
+                  , istext          = 8
                   , sand            = 0.388
                   , clay            = 0.329
                   , depth           = "F"
@@ -3405,7 +3963,7 @@ poitmp[[u]] = list( short           = "labrea"
                   , alt             = NA
                   , wmo             = NA
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -3426,7 +3984,7 @@ poitmp[[u]] = list( short           = "lencois"
                   , alt             = NA
                   , wmo             = NA
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -3447,7 +4005,7 @@ poitmp[[u]] = list( short           = "leticia"
                   , alt             = 84
                   , wmo             = 80398
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -3468,7 +4026,7 @@ poitmp[[u]] = list( short           = "lima"
                   , alt             = 12
                   , wmo             = 84629
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -3489,7 +4047,7 @@ poitmp[[u]] = list( short           = "linden"
                   , alt             = NA
                   , wmo             = NA
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -3510,7 +4068,7 @@ poitmp[[u]] = list( short           = "llochegua"
                   , alt             = NA
                   , wmo             = NA
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -3531,7 +4089,7 @@ poitmp[[u]] = list( short           = "macapa"
                   , alt             = 16
                   , wmo             = 82099
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -3552,7 +4110,7 @@ poitmp[[u]] = list( short           = "malalcahuello"
                   , alt             = NA
                   , wmo             = NA
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -3573,7 +4131,7 @@ poitmp[[u]] = list( short           = "manaus"
                   , alt             = 84
                   , wmo             = 82332
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -3594,7 +4152,7 @@ poitmp[[u]] = list( short           = "manaus_km34"
                   , alt             = NA
                   , wmo             = NA
                   , isoilflg        = 2
-                  , ntext           = 11
+                  , istext          = 11
                   , sand            = 0.200
                   , clay            = 0.680
                   , depth           = "H"
@@ -3615,7 +4173,7 @@ poitmp[[u]] = list( short           = "manaus_bdffp"
                   , alt             = NA
                   , wmo             = NA
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -3636,7 +4194,7 @@ poitmp[[u]] = list( short           = "manicore"
                   , alt             = 49
                   , wmo             = 82532
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -3657,7 +4215,7 @@ poitmp[[u]] = list( short           = "maracay"
                   , alt             = 437
                   , wmo             = 80413
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -3678,7 +4236,7 @@ poitmp[[u]] = list( short           = "maringa"
                   , alt             = NA
                   , wmo             = NA
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -3699,7 +4257,7 @@ poitmp[[u]] = list( short           = "mariscal_estigarribia"
                   , alt             = NA
                   , wmo             = NA
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -3720,7 +4278,7 @@ poitmp[[u]] = list( short           = "maracarume"
                   , alt             = NA
                   , wmo             = NA
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -3741,7 +4299,7 @@ poitmp[[u]] = list( short           = "montes_claros"
                   , alt             = NA
                   , wmo             = NA
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -3762,7 +4320,7 @@ poitmp[[u]] = list( short           = "mojui_dos_campos"
                   , alt             = 128
                   , wmo             = NA
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -3783,7 +4341,7 @@ poitmp[[u]] = list( short           = "natal"
                   , alt             = 58
                   , wmo             = 82599
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -3804,7 +4362,7 @@ poitmp[[u]] = list( short           = "neuquen"
                   , alt             = 270
                   , wmo             = 87715
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -3825,7 +4383,7 @@ poitmp[[u]] = list( short           = "nouragues"
                   , alt             = 77
                   , wmo             = NA
                   , isoilflg        = 2
-                  , ntext           = 6
+                  , istext          = 6
                   , sand            = 0.562
                   , clay            = 0.345
                   , depth           = "H"
@@ -3846,7 +4404,7 @@ poitmp[[u]] = list( short           = "oeiras"
                   , alt             = NA
                   , wmo             = NA
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -3867,7 +4425,7 @@ poitmp[[u]] = list( short           = "palmas"
                   , alt             = NA
                   , wmo             = NA
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -3888,7 +4446,7 @@ poitmp[[u]] = list( short           = "panama"
                   , alt             = 16
                   , wmo             = 78807
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -3909,7 +4467,7 @@ poitmp[[u]] = list( short           = "paramaribo"
                   , alt             = NA
                   , wmo             = NA
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -3930,7 +4488,7 @@ poitmp[[u]] = list( short           = "paracou"
                   , alt             = NA
                   , wmo             = NA
                   , isoilflg        = 2
-                  , ntext           = 6
+                  , istext          = 6
                   , sand            = 0.562
                   , clay            = 0.345
                   , depth           = "H"
@@ -3951,7 +4509,7 @@ poitmp[[u]] = list( short           = "neonita"
                   , alt             = 122
                   , wmo             = NA
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.00
                   , clay            = -1.00
                   , depth           = "H"
@@ -3972,7 +4530,7 @@ poitmp[[u]] = list( short           = "paragominas"
                   , alt             = 81
                   , wmo             = NA
                   , isoilflg        = 2
-                  , ntext           = 6
+                  , istext          = 6
                   , sand            = 0.471
                   , clay            = 0.328
                   , depth           = "I"
@@ -3993,7 +4551,7 @@ poitmp[[u]] = list( short           = "pedegigante"
                   , alt             = NA
                   , wmo             = NA
                   , isoilflg        = 2
-                  , ntext           = 2
+                  , istext          = 2
                   , sand            = 0.850
                   , clay            = 0.030
                   , depth           = "F"
@@ -4014,7 +4572,7 @@ poitmp[[u]] = list( short           = "petrolina"
                   , alt             = 383
                   , wmo             = 82983
                   , isoilflg        = 2
-                  , ntext           = 2
+                  , istext          = 2
                   , sand            = 0.821
                   , clay            = 0.052
                   , depth           = "C"
@@ -4035,7 +4593,7 @@ poitmp[[u]] = list( short           = "piura"
                   , alt             = 49
                   , wmo             = 84416
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -4056,7 +4614,7 @@ poitmp[[u]] = list( short           = "port_of_spain"
                   , alt             = 15
                   , wmo             = 78970
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -4077,7 +4635,7 @@ poitmp[[u]] = list( short           = "porto_de_moz"
                   , alt             = NA
                   , wmo             = NA
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -4098,7 +4656,7 @@ poitmp[[u]] = list( short           = "porto_velho"
                   , alt             = 102
                   , wmo             = 82824
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -4119,7 +4677,7 @@ poitmp[[u]] = list( short           = "pucallpa"
                   , alt             = NA
                   , wmo             = NA
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -4140,7 +4698,7 @@ poitmp[[u]] = list( short           = "puerto_suarez"
                   , alt             = NA
                   , wmo             = NA
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -4161,7 +4719,7 @@ poitmp[[u]] = list( short           = "quibdo"
                   , alt             = NA
                   , wmo             = NA
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -4182,7 +4740,7 @@ poitmp[[u]] = list( short           = "rebio_jaru"
                   , alt             = NA
                   , wmo             = NA
                   , isoilflg        = 2
-                  , ntext           = 2
+                  , istext          = 2
                   , sand            = 0.800
                   , clay            = 0.100
                   , depth           = "C"
@@ -4203,7 +4761,7 @@ poitmp[[u]] = list( short           = "recife"
                   , alt             = 7
                   , wmo             = 82900
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -4224,7 +4782,7 @@ poitmp[[u]] = list( short           = "redencao"
                   , alt             = NA
                   , wmo             = NA
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -4245,7 +4803,7 @@ poitmp[[u]] = list( short           = "ribeirao_preto"
                   , alt             = NA
                   , wmo             = NA
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -4266,7 +4824,7 @@ poitmp[[u]] = list( short           = "rio_branco"
                   , alt             = 199.
                   , wmo             = 82917
                   , isoilflg        = 2
-                  , ntext           = 8
+                  , istext          = 8
                   , sand            = 0.382
                   , clay            = 0.308
                   , depth           = "I"
@@ -4287,7 +4845,7 @@ poitmp[[u]] = list( short           = "riohacha"
                   , alt             = 4
                   , wmo             = 80035
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -4308,7 +4866,7 @@ poitmp[[u]] = list( short           = "salta"
                   , alt             = 1238
                   , wmo             = 87047
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -4329,7 +4887,7 @@ poitmp[[u]] = list( short           = "salvador"
                   , alt             = 91
                   , wmo             = 83229
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -4350,7 +4908,7 @@ poitmp[[u]] = list( short           = "san_andres"
                   , alt             = 1
                   , wmo             = 80001
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -4371,7 +4929,7 @@ poitmp[[u]] = list( short           = "san_antonio_del_tachira"
                   , alt             = 378
                   , wmo             = 80447
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -4392,7 +4950,7 @@ poitmp[[u]] = list( short           = "san_jose"
                   , alt             = 939
                   , wmo             = 78762
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -4413,7 +4971,7 @@ poitmp[[u]] = list( short           = "san_fernando_de_apure"
                   , alt             = 48
                   , wmo             = 80450
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -4434,7 +4992,7 @@ poitmp[[u]] = list( short           = "san_pedro"
                   , alt             = NA
                   , wmo             = NA
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -4455,7 +5013,7 @@ poitmp[[u]] = list( short           = "sao_carlos"
                   , alt             = 904
                   , wmo             = NA
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -4476,7 +5034,7 @@ poitmp[[u]] = list( short           = "sao_felix_araguaia"
                   , alt             = NA
                   , wmo             = NA
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -4497,7 +5055,7 @@ poitmp[[u]] = list( short           = "sao_felix_xingu"
                   , alt             = 197.
                   , wmo             = NA
                   , isoilflg        = 2
-                  , ntext           = 6
+                  , istext          = 6
                   , sand            = 0.451
                   , clay            = 0.309
                   , depth           = "I"
@@ -4518,7 +5076,7 @@ poitmp[[u]] = list( short           = "sao_gabriel"
                   , alt             = 90
                   , wmo             = 82107
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -4539,7 +5097,7 @@ poitmp[[u]] = list( short           = "sao_jorge"
                   , alt             = 111
                   , wmo             = NA
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -4560,7 +5118,7 @@ poitmp[[u]] = list( short           = "sao_luis"
                   , alt             = 53
                   , wmo             = 82281
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -4581,7 +5139,7 @@ poitmp[[u]] = list( short           = "sao_martinho"
                   , alt             = 489
                   , wmo             = 83937
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -4602,7 +5160,7 @@ poitmp[[u]] = list( short           = "santa_fe"
                   , alt             = 198.
                   , wmo             = NA
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -4623,7 +5181,7 @@ poitmp[[u]] = list( short           = "santarem"
                   , alt             = 198.
                   , wmo             = 82244
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -4644,7 +5202,7 @@ poitmp[[u]] = list( short           = "santarem_km67"
                   , alt             = 198.
                   , wmo             = NA
                   , isoilflg        = 2
-                  , ntext           = 16
+                  , istext          = 16
                   , sand            = 0.390
                   , clay            = 0.590
                   , depth           = "I"
@@ -4665,7 +5223,7 @@ poitmp[[u]] = list( short           = "santarem_km77"
                   , alt             = 33.
                   , wmo             = NA
                   , isoilflg        = 2
-                  , ntext           = 16
+                  , istext          = 16
                   , sand            = 0.390
                   , clay            = 0.590
                   , depth           = "I"
@@ -4686,7 +5244,7 @@ poitmp[[u]] = list( short           = "santarem_km83"
                   , alt             = 191
                   , wmo             = NA
                   , isoilflg        = 2
-                  , ntext           = 16
+                  , istext          = 16
                   , sand            = 0.390
                   , clay            = 0.590
                   , depth           = "I"
@@ -4707,7 +5265,7 @@ poitmp[[u]] = list( short           = "santarem_km117"
                   , alt             = 186
                   , wmo             = NA
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -4728,7 +5286,7 @@ poitmp[[u]] = list( short           = "saraca-taquera"
                   , alt             = 104.
                   , wmo             = NA
                   , isoilflg        = 2
-                  , ntext           = 6
+                  , istext          = 6
                   , sand            = 0.588
                   , clay            = 0.272
                   , depth           = "I"
@@ -4749,7 +5307,7 @@ poitmp[[u]] = list( short           = "serra_do_navio"
                   , alt             = NA
                   , wmo             = NA
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -4770,7 +5328,7 @@ poitmp[[u]] = list( short           = "sinop"
                   , alt             = 423
                   , wmo             = NA
                   , isoilflg        = 2
-                  , ntext           = 2
+                  , istext          = 2
                   , sand            = 0.840
                   , clay            = 0.120
                   , depth           = "E"
@@ -4791,7 +5349,7 @@ poitmp[[u]] = list( short           = "sobral"
                   , alt             = NA
                   , wmo             = NA
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -4812,7 +5370,7 @@ poitmp[[u]] = list( short           = "sorriso"
                   , alt             = 379
                   , wmo             = NA
                   , isoilflg        = 2
-                  , ntext           = 2
+                  , istext          = 2
                   , sand            = 0.840
                   , clay            = 0.120
                   , depth           = "E"
@@ -4833,7 +5391,7 @@ poitmp[[u]] = list( short           = "tabatinga"
                   , alt             = 85
                   , wmo             = 82411
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -4854,7 +5412,7 @@ poitmp[[u]] = list( short           = "talisma"
                   , alt             = 189
                   , wmo             = NA
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -4875,7 +5433,7 @@ poitmp[[u]] = list( short           = "tambopata"
                   , alt             = NA
                   , wmo             = NA
                   , isoilflg        = 2
-                  , ntext           = 11
+                  , istext          = 11
                   , sand            = 0.400
                   , clay            = 0.430
                   , depth           = "B"
@@ -4896,7 +5454,7 @@ poitmp[[u]] = list( short           = "tanguro_sl"
                   , alt             = 349.
                   , wmo             = NA
                   , isoilflg        = 2
-                  , ntext           = 6
+                  , istext          = 6
                   , sand            = 0.664
                   , clay            = 0.246
                   , depth           = "I"
@@ -4905,7 +5463,7 @@ poitmp[[u]] = list( short           = "tanguro_sl"
                   , scolour         = 14
                   , met.driver      = "Tanguro"
                   , yeara           = 2009
-                  , yearz           = 2018
+                  , yearz           = 2019
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -4917,7 +5475,7 @@ poitmp[[u]] = list( short           = "tanguro_ctrl"
                   , alt             = 349.
                   , wmo             = NA
                   , isoilflg        = 2
-                  , ntext           = 6
+                  , istext          = 6
                   , sand            = 0.550
                   , clay            = 0.430
                   , depth           = "I"
@@ -4926,7 +5484,7 @@ poitmp[[u]] = list( short           = "tanguro_ctrl"
                   , scolour         = 14
                   , met.driver      = "Tanguro_Ctrl"
                   , yeara           = 2009
-                  , yearz           = 2018
+                  , yearz           = 2019
                   , iphen           = -1
                   )#end list
 u           = u + 1
@@ -4938,7 +5496,7 @@ poitmp[[u]] = list( short           = "tanguro_burn"
                   , alt             = 349.
                   , wmo             = NA
                   , isoilflg        = 2
-                  , ntext           = 6
+                  , istext          = 6
                   , sand            = 0.664
                   , clay            = 0.246
                   , depth           = "I"
@@ -4959,7 +5517,7 @@ poitmp[[u]] = list( short           = "tapajos"
                   , alt             = 199.
                   , wmo             = NA
                   , isoilflg        = 2
-                  , ntext           = 16
+                  , istext          = 16
                   , sand            = 0.390
                   , clay            = 0.590
                   , depth           = "H"
@@ -4980,7 +5538,7 @@ poitmp[[u]] = list( short           = "tapajos"
                   , alt             = 110.
                   , wmo             = NA
                   , isoilflg        = 2
-                  , ntext           = 16
+                  , istext          = 16
                   , sand            = 0.433
                   , clay            = 0.430
                   , depth           = "I"
@@ -5001,7 +5559,7 @@ poitmp[[u]] = list( short           = "tarauaca"
                   , alt             = 197
                   , wmo             = 82807
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -5022,7 +5580,7 @@ poitmp[[u]] = list( short           = "tefe"
                   , alt             = NA
                   , wmo             = NA
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -5043,7 +5601,7 @@ poitmp[[u]] = list( short           = "teresina"
                   , alt             = NA
                   , wmo             = NA
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -5064,7 +5622,7 @@ poitmp[[u]] = list( short           = "tirios"
                   , alt             = 325
                   , wmo             = 82026
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -5085,7 +5643,7 @@ poitmp[[u]] = list( short           = "tolhuin"
                   , alt             = NA
                   , wmo             = NA
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -5106,7 +5664,7 @@ poitmp[[u]] = list( short           = "tome-acu"
                   , alt             = 50
                   , wmo             = NA
                   , isoilflg        = 2
-                  , ntext           = 6
+                  , istext          = 6
                   , sand            = 0.504
                   , clay            = 0.294
                   , depth           = "F"
@@ -5127,7 +5685,7 @@ poitmp[[u]] = list( short           = "tonzi"
                   , alt             = NA
                   , wmo             = NA
                   , isoilflg        = 2
-                  , ntext           = 5
+                  , istext          = 5
                   , sand            = 0.447
                   , clay            = 0.191
                   , depth           = "D"
@@ -5148,7 +5706,7 @@ poitmp[[u]] = list( short           = "vina_del_mar"
                   , alt             = NA
                   , wmo             = NA
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -5169,7 +5727,7 @@ poitmp[[u]] = list( short           = "vila_franca"
                   , alt             = 13
                   , wmo             = NA
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -5190,7 +5748,7 @@ poitmp[[u]] = list( short           = "vilhena"
                   , alt             = 612
                   , wmo             = 83208
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -5211,7 +5769,7 @@ poitmp[[u]] = list( short           = "vitoria"
                   , alt             = 3
                   , wmo             = 83649
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -5232,7 +5790,7 @@ poitmp[[u]] = list( short           = "west_feliz_natal"
                   , alt             = 392.
                   , wmo             = NA
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -5253,7 +5811,7 @@ poitmp[[u]] = list( short           = "west_sao_felix"
                   , alt             = 213
                   , wmo             = NA
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -5274,7 +5832,7 @@ poitmp[[u]] = list( short           = "xingu"
                   , alt             = NA
                   , wmo             = NA
                   , isoilflg        = 1
-                  , ntext           = 1
+                  , istext          = 1
                   , sand            = -1.000
                   , clay            = -1.000
                   , depth           = "F"
@@ -5295,7 +5853,7 @@ poitmp[[u]] = list( short           = "yasuni"
                   , alt             = NA
                   , wmo             = NA
                   , isoilflg        = 2
-                  , ntext           = 4
+                  , istext          = 4
                   , sand            = 0.259
                   , clay            = 0.255
                   , depth           = "F"

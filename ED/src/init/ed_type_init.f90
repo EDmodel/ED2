@@ -23,15 +23,20 @@ module ed_type_init
       use pft_coms       , only : phenology          & ! intent(in)
                                 , cuticular_cond     & ! intent(in)
                                 , leaf_turnover_rate & ! intent(in)
-                                , Vm0                & ! intent(in)
                                 , sla                & ! intent(in)
+                                , sla_s0             & ! intent(in)
+                                , sla_s1             & ! intent(in)
+                                , Vm0                & ! intent(in)
+                                , Vm0_v0             & ! intent(in)
+                                , Vm0_v1             & ! intent(in)
                                 , small_psi_min      ! ! intent(in)
       use canopy_air_coms, only : f_bndlyr_init      ! ! intent(in)
       use rk4_coms       , only : effarea_transp     & ! intent(in)
                                 , tiny_offset        ! ! intent(in)
       use ed_misc_coms   , only : writing_long       & ! intent(in)
                                 , writing_eorq       & ! intent(in)
-                                , writing_dcyc       ! ! intent(in)
+                                , writing_dcyc       & ! intent(in)
+                                , economics_scheme   ! ! intent(in)
       use phenology_coms , only : vm0_tran           & ! intent(in)
                                 , vm0_slope          & ! intent(in)
                                 , vm0_amp            & ! intent(in)
@@ -95,11 +100,11 @@ module ed_type_init
 
 
       !------------------------------------------------------------------------------------!
-      !     The leaf life span is initialised with the inverse of the turnover rate.       !
-      ! Notice that the turnover rate is in years, but the life span is in months.  Also,  !
-      ! some PFTs do not define the turnover rate (temperate cold-deciduous for example),  !
-      ! in which case we assign a meaningless number just to make sure the variable is     !
-      ! initialised.                                                                       !
+      !     The top-of-canopy leaf life span is initialised with the inverse of the        !
+      ! turnover rate.  Notice that the turnover rate is in years, but the life span is in !
+      ! months.  Also, some PFTs do not define the turnover rate (temperate cold-deciduous !
+      ! for example), in which case we assign a meaningless number just to make sure the   !
+      ! variable is initialised.                                                           !
       !------------------------------------------------------------------------------------!
       if (leaf_turnover_rate(ipft) > 0.0) then
          cpatch%llspan(ico) = 12.0 / leaf_turnover_rate(ipft)
@@ -110,19 +115,62 @@ module ed_type_init
 
 
       !------------------------------------------------------------------------------------!
-      !      The maximum capacity of Rubisco to perform the carboxylase function (Vm) and  !
-      ! the specific leaf area (SLA) must be assigned with the default values.  These      !
-      ! numbers will change only if the PFT uses a light-controlled phenology.             !
+      !      The top-of-canopy maximum capacity of Rubisco to perform the carboxylase      !
+      ! function (Vm) and the top-of-canopy specific leaf area (SLA) must be assigned with !
+      ! the default values.  Note that these numbers will change only if the PFT uses a    !
+      ! light-controlled phenology.                                                        !
       !------------------------------------------------------------------------------------!
       select case(phenology(ipft))
       case (3)
-         cpatch%vm_bar(ico) = vm0_amp / (1.0 + (cpatch%llspan(ico)/vm0_tran)**vm0_slope)   &
-                            + vm0_min
+         !---------------------------------------------------------------------------------!
+         !    Define Vm0 and SLA based on trait relationships.  This also depends on       !
+         ! which economics spectrum we are using.                                          !
+         !---------------------------------------------------------------------------------!
+         select case (economics_scheme)
+         case (1)
+            !------------------------------------------------------------------------------!
+            !    Use the trait relationships from L20.                                     !
+            !                                                                              !
+            ! Longo M, Saatchi SS, Keller M, Bowman KW, Ferraz A, Moorcroft PR, Morton D,  !
+            !    Bonal D, Brando P, Burban B et al. 2020. Impacts of degradation on water, !
+            !    energy, and carbon cycling of the Amazon tropical forests. Earth and      !
+            !    Space Science Open Archive.  doi:10.1002/essoar.10502287.1, in review for !
+            !    J. Geophys. Res.-Biogeosci.                                               !
+            !------------------------------------------------------------------------------!
+            cpatch%sla   (ico) = sla_s0(ipft) * cpatch%llspan(ico) ** sla_s1(ipft)
+            cpatch%vm_bar(ico) = vm0_v0(ipft) * cpatch%sla   (ico) ** vm0_v1(ipft)
+            !------------------------------------------------------------------------------!
+         case default
+            !------------------------------------------------------------------------------!
+            !    Original approach, from K12.                                              !
+            !                                                                              !
+            ! Kim Y, Knox RG, Longo M, Medvigy D, Hutyra LR, Pyle EH, Wofsy SC, Bras RL,   !
+            !    Moorcroft PR. 2012. Seasonal carbon dynamics and water fluxes in an       !
+            !    Amazon rainforest. Glob. Change Biol., 18: 1322-1334.                     !
+            !    doi:10.1111/j.1365-2486.2011.02629.x (K12).                               !
+            !------------------------------------------------------------------------------!
+            cpatch%vm_bar(ico) = vm0_min                                                   &
+                               + vm0_amp                                                   &
+                               / ( 1. + (cpatch%llspan(ico)/ vm0_tran)**vm0_slope )
+            !------------------------------------------------------------------------------!
+
+
+            !----- SLA is the default value. ----------------------------------------------!
+            cpatch%sla(ico)    = SLA(ipft)
+            !------------------------------------------------------------------------------!
+         end select
+         !---------------------------------------------------------------------------------!
       case default
+         !---------------------------------------------------------------------------------!
+         !     Other phenologies.  Use tabulated values.                                   !
+         !---------------------------------------------------------------------------------!
          cpatch%vm_bar(ico) = Vm0(ipft)
+         cpatch%sla   (ico) = SLA(ipft)
+         !---------------------------------------------------------------------------------!
       end select
-      cpatch%sla(ico) = sla(ipft)
       !------------------------------------------------------------------------------------!
+
+
 
 
       !------------------------------------------------------------------------------------!
@@ -132,13 +180,6 @@ module ed_type_init
       cpatch%fsw    (ico) = 1.0
       cpatch%fsn    (ico) = 1.0
       cpatch%fs_open(ico) = 0.0
-      !------------------------------------------------------------------------------------!
-
-      !------------------------------------------------------------------------------------!
-      !     Turnover amplitude must be set to 1 because it is used for scaling of the leaf !
-      ! life span in the light-controlled phenology.                                       !
-      !------------------------------------------------------------------------------------!
-      cpatch%turnover_amp    (ico) = 1.0
       !------------------------------------------------------------------------------------!
 
 
@@ -613,6 +654,9 @@ module ed_type_init
          cpatch%mmean_vapor_wc            (ico) = 0.0
          cpatch%mmean_intercepted_aw      (ico) = 0.0
          cpatch%mmean_wshed_wg            (ico) = 0.0
+         cpatch%mmean_vm_bar              (ico) = 0.0
+         cpatch%mmean_sla                 (ico) = 0.0
+         cpatch%mmean_llspan              (ico) = 0.0
          cpatch%mmean_lai                 (ico) = 0.0
          cpatch%mmean_bleaf               (ico) = 0.0
          cpatch%mmean_broot               (ico) = 0.0
@@ -1271,6 +1315,10 @@ module ed_type_init
          csite%mmean_struct_grnd_n          (ipaa:ipaz) = 0.0
          csite%mmean_struct_soil_n          (ipaa:ipaz) = 0.0
          csite%mmean_mineral_soil_n         (ipaa:ipaz) = 0.0
+         csite%mmean_fgc_in                 (ipaa:ipaz) = 0.0
+         csite%mmean_fsc_in                 (ipaa:ipaz) = 0.0
+         csite%mmean_stgc_in                (ipaa:ipaz) = 0.0
+         csite%mmean_stsc_in                (ipaa:ipaz) = 0.0
          csite%mmean_A_decomp               (ipaa:ipaz) = 0.0
          csite%mmean_B_decomp               (ipaa:ipaz) = 0.0
          csite%mmean_Af_decomp              (ipaa:ipaz) = 0.0
@@ -1437,18 +1485,34 @@ module ed_type_init
    !     This sub-routine initialises some site-level variables.                           !
    !---------------------------------------------------------------------------------------!
    subroutine init_ed_site_vars(cpoly)
-      use ed_state_vars, only : polygontype      ! ! intent(in)
-      use ed_max_dims  , only : n_pft            & ! intent(in)
-                              , n_dbh            ! ! intent(in)
-      use pft_coms     , only : pasture_stock    & ! intent(in)
-                              , agri_stock       & ! intent(in)
-                              , plantation_stock ! ! intent(in)
-      use ed_misc_coms , only : writing_long     & ! intent(in)
-                              , writing_eorq     & ! intent(in)
-                              , writing_dcyc     ! ! intent(in)
+      use ed_state_vars , only : polygontype        ! ! intent(in)
+      use ed_max_dims   , only : n_pft              & ! intent(in)
+                               , n_dbh              ! ! intent(in)
+      use pft_coms      , only : pasture_stock      & ! intent(in)
+                               , agri_stock         & ! intent(in)
+                               , plantation_stock   & ! intent(in)
+                               , sla_s0             & ! intent(in)
+                               , sla_s1             & ! intent(in)
+                               , SLA                & ! intent(in)
+                               , leaf_turnover_rate & ! intent(in)
+                               , Vm0_v0             & ! intent(in)
+                               , Vm0_v1             & ! intent(in)
+                               , Vm0                & ! intent(in)
+                               , phenology          ! ! intent(in)
+      use phenology_coms, only : vm0_tran           & ! intent(in)
+                               , vm0_slope          & ! intent(in)
+                               , vm0_amp            & ! intent(in)
+                               , vm0_min            & ! intent(in)
+                               , llspan_inf         ! ! intent(in)
+      use ed_misc_coms  , only : writing_long       & ! intent(in)
+                               , writing_eorq       & ! intent(in)
+                               , writing_dcyc       & ! intent(in)
+                               , economics_scheme   ! ! intent(in)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       type(polygontype), target     :: cpoly
+      !----- Local variables. -------------------------------------------------------------!
+      integer                       :: ipft
       !----- External functions. ----------------------------------------------------------!
       integer          , external   :: julday
       !------------------------------------------------------------------------------------!
@@ -1500,12 +1564,94 @@ module ed_type_init
 
 
       !------------------------------------------------------------------------------------!
-      !      Phenology variables (green_leaf_factor should be merged with elongf, as they  !
-      ! represent the same thing).                                                         !
+      !      Cold-deciduous phenology variables (MLO remark: I think green_leaf_factor     !
+      ! should be merged with elongf, as they represent the same thing and it is often     !
+      ! confusing).                                                                        !
       !------------------------------------------------------------------------------------!
       cpoly%green_leaf_factor(1:n_pft,:) = 1.0
       cpoly%leaf_aging_factor(1:n_pft,:) = 1.0
       !------------------------------------------------------------------------------------!
+
+
+      !------ Initialise turnover amplification factor as 1.0. ----------------------------!
+      cpoly%turnover_amp(:) = 1.0
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !      Light-phenology variables at top of canopy.  Assume the default values from   !
+      ! the PFT look-up tables.                                                            !
+      !------------------------------------------------------------------------------------!
+      do ipft=1,n_pft
+         !---------------------------------------------------------------------------------!
+         !    Assign leaf life span as the inverse of LTOR, but check the tabulated value  !
+         ! to avoid singularities.                                                         !
+         !---------------------------------------------------------------------------------!
+         if (leaf_turnover_rate(ipft) > 0.0) then
+            cpoly%llspan_toc(ipft,:) = 12.0 / leaf_turnover_rate(ipft)
+         else
+            cpoly%llspan_toc(ipft,:) = llspan_inf
+         end if
+         !---------------------------------------------------------------------------------!
+
+
+         !---------------------------------------------------------------------------------!
+         !    We only account for the trade-offs when using the light-modulated evergreen  !
+         ! phenology.                                                                      !
+         !---------------------------------------------------------------------------------!
+         select case (phenology(ipft))
+         case (3)
+            !------------------------------------------------------------------------------!
+            !    Define Vm0 and SLA based on trait relationships.  This also depends on    !
+            ! which economics spectrum we are using.                                       !
+            !------------------------------------------------------------------------------!
+            select case (economics_scheme)
+            case (1)
+               !---------------------------------------------------------------------------!
+               !    Use the trait relationships from L20.                                  !
+               !                                                                           !
+               ! Longo M, Saatchi SS, Keller M, Bowman KW, Ferraz A, Moorcroft PR,         !
+               !    Morton D, Bonal D, Brando P, Burban B et al. 2020. Impacts of          !
+               !    degradation on water, energy, and carbon cycling of the Amazon         !
+               !    tropical forests. Earth and Space Science Open Archive.                !
+               !    doi:10.1002/essoar.10502287.1, in review for                           !
+               !    J. Geophys. Res.-Biogeosci.                                            !
+               !---------------------------------------------------------------------------!
+               cpoly%sla_toc   (ipft,:) = sla_s0(ipft)                                     &
+                                        * cpoly%llspan_toc(ipft,:) ** sla_s1(ipft)
+               cpoly%vm_bar_toc(ipft,:) = vm0_v0(ipft)                                     &
+                                        * cpoly%sla_toc   (ipft,:) ** vm0_v1(ipft)
+               !---------------------------------------------------------------------------!
+            case default
+               !---------------------------------------------------------------------------!
+               !    Original approach, from K12.                                           !
+               !                                                                           !
+               ! Kim Y, Knox RG, Longo M, Medvigy D, Hutyra LR, Pyle EH, Wofsy SC,         !
+               !    Bras RL, Moorcroft PR. 2012. Seasonal carbon dynamics and water fluxes !
+               !    in an Amazon rainforest. Glob. Change Biol., 18: 1322-1334.            !
+               !    doi:10.1111/j.1365-2486.2011.02629.x (K12).                            !
+               !---------------------------------------------------------------------------!
+               cpoly%vm_bar_toc(ipft,:) = vm0_min                                          &
+                    + vm0_amp / ( 1.0 + (cpoly%llspan_toc(ipft,:)/ vm0_tran)**vm0_slope )
+               !---------------------------------------------------------------------------!
+
+
+               !----- SLA is the default value. -------------------------------------------!
+               cpoly%sla_toc(ipft,:) = SLA(ipft)
+               !---------------------------------------------------------------------------!
+            end select
+            !------------------------------------------------------------------------------!
+
+         case default
+            !------ Set standard values for Vm0 and SLA. ----------------------------------!
+            cpoly%vm_bar_toc(ipft,:) = Vm0(ipft)
+            cpoly%sla_toc   (ipft,:) = SLA(ipft)
+            !------------------------------------------------------------------------------!
+         end select
+         !---------------------------------------------------------------------------------!
+      end do
+      !------------------------------------------------------------------------------------!
+
 
 
       !------------------------------------------------------------------------------------!
@@ -2319,6 +2465,10 @@ module ed_type_init
             cgrid%mmean_struct_grnd_n        (ipy) = 0.0
             cgrid%mmean_struct_soil_n        (ipy) = 0.0
             cgrid%mmean_mineral_soil_n       (ipy) = 0.0
+            cgrid%mmean_fgc_in               (ipy) = 0.0
+            cgrid%mmean_fsc_in               (ipy) = 0.0
+            cgrid%mmean_stgc_in              (ipy) = 0.0
+            cgrid%mmean_stsc_in              (ipy) = 0.0
             cgrid%mmean_nppleaf              (ipy) = 0.0
             cgrid%mmean_nppfroot             (ipy) = 0.0
             cgrid%mmean_nppsapwood           (ipy) = 0.0

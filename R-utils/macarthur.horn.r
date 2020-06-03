@@ -207,10 +207,7 @@ macarthur.horn <<- function( pt.cloud
       gnd.cloud$y              = mean(veg.cloud$y)
       gnd.cloud$z              = 0.01
       gnd.cloud$intensity      = min(veg.cloud$intensity)
-      gnd.cloud$retn.number    = min(veg.cloud$retn.number)
-      gnd.cloud$number.retn.gp = commonest(veg.cloud$number.retn.gp)
       gnd.cloud$pt.class       = 2
-      gnd.cloud$gpstime        = max(veg.cloud$gpstime)
    }#end if
    #---------------------------------------------------------------------------------------#
 

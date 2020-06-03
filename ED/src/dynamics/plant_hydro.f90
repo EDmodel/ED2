@@ -18,6 +18,10 @@ module plant_hydro
 
    real(kind=4), parameter :: op_buff   = 1. + tol_buff
    real(kind=8), parameter :: op_buff_d = dble(op_buff)
+
+   real(kind=4), parameter :: mg_safe   = 0.05
+   real(kind=4), parameter :: op_safe   = 1. + mg_safe
+   real(kind=4), parameter :: om_safe   = 1. - mg_safe
    !---------------------------------------------------------------------------------------!
 
    contains
@@ -64,6 +68,7 @@ module plant_hydro
       integer,dimension(nzg), intent(in)  :: ntext_soil
       !----- Local Vars  ------------------------------------------------------------------!
       type(patchtype)       , pointer     :: cpatch      !< patch strcture
+      real                                :: swater_min  !< Min. soil moisture for condct.
       real                                :: swater_use  !< soil moisture
       integer                             :: nsoil       !< soil type for soil
       integer                             :: k           !< iterator for soil lyr
@@ -127,8 +132,15 @@ module plant_hydro
          do k = 1,nzg
             nsoil = ntext_soil(k)
 
-            !------ Get bounded soil moisture (it must be between air-dry and porosity). --!
-            swater_use = max( soil(nsoil)%soilcp                                           &
+            !------------------------------------------------------------------------------!
+            !      Get bounded soil moisture.                                              !
+            !  MLO.  The lower bound used to be air-dry soil moisture.  This causes issues !
+            !  in the RK4 integrator if the soil moisture is just slightly above air-dry   !
+            !  and dtlsm is long.  For the time being, I am assuming that soil             !
+            !  conductivity is halted at a safe margin.                                    !
+            !------------------------------------------------------------------------------!
+            swater_min = om_safe * soil(nsoil)%soilcp + mg_safe * soil(nsoil)%soilwp
+            swater_use = max( swater_min                                                   &
                             , min(soil(nsoil)%slmsts                                       &
                                  ,csite%soil_water(k,ipa) * csite%soil_fracliq(k,ipa) ) )
             !------------------------------------------------------------------------------!
@@ -144,7 +156,7 @@ module plant_hydro
             ! that hydraulic conductivity is effectively zero in case soil moisture        !
             ! reaches this level or drier.                                                 !
             !------------------------------------------------------------------------------!
-            if (csite%soil_water(k,ipa) <= (op_buff * soil(nsoil)%soilcp)) then
+            if (csite%soil_water(k,ipa) < swater_min) then
                soil_cond(k) = 0.
             else
                soil_cond(k) = wdns * hydr_conduct(k,nsoil,csite%soil_water(k,ipa)          &
@@ -200,6 +212,7 @@ module plant_hydro
                   cpatch%leaf_psi(ico) = cpatch%leaf_psi(ico)  & ! m
                                        + transp * dtlsm        & ! kgH2O
                                        / c_leaf                ! ! kgH2O/m
+                  !------------------------------------------------------------------------!
                else
                   !----- No leaves, set leaf_psi the same as wood_psi - hite. -------------!
                   cpatch%leaf_psi(ico) = cpatch%wood_psi(ico) - cpatch%hite(ico)
@@ -1038,6 +1051,7 @@ module plant_hydro
 
 
 
+
    !=======================================================================================!
    !=======================================================================================!
    !  SUBROUTINE: PSI2RWC           
@@ -1282,7 +1296,7 @@ module plant_hydro
    !=======================================================================================!
    !=======================================================================================!
    !  SUBROUTINE: PSI2TW            
-   !> \breif Convert water potential to total water for both leaf and wood
+   !> \brief Convert water potential to total water for both leaf and wood
    !=======================================================================================!
    subroutine psi2tw(leaf_psi,wood_psi,bleaf,bsapwooda,bsapwoodb,bdeada,bdeadb,broot,dbh   &
                     ,ipft,leaf_water_int,wood_water_int)
@@ -1440,6 +1454,57 @@ module plant_hydro
 
       return
    end subroutine twe2twi
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !  SUBROUTINE: PSI2TWE
+   !> \breif Convert water potential of leaf and wood to extensive water storage
+   !> \details This sub-routine is useful when we need to go from water potential to 
+   !>          storage, but we don't need the intermediate quantities (relative and
+   !>          individual water contents).
+   !=======================================================================================!
+   subroutine psi2twe(leaf_psi,wood_psi,ipft,nplant,bleaf,bsapwooda,bsapwoodb,bdeada       &
+                     ,bdeadb,broot,dbh,leaf_water_im2,wood_water_im2)
+      implicit none
+      !----- Arguments --------------------------------------------------------------------!
+      real      , intent(in)    ::  leaf_psi       ! Water potential of leaves     [     m]
+      real      , intent(in)    ::  wood_psi       ! Water potential of wood       [     m]
+      integer   , intent(in)    ::  ipft           ! Plant functional type         [     -]
+      real      , intent(in)    ::  nplant         ! Stem density                  [ pl/m2]
+      real      , intent(in)    ::  bleaf          ! Biomass of leaf               [kgC/pl]
+      real      , intent(in)    ::  bsapwooda      ! Aboveground sapwood biomass   [kgC/pl]
+      real      , intent(in)    ::  bsapwoodb      ! Belowground sapwood biomass   [kgC/pl]
+      real      , intent(in)    ::  bdeada         ! Aboveground heartwood biomass [kgC/pl]
+      real      , intent(in)    ::  bdeadb         ! Belowground heartwood biomass [kgC/pl]
+      real      , intent(in)    ::  broot          ! Biomass of fine root          [kgC/pl]
+      real      , intent(in)    ::  dbh            ! Diameter at breast height     [    cm]
+      real      , intent(out)   ::  leaf_water_im2 ! Extensive leaf internal water [ kg/m2]
+      real      , intent(out)   ::  wood_water_im2 ! Extensive wood internal water [ kg/m2]
+      !----- Local variables. -------------------------------------------------------------!
+      real                      ::  leaf_rwc       ! Relative leaf water content   [    --]
+      real                      ::  wood_rwc       ! Relative wood water content   [    --]
+      real                      ::  leaf_water_int ! Intensive leaf internal water [ kg/pl]
+      real                      ::  wood_water_int ! Intensive wood internal water [ kg/pl]
+      !------------------------------------------------------------------------------------!
+
+      !----- 1. Potential -> relative water content. --------------------------------------!
+      call psi2rwc(leaf_psi,wood_psi,ipft,leaf_rwc,wood_rwc)
+      !----- 2. Relative water content -> Intensive internal water. -----------------------!
+      call rwc2tw(leaf_rwc,wood_rwc,bleaf,bsapwooda,bsapwoodb,bdeada,bdeadb,broot,dbh,ipft &
+                 ,leaf_water_int,wood_water_int)
+      !----- 3. Intensive internal water -> Extensive internal water. ---------------------!
+      call twi2twe(leaf_water_int,wood_water_int,nplant,leaf_water_im2,wood_water_im2)
+      !------------------------------------------------------------------------------------!
+
+
+      return
+   end subroutine psi2twe
    !=======================================================================================!
    !=======================================================================================!
 end module plant_hydro

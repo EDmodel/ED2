@@ -261,8 +261,12 @@ module phenology_coms
 
 
    !---------------------------------------------------------------------------------------!
-   !      Variables controlling the light phenology as in Kim et al. (20??)                !
+   !      Variables controlling the light phenology as in Kim et al. (2012)                !
    !---------------------------------------------------------------------------------------!
+   !----- Radiation window for running average [days] -------------------------------------!
+   real :: radavg_window
+   !----- Turnover weight, the inverse of the window. -------------------------------------!
+   real :: radavg_wgt
    !----- Turnover window for running average [days] --------------------------------------!
    real :: turnamp_window
    !----- Turnover weight, the inverse of the window. -------------------------------------!
@@ -294,6 +298,10 @@ module phenology_coms
    real :: vm0_slope
    real :: vm0_amp
    real :: vm0_min
+   !----- SLA window for running average [days]. ------------------------------------------!
+   real :: sla_window
+   !----- SLA weight, the inverse of the window. ------------------------------------------!
+   real :: sla_wgt
    !---------------------------------------------------------------------------------------!
 
 end module phenology_coms

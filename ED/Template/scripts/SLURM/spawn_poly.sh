@@ -79,7 +79,7 @@ npartial=300                  # Maximum number of polygons to include in this bu
                               #    (actual number will be adjusted for total number of 
                               #     polygons if needed be).
 dttask=2                      # Time to wait between task submission
-runtime="00:00:00"            # Requested runtime.  Zero uses the queue's maximum.
+runtime="00:00:00"         # Requested runtime.  Zero uses the queue's maximum.
 #------------------------------------------------------------------------------------------#
 
 #==========================================================================================#
@@ -584,6 +584,13 @@ echo "echo \"--------------------------------------------------------------\"" >
 echo "echo \"\""                                                               >> ${sbatch}
 echo "echo \"\""                                                               >> ${sbatch}
 echo ""                                                                        >> ${sbatch}
+echo ""                                                                        >> ${sbatch}
+echo "#--- Define home in case home is not set"                                >> ${sbatch}
+echo "if [[ \"x\${HOME}\" == \"x\" ]]"                                         >> ${sbatch}
+echo "then"                                                                    >> ${sbatch}
+echo "   export HOME=\$(echo ~)"                                               >> ${sbatch}
+echo "fi"                                                                      >> ${sbatch}
+echo ""                                                                        >> ${sbatch}
 echo "#--- Load modules and settings."                                         >> ${sbatch}
 echo ". \${HOME}/.bashrc ${optsrc}"                                            >> ${sbatch}
 echo ""                                                                        >> ${sbatch}
@@ -928,6 +935,18 @@ do
          storharv=0.00
          leafharv=0.00
          ;;
+      l[0-5][0-3])
+         pfts="6,8,9,10,11"
+         pasture=16
+         crop=16
+         plantation=6
+         logging="6,8,9,10,11"
+         probharv="1.0,1.0,1.0,1.0,1.0"
+         dbhharv="0.0,0.0,0.0,0.0,0.0"
+         seedharv=0.75
+         storharv=0.00
+         leafharv=0.00
+         ;;
       asu|cnf|bnu|cwb|erm|iqq|ipv|mgf|rao|sla|zpe|kna|sfn)
          pfts="1,2,3,4,15,16"
          pasture=1
@@ -998,6 +1017,18 @@ do
          pasture=16
          crop=16
          plantation=10
+         logging="6,8,9,10,11"
+         probharv="1.0,1.0,1.0,1.0,1.0"
+         dbhharv="0.0,0.0,0.0,0.0,0.0"
+         seedharv=0.75
+         storharv=0.00
+         leafharv=0.00
+         ;;
+      l[0-5][0-3])
+         pfts="6,8,9,10,11"
+         pasture=16
+         crop=16
+         plantation=6
          logging="6,8,9,10,11"
          probharv="1.0,1.0,1.0,1.0,1.0"
          dbhharv="0.0,0.0,0.0,0.0,0.0"
@@ -1267,6 +1298,12 @@ do
       metcycf=2003
       imetavg=3
       ;;
+   Laegern)
+      metdriverdb="${fullscen}/Laegern/Laegern_HEADER"
+      metcyc1=2006
+      metcycf=2016
+      imetavg=1
+      ;;
    Manaus_Km34)
       metdriverdb="${fullscen}/Manaus_Km34/Manaus_Km34_HEADER"
       metcyc1=1999
@@ -1366,13 +1403,13 @@ do
    Tanguro_Burn)
       metdriverdb="${fullscen}/Tanguro_Burn/Tanguro_Burn_HEADER"
       metcyc1=2008
-      metcycf=2017
+      metcycf=2018
       imetavg=1
       ;;
    Tanguro_Ctrl)
       metdriverdb="${fullscen}/Tanguro_Ctrl/Tanguro_Ctrl_HEADER"
       metcyc1=2008
-      metcycf=2017
+      metcycf=2018
       imetavg=1
       ;;
    Tonzi)
@@ -1437,7 +1474,7 @@ do
    case ${ianthdataset} in
    glu-331)
       case ${polyiata} in
-      tzi|zmh|nqn|hvd|wch|tqh)
+      tzi|zmh|nqn|hvd|wch|tqh|l[0-5][0-3])
          ludatabase="${lumain}/glu/glu-"
          ;;
       *)
@@ -1447,7 +1484,7 @@ do
       ;;
    glu-sa1)
       case ${polyiata} in
-      tzi|zmh|nqn|hvd|wch|tqh)
+      tzi|zmh|nqn|hvd|wch|tqh|l[0-5][0-3])
          ludatabase="${lumain}/glu/glu-"
          ;;
       *)
@@ -1457,7 +1494,7 @@ do
       ;;
    glu-sag)
       case ${polyiata} in
-      tzi|zmh|nqn|hvd|wch|tqh)
+      tzi|zmh|nqn|hvd|wch|tqh|l[0-5][0-3])
          ludatabase="${lumain}/glu/glu-"
          ;;
       *)
@@ -1467,7 +1504,7 @@ do
       ;;
    glu-sa2)
       case ${polyiata} in
-      tzi|zmh|nqn|hvd|wch|tqh)
+      tzi|zmh|nqn|hvd|wch|tqh|l[0-5][0-3])
          ludatabase="${lumain}/glu/glu-"
          ;;
       *)
@@ -1638,6 +1675,54 @@ do
          polyslt1=" 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000,"
          polyslt2=" 0.000, 0.000, 0.000, 0.000, 0.000, 0.000"
          ;;
+      P)
+         polynzg=7
+         polyslz1="-0.580,-0.420,-0.300,-0.200,-0.120,-0.060,-0.020"
+         polyslm1=" 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000"
+         polyslt1=" 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000"
+         ;;
+      Q)
+         polynzg=8
+         polyslz1="-0.830,-0.630,-0.450,-0.300,-0.200,-0.120,-0.060,-0.020"
+         polyslm1=" 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000"
+         polyslt1=" 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000"
+         ;;
+      U)
+         polynzg=6
+         polyslz1="-0.400,-0.300,-0.200,-0.120,-0.060,-0.020"
+         polyslm1=" 1.000, 1.000, 1.000, 1.000, 1.000, 1.000"
+         polyslt1=" 0.000, 0.000, 0.000, 0.000, 0.000, 0.000"
+         ;;
+      V)
+         polynzg=6
+         polyslz1="-0.420,-0.300,-0.200,-0.120,-0.060,-0.020"
+         polyslm1=" 1.000, 1.000, 1.000, 1.000, 1.000, 1.000"
+         polyslt1=" 0.000, 0.000, 0.000, 0.000, 0.000, 0.000"
+         ;;
+      W)
+         polynzg=7
+         polyslz1="-0.510,-0.400,-0.300,-0.200,-0.120,-0.060,-0.020"
+         polyslm1=" 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000"
+         polyslt1=" 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000"
+         ;;
+      X)
+         polynzg=8
+         polyslz1="-0.670,-0.520,-0.400,-0.300,-0.200,-0.120,-0.060,-0.020"
+         polyslm1=" 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000"
+         polyslt1=" 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000"
+         ;;
+      Y)
+         polynzg=8
+         polyslz1="-0.700,-0.550,-0.400,-0.300,-0.200,-0.120,-0.060,-0.020"
+         polyslm1=" 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000"
+         polyslt1=" 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000"
+         ;;
+      Z)
+         polynzg=8
+         polyslz1="-0.750,-0.600,-0.450,-0.300,-0.200,-0.120,-0.060,-0.020"
+         polyslm1=" 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000"
+         polyslt1=" 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000"
+         ;;
       *)
          polynzg=16
          polyslz1="-8.000,-7.072,-6.198,-5.380,-4.617,-3.910,-3.259,-2.664,-2.127,-1.648,"
@@ -1731,6 +1816,54 @@ do
          polyslm2=" 1.000, 1.000, 1.000, 1.000, 1.000, 1.000"
          polyslt1=" 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000,"
          polyslt2=" 0.000, 0.000, 0.000, 0.000, 0.000, 0.000"
+         ;;
+      P)
+         polynzg=7
+         polyslz1="-0.580,-0.420,-0.300,-0.200,-0.120,-0.060,-0.020"
+         polyslm1=" 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000"
+         polyslt1=" 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000"
+         ;;
+      Q)
+         polynzg=8
+         polyslz1="-0.830,-0.630,-0.450,-0.300,-0.200,-0.120,-0.060,-0.020"
+         polyslm1=" 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000"
+         polyslt1=" 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000"
+         ;;
+      U)
+         polynzg=6
+         polyslz1="-0.400,-0.300,-0.200,-0.120,-0.060,-0.020"
+         polyslm1=" 1.000, 1.000, 1.000, 1.000, 1.000, 1.000"
+         polyslt1=" 0.000, 0.000, 0.000, 0.000, 0.000, 0.000"
+         ;;
+      V)
+         polynzg=6
+         polyslz1="-0.420,-0.300,-0.200,-0.120,-0.060,-0.020"
+         polyslm1=" 1.000, 1.000, 1.000, 1.000, 1.000, 1.000"
+         polyslt1=" 0.000, 0.000, 0.000, 0.000, 0.000, 0.000"
+         ;;
+      W)
+         polynzg=7
+         polyslz1="-0.510,-0.400,-0.300,-0.200,-0.120,-0.060,-0.020"
+         polyslm1=" 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000"
+         polyslt1=" 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000"
+         ;;
+      X)
+         polynzg=8
+         polyslz1="-0.670,-0.520,-0.400,-0.300,-0.200,-0.120,-0.060,-0.020"
+         polyslm1=" 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000"
+         polyslt1=" 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000"
+         ;;
+      Y)
+         polynzg=8
+         polyslz1="-0.700,-0.550,-0.400,-0.300,-0.200,-0.120,-0.060,-0.020"
+         polyslm1=" 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000"
+         polyslt1=" 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000"
+         ;;
+      Z)
+         polynzg=8
+         polyslz1="-0.750,-0.600,-0.450,-0.300,-0.200,-0.120,-0.060,-0.020"
+         polyslm1=" 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000"
+         polyslt1=" 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000"
          ;;
       *)
          polynzg=16
@@ -2043,7 +2176,14 @@ do
          #---------------------------------------------------------------------------------#
          #     ALS initialisation. ISIZEPFT has disturbance history information.           #
          #---------------------------------------------------------------------------------#
-         thissfilin="${alsinit}/${polyiata}_${isizepft}."
+         case ${polyiata} in
+         l[0-5][0-3])
+            thissfilin="${alsinit}/${polyiata}."
+            ;;
+         *)
+            thissfilin="${alsinit}/${polyiata}_${isizepft}."
+            ;;
+         esac
          #---------------------------------------------------------------------------------#
          ;;
       3)

@@ -2547,8 +2547,8 @@ module rk4_integ_utils
 
          !----- Find the boundaries for leaf water (surface and internal). ----------------!
          rk4min_leaf_water     = rk4min_veg_lwater * y%lai(ico)
-         rk4min_leaf_water_im2 = rk4aux(ibuff)%rk4min_leaf_water_im2(ico) * (1.d0 - rk4eps)
-         rk4max_leaf_water_im2 = rk4aux(ibuff)%rk4max_leaf_water_im2(ico) * (1.d0 + rk4eps)
+         rk4min_leaf_water_im2 = rk4aux(ibuff)%rk4min_leaf_water_im2(ico)
+         rk4max_leaf_water_im2 = rk4aux(ibuff)%rk4max_leaf_water_im2(ico)
          !---------------------------------------------------------------------------------!
 
 
@@ -2701,8 +2701,8 @@ module rk4_integ_utils
 
          !----- Find the boundaries for wood water (surface and internal). ----------------!
          rk4min_wood_water = rk4min_veg_lwater * y%wai(ico)
-         rk4min_wood_water_im2 = rk4aux(ibuff)%rk4min_wood_water_im2(ico) * (1.d0 - rk4eps)
-         rk4max_wood_water_im2 = rk4aux(ibuff)%rk4max_wood_water_im2(ico) * (1.d0 + rk4eps)
+         rk4min_wood_water_im2 = rk4aux(ibuff)%rk4min_wood_water_im2(ico)
+         rk4max_wood_water_im2 = rk4aux(ibuff)%rk4max_wood_water_im2(ico)
          !---------------------------------------------------------------------------------!
 
 
@@ -3089,7 +3089,7 @@ module rk4_integ_utils
          !----- 3. Wood. ------------------------------------------------------------------!
          write(unit=*,fmt='(a)')           ' '
          write(unit=*,fmt='(a)')           ' 3. WOOD PROPERTIES (resolvable only): '
-         write(unit=*,fmt='(6(a,1x))')               '  ICO',       ' IPFT','   MIN_WATER' &
+         write(unit=*,fmt='(7(a,1x))')               '  ICO',       ' IPFT','   MIN_WATER' &
                                              ,' MIN_WAT_IM2',' MAX_WAT_IM2','    MIN_TEMP' &
                                              ,'    MAX_TEMP'
          prob_wood_loop: do ico = 1,cpatch%ncohorts

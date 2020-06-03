@@ -347,8 +347,15 @@ module ed_init_history
                            !---------------------------------------------------------------!
                         else
                            cpatch%ncohorts = 0
-                        endif
+                        end if
+                        !------------------------------------------------------------------!
+
+
+                        !----- Update the cohort count (may be redundant as well...) ------!
+                        csite%cohort_count(ipa) = cpatch%ncohorts
+                        !------------------------------------------------------------------!
                      end do patchloop
+                     !---------------------------------------------------------------------!
                   else
                      write (unit=*,fmt='(a)'          ) '---------------------------------'
                      write (unit=*,fmt='(a)'          ) ' Found a site with no patches.'
@@ -1211,6 +1218,14 @@ module ed_init_history
                         ,'MMEAN_STRUCT_SOIL_N_PY    ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cgrid%mmean_mineral_soil_n (ipy:ipy)                           &
                         ,'MMEAN_MINERAL_SOIL_N_PY   ',dsetrank,iparallel,.false.,foundvar)
+         call hdf_getslab_r(cgrid%mmean_fgc_in         (ipy:ipy)                           &
+                        ,'MMEAN_FGC_IN_PY           ',dsetrank,iparallel,.false.,foundvar)
+         call hdf_getslab_r(cgrid%mmean_fsc_in         (ipy:ipy)                           &
+                        ,'MMEAN_FSC_IN_PY           ',dsetrank,iparallel,.false.,foundvar)
+         call hdf_getslab_r(cgrid%mmean_stgc_in        (ipy:ipy)                           &
+                        ,'MMEAN_STGC_IN_PY          ',dsetrank,iparallel,.false.,foundvar)
+         call hdf_getslab_r(cgrid%mmean_stsc_in        (ipy:ipy)                           &
+                        ,'MMEAN_STSC_IN_PY          ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cgrid%mmean_gpp            (ipy:ipy)                           &
                         ,'MMEAN_GPP_PY              ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cgrid%mmean_npp            (ipy:ipy)                           &
@@ -2978,6 +2993,8 @@ module ed_init_history
                       ,'IGNITION_RATE              ' ,dsetrank,iparallel,.true. ,foundvar)
       call hdf_getslab_r(cpoly%rad_avg                                                     &
                       ,'RAD_AVG                    ' ,dsetrank,iparallel,.true. ,foundvar)
+      call hdf_getslab_r(cpoly%turnover_amp                                                &
+                        ,'TURNOVER_AMP             ' ,dsetrank,iparallel,.true. ,foundvar)
       call hdf_getslab_r(cpoly%daylight                                                    &
                       ,'DAYLIGHT                   ' ,dsetrank,iparallel,.true. ,foundvar)
       call hdf_getslab_r(cpoly%cosaoi                                                      &
@@ -3158,6 +3175,12 @@ module ed_init_history
                         ,'GREEN_LEAF_FACTOR  ',dsetrank,iparallel,.true. ,foundvar)
       call hdf_getslab_r(cpoly%leaf_aging_factor                                           &
                         ,'LEAF_AGING_FACTOR  ',dsetrank,iparallel,.true. ,foundvar)
+      call hdf_getslab_r(cpoly%vm_bar_toc                                                  &
+                        ,'VM_BAR_TOC         ',dsetrank,iparallel,.true. ,foundvar)
+      call hdf_getslab_r(cpoly%llspan_toc                                                  &
+                        ,'LLSPAN_TOC         ',dsetrank,iparallel,.true. ,foundvar)
+      call hdf_getslab_r(cpoly%sla_toc                                                     &
+                        ,'SLA_TOC            ',dsetrank,iparallel,.true. ,foundvar)
       !------------------------------------------------------------------------------------!
       !------------------------------------------------------------------------------------!
       !------------------------------------------------------------------------------------!
@@ -3783,9 +3806,9 @@ module ed_init_history
       call hdf_getslab_r(csite%cbudget_initialstorage                                      &
                      ,'CBUDGET_INITIALSTORAGE      ',dsetrank,iparallel,.true. ,foundvar)
       call hdf_getslab_r(csite%cbudget_residual                                            &
-                     ,'CBUDGET_COMMITTED           ',dsetrank,iparallel,.true. ,foundvar)
-      call hdf_getslab_r(csite%cbudget_committed                                           &
                      ,'CBUDGET_RESIDUAL            ',dsetrank,iparallel,.true. ,foundvar)
+      call hdf_getslab_r(csite%cbudget_committed                                           &
+                     ,'CBUDGET_COMMITTED           ',dsetrank,iparallel,.true. ,foundvar)
       call hdf_getslab_r(csite%commit_storage_resp                                         &
                      ,'COMMIT_STORAGE_RESP         ',dsetrank,iparallel,.true. ,foundvar)
       call hdf_getslab_r(csite%commit_growth_resp                                          &
@@ -4125,6 +4148,14 @@ module ed_init_history
                         ,'MMEAN_STRUCT_SOIL_N_PA    ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(csite%mmean_mineral_soil_n                                     &
                         ,'MMEAN_MINERAL_SOIL_N_PA   ',dsetrank,iparallel,.false.,foundvar)
+         call hdf_getslab_r(csite%mmean_fgc_in                                             &
+                        ,'MMEAN_FGC_IN_PA           ',dsetrank,iparallel,.false.,foundvar)
+         call hdf_getslab_r(csite%mmean_fsc_in                                             &
+                        ,'MMEAN_FSC_IN_PA           ',dsetrank,iparallel,.false.,foundvar)
+         call hdf_getslab_r(csite%mmean_stgc_in                                            &
+                        ,'MMEAN_STGC_IN_PA          ',dsetrank,iparallel,.false.,foundvar)
+         call hdf_getslab_r(csite%mmean_stsc_in                                            &
+                        ,'MMEAN_STSC_IN_PA          ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(csite%mmean_co2_residual                                       &
                         ,'MMEAN_CO2_RESIDUAL_PA     ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(csite%mmean_energy_residual                                    &
@@ -5190,8 +5221,6 @@ module ed_init_history
                         ,'PAW_AVG                   ',dsetrank,iparallel,.true. ,foundvar)
       call hdf_getslab_r(cpatch%elongf                                                     &
                         ,'ELONGF                    ',dsetrank,iparallel,.true. ,foundvar)
-      call hdf_getslab_r(cpatch%turnover_amp                                               &
-                        ,'TURNOVER_AMP              ',dsetrank,iparallel,.true. ,foundvar)
       call hdf_getslab_r(cpatch%llspan                                                     &
                         ,'LLSPAN                    ',dsetrank,iparallel,.true. ,foundvar)
       call hdf_getslab_r(cpatch%vm_bar                                                     &
@@ -5398,6 +5427,12 @@ module ed_init_history
       if (writing_eorq) then
          call hdf_getslab_r(cpatch%mmean_thbark                                            &
                         ,'MMEAN_THBARK_CO           ',dsetrank,iparallel,.false.,foundvar)
+         call hdf_getslab_r(cpatch%mmean_vm_bar                                            &
+                        ,'MMEAN_VM_BAR_CO           ',dsetrank,iparallel,.false.,foundvar)
+         call hdf_getslab_r(cpatch%mmean_sla                                               &
+                        ,'MMEAN_SLA_CO              ',dsetrank,iparallel,.false.,foundvar)
+         call hdf_getslab_r(cpatch%mmean_llspan                                            &
+                        ,'MMEAN_LLSPAN_CO           ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cpatch%mmean_lai                                               &
                         ,'MMEAN_LAI_CO              ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cpatch%mmean_bleaf                                             &

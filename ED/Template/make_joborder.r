@@ -392,7 +392,7 @@ if (is.null(lonlat)){
       sel                      = joborder$istext != 0
       joborder$sand    [  sel] = -1.0
       joborder$clay    [  sel] = -1.0
-      joborder$istext  [! sel] = poidata$istext[! sel]
+      joborder$istext  [! sel] = poitout$istext[! sel]
       joborder$isoilflg[  sel] = 2
    }#end if
    #---------------------------------------------------------------------------------------#

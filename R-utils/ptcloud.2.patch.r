@@ -724,18 +724,19 @@ ptcloud.2.patch <<- function( pt.cloud
             if (suspicious){
                if (nidx > 0){
                   #----- Aggregate information of the suspicious patch. -------------------#
-                  css.agf    = pft$agf.bs[css.now$pft]
-                  css.bsapa  = pft$qsw   [css.now$pft] * css.now$hite * css.now$bleaf
-                  css.bbarka = pft$qbark [css.now$pft] * css.now$hite * css.now$bleaf
-                  css.agb    = ( css.now$bleaf
-                               + css.agf * ( css.bsapa + css.bbarka + css.now$bdead )
+                  css.agf    = pft$agf.bs[cssnow$pft]
+                  css.bleaf  = with(cssnow,size2bl(dbh=dbh,hgt=hite,ipft=pft))
+                  css.bsap   = pft$qsw   [cssnow$pft] * cssnow$hite * css.bleaf
+                  css.bbark  = pft$qbark [cssnow$pft] * cssnow$hite * css.bleaf
+                  css.agb    = ( css.bleaf
+                               + css.agf * ( css.bsap + css.bbark + cssnow$bdead )
                                )#end css.agb
-                  css.bsa    = 0.25 * pi * css.now$dbh * css.now$dbh
-                  css.use    = css.now$dbh %>=% 10.0
-                  npl.show   = 10000. * sum(css.now$n[css.use])
+                  css.bsa    = 0.25 * pi * cssnow$dbh * cssnow$dbh
+                  css.use    = cssnow$dbh %>=% 10.0
+                  npl.show   = 10000. * sum(cssnow$n[css.use])
                   lai.show   = sum(cssnow$lai)
-                  agb.show   = sum(css.now$n[css.use]*css.agb[css.use])
-                  bsa.show   = sum(css.now$n[css.use]*css.bsa[css.use])
+                  agb.show   = sum(cssnow$n[css.use]*css.agb[css.use])
+                  bsa.show   = sum(cssnow$n[css.use]*css.bsa[css.use])
                   #------------------------------------------------------------------------#
                }else{
                   #----- Empty patch. -----------------------------------------------------#
@@ -759,10 +760,10 @@ ptcloud.2.patch <<- function( pt.cloud
                cat0("  + Disturbance type          -- ",dist.type                        )
                cat0("  + Multiplication factor     -- ",f.net                            )
                cat0("  + Age                       -- ",dist.age                         )
-               cat0("  + Stem density [DBH > 10cm] -- ",css.npl                          )
-               cat0("  + Leaf area index           -- ",css.lai                          )
-               cat0("  + AG Biomass   [DBH > 10cm] -- ",css.agb                          )
-               cat0("  + Basal Area   [DBH > 10cm] -- ",css.bsa                          )
+               cat0("  + Stem density [DBH > 10cm] -- ",npl.show                         )
+               cat0("  + Leaf area index           -- ",lai.show                         )
+               cat0("  + AG Biomass   [DBH > 10cm] -- ",agb.show                         )
+               cat0("  + Basal Area   [DBH > 10cm] -- ",bsa.show                         )
                cat0("-------------------------------------------------------------------")
                cat0(" ")
                cat0(" ")

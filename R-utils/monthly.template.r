@@ -137,14 +137,20 @@ create.monthly <<- function(ntimes,montha,yeara,inpref,slz.min){
    #---------------------------------------------------------------------------------------#
    emean = list()
    emean$wood.dens               = rep(NA_real_,times=ntimes)
+   emean$vm0                     = rep(NA_real_,times=ntimes)
+   emean$llspan                  = rep(NA_real_,times=ntimes)
    emean$sla                     = rep(NA_real_,times=ntimes)
    emean$fast.grnd.c             = rep(NA_real_,times=ntimes)
    emean$fast.soil.c             = rep(NA_real_,times=ntimes)
    emean$struct.grnd.c           = rep(NA_real_,times=ntimes)
    emean$struct.soil.c           = rep(NA_real_,times=ntimes)
    emean$microbe.soil.c          = rep(NA_real_,times=ntimes)
-   emean$passive.soil.c          = rep(NA_real_,times=ntimes)
    emean$slow.soil.c             = rep(NA_real_,times=ntimes)
+   emean$passive.soil.c          = rep(NA_real_,times=ntimes)
+   emean$fgc.in                  = rep(NA_real_,times=ntimes)
+   emean$fsc.in                  = rep(NA_real_,times=ntimes)
+   emean$stgc.in                 = rep(NA_real_,times=ntimes)
+   emean$stsc.in                 = rep(NA_real_,times=ntimes)
    emean$crop.yield              = rep(NA_real_,times=ntimes)
    emean$crop.harvest            = rep(NA_real_,times=ntimes)
    emean$logging.harvest         = rep(NA_real_,times=ntimes)
@@ -506,6 +512,8 @@ create.monthly <<- function(ntimes,montha,yeara,inpref,slz.min){
    szpft$par.leaf.diff     = array(data=0 ,dim=c(ntimes,ndbh+1,npft+1))
    #----- Initial value should be NA. -----------------------------------------------------#
    szpft$wood.dens         = array(data=NA_real_,dim=c(ntimes,ndbh+1,npft+1))
+   szpft$vm0               = array(data=NA_real_,dim=c(ntimes,ndbh+1,npft+1))
+   szpft$llspan            = array(data=NA_real_,dim=c(ntimes,ndbh+1,npft+1))
    szpft$sla               = array(data=NA_real_,dim=c(ntimes,ndbh+1,npft+1))
    szpft$gpp               = array(data=NA_real_,dim=c(ntimes,ndbh+1,npft+1))
    szpft$npp               = array(data=NA_real_,dim=c(ntimes,ndbh+1,npft+1))
@@ -743,6 +751,9 @@ create.monthly <<- function(ntimes,montha,yeara,inpref,slz.min){
    qmean$leaf.gbw       = matrix(data=NA,nrow=ntimes,ncol=ndcycle)
    qmean$wood.gbw       = matrix(data=NA,nrow=ntimes,ncol=ndcycle)
    qmean$rk4step        = matrix(data=NA,nrow=ntimes,ncol=ndcycle)
+   qmean$soil.water     = array(data=NA,dim=c(ntimes,ndcycle,nzg))
+   qmean$soil.temp      = array(data=NA,dim=c(ntimes,ndcycle,nzg))
+   qmean$soil.mstpot    = array(data=NA,dim=c(ntimes,ndcycle,nzg))
    #---------------------------------------------------------------------------------------#
 
 
@@ -848,6 +859,8 @@ create.monthly <<- function(ntimes,montha,yeara,inpref,slz.min){
    patch$ba             = list()
    patch$nplant         = list()
    patch$wood.dens      = list()
+   patch$vm0            = list()
+   patch$llspan         = list()
    patch$sla            = list()
    patch$can.depth      = list()
    patch$can.area       = list()
@@ -890,8 +903,12 @@ create.monthly <<- function(ntimes,montha,yeara,inpref,slz.min){
    patch$struct.grnd.c  = list()
    patch$struct.soil.c  = list()
    patch$microbe.soil.c = list()
-   patch$passive.soil.c = list()
    patch$slow.soil.c    = list()
+   patch$passive.soil.c = list()
+   patch$fgc.in         = list()
+   patch$fsc.in         = list()
+   patch$stgc.in        = list()
+   patch$stsc.in        = list()
    patch$soil.temp      = list()
    patch$soil.water     = list()
    patch$soil.mstpot    = list()
@@ -978,6 +995,10 @@ create.monthly <<- function(ntimes,montha,yeara,inpref,slz.min){
    cohort$dbh            = list()
    cohort$age            = list()
    cohort$pft            = list()
+   cohort$wood.dens      = list()
+   cohort$vm0            = list()
+   cohort$llspan         = list()
+   cohort$sla            = list()
    cohort$nplant         = list()
    cohort$height         = list()
    cohort$ba             = list()
@@ -1123,14 +1144,20 @@ update.monthly <<- function(new.ntimes,old.datum,montha,yeara,inpref,slz.min){
    #          plotted in simple time series (with no PFT or DBH information).              #
    #---------------------------------------------------------------------------------------#
    new.datum$emean$wood.dens         [idx ] = old.datum$emean$wood.dens           [sel ]
+   new.datum$emean$vm0               [idx ] = old.datum$emean$vm0                 [sel ]
+   new.datum$emean$llspan            [idx ] = old.datum$emean$llspan              [sel ]
    new.datum$emean$sla               [idx ] = old.datum$emean$sla                 [sel ]
    new.datum$emean$fast.grnd.c       [idx ] = old.datum$emean$fast.grnd.c         [sel ]
    new.datum$emean$fast.soil.c       [idx ] = old.datum$emean$fast.soil.c         [sel ]
    new.datum$emean$struct.grnd.c     [idx ] = old.datum$emean$struct.grnd.c       [sel ]
    new.datum$emean$struct.soil.c     [idx ] = old.datum$emean$struct.soil.c       [sel ]
    new.datum$emean$microbe.soil.c    [idx ] = old.datum$emean$microbe.soil.c      [sel ]
-   new.datum$emean$passive.soil.c    [idx ] = old.datum$emean$passive.soil.c      [sel ]
    new.datum$emean$slow.soil.c       [idx ] = old.datum$emean$slow.soil.c         [sel ]
+   new.datum$emean$passive.soil.c    [idx ] = old.datum$emean$passive.soil.c      [sel ]
+   new.datum$emean$fgc.in            [idx ] = old.datum$emean$fgc.in              [sel ]
+   new.datum$emean$fsc.in            [idx ] = old.datum$emean$fsc.in              [sel ]
+   new.datum$emean$stgc.in           [idx ] = old.datum$emean$stgc.in             [sel ]
+   new.datum$emean$stsc.in           [idx ] = old.datum$emean$stsc.in             [sel ]
    new.datum$emean$crop.yield        [idx ] = old.datum$emean$crop.yield          [sel ]
    new.datum$emean$crop.harvest      [idx ] = old.datum$emean$crop.harvest        [sel ]
    new.datum$emean$logging.harvest   [idx ] = old.datum$emean$logging.harvest     [sel ]
@@ -1454,6 +1481,8 @@ update.monthly <<- function(new.ntimes,old.datum,montha,yeara,inpref,slz.min){
    new.datum$szpft$npp            [idx,,] = old.datum$szpft$npp             [sel,,]
    new.datum$szpft$dcbadt         [idx,,] = old.datum$szpft$dcbadt          [sel,,]
    new.datum$szpft$wood.dens      [idx,,] = old.datum$szpft$wood.dens       [sel,,]
+   new.datum$szpft$vm0            [idx,,] = old.datum$szpft$vm0             [sel,,]
+   new.datum$szpft$llspan         [idx,,] = old.datum$szpft$llspan          [sel,,]
    new.datum$szpft$sla            [idx,,] = old.datum$szpft$sla             [sel,,]
    new.datum$szpft$leaf.resp      [idx,,] = old.datum$szpft$leaf.resp       [sel,,]
    new.datum$szpft$root.resp      [idx,,] = old.datum$szpft$root.resp       [sel,,]
@@ -1695,9 +1724,12 @@ update.monthly <<- function(new.ntimes,old.datum,montha,yeara,inpref,slz.min){
    new.datum$qmean$albedo.nir    [idx,] = old.datum$qmean$albedo.nir     [sel,]
    new.datum$qmean$rlong.albedo  [idx,] = old.datum$qmean$rlong.albedo   [sel,]
    new.datum$qmean$leaf.gsw      [idx,] = old.datum$qmean$leaf.gsw       [sel,]
-   new.datum$qmean$leaf.gbw      [idx,] = old.datum$qmean$leaf.gbw       [sel,]
-   new.datum$qmean$wood.gbw      [idx,] = old.datum$qmean$wood.gbw       [sel,]
-   new.datum$qmean$rk4step       [idx,] = old.datum$qmean$rk4step        [sel,]
+   new.datum$qmean$leaf.gbw      [idx,] = old.datum$qmean$leaf.gbw       [,]
+   new.datum$qmean$wood.gbw      [idx,] = old.datum$qmean$wood.gbw       [,]
+   new.datum$qmean$rk4step       [idx,] = old.datum$qmean$rk4step        [,]
+   new.datum$qmean$soil.water   [idx,,] = old.datum$qmean$soil.water    [sel,,]
+   new.datum$qmean$soil.temp    [idx,,] = old.datum$qmean$soil.temp     [sel,,]
+   new.datum$qmean$soil.mstpot  [idx,,] = old.datum$qmean$soil.mstpot   [sel,,]
    #---------------------------------------------------------------------------------------#
 
 
@@ -1801,6 +1833,8 @@ update.monthly <<- function(new.ntimes,old.datum,montha,yeara,inpref,slz.min){
    new.datum$patch$ba             = old.datum$patch$ba
    new.datum$patch$nplant         = old.datum$patch$nplant
    new.datum$patch$wood.dens      = old.datum$patch$wood.dens
+   new.datum$patch$vm0            = old.datum$patch$vm0
+   new.datum$patch$llspan         = old.datum$patch$llspan
    new.datum$patch$sla            = old.datum$patch$sla
    new.datum$patch$can.depth      = old.datum$patch$can.depth
    new.datum$patch$can.area       = old.datum$patch$can.area
@@ -1843,8 +1877,12 @@ update.monthly <<- function(new.ntimes,old.datum,montha,yeara,inpref,slz.min){
    new.datum$patch$struct.grnd.c  = old.datum$patch$struct.grnd.c
    new.datum$patch$struct.soil.c  = old.datum$patch$struct.soil.c
    new.datum$patch$microbe.soil.c = old.datum$patch$microbe.soil.c
-   new.datum$patch$passive.soil.c = old.datum$patch$passive.soil.c
    new.datum$patch$slow.soil.c    = old.datum$patch$slow.soil.c
+   new.datum$patch$passive.soil.c = old.datum$patch$passive.soil.c
+   new.datum$patch$fgc.in         = old.datum$patch$fgc.in
+   new.datum$patch$fsc.in         = old.datum$patch$fsc.in
+   new.datum$patch$stgc.in        = old.datum$patch$stgc.in
+   new.datum$patch$stsc.in        = old.datum$patch$stsc.in
    new.datum$patch$soil.temp      = old.datum$patch$soil.temp
    new.datum$patch$soil.water     = old.datum$patch$soil.water
    new.datum$patch$soil.mstpot    = old.datum$patch$soil.mstpot
@@ -1929,6 +1967,10 @@ update.monthly <<- function(new.ntimes,old.datum,montha,yeara,inpref,slz.min){
    new.datum$cohort$dbh              = old.datum$cohort$dbh
    new.datum$cohort$age              = old.datum$cohort$age
    new.datum$cohort$pft              = old.datum$cohort$pft
+   new.datum$cohort$wood.dens        = old.datum$cohort$wood.dens
+   new.datum$cohort$vm0              = old.datum$cohort$vm0
+   new.datum$cohort$llspan           = old.datum$cohort$llspan
+   new.datum$cohort$sla              = old.datum$cohort$sla
    new.datum$cohort$nplant           = old.datum$cohort$nplant
    new.datum$cohort$height           = old.datum$cohort$height
    new.datum$cohort$ba               = old.datum$cohort$ba

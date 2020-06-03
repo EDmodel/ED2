@@ -576,6 +576,10 @@ do
       eftyeara=1999
       eftyearz=2003
       ;;
+   l[0-5][0-3])
+      eftyeara=2006
+      eftyearz=2016
+      ;;
    m34)
       eftyeara=1999
       eftyearz=2006
@@ -618,7 +622,7 @@ do
       ;;
    tb0|tbx)
       eftyeara=2014
-      eftyearz=2017
+      eftyearz=2018
       ;;
    hvd)
       eftyeara=1992
@@ -706,6 +710,10 @@ do
          Sheffield|WFDEI*|ERAINT*|MERRA2*|PGMF3*)
             thisyeara=${metcyca}
             thisyearz=${metcycz}
+            ;;
+         Tanguro_*)
+            thisyeara=2014
+            thisyearz=2018
             ;;
          *)
             thisyeara=${metcyca}

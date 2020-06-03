@@ -20,7 +20,6 @@ module photosyn_driv
                                 , vm0                     & ! intent(in)
                                 , D0                      & ! intent(in)
                                 , cuticular_cond          & ! intent(in)
-                                , leaf_turnover_rate      & ! intent(in)
                                 , stoma_psi_b             & ! intent(in)
                                 , stoma_psi_c             ! ! intent(in)
       use soil_coms      , only : soil                    & ! intent(in)
@@ -47,7 +46,6 @@ module photosyn_driv
                                 , istomata_scheme         & ! intent(in)
                                 , h2o_plant_lim           & ! intent(in)
                                 , gbh_2_gbw               ! ! intent(in)
-      use phenology_coms , only : llspan_inf              ! ! intent(in)
       use farq_leuning   , only : lphysiol_full           ! ! sub-routine
       use farq_katul     , only : katul_lphys             ! ! sub-routine
       use allometry      , only : h2crownbh               ! ! function
@@ -105,7 +103,6 @@ module photosyn_driv
       real                                    :: wilting_factor
       real                                    :: pss_available_water
       real                                    :: vm0_tuco
-      real                                    :: llspan_tuco
       real                                    :: lnexp
       integer, dimension(n_pft)               :: tuco_pft
       !----- External function. -----------------------------------------------------------!
@@ -291,11 +288,6 @@ module photosyn_driv
                   ! top canopy.                                                            !
                   !------------------------------------------------------------------------!
                   vm0_tuco    = Vm0(ipft)
-                  if (leaf_turnover_rate(ipft) == 0.) then
-                     llspan_tuco = llspan_inf
-                  else
-                     llspan_tuco = 12. / leaf_turnover_rate(ipft)
-                  end if
                   !------------------------------------------------------------------------!
                else
                   !------------------------------------------------------------------------!
@@ -304,7 +296,6 @@ module photosyn_driv
                   ! match.                                                                 !
                   !------------------------------------------------------------------------!
                   vm0_tuco    = cpatch%vm_bar(tpft)
-                  llspan_tuco = cpatch%llspan(tpft)
                   !------------------------------------------------------------------------!
                end if
                !---------------------------------------------------------------------------!
@@ -333,7 +324,6 @@ module photosyn_driv
                    , cpatch%lint_shv(tuco)    & ! Leaf intercellular spec. hum. [    kg/kg]
                    , green_leaf_factor(ipft)  & ! Cold-deciduous elong. factor  [      ---]
                    , leaf_aging_factor(ipft)  & ! Ageing parameter to scale VM  [      ---]
-                   , llspan_tuco              & ! Leaf life span                [       yr]
                    , vm0_tuco                 & ! Average Vm function           [umol/m2/s]
                    , cpatch%leaf_gbw(tuco)    & ! Leaf boundary-layer conduct.  [  kg/m2/s]
                    , D0(ipft)                 & ! VPD stomatal-closure scale    [  mol/mol]
@@ -371,7 +361,6 @@ module photosyn_driv
                    , cpatch%lint_shv(tuco)    & ! Leaf intercellular spec. hum. [    kg/kg]
                    , green_leaf_factor(ipft)  & ! Cold-deciduous elong. factor  [      ---]
                    , leaf_aging_factor(ipft)  & ! Ageing parameter to scale VM  [      ---]
-                   , llspan_tuco              & ! Leaf life span                [       yr]
                    , vm0_tuco                 & ! Average Vm function           [umol/m2/s]
                    , cpatch%leaf_gbw(tuco)    & ! Leaf boundary-layer conduct.  [  kg/m2/s]
                    , 0.                       & ! Leaf water potential          [        m]
@@ -499,7 +488,6 @@ module photosyn_driv
                 , cpatch%lint_shv(ico)        & ! Leaf intercellular spec. hum. [    kg/kg]
                 , green_leaf_factor(ipft)     & ! Relative greenness            [      ---]
                 , leaf_aging_factor(ipft)     & ! Ageing parameter to scale VM  [      ---]
-                , cpatch%llspan(ico)          & ! Leaf life span                [       yr]
                 , cpatch%vm_bar(ico)          & ! Average Vm function           [umol/m2/s]
                 , cpatch%leaf_gbw(ico)        & ! Aerodyn. condct. of H2O(v)    [  kg/m2/s]
                 , leaf_D0                     & ! VPD scale for stom. closure   [  mol/mol]
@@ -537,7 +525,6 @@ module photosyn_driv
                 , cpatch%lint_shv(ico)        & ! Leaf intercellular spec. hum. [    kg/kg]
                 , green_leaf_factor(ipft)     & ! Relative greenness            [      ---]
                 , leaf_aging_factor(ipft)     & ! Ageing parameter to scale VM  [      ---]
-                , cpatch%llspan(ico)          & ! Leaf life span                [       yr]
                 , cpatch%vm_bar(ico)          & ! Average Vm function           [umol/m2/s]
                 , cpatch%leaf_gbw(ico)        & ! Aerodyn. condct. of H2O(v)    [  kg/m2/s]
                 , cpatch%leaf_psi(ico)        & ! Leaf water potential          [        m]

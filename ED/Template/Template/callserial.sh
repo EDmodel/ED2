@@ -22,6 +22,9 @@ optsrc="myoptsrc"                # Option for .bashrc (for special submission se
 
 
 #----- Source script. ---------------------------------------------------------------------#
+case "x${HOME}" in
+   x) HOME=$(echo ~) ;;
+esac
 . ${HOME}/.bashrc ${optsrc}
 #------------------------------------------------------------------------------------------#
 

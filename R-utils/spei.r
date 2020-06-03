@@ -42,8 +42,11 @@ spei <<- function( x
        #-----------------------------------------------------------------------------------#
     }else{
        #----- Exclude invalid entries. ----------------------------------------------------#
-       xfine = x[is.finite(x)]
+       fine  = is.finite(x)
+       xfine = x[fine]
        nfine = length(xfine)
+       cdf   = NA_real_ * x
+       ans   = NA_real_ * x
        #-----------------------------------------------------------------------------------#
 
 
@@ -72,15 +75,18 @@ spei <<- function( x
                                 )#end fitdistr
                       , silent = TRUE
                       )#end try
-          if ("try-error" %in% is(fitnow)) browser()
-          ll.scale = exp(fitnow$estimate["ln.scale"])
-          ll.shape = exp(fitnow$estimate["ln.shape"])
-          ll.thres = fitnow$estimate["thres"]
-          #--------------------------------------------------------------------------------#
+          if (! ("try-error" %in% is(fitnow))){
+             #------ Find the statistics. -------------------------------------------------#
+             ll.scale = exp(fitnow$estimate["ln.scale"])
+             ll.shape = exp(fitnow$estimate["ln.shape"])
+             ll.thres = fitnow$estimate["thres"]
+             #-----------------------------------------------------------------------------#
 
 
-          #----- Find the cumulative distribution function values. ------------------------#
-          cdf = pllog3(q=x,thres=ll.thres,shape=ll.shape,scale=ll.scale)
+             #----- Find the cumulative distribution function values. ---------------------#
+             cdf[fine] = pllog3(q=xfine,thres=ll.thres,shape=ll.shape,scale=ll.scale)
+             #-----------------------------------------------------------------------------#
+          }#end if (! ("try-error" %in% is(fitnow)))
           #--------------------------------------------------------------------------------#
        }else if (distrib %in% "sn"){
           #----- Find first guess for parameters. -----------------------------------------#
@@ -100,15 +106,18 @@ spei <<- function( x
                                   )#end fitdistr
                       , silent = TRUE
                       )#end try
-          if ("try-error" %in% is(fitnow)) browser()
-          sn.xi    = fitnow$estimate["xi"   ]
-          sn.omega = fitnow$estimate["omega"]
-          sn.alpha = fitnow$estimate["alpha"]
-          #--------------------------------------------------------------------------------#
+          if (! ("try-error" %in% is(fitnow))){
+             #----- Retrieve the statistics. ----------------------------------------------#
+             sn.xi    = fitnow$estimate["xi"   ]
+             sn.omega = fitnow$estimate["omega"]
+             sn.alpha = fitnow$estimate["alpha"]
+             #-----------------------------------------------------------------------------#
 
 
-          #----- Find the cumulative distribution function values. ------------------------#
-          cdf = psn(x=x,xi=sn.xi,omega=sn.omega,alpha=sn.alpha)
+             #----- Find the cumulative distribution function values. ---------------------#
+             cdf[fine] = psn(x=xfine,xi=sn.xi,omega=sn.omega,alpha=sn.alpha)
+             #-----------------------------------------------------------------------------#
+          }#end if ("try-error" %in% is(fitnow))
           #--------------------------------------------------------------------------------#
        }#end if (distrib %in% "llog3")
        #-----------------------------------------------------------------------------------#
@@ -118,10 +127,10 @@ spei <<- function( x
        #-----------------------------------------------------------------------------------#
        #     Find the standardised values of p3cdf:                                        #
        #-----------------------------------------------------------------------------------#
-       P     = 1. - cdf
-       FS    = ifelse( test = P %<=% 0.5, yes = 1.0, no = -1.0)
-       PUSE  = 0.5 - sqrt((P - 0.5)^2)
-       W     = sqrt(-2. * log(PUSE))
+       # P     = 1. - cdf
+       # FS    = ifelse( test = P %<=% 0.5, yes = 1.0, no = -1.0)
+       # PUSE  = 0.5 - sqrt((P - 0.5)^2)
+       # W     = sqrt(-2. * log(PUSE))
        #-----------------------------------------------------------------------------------#
 
 
@@ -130,11 +139,19 @@ spei <<- function( x
        #-----------------------------------------------------------------------------------#
        #     Find the SPEI, following VS10:                                                #
        #-----------------------------------------------------------------------------------#
-       snom = vs10["C0"] + W * ( vs10["C1"] + W *   vs10["C2"] )
-       sden = vs10["d0"] + W * ( vs10["d1"] + W * ( vs10["d2"] + W * vs10["d3"] ) )
-       ans  = FS * ( W - snom / sden )
+       # snom = vs10["C0"] + W * ( vs10["C1"] + W *   vs10["C2"] )
+       #sden = vs10["d0"] + W * ( vs10["d1"] + W * ( vs10["d2"] + W * vs10["d3"] ) )
+       # ans  = FS * ( W - snom / sden )
        #-----------------------------------------------------------------------------------#
-    
+
+
+       #-----------------------------------------------------------------------------------#
+       #     To obtain the index, we convert the cumulative distribution function into     #
+       # the equivalent quantile of a normal distribution of mean zero and standard        #
+       # deviation one.                                                                    #
+       #-----------------------------------------------------------------------------------#
+       ans[fine] = qnorm(p=cdf[fine],mean=0,sd=1)
+       #-----------------------------------------------------------------------------------#
     }#end if
     #--------------------------------------------------------------------------------------#
 
@@ -143,6 +160,8 @@ spei <<- function( x
 }#end spei
 #==========================================================================================#
 #==========================================================================================#
+
+
 
 
 

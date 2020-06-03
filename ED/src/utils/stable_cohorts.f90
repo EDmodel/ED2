@@ -18,22 +18,23 @@ module stable_cohorts
    ! cohorts we will solve in photosynthesis, radiation, and the energy balance (RK4 or    !
    ! Euler).                                                                               !
    !---------------------------------------------------------------------------------------!
-   subroutine flag_stable_cohorts(cgrid)
+   subroutine flag_stable_cohorts(cgrid,is_initial)
       use ed_state_vars         , only : edtype          & ! structure
                                        , polygontype     & ! structure
                                        , sitetype        & ! structure
                                        , patchtype       ! ! structure
       implicit none
       !----- Arguments --------------------------------------------------------------------!
-      type(edtype)     , target   :: cgrid         ! Current grid
+      type(edtype)     , target     :: cgrid         ! Current grid
+      logical          , intent(in) :: is_initial    ! Flag: initial condition?
       !----- Local variables. -------------------------------------------------------------!
-      type(polygontype), pointer  :: cpoly         ! Current polygon
-      type(sitetype)   , pointer  :: csite         ! Current site
-      type(patchtype)  , pointer  :: cpatch        ! Current patch
-      integer                     :: ipy           ! Polygon index
-      integer                     :: isi           ! Site index
-      integer                     :: ipa           ! Patch index
-      integer                     :: ico           ! Cohort index
+      type(polygontype), pointer    :: cpoly         ! Current polygon
+      type(sitetype)   , pointer    :: csite         ! Current site
+      type(patchtype)  , pointer    :: cpatch        ! Current patch
+      integer                       :: ipy           ! Polygon index
+      integer                       :: isi           ! Site index
+      integer                       :: ipa           ! Patch index
+      integer                       :: ico           ! Cohort index
       !------------------------------------------------------------------------------------!
 
       polyloop: do ipy=1, cgrid%npolygons
@@ -48,7 +49,7 @@ module stable_cohorts
                cohortloop: do ico=1, cpatch%ncohorts
 
                   !----- Check whether we can resolve this cohort. ------------------------!
-                  call is_resolvable(csite,ipa,ico,.false.,.false.,'flag_stable_cohorts')
+                  call is_resolvable(csite,ipa,ico,is_initial,.false.,'flag_stable_cohorts')
                   !------------------------------------------------------------------------!
 
                end do cohortloop

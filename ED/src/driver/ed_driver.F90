@@ -284,13 +284,14 @@ subroutine ed_driver()
 
 
    !---------------------------------------------------------------------------------------!
-   !      Initialise some derived variables.  This must be done outside                    !
-   ! resume_from_history because it depends on some meteorological variables that were not !
-   ! initialised until the sub-routine ed_init_atm was called.                             !
+   !      Initialise some derived variables.  Skip this in case the simulation is resuming !
+   ! from HISTORY.                                                                         !
    !---------------------------------------------------------------------------------------!
-   do ifm=1,ngrids
-      call update_derived_props(edgrid_g(ifm))
-   end do
+   if (trim(runtype) /= 'HISTORY' ) then
+      do ifm=1,ngrids
+         call update_derived_props(edgrid_g(ifm))
+      end do
+   end if
    !---------------------------------------------------------------------------------------!
 
 

@@ -275,6 +275,14 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
          mymont$MMEAN.STRUCT.SOIL.L.PA  = (1. - agf.struct) * mymont$MMEAN.STRUCT.SOIL.L.PA
          mymont$MMEAN.MICROBE.SOIL.C.PA = 0. * mymont$MMEAN.FAST.SOIL.C.PA 
          mymont$MMEAN.PASSIVE.SOIL.C.PA = 0. * mymont$MMEAN.FAST.SOIL.C.PA 
+         #---------------------------------------------------------------------------------#
+
+         #----- Create dummy soil carbon inputs. ------------------------------------------#
+         mymont$MMEAN.FGC.IN.PA         = 0. * mymont$MMEAN.FAST.SOIL.C.PA
+         mymont$MMEAN.FSC.IN.PA         = 0. * mymont$MMEAN.FAST.SOIL.C.PA
+         mymont$MMEAN.STGC.IN.PA        = 0. * mymont$MMEAN.FAST.SOIL.C.PA
+         mymont$MMEAN.STSC.IN.PA        = 0. * mymont$MMEAN.FAST.SOIL.C.PA
+         #---------------------------------------------------------------------------------#
       }#end if (! "MMEAN.FAST.SOIL.C.PA" %in% names(mymont))
       #------------------------------------------------------------------------------------#
       #    Ground pools and microbial soil were added at the same time the above- and      #
@@ -293,6 +301,13 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
          mymont$MMEAN.STRUCT.SOIL.L.PY  = (1. - agf.struct) * mymont$MMEAN.STRUCT.SOIL.L.PY
          mymont$MMEAN.MICROBE.SOIL.C.PY = 0. * mymont$MMEAN.FAST.SOIL.C.PY 
          mymont$MMEAN.PASSIVE.SOIL.C.PY = 0. * mymont$MMEAN.FAST.SOIL.C.PY 
+
+         #----- Create dummy soil carbon inputs. ------------------------------------------#
+         mymont$MMEAN.FGC.IN.PY         = 0. * mymont$MMEAN.FAST.SOIL.C.PY
+         mymont$MMEAN.FSC.IN.PY         = 0. * mymont$MMEAN.FAST.SOIL.C.PY
+         mymont$MMEAN.STGC.IN.PY        = 0. * mymont$MMEAN.FAST.SOIL.C.PY
+         mymont$MMEAN.STSC.IN.PY        = 0. * mymont$MMEAN.FAST.SOIL.C.PY
+         #---------------------------------------------------------------------------------#
       }#end if (! "COMBUSTED.FUEL.PY" %in% names(mymont))
       #------------------------------------------------------------------------------------#
       #    Populate SLA with PFT default in case SLA is not in the output.                 #
@@ -301,6 +316,11 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
          mymont$SLA    = pft$SLA[mymont$PFT]
          mymont$LLSPAN = 12. / pft$leaf.turnover.rate[mymont$PFT]
          mymont$VM.BAR = pft$vm0[mymont$PFT]
+      }#end if (! "SLA" %in% names(mymont))
+      if (! "MMEAN.SLA.CO" %in% names(mymont)){
+         mymont$MMEAN.SLA.CO    = pft$SLA[mymont$PFT]
+         mymont$MMEAN.LLSPAN.CO = 12. / pft$leaf.turnover.rate[mymont$PFT]
+         mymont$MMEAN.VM.BAR.CO = pft$vm0[mymont$PFT]
       }#end if (! "SLA" %in% names(mymont))
       #------------------------------------------------------------------------------------#
 
@@ -343,8 +363,12 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
       emean$struct.grnd.c   [m] =   mymont$MMEAN.STRUCT.GRND.C.PY
       emean$struct.soil.c   [m] =   mymont$MMEAN.STRUCT.SOIL.C.PY
       emean$microbe.soil.c  [m] =   mymont$MMEAN.MICROBE.SOIL.C.PY
-      emean$passive.soil.c  [m] =   mymont$MMEAN.PASSIVE.SOIL.C.PY
       emean$slow.soil.c     [m] =   mymont$MMEAN.SLOW.SOIL.C.PY
+      emean$passive.soil.c  [m] =   mymont$MMEAN.PASSIVE.SOIL.C.PY
+      emean$fgc.in          [m] =   mymont$MMEAN.FGC.IN.PY
+      emean$fsc.in          [m] =   mymont$MMEAN.FSC.IN.PY
+      emean$stgc.in         [m] =   mymont$MMEAN.STGC.IN.PY
+      emean$stsc.in         [m] =   mymont$MMEAN.STSC.IN.PY
       emean$crop.yield      [m] =   mymont$CROP.YIELD.PY[thismonth]
       emean$crop.harvest    [m] =   mymont$CROP.HARVEST.PY
       emean$logging.harvest [m] =   mymont$LOGGING.HARVEST.PY
@@ -640,6 +664,9 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
       qmean$leaf.gsw     [m,] =   mymont$QMEAN.LEAF.GSW.PY       * day.sec
       qmean$wood.gbw     [m,] =   mymont$QMEAN.WOOD.GBW.PY       * day.sec
       qmean$rk4step      [m,] =   mymont$QMEAN.RK4STEP.PY
+      qmean$soil.water  [m,,] =   mymont$QMEAN.SOIL.WATER.PY
+      qmean$soil.temp   [m,,] =   mymont$QMEAN.SOIL.TEMP.PY      - t00
+      qmean$soil.mstpot [m,,] = - mymont$QMEAN.SOIL.MSTPOT.PY    * grav * wdnsi
       #------------------------------------------------------------------------------------#
 
 
@@ -815,7 +842,13 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
          heightconow       = mymont$HITE
          thbarkconow       = mymont$MMEAN.THBARK.CO
          wood.densconow    = pft$rho[pftconow]
-         slaconow          = mymont$SLA
+         slaconow          = mymont$MMEAN.SLA.CO
+         vm0conow          = mymont$MMEAN.VM.BAR.CO
+         llspanconow       = mymont$MMEAN.LLSPAN.CO
+         ltorconow         = ifelse( test = llspanconow > 0
+                                   , yes  = 1./llspanconow
+                                   , no   = NA_real_
+                                   )#end ifelse
          agf.bsconow       = pft$agf.bs[pftconow]
          baconow           = mymont$BA.CO
          agbconow          = mymont$AGB.CO
@@ -1487,6 +1520,8 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
          nplantconow         = NA
          heightconow         = NA
          wood.densconow      = NA
+         vm0conow            = NA
+         llspanconow         = NA
          slaconow            = NA
          baconow             = NA
          agbconow            = NA
@@ -1695,6 +1730,8 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
       patch$ba            [[plab]] = rep(0.      ,times=mymont$NPATCHES.GLOBAL)
       patch$nplant        [[plab]] = rep(0.      ,times=mymont$NPATCHES.GLOBAL)
       patch$wood.dens     [[plab]] = rep(NA_real_,times=mymont$NPATCHES.GLOBAL)
+      patch$vm0           [[plab]] = rep(NA_real_,times=mymont$NPATCHES.GLOBAL)
+      patch$llspan        [[plab]] = rep(NA_real_,times=mymont$NPATCHES.GLOBAL)
       patch$sla           [[plab]] = rep(NA_real_,times=mymont$NPATCHES.GLOBAL)
       patch$can.depth     [[plab]] = rep(0.      ,times=mymont$NPATCHES.GLOBAL)
       patch$can.area      [[plab]] = rep(0.      ,times=mymont$NPATCHES.GLOBAL)
@@ -1736,8 +1773,12 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
       patch$struct.grnd.c [[plab]] = mymont$MMEAN.STRUCT.GRND.C.PA
       patch$struct.soil.c [[plab]] = mymont$MMEAN.STRUCT.SOIL.C.PA
       patch$microbe.soil.c[[plab]] = mymont$MMEAN.MICROBE.SOIL.C.PA
-      patch$passive.soil.c[[plab]] = mymont$MMEAN.PASSIVE.SOIL.C.PA
       patch$slow.soil.c   [[plab]] = mymont$MMEAN.SLOW.SOIL.C.PA
+      patch$passive.soil.c[[plab]] = mymont$MMEAN.PASSIVE.SOIL.C.PA
+      patch$fgc.in        [[plab]] = mymont$MMEAN.FGC.IN.PA
+      patch$fsc.in        [[plab]] = mymont$MMEAN.FSC.IN.PA
+      patch$stgc.in       [[plab]] = mymont$MMEAN.STGC.IN.PA
+      patch$stsc.in       [[plab]] = mymont$MMEAN.STSC.IN.PA
       patch$soil.temp     [[plab]] = mymont$MMEAN.SOIL.TEMP.PA - t00
       patch$soil.water    [[plab]] = mymont$MMEAN.SOIL.WATER.PA
       patch$soil.mstpot   [[plab]] = - mymont$MMEAN.SOIL.MSTPOT.PA * grav * wdnsi
@@ -1940,16 +1981,24 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
 
 
          #---------------------------------------------------------------------------------#
-         #      SLA is found using weighted averages of LMA (leaf area indices are the     #
-         # weights).                                                                       #
+         #      SLA is found using leaf biomass as weighting factor (so leaf biomass and   #
+         # leaf area index are consistent.  To obtain the average leaf life span, we       #
+         # average leaf turnover rate so maintenance costs are preserved.                  #
          #---------------------------------------------------------------------------------#
-         sla.pa = mapply( FUN      = weighted.mean
-                        , x        = split(1./slaconow,ipaconow)
-                        , w        = split(laiconow   ,ipaconow)
-                        , na.rm    = TRUE
-                        , SIMPLIFY = TRUE
-                        )#end mapply
-         sla.pa = ifelse(test=leaf.empty,yes=NA_real_,no=1./sla.pa)
+         sla.pa    = mapply( FUN      = weighted.mean
+                           , x        = split(slaconow              ,ipaconow)
+                           , w        = split(nplantconow*bleafconow,ipaconow)
+                           , na.rm    = TRUE
+                           , SIMPLIFY = TRUE
+                           )#end mapply
+         ltor.pa   = mapply( FUN      = weighted.mean
+                           , x        = split(ltorconow             ,ipaconow)
+                           , w        = split(nplantconow*bleafconow,ipaconow)
+                           , na.rm    = TRUE
+                           , SIMPLIFY = TRUE
+                           )#end mapply
+         sla.pa    = ifelse( test = leaf.empty, yes = NA_real_, no = sla.pa    )
+         llspan.pa = ifelse( test = leaf.empty, yes = NA_real_, no = 1./ltor.pa)
          #---------------------------------------------------------------------------------#
 
 
@@ -2015,6 +2064,12 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
                                   )#end mapply
          assim.co2.pa     = mapply( FUN      = weighted.mean
                                   , x        = split(assim.co2conow         ,ipaconow)
+                                  , w        = split(laiconow               ,ipaconow)
+                                  , na.rm    = TRUE
+                                  , SIMPLIFY = TRUE
+                                  )#end mapply
+         vm0.pa           = mapply( FUN      = weighted.mean
+                                  , x        = split(vm0conow               ,ipaconow)
                                   , w        = split(laiconow               ,ipaconow)
                                   , na.rm    = TRUE
                                   , SIMPLIFY = TRUE
@@ -2096,11 +2151,13 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
          patch$nplant       [[plab]][idx     ] = nplant.pa
          patch$can.depth    [[plab]][idx     ] = can.depth.pa
          patch$can.area     [[plab]][idx     ] = can.area.pa
-         patch$veg.height   [[plab]][idx     ] = veg.height.pa  
+         patch$veg.height   [[plab]][idx     ] = veg.height.pa
          patch$veg.displace [[plab]][idx     ] = veg.displace.pa
-         patch$veg.rough    [[plab]][idx     ] = veg.rough.pa   
-         patch$can.rough    [[plab]][idx     ] = can.rough.pa   
+         patch$veg.rough    [[plab]][idx     ] = veg.rough.pa
+         patch$can.rough    [[plab]][idx     ] = can.rough.pa
          patch$wood.dens    [[plab]][idx     ] = wood.dens.pa
+         patch$vm0          [[plab]][idx     ] = vm0.pa
+         patch$llspan       [[plab]][idx     ] = llspan.pa
          patch$sla          [[plab]][idx     ] = sla.pa
          patch$par.leaf     [[plab]][idx     ] = par.leaf.pa
          patch$par.leaf.beam[[plab]][idx     ] = par.leaf.beam.pa
@@ -2472,6 +2529,7 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
       w.wai     = waiconow     * areaconow
       w.tai     = taiconow     * areaconow
       w.biomass = biomassconow * w.nplant
+      w.bleaf   = bleafconow   * w.nplant
       w.balive  = baliveconow  * w.nplant
       w.basarea = baconow      * w.nplant
       #------------------------------------------------------------------------------------#
@@ -2844,6 +2902,10 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
                                                          , w     = w.lai             [sel]
                                                          , na.rm = TRUE
                                                          )#end weighted.mean
+               szpft$vm0          [m,d,p] = weighted.mean( x     = vm0conow          [sel]
+                                                         , w     = w.lai             [sel]
+                                                         , na.rm = TRUE
+                                                         )#end weighted.mean
                szpft$wood.gbw     [m,d,p] = weighted.mean( x     = wood.gbwconow     [sel]
                                                          , w     = w.wai             [sel]
                                                          , na.rm = TRUE
@@ -2899,13 +2961,25 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
                #---------------------------------------------------------------------------#
 
 
-               #----- SLA: averaged LMA by leaf area index. -------------------------------#
-               szpft$sla          [m,d,p] = weighted.mean( x     = 1./slaconow     [sel]
-                                                         , w     = w.lai           [sel]
+               #---------------------------------------------------------------------------#
+               #    SLA: use leaf biomass as weight so bleaf, SLA, and LAI are consistent. #
+               #---------------------------------------------------------------------------#
+               szpft$sla          [m,d,p] = weighted.mean( x     = slaconow        [sel]
+                                                         , w     = w.bleaf         [sel]
                                                          , na.rm = TRUE
                                                          )#end weighted.mean
-               szpft$sla          [m,d,p] = ifelse( test = szpft$sla[m,d,p] %>% 0
-                                                  , yes  = 1. / szpft$sla[m,d,p]
+               #---------------------------------------------------------------------------#
+
+
+               #---------------------------------------------------------------------------#
+               #    Leaf life span: use leaf turnover rate as . #
+               #---------------------------------------------------------------------------#
+               szpft$llspan       [m,d,p] = weighted.mean( x     = ltorconow        [sel]
+                                                         , w     = w.bleaf          [sel]
+                                                         , na.rm = TRUE
+                                                         )#end weighted.mean
+               szpft$llspan       [m,d,p] = ifelse( test = szpft$llspan[m,d,p] %>% 0
+                                                  , yes  = 1./szpft$llspan[m,d,p]
                                                   , no   = NA_real_
                                                   )#end ifelse
                #---------------------------------------------------------------------------#
@@ -3279,6 +3353,8 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
       emean$acc.dimort      [m] = szpft$acc.dimort     [m,ndbh+1,npft+1]
       emean$acc.recr        [m] = szpft$acc.recr       [m,ndbh+1,npft+1]
       emean$wood.dens       [m] = szpft$wood.dens      [m,ndbh+1,npft+1]
+      emean$vm0             [m] = szpft$vm0            [m,ndbh+1,npft+1]
+      emean$llspan          [m] = szpft$llspan         [m,ndbh+1,npft+1]
       emean$sla             [m] = szpft$sla            [m,ndbh+1,npft+1]
       emean$phap.lpar       [m] = szpft$phap.lpar      [m,ndbh+1,npft+1]
       emean$phap.ltemp      [m] = szpft$phap.ltemp     [m,ndbh+1,npft+1]
@@ -3570,6 +3646,10 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
          cohort$dbh          [[clab]] = dbhconow
          cohort$age          [[clab]] = ageconow
          cohort$pft          [[clab]] = pftconow
+         cohort$wood.dens    [[clab]] = wood.densconow
+         cohort$vm0          [[clab]] = vm0conow
+         cohort$llspan       [[clab]] = llspanconow
+         cohort$sla          [[clab]] = slaconow
          cohort$nplant       [[clab]] = nplantconow * areaconow
          cohort$height       [[clab]] = heightconow
          cohort$ba           [[clab]] = nplantconow * baconow * areaconow

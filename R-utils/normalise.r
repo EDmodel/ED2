@@ -9,11 +9,34 @@
 #     This function normalises a vector.  Results are just the normalised values, mean and #
 # standard deviation are in attributes.                                                    #
 #------------------------------------------------------------------------------------------#
-normalise <<- function(x,mu,sigma){
+normalise <<- function(x,mu,sigma,distr=c("best","normal","lognormal","skewnormal")){
+
+   #----- Standardise distribution. -------------------------------------------------------#
+   distr       = match.arg(distr)
+   #---------------------------------------------------------------------------------------#
+
+
+   #----- Exclude missing points. ---------------------------------------------------------#
    xfit        = x[is.finite(x)]
    nxfit       = length(xfit)
    lntry       = all(xfit %>% 0)
-   force.gauss = (! missing(mu)) && (! missing(sigma))
+   #---------------------------------------------------------------------------------------#
+
+   #---------------------------------------------------------------------------------------#
+   #     Issue an error message in case distr should be lognormal but there are negative   #
+   # numbers.                                                                              #
+   #---------------------------------------------------------------------------------------#
+   if ( (distr %in% "lognormal") && (! lntry) ){
+      stop("Log-normal distribution was requested, but data have non-positive numbers.")
+   }#end if ( (distr %in% "lognormal") && (! lntry) )
+   #---------------------------------------------------------------------------------------#
+
+
+   #----- Use Gaussian distribution in case mu and sigma are provided. --------------------#
+   force.gauss = ( distr %in% "normal"    ) || ( (! missing(mu)) && (! missing(sigma)) )
+   force.skewn = ( distr %in% "skewnormal")
+   force.lnorm = ( distr %in% "lognormal" )
+   #---------------------------------------------------------------------------------------#
 
 
    if (nxfit == 0){
@@ -22,8 +45,14 @@ normalise <<- function(x,mu,sigma){
       use.norm = FALSE
       #------------------------------------------------------------------------------------#
    }else if (force.gauss){
-      #------ Finormal distribution. ----------------------------------------------------#
-      lnlike    = -0.5*nxfit*(log(2*pi) + log(sigma^2)) - 0.5*sum((x-mu)^2)/sigma^2
+      #------ Make sure that both mu and sigma are defined. -------------------------------#
+      if (missing(mu   )) mu    = mean(xfit)
+      if (missing(sigma)) sigma = sd  (xfit)
+      #------------------------------------------------------------------------------------#
+
+
+      #------ Fit normal distribution. ----------------------------------------------------#
+      lnlike    = -0.5*nxfit*(log(2*pi) + log(sigma^2)) - 0.5*sum((xfit-mu)^2)/sigma^2
       normfit   = list( estimate = c(mean=mu,sd=sigma)
                       , loglik   = lnlike
                       , bic      = log(nxfit)*2 - 2. * lnlike
@@ -63,7 +92,7 @@ normalise <<- function(x,mu,sigma){
       if ("try-error" %in% is(snfit)){
          #----- Fitting failed, copy normfit, but set likelihood to infinity to skip it. --#
          snfit     = normfit
-         snfit$bic = +Inf
+         if (! force.skewn) snfit$bic = +Inf
          #---------------------------------------------------------------------------------#
       }else{
          #---------------------------------------------------------------------------------#
@@ -92,8 +121,8 @@ normalise <<- function(x,mu,sigma){
 
 
       #------ Choose the best distribution to normalise the data. -------------------------#
-      use.sn   = (snfit$bic < normfit$bic) & (snfit$bic < lnormfit$bic)
-      use.norm = (! use.sn) & (normfit$bic < lnormfit$bic)
+      use.sn   = force.skewn || ( (snfit$bic < normfit$bic) && (snfit$bic < lnormfit$bic) )
+      use.norm = (! force.lnorm) && (! use.sn) && (normfit$bic < lnormfit$bic)
       #------------------------------------------------------------------------------------#
 
 
@@ -113,9 +142,15 @@ normalise <<- function(x,mu,sigma){
       #------------------------------------------------------------------------------------#
    }else if (use.sn){
       #------ Skew-normal distribution. ---------------------------------------------------#
-      xi                 = snfit$estimate["xi"   ]
-      omega              = snfit$estimate["omega"]
-      alpha              = snfit$estimate["alpha"]
+      if ("xi" %in% names(snfit$estimate)){
+         xi              = snfit$estimate["xi"   ]
+         omega           = snfit$estimate["omega"]
+         alpha           = snfit$estimate["alpha"]
+      }else{
+         xi              = snfit$estimate["mean" ]
+         omega           = snfit$estimate["sd"   ]
+         alpha           = 0.
+      }#end if ("xi" %in names(snfit$estimate))
       normal             = skew2normal(x=x,location=xi,scale=omega,shape=alpha)
       normal             = ifelse(test=is.finite(normal),yes=normal,no=NA_real_)
       attributes(normal) = list( location = xi
