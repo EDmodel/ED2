@@ -1255,6 +1255,28 @@ $ED_NL
    NL%DDMORT_CONST    = 0.8
    !---------------------------------------------------------------------------------------!
 
+   !---------------------------------------------------------------------------------------!
+   !  CARBON_MORTALITY_SCHEME - Different methods to calculate negative carbon balance     !
+   !                            mortality.                                                 !
+   !                            0. (ED-2.2 default) ED-1 original formulation              !
+   !                               (Moorcroft et al. 2001)                                 !
+   !                            1. (ED-2.2 Alternative)                                    !
+   !                               trait-dependent exponential model by Camac et al. 2018  !
+   !                               but uses CB instead of growth                           !
+   !                            2. (ED-2.2 Alternative)                                    !
+   !                               trait-dependent exponential model by Camac et al. 2018  !
+   !                               and use actual growth rates                             !
+   !---------------------------------------------------------------------------------------!
+   NL%CARBON_MORTALITY_SCHEME = 0
+
+   !---------------------------------------------------------------------------------------!
+   !  HYDRAULIC_MORTALITY_SCHEME - Different methods to calculate hydraulic failure        !
+   !                               mortality.                                              !
+   !                            0. (ED-2.2 default) No hydraulic failure mortality         !
+   !                            1. (Beta) hydraulic failure mortality based on monthly     !
+   !                               mean xylem percentage loss of conductance (PLC)         !
+   !---------------------------------------------------------------------------------------!
+   NL%HYDRAULIC_MORTALITY_SCHEME
 
    !---------------------------------------------------------------------------------------!
    !  These variables will be eventually removed from ED2IN, use the XML initialisation    !
