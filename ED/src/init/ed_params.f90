@@ -5445,7 +5445,6 @@ subroutine init_pft_hydro_params()
                              , photosyn_pathway     & ! intent(in)
                              , SLA                  & ! intent(in)
                              , rho                  & ! intent(in)
-                             , Vm0                  & ! intent(in)
                              , C2B                  & ! intent(in)
                              , vessel_curl_factor   & ! intent(out)
                              , leaf_water_cap       & ! intent(out)
@@ -5475,9 +5474,9 @@ subroutine init_pft_hydro_params()
    !------ Local variables. ---------------------------------------------------------------!
    integer                   :: ipft
    real   , dimension(n_pft) :: rwc_tlp_wood ! RWC at turgor loss point for sapwood
-   real   , dimension(n_pft) :: leaf_density ! density of leaf tissue [kg/m3]
+   !real   , dimension(n_pft) :: leaf_density ! density of leaf tissue [kg/m3]
    real   , dimension(n_pft) :: LMA          ! leaf mass per area     [ g/m2]
-   real   , dimension(n_pft) :: Amax_25      ! estimated max. photosynthetic rates at 25C
+   !real   , dimension(n_pft) :: Amax_25      ! estimated max. photosynthetic rates at 25C
    real   , dimension(n_pft) :: rho_bnd      ! Bounded wood density, to avoid FPE.
    logical, dimension(n_pft) :: is_troptree  ! Flag to select only tropical trees.
    !------ Local parameters. --------------------------------------------------------------!
@@ -5627,7 +5626,7 @@ subroutine init_pft_hydro_params()
 
    ! Now we use data from Powers and Tiffin 2009 to calculate leaf_water_sat from wood density
    ! This will generate much reasonable values for leaf_water_sat
-   leaf_water_sat(ipft) = 2.57 * exp(-0.94 * rho(ipft)) ! R2 = 0.24
+   leaf_water_sat(:) = 2.57 * exp(-0.94 * rho_bnd(:)) ! R2 = 0.24
    !---------------------------------------------------------------------------------------!
 
 
@@ -5694,7 +5693,7 @@ subroutine init_pft_hydro_params()
 
 
    !----- Wood P50 [m]. -------------------------------------------------------------------!
-   wood_psi50(:) = (-1.09 - (3.57 * rho_bnd(:) ** 1.73) * MPa2m 
+   wood_psi50(:) = (-1.09 - (3.57 * rho_bnd(:) ** 1.73)) * MPa2m 
    !---------------------------------------------------------------------------------------!
 
 
@@ -5704,7 +5703,7 @@ subroutine init_pft_hydro_params()
    ! This is only an estimate. 2.4 is Q10, converting to Vcmax_25. The 4.1 factor is a     !
    ! conversion factor from Vcmax to Amax at ~25degC.                                      !
    !---------------------------------------------------------------------------------------!
-   Amax_25(:) = Vm0(:) * 2.4 / 4.1 ! umol/m2/s
+   !Amax_25(:) = Vm0(:) * 2.4 / 4.1 ! umol/m2/s
    !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
@@ -5713,7 +5712,9 @@ subroutine init_pft_hydro_params()
    !---------------------------------------------------------------------------------------!
    !wood_Kmax(:)  = exp(2.11 - 20.05 * rho_bnd(:) / Amax_25(:)) / MPa2m 
    ! TODO: remove above after test
-   wood_Kmax = exp(2.32 - 2.27 * rho(ipft) - 0.48 * log(-wood_psi50(ipft) / MPa2m) + 0.5 * 0.89) / MPa2m
+   wood_Kmax(:) = exp( 2.32 - 2.27 * rho_bnd(:)                                            &
+                     - 0.48 * log(-wood_psi50(:) / MPa2m)                                  &
+                     + 0.5 * 0.89) / MPa2m
    ! from analysis of the Gleason et al. and Xu et al. data.
    ! Again this makes more sense....
 
