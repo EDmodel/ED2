@@ -79,9 +79,9 @@ module plant_hydro
       real                                :: sap_frac    !< sapwood fraction       [    ---]
       real                                :: sap_area    !< sapwood area           [     m2]
       real                                :: bsap        !< sapwood biomass        [    kgC]
-      real                                :: crown_area  !< crown area             [     m2]
       real                                :: transp      !< transpiration rate     [   kg/s]
       real                                :: c_leaf      !< leaf capacitance       [   kg/m]
+      logical                             :: track_hydraulics !< whether track hydraulics
       !----- Variables for debugging purposes ---------------------------------------------!
       integer, parameter                  :: dco        = 0 ! the cohort to debug
       logical, dimension(3)               :: error_flag
@@ -176,13 +176,23 @@ module plant_hydro
             ipft = cpatch%pft(ico)
 
             !------------------------------------------------------------------------------!
-            !     Track the plant hydraulics whenever leaf or wood are resolvable.  We     !
-            ! ought to calculate hydraulic properties for cohort even when leaf is not     !
-            ! resolvable.  When plants shed all the leaves during the dry season,          !
-            ! leaf_hcap becomes 0 and the cohort becomes non-resolvable.  But if we do not !
-            ! track water potential in this case, we can never allow soil water to refill  !
-            ! wood.                                                                        !
+            !     Track the plant hydraulics when either leaf or wood are resolvable. Leaf !
+            ! become un-resolvable in dry season when all leaves are shed. In this scena-  !
+            ! rio, we still nedd to track plant hydraulics to update wood_psi so that the  !
+            ! model knows when to reflush the leaves. Otherwise, soil water will never re- !
+            ! fill wood water pool.                                                        !
+            !     Special case: leaf is not resolvable when bleaf is on allometry while    !
+            ! wood can be still resolvable. Transpiration is always zero, whereas soil     !
+            ! water can still flow into the stem. This will ultimately leads to unreal-    !
+            ! istically high wood_psi and even positive psi due to numerical erros. There- !
+            ! fore, we do not track plant hydraulics in this case.                         !
             !------------------------------------------------------------------------------!
+
+            track_hydraulics = cpatch%leaf_resolvable(ico) .or.                            &
+                              (cpatch%wood_resolvable(ico) .and.                           & 
+                               .not. (cpatch%elongf(ico) == 1 .and.                        &
+                                      cpatch%leaf_resolvable(ico) == .false.))
+
 
             if (cpatch%leaf_resolvable(ico) .or. cpatch%wood_resolvable(ico)) then
                !----- Prepare input for plant water flux calculations. --------------------!
@@ -190,7 +200,6 @@ module plant_hydro
                sap_area    = sap_frac * pio4 * (cpatch%dbh(ico) / 100.) ** 2 ! m2
                bsap        = ( cpatch%bdeada   (ico) + cpatch%bdeadb   (ico)               &
                              + cpatch%bsapwooda(ico) + cpatch%bsapwoodb(ico) ) * sap_frac
-               crown_area  = cpatch%crown_area(ico) / cpatch%nplant(ico)     ! m2
                transp      = ( cpatch%fs_open(ico) * cpatch%psi_open(ico)                  &
                              + (1. - cpatch%fs_open(ico)) * cpatch%psi_closed(ico) )       &
                            * cpatch%lai(ico) / cpatch%nplant(ico)            ! kg / s
@@ -272,7 +281,6 @@ module plant_hydro
 
                   write (unit=*,fmt=efmt   ) ' + BROOT            =',cpatch%broot(ico)
                   write (unit=*,fmt=efmt   ) ' + SAPWOOD_AREA     =',sap_area
-                  write (unit=*,fmt=efmt   ) ' + CROWN_AERA       =',crown_area
   
                   write (unit=*,fmt='(a)'  ) ' '
                   write (unit=*,fmt=efmt   ) ' + TRANSP           =',transp
@@ -329,10 +337,10 @@ module plant_hydro
                !---------------------------------------------------------------------------!
                call calc_plant_water_flux(                            &
                         dtlsm                                         &!input
-                       ,sap_area,crown_area                           &!input
+                       ,sap_area,cpatch%nplant(ico),ipft              &!input
                        ,cpatch%is_small(ico),cpatch%krdepth(ico)      &!input
                        ,cpatch%bleaf(ico),bsap,cpatch%broot(ico)      &!input
-                       ,cpatch%hite(ico),ipft,transp                  &!input
+                       ,cpatch%hite(ico),transp                       &!input
                        ,cpatch%leaf_psi(ico),cpatch%wood_psi(ico)     &!input
                        ,soil_psi,soil_cond,ipa,ico                    &!input
                        ,cpatch%wflux_wl(ico),cpatch%wflux_gw(ico)     &!output
@@ -355,11 +363,6 @@ module plant_hydro
 
       !------------------------------------------------------------------------------------!
       !     Update the most frequent timescale averages.                                   !
-      !                                                                                    !
-      ! MLO -> XX.  I removed the fluxes from here because during the RK4 integration the  !
-      !             water content may go slightly off.  When this happens, we correct the  !
-      !             storage and exchange water in adjust_veg_properties,  and correct      !
-      !             fluxes accordingly.                                                    !
       !------------------------------------------------------------------------------------!
       do ico = 1, cpatch%ncohorts
          cpatch%fmean_leaf_psi      (ico) = cpatch%fmean_leaf_psi      (ico)               &
@@ -442,11 +445,11 @@ module plant_hydro
    !> \author Xiangtao Xu, 29 Jan. 2018
    !---------------------------------------------------------------------------------------!
    subroutine calc_plant_water_flux(dt                                  & !timestep
-               ,sap_area,crown_area,is_small,krdepth                    & !plant input
-               ,bleaf,bsap,broot,hite,ipft                              & !plant input
+               ,sap_area,nplant,ipft,is_small,krdepth                   & !plant input
+               ,bleaf,bsap,broot,hite                                   & !plant input
                ,transp,leaf_psi,wood_psi                                & !plant input
                ,soil_psi,soil_cond                                      & !soil  input
-               ,ipa,ico                                                 & !for debugging
+               ,ipa,ico                                                 & !debug input
                ,wflux_wl,wflux_gw,wflux_gw_layer)                       ! !flux  output
       use soil_coms       , only : slz8                 & ! intent(in)
                                  , dslz8                ! ! intent(in)
@@ -471,14 +474,14 @@ module plant_hydro
       !----- Arguments --------------------------------------------------------------------!
       real   ,                 intent(in)  :: dt             !time step           [      s]
       real   ,                 intent(in)  :: sap_area       !sapwood_area        [     m2]
-      real   ,                 intent(in)  :: crown_area     !crown_area          [  m2/pl]
+      real   ,                 intent(in)  :: nplant         !plant density       [  pl/m2]
+      integer,                 intent(in)  :: ipft           !plant funct. type   [    ---]
       integer,                 intent(in)  :: krdepth        !Max. rooting depth  [    ---]
       logical,                 intent(in)  :: is_small       !Small cohort?       [    T|F]
       real   ,                 intent(in)  :: bleaf          !leaf biomass        [    kgC]
       real   ,                 intent(in)  :: bsap           !sapwood biomass     [ kgC/pl]
       real   ,                 intent(in)  :: broot          !fine root biomass   [ kgC/pl]
       real   ,                 intent(in)  :: hite           !plant height        [      m]
-      integer,                 intent(in)  :: ipft           !plant funct. type   [    ---]
       real   ,                 intent(in)  :: transp         !transpiration       [   kg/s]
       real   ,                 intent(in)  :: leaf_psi       !leaf water pot.     [      m]
       real   ,                 intent(in)  :: wood_psi       !wood water pot.     [      m]
@@ -492,10 +495,10 @@ module plant_hydro
       !----- Temporary double precision variables (input/output). -------------------------!
       real(kind=8)                 :: dt_d
       real(kind=8)                 :: sap_area_d
-      real(kind=8)                 :: crown_area_d
       real(kind=8)                 :: bleaf_d
       real(kind=8)                 :: bsap_d
       real(kind=8)                 :: broot_d
+      real(kind=8)                 :: nplant_d
       real(kind=8)                 :: hite_d
       real(kind=8)                 :: transp_d
       real(kind=8)                 :: leaf_psi_d
@@ -560,10 +563,10 @@ module plant_hydro
       !------------------------------------------------------------------------------------!
       dt_d                 = dble(dt                      )
       sap_area_d           = dble(sap_area                )
-      crown_area_d         = dble(crown_area              )
       bleaf_d              = dble(bleaf                   )
       bsap_d               = dble(bsap                    )
       broot_d              = dble(broot                   )
+      nplant_d             = dble(nplant                   )
       hite_d               = dble(hite                    )
       transp_d             = dble(transp                  )
       leaf_psi_d           = dble(leaf_psi                )
@@ -791,7 +794,6 @@ module plant_hydro
          !---------------------------------------------------------------------------------!
          !   Define layer edges 
          !
-         ! MLO->XX.  slz8(nzg+1) is  defined as 0. in ed_init.F90, no if is needed here.
          !---------------------------------------------------------------------------------!
          current_layer_depth = -slz8(k)
          above_layer_depth   = -slz8(k+1)
@@ -806,22 +808,16 @@ module plant_hydro
 
 
          !---------------------------------------------------------------------------------!
-         !  Calculate RAI in each layer.  Assume root can extent to an area 4 times of
-         ! crown area (twice as much as crown radius).
+         !  Calculate RAI in each layer.                                                   !
          !---------------------------------------------------------------------------------!
-         if (crown_area_d == 0.d0) then
-            RAI = 0.d0
-         else
-             RAI = broot_d * SRA_d * root_frac     & ! m2
-                 / (4.d0 * crown_area_d)           ! ! m2
-         end if
+         RAI = broot_d * SRA_d * root_frac * nplant_d  ! m2/m2
          !---------------------------------------------------------------------------------!
 
          !---------------------------------------------------------------------------------!
          !    Calculate soil-root water conductance kg H2O/m/s based on reference [K03].
          !---------------------------------------------------------------------------------!
          gw_cond = soil_cond_d(k) * sqrt(RAI) / (pi18 * dslz8(k))  & ! kg H2O / m3 / s
-                 * (4.d0 * crown_area_d)                           ! ! conducting area  m2
+                 / nplant_d                                        ! ! conducting area  m2
          !---------------------------------------------------------------------------------!
 
 
@@ -969,7 +965,6 @@ module plant_hydro
          write (unit=*,fmt=efmt   ) ' + BSAPWOOD         =',bsap
          write (unit=*,fmt=efmt   ) ' + BROOT            =',broot
          write (unit=*,fmt=efmt   ) ' + SAPWOOD_AREA     =',sap_area
-         write (unit=*,fmt=efmt   ) ' + CROWN_AERA       =',crown_area
 
          write (unit=*,fmt='(a)'  ) ' '
          write (unit=*,fmt=lfmt   ) ' + Finite fluxes     =',.not. error_flag(1)
