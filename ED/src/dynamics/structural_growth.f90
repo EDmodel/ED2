@@ -1158,9 +1158,11 @@ module structural_growth
       ! / bstorage to maintain compatibility with previous versions (bstorage_reserve = 0.)
       f_bstorage = max(1.0 - f_bseeds - f_growth, bstorage_reserve / bstorage)
 
-      ! we need to modify f_bseeds and f_growth accordingly
-      f_bseeds = f_bseeds / (f_bseeds + f_growth) * (1.0 - f_bstorage)
-      f_growth = f_growth / (f_bseeds + f_growth) * (1.0 - f_bstorage)
+      ! we need to modify f_bseeds and f_growth accordingly if f_bseeds+f_growth is non-zero
+      if (f_bseeds + f_growth > 0.0) then
+          f_bseeds = f_bseeds / (f_bseeds + f_growth) * (1.0 - f_bstorage)
+          f_growth = f_growth / (f_bseeds + f_growth) * (1.0 - f_bstorage)
+      endif
       !------------------------------------------------------------------------------------!
 
 
