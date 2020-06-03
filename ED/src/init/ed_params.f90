@@ -1216,9 +1216,6 @@ subroutine init_physiology_params()
       !   Find the CO2 compensation point values using an approach similar to F80 and CLM. !
       !   Gamma* = (ko/kc) * [O2] * KCO2 / (2. * KO2)                                      !
       !                                                                                    !
-      ! MLO -> XX.  I rewrote the compp_refval equation because the factor 2 was           !
-      !             apparently missing. It doesn't look like your kookc accounts for this  !
-      !             factor. Can you confirm?                                               !
       !------------------------------------------------------------------------------------!
       compp_refval = kookc * o2_ref * kco2_refval                                          &
                    / (2. * ko2_refval)                         ! Reference value [ mol/mol]
@@ -5620,10 +5617,17 @@ subroutine init_pft_hydro_params()
    !    First calculate leaf_density from Fig. 4 in N01.  The  calculated                  !
    ! leaf_water_sat is comparable to measurements from K09.                                !
    !---------------------------------------------------------------------------------------!
-   leaf_density(:)   = max(0.1 * 1.e3, (leaf_elastic_mod(:) - 2.03) / 25.4 * 1.e3)
-   leaf_water_sat(:) = (-2.32e4 / LMA(:) + 782.)                                           &
-                        * (1. / (-0.21 * log(1.e4 / LMA(:)) + 1.43) - 1.)                  &
-                        / leaf_density(:)
+   !leaf_density(:)   = max(0.1 * 1.e3, (leaf_elastic_mod(:) - 2.03) / 25.4 * 1.e3)
+   !leaf_water_sat(:) = (-2.32e4 / LMA(:) + 782.)                                           &
+   !                     * (1. / (-0.21 * log(1.e4 / LMA(:)) + 1.43) - 1.)                  &
+   !                     / leaf_density(:)
+   ! TODO: remove above after test
+   ! The previous two equations will yield large values for leaf_water_sat per leaf area (>0.2
+   ! kg/m2 while the observed is ~ 0.12), probably due to large uncertainties in both equations
+
+   ! Now we use data from Powers and Tiffin 2009 to calculate leaf_water_sat from wood density
+   ! This will generate much reasonable values for leaf_water_sat
+   leaf_water_sat(ipft) = 2.57 * exp(-0.94 * rho(ipft)) ! R2 = 0.24
    !---------------------------------------------------------------------------------------!
 
 
@@ -5640,13 +5644,11 @@ subroutine init_pft_hydro_params()
    !---------------------------------------------------------------------------------------!
 
    !----- Sapwood minimum relative water content, or residual fraction. -------------------!
-   rwc_tlp_wood(:) = 1. - (1.00 - 0.75 * rho_bnd(:)) / (2.74 + 2.01 * rho_bnd(:))
-   wood_rwc_min(:) = max( leaf_rwc_min(:) + 0.1                                            &
-                        , wood_elastic_mod(:) * (1. - rwc_tlp_wood(:) - f_cap)             &
-                        / (wood_psi_osmotic(:) / MPa2M * (1. - f_cap) ) + 1. - f_cap )
+   rwc_tlp_wood(:) = 1.00 - (1.00 - 0.75 * rho_bnd(:)) / (2.74 + 2.01 * rho_bnd(:))
+   wood_rwc_min(:) = wood_elastic_mod(:) * (1.00 - rwc_tlp_wood(:) - f_cap)             &
+                        / (wood_psi_osmotic(:) / MPa2M * (1.00 - f_cap) ) + 1.00 - f_cap 
 
-
-   ! note that we set fcap to 0. in the original equation
+   ! note that there is a typo in the original equation, the last epsilon_x before fcap is extra
    !---------------------------------------------------------------------------------------!
 
    !----- Wood water content at saturation (rwc = 1.) [kg H2O / kg biomass]. --------------!
@@ -5692,7 +5694,7 @@ subroutine init_pft_hydro_params()
 
 
    !----- Wood P50 [m]. -------------------------------------------------------------------!
-   wood_psi50(:) = (-1.09 - (3.57 * rho_bnd(:)) ** 1.73) * MPa2m 
+   wood_psi50(:) = (-1.09 - (3.57 * rho_bnd(:) ** 1.73) * MPa2m 
    !---------------------------------------------------------------------------------------!
 
 
@@ -5709,7 +5711,12 @@ subroutine init_pft_hydro_params()
    !     Sapwood maximum conductivity [kg/m2/s].  This is estimated from Figure S2.2       !
    ! of C16.                                                                               !
    !---------------------------------------------------------------------------------------!
-   wood_Kmax(:)  = exp(2.11 - 20.05 * rho_bnd(:) / Amax_25(:)) / MPa2m 
+   !wood_Kmax(:)  = exp(2.11 - 20.05 * rho_bnd(:) / Amax_25(:)) / MPa2m 
+   ! TODO: remove above after test
+   wood_Kmax = exp(2.32 - 2.27 * rho(ipft) - 0.48 * log(-wood_psi50(ipft) / MPa2m) + 0.5 * 0.89) / MPa2m
+   ! from analysis of the Gleason et al. and Xu et al. data.
+   ! Again this makes more sense....
+
    !---------------------------------------------------------------------------------------!
 
 

@@ -1016,8 +1016,6 @@ module plant_hydro
       do k = 1, nzg
          wflux_gw_layer(k) = sngloff(wflux_gw_layer_d(k),tiny_offset)
       end do
-      ! MLO -> XX. I imposed wflux_gw to be the same as the sum of layers to ensure
-      !            that water would be conserved.  Please check that this is ok.
       wflux_gw = sum(wflux_gw_layer)
       !------------------------------------------------------------------------------------!
 
