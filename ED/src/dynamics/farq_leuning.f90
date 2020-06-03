@@ -108,7 +108,6 @@ module farq_leuning
                                 , jm_decay_elow            & ! intent(in)
                                 , jm_decay_ehigh           & ! intent(in)
                                 , TPm0                     & ! intent(in)
-                                , Rd0                      & ! intent(in)
                                 , rd_low_temp              & ! intent(in)
                                 , rd_high_temp             & ! intent(in)
                                 , rd_hor                   & ! intent(in)
@@ -121,8 +120,7 @@ module farq_leuning
                                 , curvpar_electron         & ! intent(in)
                                 , qyield_psII              ! ! intent(in)
       use physiology_coms, only : gbw_2_gbc8               & ! intent(in)
-                                , o2_ref8                  & ! intent(in)
-                                , trait_plasticity_scheme  ! ! intent(in)
+                                , o2_ref8                  ! ! intent(in)
       use consts_coms    , only : mmh2oi8                  & ! intent(in)
                                 , mmh2o8                   & ! intent(in)
                                 , mmdryi8                  & ! intent(in)
@@ -250,32 +248,19 @@ module farq_leuning
 
 
 
-
       !------------------------------------------------------------------------------------!
       !     Set Vm0 and find terms that typically depend upon Vm0 (Rd0, Jm0, TPm0).        !
       ! This may be the default parameters, but in case trait plasticity is enabled, they  !
       ! must be down-regulated.  Convert the resulting terms to mol/m2/s.                  !
+      !     If no plasticity is applied, vm_bar and rd_bar will be qual to vm0 and rd0     !
+      ! and f_plastic8 will be 1. Therefore it also works for this scenario.               !
+      !     Jm0, and TPm0 are all scaled with the vm_bar:Vm0 ratio.                        !
       !------------------------------------------------------------------------------------!
-      select case (trait_plasticity_scheme)
-      case (-2,-1,1,2,3)
-         !---------------------------------------------------------------------------------!
-         !      Within-canopy trait plasticity.  In this case, the input vm_bar is the     !
-         ! realized Vm0.  Rd0, Jm0, and TPm0 are all scaled with the vm_bar:Vm0 ratio.     !
-         !---------------------------------------------------------------------------------!
-         thispft(ib)%vm0  = dble(vm_bar) * umol_2_mol8
-         thispft(ib)%rd0  = dble(rd_bar) * umol_2_mol8
-         f_plastic8       = dble(vm_bar) / dble(vm0(ipft))
-         thispft(ib)%jm0  = f_plastic8 * dble(jm0 (ipft)) * umol_2_mol8
-         thispft(ib)%TPm0 = f_plastic8 * dble(TPm0(ipft)) * umol_2_mol8
-         !---------------------------------------------------------------------------------!
-      case default
-         !------ No plasticity: use default parameters. -----------------------------------!
-         thispft(ib)%vm0  = dble(vm0 (ipft)) * umol_2_mol8
-         thispft(ib)%rd0  = dble(rd0 (ipft)) * umol_2_mol8
-         thispft(ib)%jm0  = dble(jm0 (ipft)) * umol_2_mol8
-         thispft(ib)%TPm0 = dble(TPm0(ipft)) * umol_2_mol8
-         !---------------------------------------------------------------------------------!
-      end select
+      thispft(ib)%vm0  = dble(vm_bar) * umol_2_mol8
+      thispft(ib)%rd0  = dble(rd_bar) * umol_2_mol8
+      f_plastic8       = dble(vm_bar) / dble(vm0(ipft))
+      thispft(ib)%jm0  = f_plastic8 * dble(jm0 (ipft)) * umol_2_mol8
+      thispft(ib)%TPm0 = f_plastic8 * dble(TPm0(ipft)) * umol_2_mol8
       !------------------------------------------------------------------------------------!
 
 
