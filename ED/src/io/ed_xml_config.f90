@@ -2522,7 +2522,7 @@ subroutine putConfigREAL(tag,rvalue)
   real,intent(in) :: rvalue
   character(str_len) :: value
   integer :: lenval 
-  write(value,"(f20.10)") rvalue
+  write(value,"(f40.10)") rvalue
   lenval = len(trim(value))
   call libxml2f90_ll_opentag(tag)
   call libxml2f90_ll_addid(trim(tag),lenval,trim(value))
