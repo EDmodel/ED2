@@ -5022,6 +5022,9 @@ subroutine init_pft_mort_params()
    !---------------------------------------------------------------------------------------!
    select case (carbon_mortality_scheme)
    case (2)
+      rho_use(:) = merge(rho_c18                                                           &
+                        ,rho(:)                                                            &
+                        ,is_grass(:) .or. is_liana(:) .or. (.not. is_tropical(:)) )
       mort0(:) = 0.0
       mort1(:) = delta_c18   * alpha0_c18 * (rho_use(:)/rho_c18) ** alpha1_c18
       mort2(:) = beta0_c18  * (rho_use(:)/rho_c18) ** beta1_c18
