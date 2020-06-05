@@ -1205,23 +1205,6 @@ subroutine init_physiology_params()
                    / (2. * ko2_refval)                         ! Reference value [ mol/mol]
       !------------------------------------------------------------------------------------!
 
-   case (4)
-      !----- Use default CO2 and O2 reference values from F96. ----------------------------!
-      kco2_refval   = 150. * umol_2_mol ! Reference Michaelis-Mentel CO2 coeff.  [ mol/mol]
-      ko2_refval    = 0.250             ! Reference Michaelis-Mentel O2 coeff.   [ mol/mol]
-      !------------------------------------------------------------------------------------!
-
-
-      !------------------------------------------------------------------------------------!
-      !   Find the CO2 compensation point values using an approach similar to F80 and CLM. !
-      !   Gamma* = (ko/kc) * [O2] * KCO2 / (2. * KO2)                                      !
-      !                                                                                    !
-      !------------------------------------------------------------------------------------!
-      compp_refval = kookc * o2_ref * kco2_refval                                          &
-                   / (2. * ko2_refval)                         ! Reference value [ mol/mol]
-      compp_hor     = kco2_hor - ko2_hor                       ! "Act. energy"   [       K]
-      compp_q10     = kco2_q10 / ko2_q10                       ! "Q10" term      [     ---]
-      !------------------------------------------------------------------------------------!
    end select
    !---------------------------------------------------------------------------------------!
 
@@ -2613,6 +2596,8 @@ subroutine init_pft_alloc_params()
    !                                                                                       !
    !---------------------------------------------------------------------------------------!
    real, dimension(2)    , parameter :: c14f15_bl_xx  = (/ 0.46769540,0.6410495 /)
+   real, dimension(3)    , parameter :: c14f15_la_wd  = (/-0.5874,0.5679,0.5476 /)
+   real, dimension(3)    , parameter :: c14f15_ht_xx  = (/0.5709,-0.1007,0.6734 /)
    real, dimension(2)    , parameter :: c14f15_bs_tf  = (/ 0.06080334,1.0044785 /)
    real, dimension(2)    , parameter :: c14f15_bs_sv  = (/ 0.05602791,1.0093501 /)
    real, dimension(2)    , parameter :: c14f15_bs_gr  = (/ 1.0e-5, 1.0 /) * c14f15_bl_xx
@@ -3195,7 +3180,7 @@ subroutine init_pft_alloc_params()
             !----- hgt_ref is their "Hmax". -----------------------------------------------!
             hgt_ref(ipft) = 61.7
             !------------------------------------------------------------------------------!
-        case (3,4) ! TODO: add wood density based allometric equation
+        case (3)
             !------------------------------------------------------------------------------!
             !     Allometric equation based on the fitted curve using the Sustainable      !
             ! Landscapes data set (L16) and the size- and site-dependent stratified        !
@@ -3225,6 +3210,14 @@ subroutine init_pft_alloc_params()
             !----- hgt_ref is not used. ---------------------------------------------------!
             hgt_ref(ipft) = 0.0
             !------------------------------------------------------------------------------!
+         case (4)
+            !------------------------------------------------------------------------------!
+            !  Allometric equation based on Chave et al. 2014 and Falster et al. 2015      !
+            !------------------------------------------------------------------------------!
+            b1Ht   (ipft) = c14f15_ht_xx(1) + c14f15_ht_xx(2) * log(rho(ipft))
+            b2Ht   (ipft) = c14f15_ht_xx(3)
+            !----- hgt_ref is not used. ---------------------------------------------------!
+            hgt_ref(ipft) = 0.0
          end select
          !---------------------------------------------------------------------------------!
       else
@@ -3475,6 +3468,8 @@ subroutine init_pft_alloc_params()
    !                                                                                       !
    !   IALLOM = 0,1,2  --  Bleaf = b1Bl * DBH^b2Bl                                         !
    !   IALLOM = 3      --  Bleaf = b1Bl * (DBH*DBH*Height)^b2Bl                            !
+   !   IALLOM = 4      --  leaf_A= b1Bl * (DBH*DBH*Height)^b2Bl                            !
+   !                       b1Bl is a fucntion of wood density                              !
    !                                                                                       !
    !   The coefficients and thresholds depend on the PFT and allometric equations.  In     !
    ! addition to the coefficients, we define the dbh point that defines adult cohorts as   !
@@ -3536,14 +3531,14 @@ subroutine init_pft_alloc_params()
             b1Bl(ipft) = c14f15_bl_xx(1) / SLA(ipft) ! XX --> MLO: should ther be a C2B here given c14f15_bl_xx is in m2 (?) and SLA is m2/kgC
             b2Bl(ipft) = c14f15_bl_xx(2)
             !------------------------------------------------------------------------------!
-        case (4) ! TODO: add wood density based allometry
+        case (4)
             !------------------------------------------------------------------------------!
             !    Allometry based on the BAAD data based (F15).  We only used leaves from   !
             ! wild tropical, note that b1Bl has the unit of m2 leaf under this scenario    !
             ! and will be converted to leaf carbon using SLA in size2bl
             !------------------------------------------------------------------------------!
-            b1Bl(ipft) = c14f15_bl_xx(1)
-            b2Bl(ipft) = c14f15_bl_xx(2)
+            b1Bl(ipft) = exp( c14f15_la_wd(1) + c14f15_la_wd(2) * log(rho(ipft)))
+            b2Bl(ipft) = c14f15_la_wd(3)
             !------------------------------------------------------------------------------!
 
          end select
@@ -3593,7 +3588,7 @@ subroutine init_pft_alloc_params()
    !   Bdead = {                                                                           !
    !           { b1Bs_large * DBH^b2Bl_large  , if dbh > dbh_crit                          !
    !                                                                                       !
-   !   IALLOM = 3                                                                          !
+   !   IALLOM = 3, 4                                                                       !
    !                                                                                       !
    !   Bdead = b1Bs_small * (DBH^2 * Height) ^ b2Bs_small                                  !
    !                                                                                       !
@@ -3856,10 +3851,19 @@ subroutine init_pft_alloc_params()
    !    through tropical forest canopy trees: Do universal rules apply?, Tree Physiol.,    !
    !    21(1), 19-26, doi:10.1093/treephys/21.1.19 (M01).                                  !
    !---------------------------------------------------------------------------------------!
-   b1SA(:) = merge( 1.0                                                                    &
-                  , merge( 0.30, merge(1.582,0.30,is_tropical(:)), is_conifer(:) )         &
-                  , is_grass(:)                                                   )
-   b2SA(:) = merge(1.764,2.0,is_tropical(:) .and. (.not. is_grass(:)))
+   select case (iallom)
+   case (4)
+       ! Data from BAAD and Christoffersen et al. 2016 GMD
+       b1SA(:) = merge( 1.0                                                                &
+                      , merge( 0.30, merge(0.6572,0.30,is_tropical(:)), is_conifer(:) )     &
+                      , is_grass(:)                                                   )
+       b2SA(:) = merge(1.8530,2.0,is_tropical(:) .and. (.not. is_grass(:)))  
+   case default
+       b1SA(:) = merge( 1.0                                                                &
+                      , merge( 0.30, merge(1.582,0.30,is_tropical(:)), is_conifer(:) )     &
+                      , is_grass(:)                                                   )
+       b2SA(:) = merge(1.764,2.0,is_tropical(:) .and. (.not. is_grass(:)))  
+   end select
    !---------------------------------------------------------------------------------------!
 
 
@@ -3919,7 +3923,7 @@ subroutine init_pft_alloc_params()
       b1Rd(:)  = -1.1140580
       b2Rd(:)  =  0.4223014
       !------------------------------------------------------------------------------------!
-    case (3,4) ! TODO: add allometry based on Smith-Martin et al. 2019
+    case (3)
       !------------------------------------------------------------------------------------!
       !    Test allometry, similar to 2, but based on D*D*H.  The curve loosely fits B18   !
       ! for large trees, and Xiangtao's fit based on unpublished data from excavation in   !
@@ -3943,6 +3947,12 @@ subroutine init_pft_alloc_params()
                      , +0.4223014                                                          &
                      , is_tropical(:) .and. (.not. is_liana(:)) )
       !------------------------------------------------------------------------------------!
+   case (4)
+      !------------------------------------------------------------------------------------!
+      !    Test allometry based on excavation data in Panama based on  H.                  !
+      !------------------------------------------------------------------------------------!
+      b1Rd(:) = -0.609
+      b2Rd(:) = 0.580
 
    end select
    !---------------------------------------------------------------------------------------!
@@ -4242,7 +4252,7 @@ subroutine init_pft_photo_params()
    !> (2001).
    !---------------------------------------------------------------------------------------!
    select case (iphysiol)
-   case (0,2,4)
+   case (0,2)
       Vm_decay_elow (:) = 0.4
       Vm_decay_ehigh(:) = 0.4
    case (1,3)
@@ -4258,7 +4268,7 @@ subroutine init_pft_photo_params()
    ! constant.  Vm_q10 is the base for the Collatz approach.                               !
    !---------------------------------------------------------------------------------------!
    select case (iphysiol)
-   case (0,2,4)
+   case (0,2)
       !----- Default parameters (Moorcroft et al. 2001; Longo 2014). ----------------------!
       vm_hor(:) = 3000.
       vm_q10(:) = merge(q10_c4,q10_c3,photosyn_pathway(:) == 4)
@@ -4810,7 +4820,7 @@ subroutine init_pft_resp_params()
    ! temperature of 15C.  Its units is umol_CO2/kg_fine_roots/s.                           !
    !---------------------------------------------------------------------------------------!
    select case (iphysiol)
-   case (0,1,4)
+   case (0,1)
       !----- Arrhenius function. ----------------------------------------------------------!
       root_respiration_factor(:) = 0.528 * rrffact
       !------------------------------------------------------------------------------------!
@@ -8895,7 +8905,8 @@ subroutine init_derived_params_after_xml()
          select case (trait_plasticity_scheme)
          case (3)
             if (is_tropical(ipft) .and. (.not. is_grass(ipft))) then
-                kplastic_vm0(ipft) = - 1.0 * (0.811 * log(Vcmax25(ipft)) - 2.22) / kplastic_ref_lai
+                kplastic_vm0(ipft) = - 1.0 * (0.811 * log(Vcmax25(ipft)) - 2.22)           &
+                                   / kplastic_ref_lai
             endif
          end select
          !---------------------------------------------------------------------------------!
@@ -8923,7 +8934,8 @@ subroutine init_derived_params_after_xml()
          select case (trait_plasticity_scheme)
          case (3)
             if (is_tropical(ipft) .and. (.not. is_grass(ipft))) then
-                kplastic_rd0(ipft) = - 1.0 * (0.559 * log(Rdark25) - 0.82) / kplastic_ref_lai
+                kplastic_rd0(ipft) = - 1.0 * (0.559 * log(Rdark25) - 0.82)                 &
+                                   / kplastic_ref_lai
             endif
          end select
          !---------------------------------------------------------------------------------!
@@ -9081,7 +9093,7 @@ subroutine init_derived_params_after_xml()
    if (print_zero_table) then
       open (unit=18,file=trim(photo_file),status='replace',action='write')
       select case (iphysiol)
-      case (0,1,4)
+      case (0,1)
          !---------------------------------------------------------------------------------!
          !     Arrhenius-based model, print Arrhenius reference and skip Q10.              !
          !---------------------------------------------------------------------------------!

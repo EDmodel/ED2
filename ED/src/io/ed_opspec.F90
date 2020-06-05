@@ -1772,19 +1772,12 @@ end do
       ifaterr = ifaterr +1
    end if
 
-   if (iphysiol < 0 .or. iphysiol > 4) then
+   if (iphysiol < 0 .or. iphysiol > 3) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
-                    'Invalid IPHYSIOL, it must be between 0 and 4. Yours is set to'        &
+                    'Invalid IPHYSIOL, it must be between 0 and 3. Yours is set to'        &
                     ,iphysiol,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
-   else if (iphysiol == 4 .and. (istomata_scheme /= 1)) then
-      write (reason,fmt='(a,1x,i4,a)')                                                     &
-                    'ISTOMATA_SCHEME must be set to 1, when IPHYSIOL is set to 4. Yours is set to'        &
-                    ,istomata_scheme,'...'
-      call opspec_fatal(reason,'opspec_misc')
-      ifaterr = ifaterr +1
-
    end if
 
    if (iallom < 0 .or. iallom > 4) then

@@ -1,0 +1,121 @@
+#==========================================================================================#
+#==========================================================================================#
+#    Makefile include.mk.opt.odyssey                                                       #
+#                                                                                          #
+#    Compilation controls optimised for Odyssey cluster at Harvard.                        #
+#------------------------------------------------------------------------------------------#
+
+#----- Define make (gnu make works best). -------------------------------------------------#
+MAKE=/usr/bin/make
+#------------------------------------------------------------------------------------------#
+
+
+
+#----- Main path for compilation. ---------------------------------------------------------#
+BASE=$(ED_ROOT)/build/
+#------------------------------------------------------------------------------------------#
+
+
+#------------------------------------------------------------------------------------------#
+#    HDF 5 libraries.                                                                      #
+#                                                                                          #
+#    Since ED-2.1, this is no longer optional for real simulations.  You must have the     #
+# HDF5 libraries compiled with the same compiler you set for F_COMP and C_COMP.  You may   #
+# still be able to compile without HDF5 but the code is not going to run.                  #
+#------------------------------------------------------------------------------------------#
+USE_HDF5=1
+
+#HDF5_PATH=/programs/hdf5-1.10.6/
+HDF5_INCS=-I$(HDF5_PATH)/include
+HDF5_LIBS=-L$(HDF5_PATH)/lib -lhdf5 -lhdf5_fortran -lhdf5_hl -lm -lz
+#------------------------------------------------------------------------------------------#
+
+
+
+#------------------------------------------------------------------------------------------#
+#     If you have a version of hdf5 compiled in parallel, then you may benefit from        #
+# collective I/O, then use this flag = 1.  Otherwise, set it to zero.                      #
+#------------------------------------------------------------------------------------------#
+USE_COLLECTIVE_MPIO=0
+#------------------------------------------------------------------------------------------#
+
+# interface ----------------------------------------------------
+# This should be 1 unless you are running with -gen-interfaces.
+# Interfaces usually make the compilation to crash when the 
+# -gen-interfaces option are on, so this flag bypass all 
+# interfaces in the code.
+USE_INTERF=1
+
+# MPI_Wtime. ---------------------------------------------------
+# If USE_MPIWTIME=1, then it will use MPI libraries to compute
+# the wall time (the only double-precision intrinsic).  In case
+# you don't have it, leave USE_MPIWTIME=0, in which case it will
+# use a simpler, single-precision function.
+USE_MPIWTIME=0
+
+
+# GFORTRAN DEVELOPERS: REMOVE ffree-line-length-0
+# CODE IS INTENDED TO BE LINE WIDTH COMPLIANT WITHIN 132 
+
+
+#################################### COMPILER SETTINGS #####################################
+CMACH=CBXU_GFORTRAN
+F_COMP=mpif90
+C_COMP=mpicc
+LOADER=mpif90
+FC_TYPE=GFORTRAN
+LIBS=
+MOD_EXT=mod
+#------------------------------------------------------------------------------------------#
+##################################### COMPILER OPTIONS #####################################
+##------------------------------------------------------------------------------------------#
+## A/B/C/D. Debugging, strictest compilation flags, lowest performance.                     #
+## E.       Running, most relaxed compilation flags, highest performance.                   #
+##------------------------------------------------------------------------------------------#
+ifeq ($(KIND_COMP),)
+   KIND_COMP=E
+endif
+
+ifeq ($(KIND_COMP),$(filter $(KIND_COMP), A B C D))
+   F_OPTS= -g -fopenmp -O0 -Wall -W -ffpe-trap=invalid,zero,overflow -Wconversion -fbounds-check -fbacktrace -fdump-core
+   C_OPTS = -g -fopenmp -O0 -ffpe-trap=invalid,zero,overflow -fbounds-check
+   LOADER_OPTS=${F_OPTS}
+endif
+    
+ifeq ($(KIND_COMP),E)
+   # fastest runtime options
+   F_OPTS= -O3 -march=native -fopenmp -funroll-loops -fbacktrace
+   C_OPTS= -O2 -march=native -fopenmp -funroll-loops -fbacktrace #-ffpe-trap=invalid,zero,overflow -fbounds-check #-O2
+   LOADER_OPTS=${F_OPTS}
+endif
+
+#------------------------------------------------------------------------------------------#
+############################################################################################
+
+
+
+
+#------------------------------------------------------------------------------------------#
+#     If using mpicc and mpif90 as compilers (recommended), leave MPI_PATH, PAR_INCS, and  #
+# PAR_LIBS blank, otherwise provide the includes and libraries for mpi.  Either way, don't #
+# change PAR_DEFS unless you know what you are doing.                                      #
+#------------------------------------------------------------------------------------------#
+MPI_PATH=
+PAR_INCS=
+PAR_LIBS=
+#PAR_DEFS=
+PAR_DEFS=-DRAMS_MPI
+#------------------------------------------------------------------------------------------#
+
+
+
+#------------------------------------------------------------------------------------------#
+#     Archive options.                                                                     #
+#------------------------------------------------------------------------------------------#
+#------ For IBM, HP, SGI, ALPHA, LINUX, and MAC_OS_X use these. ---------------------------#
+ARCHIVE=ar rs
+#------ For NEC SX-6. ---------------------------------------------------------------------#
+#ARCHIVE=sxar rs
+#------ For SUN, CONVEX. ------------------------------------------------------------------#
+#ARCHIVE=ar r'
+#------------------------------------------------------------------------------------------#

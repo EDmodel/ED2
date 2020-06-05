@@ -884,14 +884,14 @@ module allometry
             !------------------------------------------------------------------------------!
             size     = dbh * dbh * hite
             !------------------------------------------------------------------------------!
-         case (1,2)
+         case (1,2,4)
             !------------------------------------------------------------------------------!
             !    This is just a test allometry, that imposes root depth to be 0.5 m for    !
             ! plants that are 0.15-m tall, and 5.0 m for plants that are 35-m tall.        !
             !------------------------------------------------------------------------------!
             size     = hite
             !------------------------------------------------------------------------------!
-         case (3,4)
+         case (3)
             !------------------------------------------------------------------------------!
             !    Test allometry, similar to 2, but based on D*D*H.  The curve loosely fits !
             ! B18 for large trees, and Xiangtao's fit based on unpublished data from       !
