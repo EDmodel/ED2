@@ -940,6 +940,7 @@ module structural_growth
       real                         :: delta_bd    !> Target Bd - actual Bd
       real                         :: dnorm       !> Normalised DBH
       real                         :: r_fract_act !> Hgt-dependent reproduction allocation
+      real                         :: f_bgi       !> inverse of fraction for growth and reproduction
       logical                      :: late_spring
       logical                      :: use_storage
       logical                      :: zero_growth
@@ -1160,8 +1161,9 @@ module structural_growth
 
       ! we need to modify f_bseeds and f_growth accordingly if f_bseeds+f_growth is non-zero
       if (f_bseeds + f_growth > 0.0) then
-          f_bseeds = f_bseeds / (f_bseeds + f_growth) * (1.0 - f_bstorage)
-          f_growth = f_growth / (f_bseeds + f_growth) * (1.0 - f_bstorage)
+          f_bgi    = 1.0 / (f_bseeds + f_growth)
+          f_bseeds = f_bseeds * f_bgi * (1.0 - f_bstorage)
+          f_growth = f_growth * f_bgi * (1.0 - f_bstorage)
       endif
       !------------------------------------------------------------------------------------!
 
