@@ -870,6 +870,9 @@ module rk4_derivs
             ! MLO -> XX                                                                    !
             ! How does this work in case we are solving grasses?  Specifically, new        !
             ! grasses do not have any wood.                                                !
+            ! XX -> MLO                                                                    !
+            ! Update leaf_water_im2 and leaf_energy pool instead for new grasses? (or any  !
+            ! condition with resolvable leaf and unresolvable wood) TODO                   !
             !------------------------------------------------------------------------------!
             do ico=1,cpatch%ncohorts
                !----- Find the soil water loss associated with this cohort. ---------------!
@@ -1401,7 +1404,8 @@ module rk4_derivs
          !---------------------------------------------------------------------------------!
          !    Subtract the metabolic NPP of this cohort from patch-level NEE.              !
          !---------------------------------------------------------------------------------!
-         nee_tot = nee_tot - (initp%gpp(ico) - initp%leaf_resp(ico) - initp%root_resp(ico))
+         nee_tot = nee_tot - ( initp%gpp(ico) - initp%leaf_resp(ico)                       &
+                             - initp%root_resp(ico) - initp%stem_resp(ico))
          !---------------------------------------------------------------------------------!
 
 

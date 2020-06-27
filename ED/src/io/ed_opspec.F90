@@ -1210,10 +1210,13 @@ subroutine ed_opspec_misc
                                     , plant_hydro_scheme           & ! intent(in)
                                     , istomata_scheme              & ! intent(in)
                                     , istruct_growth_scheme        & ! intent(in)
+                                    , istem_respiration_scheme     & ! intent(in)
                                     , trait_plasticity_scheme      & ! intent(in)
                                     , iddmort_scheme               & ! intent(in)
                                     , cbr_scheme                   & ! intent(in)
                                     , ddmort_const                 & ! intent(in)
+                                    , hydraulic_mortality_scheme   & ! intent(in)
+                                    , carbon_mortality_scheme      & ! intent(in)
                                     , n_plant_lim                  & ! intent(in)
                                     , vmfact_c3                    & ! intent(in)
                                     , vmfact_c4                    & ! intent(in)
@@ -1753,32 +1756,33 @@ end do
       ifaterr = ifaterr +1
    end if
 
-   if (trait_plasticity_scheme < -2 .or. trait_plasticity_scheme > 2) then
+   if (istem_respiration_scheme < 0 .or. istem_respiration_scheme > 1) then
+      write (reason,fmt='(a,1x,i4,a)')                                                     &
+                    'Invalid ISTEM_RESPIRATION_SCHEME, it must be between 0 and 1. Yours is set to'   &
+                    ,istem_respiration_scheme,'...'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+   end if
+
+   if (trait_plasticity_scheme < -2 .or. trait_plasticity_scheme > 3) then
       write (reason,fmt='(2a,1x,i4,a)')                                                    &
-                    'Invalid TRAIT_PLASTICITY_SCHEME, it must be between -2 and 2.'        &
+                    'Invalid TRAIT_PLASTICITY_SCHEME, it must be between -2 and 3.'        &
                    ,' Yours is set to',trait_plasticity_scheme,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if
 
-   if (iphysiol < 0 .or. iphysiol > 4) then
+   if (iphysiol < 0 .or. iphysiol > 3) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
-                    'Invalid IPHYSIOL, it must be between 0 and 4. Yours is set to'        &
+                    'Invalid IPHYSIOL, it must be between 0 and 3. Yours is set to'        &
                     ,iphysiol,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
-   else if (iphysiol == 4 .and. (istomata_scheme /= 1)) then
-      write (reason,fmt='(a,1x,i4,a)')                                                     &
-                    'ISTOMATA_SCHEME must be set to 1, when IPHYSIOL is set to 4. Yours is set to'        &
-                    ,istomata_scheme,'...'
-      call opspec_fatal(reason,'opspec_misc')
-      ifaterr = ifaterr +1
-
    end if
 
-   if (iallom < 0 .or. iallom > 3) then
+   if (iallom < 0 .or. iallom > 4) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
-                    'Invalid IALLOM, it must be between 0 and 3. Yours is set to'          &
+                    'Invalid IALLOM, it must be between 0 and 4. Yours is set to'          &
                     ,iallom,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
@@ -1924,6 +1928,22 @@ end do
       write (reason,fmt='(a,1x,es12.5,a)')                                                 &
                     'Invalid DDMORT_CONST, it must be between 0 and 1.  Yours is set to'   &
                     ,ddmort_const,'...'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+   end if
+
+   if (hydraulic_mortality_scheme < 0 .or. hydraulic_mortality_scheme > 1) then
+      write (reason,fmt='(a,1x,i4,a)')                                                     &
+                    'Invalid HYDAULIC_MORTALITY_SCHEME, it must be between 0 and 1. Yours is set to'   &
+                    ,hydraulic_mortality_scheme,'...'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+   end if
+
+   if (carbon_mortality_scheme < 0 .or. carbon_mortality_scheme > 2) then
+      write (reason,fmt='(a,1x,i4,a)')                                                     &
+                    'Invalid CARBON_MORTALITY_SCHEME, it must be between 0 and 2. Yours is set to'   &
+                    ,carbon_mortality_scheme,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if

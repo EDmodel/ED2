@@ -205,6 +205,7 @@ module budget_utils
       real                          :: today_gpp
       real                          :: today_leaf_resp
       real                          :: today_root_resp
+      real                          :: today_stem_resp
       real                          :: today_het_resp
       real                          :: toler_committed
       real                          :: resid_committed
@@ -236,21 +237,26 @@ module budget_utils
          today_gpp          = 0.
          today_leaf_resp    = 0.
          today_root_resp    = 0.
+         today_stem_resp    = 0.
          do ico=1,cpatch%ncohorts
             today_gpp       = today_gpp       + cpatch%today_gpp      (ico)
             today_leaf_resp = today_leaf_resp + cpatch%today_leaf_resp(ico)
             today_root_resp = today_root_resp + cpatch%today_root_resp(ico)
+            today_stem_resp = today_stem_resp + cpatch%today_stem_resp(ico)
          end do
          today_gpp           = today_gpp           / kgCday_2_umols
          today_leaf_resp     = today_leaf_resp     / kgCday_2_umols
          today_root_resp     = today_root_resp     / kgCday_2_umols
+         today_stem_resp     = today_stem_resp     / kgCday_2_umols
          today_het_resp      = csite%today_rh(ipa) / kgCday_2_umols
          toler_committed     = tol_carbon_budget                                           &
                              * max(today_gpp,today_leaf_resp,today_root_resp               &
+                                  ,today_stem_resp                                         &
                                   ,today_het_resp,csite%commit_storage_resp(ipa)           &
                                   ,csite%commit_growth_resp (ipa))
          resid_committed     = csite%cbudget_committed(ipa) - today_gpp                    &
-                             + today_leaf_resp + today_root_resp + today_het_resp
+                             + today_leaf_resp + today_root_resp + today_stem_resp         &
+                             + today_het_resp
          committed_violation = abs(resid_committed) > toler_committed
          !---------------------------------------------------------------------------------!
 
@@ -273,6 +279,7 @@ module budget_utils
             write(unit=*,fmt=fmtf )  ' GPP                : ',today_gpp
             write(unit=*,fmt=fmtf )  ' LEAF RESPIRATION   : ',today_leaf_resp
             write(unit=*,fmt=fmtf )  ' ROOT RESPIRATION   : ',today_root_resp
+            write(unit=*,fmt=fmtf )  ' STEM RESPIRATION   : ',today_stem_resp
             write(unit=*,fmt=fmtf )  ' HETEROTROPHIC RESP : ',today_het_resp
             write(unit=*,fmt=fmtf )  ' RESIDUAL           : ',resid_committed
             write(unit=*,fmt=fmtf )  ' TOLERANCE          : ',toler_committed
@@ -362,6 +369,7 @@ module budget_utils
       real                         :: step_gpp
       real                         :: step_leaf_resp
       real                         :: step_root_resp
+      real                         :: step_stem_resp
       real                         :: step_growth_resp
       real                         :: step_storage_resp
       real                         :: step_het_resp
@@ -415,6 +423,7 @@ module budget_utils
       step_gpp          = 0.
       step_leaf_resp    = 0.
       step_root_resp    = 0.
+      step_stem_resp    = 0.
       step_growth_resp  = 0.
       step_storage_resp = 0.
       cohloop: do ico=1,cpatch%ncohorts
@@ -425,6 +434,7 @@ module budget_utils
          step_gpp       = step_gpp       + cpatch%gpp(ico)
          step_leaf_resp = step_leaf_resp + cpatch%leaf_respiration(ico)
          step_root_resp = step_root_resp + cpatch%root_respiration(ico)
+         step_stem_resp = step_stem_resp + cpatch%stem_respiration(ico)
          !---------------------------------------------------------------------------------!
       end do cohloop
       !------------------------------------------------------------------------------------!
@@ -439,6 +449,7 @@ module budget_utils
       step_gpp          = step_gpp                       * umol_o_sec_2_kgC
       step_leaf_resp    = step_leaf_resp                 * umol_o_sec_2_kgC
       step_root_resp    = step_root_resp                 * umol_o_sec_2_kgC
+      step_stem_resp    = step_stem_resp                 * umol_o_sec_2_kgC
       step_storage_resp = csite%commit_storage_resp(ipa) * dtlsm_o_daysec
       step_growth_resp  = csite%commit_growth_resp (ipa) * dtlsm_o_daysec
       !------------------------------------------------------------------------------------!
@@ -457,7 +468,8 @@ module budget_utils
       !     Update the committed carbon pool.  Add assimilation and subtract respiration.  !
       !------------------------------------------------------------------------------------!
       step_delta                   = step_gpp          - step_leaf_resp   - step_root_resp &
-                                   - step_storage_resp - step_growth_resp - step_het_resp 
+                                   - step_stem_resp    - step_storage_resp                 &
+                                   - step_growth_resp  - step_het_resp 
       csite%cbudget_committed(ipa) = bef_committed     + step_delta
       !------------------------------------------------------------------------------------!
 
@@ -469,11 +481,11 @@ module budget_utils
       if (print_step) then
          write(committed_file,fmt='(a,i4.4,a)') 'check_committed_ipa',ipa,'.txt'
          open(unit=59,file=committed_file,status='old',position='append',action='write')
-         write(unit=59,fmt='(3(i6,1x),f12.1,9(1x,es12.5))')                                &
+         write(unit=59,fmt='(3(i6,1x),f12.1,10(1x,es12.5))')                               &
                  current_time%year,current_time%month,current_time%date,current_time%time  &
                 ,bef_committed,csite%cbudget_committed(ipa),step_delta,step_gpp            &
-                ,step_leaf_resp,step_root_resp,step_storage_resp,step_growth_resp          &
-                ,step_het_resp
+                ,step_leaf_resp,step_root_resp,step_stem_resp,step_storage_resp            &
+                ,step_growth_resp,step_het_resp
          close(unit=59,status='keep')
       end if
       !------------------------------------------------------------------------------------!
@@ -567,6 +579,7 @@ module budget_utils
       real                                  :: co2curr_gpp
       real                                  :: co2curr_leafresp
       real                                  :: co2curr_rootresp
+      real                                  :: co2curr_stemresp
       real                                  :: co2curr_storageresp
       real                                  :: co2curr_growthresp
       real                                  :: co2curr_hetresp
@@ -626,6 +639,7 @@ module budget_utils
       real                                  :: gpp
       real                                  :: leaf_resp
       real                                  :: root_resp
+      real                                  :: stem_resp
       real                                  :: storage_resp
       real                                  :: growth_resp
       real                                  :: co2_factor
@@ -794,10 +808,12 @@ module budget_utils
       !------------------------------------------------------------------------------------!
       !     Compute the carbon dioxide flux components.                                    !
       !------------------------------------------------------------------------------------!
-      call sum_plant_cfluxes(csite,ipa, gpp, leaf_resp,root_resp,storage_resp,growth_resp)
+      call sum_plant_cfluxes(csite,ipa, gpp,                                               &
+                             leaf_resp, root_resp, stem_resp, storage_resp, growth_resp)
       co2curr_gpp         = gpp           * dtlsm
       co2curr_leafresp    = leaf_resp     * dtlsm
       co2curr_rootresp    = root_resp     * dtlsm
+      co2curr_stemresp    = stem_resp     * dtlsm
       co2curr_storageresp = storage_resp  * dtlsm
       co2curr_growthresp  = growth_resp   * dtlsm
       co2curr_hetresp     = csite%rh(ipa) * dtlsm
@@ -811,8 +827,9 @@ module budget_utils
       ! we use the loss to atmosphere instead, because we also account for carbon storage  !
       ! in the canopy air space.                                                           !
       !------------------------------------------------------------------------------------!
-      co2curr_nee    = co2curr_leafresp    + co2curr_rootresp    + co2curr_storageresp     &
-                     + co2curr_growthresp  + co2curr_hetresp     - co2curr_gpp
+      co2curr_nee    = co2curr_leafresp    + co2curr_rootresp    + co2curr_stemresp        &
+                     + co2curr_storageresp + co2curr_growthresp  + co2curr_hetresp         &
+                     - co2curr_gpp
       co2curr_nep    = - co2curr_nee
       cbudget_nep    = cbudget_nep + site_area * csite%area(ipa) * co2curr_nep * umol_2_kgC
       !----- Leverage the CO2 budget loss term to find the carbon equivalent. -------------!
@@ -895,6 +912,7 @@ module budget_utils
                        + max( abs(co2budget_deltastorage  )                                &
                             , abs(co2curr_leafresp        )                                &
                             , abs(co2curr_rootresp        )                                &
+                            , abs(co2curr_stemresp        )                                &
                             , abs(co2curr_storageresp     )                                &
                             , abs(co2curr_growthresp      )                                &
                             , abs(co2curr_hetresp         )                                &
@@ -973,8 +991,8 @@ module budget_utils
       !----- 1. Carbon dioxide. -----------------------------------------------------------!
       csite%co2budget_gpp        (ipa) = csite%co2budget_gpp(ipa)       + gpp       *dtlsm
       csite%co2budget_plresp     (ipa) = csite%co2budget_plresp(ipa)                       &
-                                       + ( leaf_resp          + root_resp                  &
-                                         + storage_resp       + growth_resp        )       &
+                                       + ( leaf_resp    + root_resp   + stem_resp          &
+                                         + storage_resp + growth_resp              )       &
                                        * dtlsm
       csite%co2budget_rh         (ipa) = csite%co2budget_rh(ipa)                           &
                                        + csite%rh(ipa) * dtlsm
@@ -1145,6 +1163,7 @@ module budget_utils
             write (unit=*,fmt=fmtf ) ' GPP               : ',co2curr_gpp
             write (unit=*,fmt=fmtf ) ' LEAF_RESP         : ',co2curr_leafresp
             write (unit=*,fmt=fmtf ) ' ROOT_RESP         : ',co2curr_rootresp
+            write (unit=*,fmt=fmtf ) ' STEM_RESP         : ',co2curr_stemresp
             write (unit=*,fmt=fmtf ) ' STORAGE_RESP      : ',co2curr_storageresp
             write (unit=*,fmt=fmtf ) ' GROWTH_RESP       : ',co2curr_growthresp
             write (unit=*,fmt=fmtf ) ' HET_RESP          : ',co2curr_hetresp
@@ -1792,8 +1811,8 @@ module budget_utils
    !=======================================================================================!
    !    This subroutine computes the carbon flux terms.                                    !
    !---------------------------------------------------------------------------------------!
-   subroutine sum_plant_cfluxes(csite,ipa, gpp, leaf_resp,root_resp,storage_resp           &
-                               ,growth_resp)
+   subroutine sum_plant_cfluxes(csite,ipa, gpp                                             &
+                               ,leaf_resp, root_resp, stem_resp, storage_resp, growth_resp)
       use ed_state_vars        , only : sitetype        & ! structure
                                       , patchtype       ! ! structure
       use consts_coms          , only : kgCday_2_umols  ! ! intent(in)
@@ -1805,6 +1824,7 @@ module budget_utils
       real                  , intent(out) :: gpp
       real                  , intent(out) :: leaf_resp
       real                  , intent(out) :: root_resp
+      real                  , intent(out) :: stem_resp
       real                  , intent(out) :: storage_resp
       real                  , intent(out) :: growth_resp
       !----- Local variables --------------------------------------------------------------!
@@ -1817,6 +1837,7 @@ module budget_utils
       gpp                = 0.0
       leaf_resp          = 0.0
       root_resp          = 0.0
+      stem_resp          = 0.0
       cpatch => csite%patch(ipa)
       !------------------------------------------------------------------------------------!
 
@@ -1833,6 +1854,7 @@ module budget_utils
          end if
          !----- Root respiration happens even when the LAI is tiny ------------------------!
          root_resp = root_resp + cpatch%root_respiration(ico)
+         stem_resp = stem_resp + cpatch%stem_respiration(ico)
       end do
       !------------------------------------------------------------------------------------!
 

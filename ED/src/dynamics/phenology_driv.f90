@@ -259,8 +259,8 @@ module phenology_driv
                !----- Get cohort-specific thresholds for prescribed phenology. ------------!
                call assign_prescribed_phen(cpoly%green_leaf_factor(ipft,isi)               &
                                           ,cpoly%leaf_aging_factor(ipft,isi)               &
-                                          ,cpatch%dbh(ico),cpatch%hite(ico),ipft           &
-                                          ,drop_cold,leaf_out_cold,bl_max)
+                                          ,cpatch%dbh(ico),cpatch%hite(ico),cpatch%sla(ico)&
+                                          ,ipft,drop_cold,leaf_out_cold,bl_max)
             case default
                !----- Drop_cold is computed in phenology_thresholds for Botta scheme. -----!
                if (drop_cold) bl_max = 0.0
@@ -510,7 +510,8 @@ module phenology_driv
 
 
                !----- Find the maximum allowed leaf biomass. ------------------------------!
-               bl_max = elongf_try * size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft)
+               bl_max = elongf_try * size2bl(cpatch%dbh(ico),cpatch%hite(ico)              &
+                                            ,cpatch%sla(ico),ipft)
                !---------------------------------------------------------------------------!
 
 
@@ -705,7 +706,7 @@ module phenology_driv
                ! allow for some fine roots to persist even if all leaves have been shed,   !
                ! otherwise plants will be unable to extract water once the rains return.   !
                !---------------------------------------------------------------------------!
-               bl_full = size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft)
+               bl_full = size2bl(cpatch%dbh(ico),cpatch%hite(ico),cpatch%sla(ico),ipft)
                bl_max = elongf_try * bl_full
                if (root_phen_factor > 0.) then
                   br_max = bl_full * q(ipft)                                               &
@@ -907,7 +908,8 @@ module phenology_driv
             if (.not. veget_dyn_on) then
                elongf_try           = cpoly%green_leaf_factor(ipft,isi) * cpatch%elongf(ico)
                cpatch%bleaf(ico)    = elongf_try                                           &
-                                    * size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft)
+                                    * size2bl(cpatch%dbh(ico),cpatch%hite(ico)             &
+                                             ,cpatch%sla(ico),ipft)
                cpatch%bstorage(ico) = bstorage_in
                !----- Fix phenology status according to elongation factor. ----------------!
                if (elongf_try == 1.0) then
@@ -924,7 +926,8 @@ module phenology_driv
                !---------------------------------------------------------------------------!
                if (phenology(ipft) == 5 .and. root_phen_factor > 0.) then
                   cpatch%broot(ico) = q(ipft) * (elongf_try + root_phen_factor - 1.)       &
-                                    * size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft)       &
+                                    * size2bl(cpatch%dbh(ico),cpatch%hite(ico)             &
+                                             ,cpatch%sla(ico),ipft)                        &
                                     / root_phen_factor
                end if
                !---------------------------------------------------------------------------!
@@ -1098,7 +1101,7 @@ module phenology_driv
    !=======================================================================================!
    !    This subroutine assigns the prescribed phenology.                                  !
    !---------------------------------------------------------------------------------------!
-   subroutine assign_prescribed_phen(green_leaf_factor,leaf_aging_factor,dbh,height,pft    &
+   subroutine assign_prescribed_phen(green_leaf_factor,leaf_aging_factor,dbh,height,sla,pft&
                                     ,drop_cold,leaf_out_cold,bl_max)
       use allometry     , only : size2bl
       use phenology_coms, only : elongf_min
@@ -1111,12 +1114,13 @@ module phenology_driv
       real   , intent(in)  :: leaf_aging_factor
       real   , intent(in)  :: dbh
       real   , intent(in)  :: height
+      real   , intent(in)  :: sla
       integer, intent(in)  :: pft
       !------------------------------------------------------------------------------------!
 
       drop_cold     = green_leaf_factor /= leaf_aging_factor
       leaf_out_cold = green_leaf_factor > elongf_min .and. (.not. drop_cold)
-      bl_max        = green_leaf_factor * size2bl(dbh, height, pft)
+      bl_max        = green_leaf_factor * size2bl(dbh, height, sla, pft)
 
       return
    end subroutine assign_prescribed_phen
@@ -1185,7 +1189,8 @@ module phenology_driv
 
 
       !----- Find the minimum acceptable biomass. -----------------------------------------!
-      bleaf_ok_min     = - tol_carbon_budget * size2bl(min_dbh(ipft),hgt_min(ipft),ipft)
+      bleaf_ok_min     = - tol_carbon_budget * size2bl(min_dbh(ipft),hgt_min(ipft)         &
+                                                      ,cpatch%sla(ico),ipft)
       broot_ok_min     = q(ipft) * bleaf_ok_min
       bstorage_ok_min  = bleaf_ok_min + broot_ok_min
       !------------------------------------------------------------------------------------!

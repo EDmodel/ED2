@@ -27,6 +27,8 @@ module structural_growth
                                      , negligible_nplant           & ! intent(in)
                                      , is_grass                    & ! intent(in)
                                      , agf_bs                      & ! intent(in)
+                                     , q                           & ! intent(in)
+                                     , storage_reflush_times       & ! intent(in)
                                      , is_liana                    & ! intent(in)
                                      , cbr_severe_stress           & ! intent(in)
                                      , h_edge                      & ! intent(in)
@@ -99,6 +101,7 @@ module structural_growth
       real                          :: dbh_in
       real                          :: nplant_in
       real                          :: bstorage_in
+      real                          :: bstorage_reserve
       real                          :: agb_in
       real                          :: lai_in
       real                          :: wai_in
@@ -378,6 +381,11 @@ module structural_growth
                   cpatch%monthly_dlnndt(ico) = 0.0
                   !------------------------------------------------------------------------!
 
+                  !----- Calculate bstorage reserved for future refulushing needs ---------!
+                  bstorage_reserve = (1.0 + q(ipft)) * storage_reflush_times(ipft)         &
+                                   * size2bl(cpatch%dbh(ico),cpatch%hite(ico)              &
+                                            ,cpatch%sla(ico),ipft)
+                  !------------------------------------------------------------------------!
 
 
                   !----- Determine how to distribute what is in bstorage. -----------------!
@@ -385,10 +393,10 @@ module structural_growth
                                                   ,cpatch%dbh(ico),cgrid%lat(ipy)          &
                                                   ,cpatch%phenology_status(ico)            &
                                                   ,cpatch%elongf(ico)                      &
-                                                  ,bdeada_in,bdeadb_in, bstorage_in, maxh  &
+                                                  ,bdeada_in,bdeadb_in, bstorage_in        &
+                                                  ,bstorage_reserve, maxh                  &
                                                   ,f_bseeds,f_growth,f_bstorage)
                   !------------------------------------------------------------------------!
-
 
 
                   !------------------------------------------------------------------------!
@@ -581,6 +589,7 @@ module structural_growth
                   call update_cohort_derived_props(cpatch,ico,cpoly%lsl(isi),new_year      &
                                                   ,cpoly%llspan_toc(ipft,isi)              &
                                                   ,cpoly%vm_bar_toc(ipft,isi)              &
+                                                  ,cpoly%rd_bar_toc(ipft,isi)              &
                                                   ,cpoly%sla_toc   (ipft,isi) )
                   !------------------------------------------------------------------------!
 
@@ -592,7 +601,10 @@ module structural_growth
                   cpatch%cb_mlmax    (prev_month,ico) = cpatch%cb_mlmax    (13,ico)
                   !------------------------------------------------------------------------!
 
-
+                  !----- Update monhtly average PLC for hydraulic  mortality. -------------!
+                  cpatch%plc_monthly(prev_month,ico) = cpatch%plc_monthly(13,ico)
+                  cpatch%plc_monthly(13,ico) = 0.0
+                  !------------------------------------------------------------------------!
 
                   !----- If monthly files are written, save the current carbon balance. ---!
                   if (associated(cpatch%mmean_cb)) then
@@ -735,6 +747,9 @@ module structural_growth
                   !------------------------------------------------------------------------!
 
 
+                  !----- Record monthly diameter growth  ----------------------------------!
+                  cpatch%ddbh_monthly(prev_month,ico) = cpatch%ddbh_dt(ico) !cm/yr
+                  !------------------------------------------------------------------------!
 
 
                   !------------------------------------------------------------------------!
@@ -884,7 +899,8 @@ module structural_growth
    ! (structural) biomass.                                                                 !
    !---------------------------------------------------------------------------------------!
    subroutine plant_structural_allocation(ipft,hite,dbh,lat,phen_status,elongf,bdeada      &
-                                         ,bdeadb,bstorage,maxh,f_bseeds,f_growth,f_bstorage)
+                                         ,bdeadb,bstorage,bstorage_reserve,maxh            &
+                                         ,f_bseeds,f_growth,f_bstorage)
       use pft_coms      , only : phenology      & ! intent(in)
                                , repro_min_h    & ! intent(in)
                                , repro_min_dbh  & ! intent(in)
@@ -912,6 +928,7 @@ module structural_growth
       real   , intent(in)  :: bdeada     !> Current dead biomass
       real   , intent(in)  :: bdeadb     !> Current dead biomass
       real   , intent(in)  :: bstorage   !> Current storage pool
+      real   , intent(in)  :: bstorage_reserve !> Target bstorage reserve for reflushing
       real   , intent(in)  :: maxh       !> Height of the tallest cohort in the patch
       integer, intent(in)  :: phen_status
       real   , intent(in)  :: elongf     !> Elongation factor
@@ -923,6 +940,7 @@ module structural_growth
       real                         :: delta_bd    !> Target Bd - actual Bd
       real                         :: dnorm       !> Normalised DBH
       real                         :: r_fract_act !> Hgt-dependent reproduction allocation
+      real                         :: f_bgi       !> inverse of fraction for growth and reproduction
       logical                      :: late_spring
       logical                      :: use_storage
       logical                      :: zero_growth
@@ -951,6 +969,20 @@ module structural_growth
          first_time = .false.
       end if
       !------------------------------------------------------------------------------------!
+
+      
+      !------------------------------------------------------------------------------------!
+      ! Check whether plants want to reserve bstorage for reflushing leaves and roots      !
+      !------------------------------------------------------------------------------------!
+      if (bstorage <= bstorage_reserve) then
+          ! plants want to save bstorage for potential future needs
+          f_bseeds = 0.0
+          f_growth = 0.0
+          f_bstorage = 1.0 - f_growth - f_bseeds
+          return
+      endif
+      !------------------------------------------------------------------------------------!
+
 
 
       !----- Check whether this is late spring... -----------------------------------------!
@@ -1121,7 +1153,18 @@ module structural_growth
       !------------------------------------------------------------------------------------!
       if (f_bseeds < r_tol_trunc) f_bseeds = 0.0
       if (f_growth < r_tol_trunc) f_growth = 0.0
-      f_bstorage = 1.0 - f_growth - f_bseeds
+
+      ! plants will save bstorage_reserve as mobile carbon supply for potential reflushing
+      ! we take the maximum of the residual of f_bseeds and f_growth and bstorage_reserve 
+      ! / bstorage to maintain compatibility with previous versions (bstorage_reserve = 0.)
+      f_bstorage = max(1.0 - f_bseeds - f_growth, bstorage_reserve / bstorage)
+
+      ! we need to modify f_bseeds and f_growth accordingly if f_bseeds+f_growth is non-zero
+      if (f_bseeds + f_growth > 0.0) then
+          f_bgi    = 1.0 / (f_bseeds + f_growth)
+          f_bseeds = f_bseeds * f_bgi * (1.0 - f_bstorage)
+          f_growth = f_growth * f_bgi * (1.0 - f_bstorage)
+      endif
       !------------------------------------------------------------------------------------!
 
 
@@ -1363,7 +1406,7 @@ module structural_growth
 
 
       !----- First, find the minimum possible scale for each pool. ------------------------!
-      bleaf_ok_min     = size2bl(min_dbh(ipft),hgt_min(ipft),ipft)
+      bleaf_ok_min     = size2bl(min_dbh(ipft),hgt_min(ipft),cpatch%sla(ico),ipft)
       bdead_ok_min     = size2bd(min_dbh(ipft),hgt_min(ipft),ipft)
       bdeada_ok_min    =     agf_bs(ipft)  * bdead_ok_min
       bdeadb_ok_min    = (1.-agf_bs(ipft)) * bdead_ok_min

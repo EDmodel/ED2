@@ -4,8 +4,8 @@
 !> \brief Solve Farquhar Photosynthesis model together with Katul optimization-based
 !> stomata conductance model.
 !> \details The optimization framework is to maximize A - stoma_lambda * E every
-!> model time step. Currently the optimization is acheived using Newton's method
-!> with initial values as stom. cond. from last timestep.\n
+!> model time step. Currently the optimization is acheived using regula falsi. The module only
+!includes light-limited and RuBP-limited conditions\n
 !> The references are:\n
 !>       Xu et al. (2016) Diversity in plant hydraulic traits explains seasonal and
 !> inter-annual variations in vegetation dynamics in seasonally dry tropical
@@ -22,7 +22,7 @@
 !>       Katul, G., S. Manzoni, et al. (2010). "A stomatal optimization theory to describe
 !> the effects of atmospheric CO2 on leaf photosynthesis and transpiration."
 !> Annals of Botany 105(3): 431-442.
-!> \author Xiangtao Xu, 15 Feb. 2018
+!> \author Xiangtao Xu, 18 MAY 2020
 !==========================================================================================!
 !==========================================================================================!
 module farq_katul
@@ -38,64 +38,69 @@ module farq_katul
    !> \author Xiangtao Xu, 15 Feb. 2018
    !---------------------------------------------------------------------------------------!
 
-  subroutine katul_lphys(can_prss,can_shv,can_co2,ipft,leaf_par,leaf_temp                 &
-                        ,lint_shv,green_leaf_factor,leaf_aging_factor,Vcmax15             &
-                        ,leaf_gbw,leaf_psi,last_gV,last_gJ,A_open,A_closed,A_light        &
-                        ,A_rubp,A_co2,gsw_open,gsw_closed,lsfc_shv_open,lsfc_shv_closed   &
-                        ,lsfc_co2_open,lsfc_co2_closed,lint_co2_open,lint_co2_closed      &
-                        ,leaf_resp,vmout,comppout,limit_flag)
+   subroutine katul_lphys(ib,can_prss,can_rhos,can_shv,can_co2,ipft,leaf_par,leaf_temp     &
+                         ,lint_shv,green_leaf_factor,leaf_aging_factor,vm_bar,rd_bar       &
+                         ,leaf_gbw,leaf_psi,dmax_leaf_psi,A_open,A_closed,A_light,A_rubp,A_co2           &
+                         ,gsw_open,gsw_closed,lsfc_shv_open,lsfc_shv_closed                &
+                         ,lsfc_co2_open,lsfc_co2_closed,lint_co2_open,lint_co2_closed      &
+                         ,leaf_resp,vmout,jmout,tpmout,jactout,comppout,limit_flag)
       
     use rk4_coms       , only : tiny_offset              & ! intent(in)
                               , effarea_transp           ! ! intent(in)
+    use c34constants   , only : thispft                  & ! intent(out)
+                              , met                      & ! intent(out)
+                              , aparms                   ! ! intent(out)
+    use farq_leuning   , only : comp_photo_tempfun       ! function
     use pft_coms       , only : photosyn_pathway         & ! intent(in)
-                              , vm_hor                   & ! intent(in)
+                              , Vm0                      & ! intent(in)
                               , vm_low_temp              & ! intent(in)
                               , vm_high_temp             & ! intent(in)
+                              , vm_hor                   & ! intent(in)
+                              , vm_q10                   & ! intent(in)
                               , vm_decay_elow            & ! intent(in)
                               , vm_decay_ehigh           & ! intent(in)
-                              , vm_q10                   & ! intent(in)
-                              , rd_hor                   & ! intent(in)
+                              , Jm0                      & ! intent(in)
+                              , jm_low_temp              & ! intent(in)
+                              , jm_high_temp             & ! intent(in)
+                              , jm_hor                   & ! intent(in)
+                              , jm_q10                   & ! intent(in)
+                              , jm_decay_elow            & ! intent(in)
+                              , jm_decay_ehigh           & ! intent(in)
+                              , TPm0                     & ! intent(in)
                               , rd_low_temp              & ! intent(in)
                               , rd_high_temp             & ! intent(in)
+                              , rd_hor                   & ! intent(in)
+                              , rd_q10                   & ! intent(in)
                               , rd_decay_elow            & ! intent(in)
                               , rd_decay_ehigh           & ! intent(in)
-                              , rd_q10                   & ! intent(in)
                               , cuticular_cond           & ! intent(in)
-                              , dark_respiration_factor  & ! intent(in)
                               , quantum_efficiency       & ! intent(in)
+                              , curvpar_electron         & ! intent(in)
+                              , qyield_psII              & ! intent(in)
                               , leaf_psi_tlp             & ! intent(in)
                               , stoma_lambda             & ! intent(in)
                               , stoma_beta               ! ! intent(in)
-    use consts_coms    , only : t00                      & ! intent(in)
-                              , umol_2_mol               & ! intent(in)
-                              , mmdry1000                & ! intent(in)
-                              , mmh2o                    & ! intent(in)
-                              , mmdry                    & ! intent(in)
-                              , mmdryi                   & ! intent(in)
-                              , epi                      & ! intent(in)
-                              , ep                       & ! intent(in)
-                              , rmol                     ! ! intent(in)
-    use therm_lib      , only : eslf                     ! ! function
-    use ed_misc_coms   , only : current_time             ! ! intent(in)
-    use physiology_coms, only : gbw_2_gbc                & ! intent(in)
-                              , gsw_2_gsc                & ! intent(in)
-                              , iphysiol                 & ! intent(in)
+   use consts_coms    ,  only : mmh2oi8                  & ! intent(in)
+                              , mmh2o8                   & ! intent(in)
+                              , mmdryi8                  & ! intent(in)
+                              , mmdry8                   & ! intent(in)
+                              , ep8                      & ! intent(in)
+                              , epi8                     & ! intent(in)
+                              , t008                     & ! intent(in)
+                              , umol_2_mol8              & ! intent(in)
+                              , mol_2_umol8              & ! intent(in)
+                              , Watts_2_Ein8             ! ! intent(in)
+    use physiology_coms, only : gbw_2_gbc8               & ! intent(in)
+                              , gsc_2_gsw8               & ! intent(in)
                               , h2o_plant_lim            & ! intent(in)
-                              , o2_ref                   & ! intent(in)
-                              , kco2_refval              & ! intent(in)
-                              , kco2_hor                 & ! intent(in)
-                              , kco2_q10                 & ! intent(in)
-                              , ko2_refval               & ! intent(in)
-                              , ko2_hor                  & ! intent(in)
-                              , ko2_q10                  & ! intent(in)
-                              , compp_refval             & ! intent(in)
-                              , compp_q10                & ! intent(in)
-                              , compp_hor               
+                              , o2_ref8                  ! ! intent(in)
 
     implicit none
 
       !------ Arguments. ------------------------------------------------------------------!
+      integer     , intent(in)    :: ib                ! Multithread buffer
       real(kind=4), intent(in)    :: can_prss          ! Canopy air pressure    [       Pa]
+      real(kind=4), intent(in)    :: can_rhos          ! Canopy air density     [    kg/m2]
       real(kind=4), intent(in)    :: can_shv           ! Canopy air sp. hum.    [    kg/kg]
       real(kind=4), intent(in)    :: can_co2           ! Canopy air CO2         [ umol/mol]
       integer     , intent(in)    :: ipft              ! Plant functional type  [      ---]
@@ -104,19 +109,19 @@ module farq_katul
       real(kind=4), intent(in)    :: lint_shv          ! Leaf interc. sp. hum.  [    kg/kg]
       real(kind=4), intent(in)    :: green_leaf_factor ! Frac. of on-allom. gr. [      ---]
       real(kind=4), intent(in)    :: leaf_aging_factor ! Ageing parameter       [      ---]
-      real(kind=4), intent(in)    :: Vcmax15             ! Input Vm0              [umol/m2/s]
+      real(kind=4), intent(in)    :: vm_bar            ! Average Vm function    [umol/m2/s]
+      real(kind=4), intent(in)    :: rd_bar            ! Average Rd function    [umol/m2/s]
       real(kind=4), intent(in)    :: leaf_gbw          ! B.lyr. cnd. of H2O     [  kg/m2/s]
       real(kind=4), intent(in)    :: leaf_psi          ! leaf water potential   [        m]
-      real(kind=4), intent(inout) :: last_gV           ! gs for last timestep   [  kg/m2/s]
-      real(kind=4), intent(inout) :: last_gJ           ! gs for last timestep   [  kg/m2/s]
+      real(kind=4), intent(in)    :: dmax_leaf_psi     ! Daily maximum leaf water potential   [        m]
       real(kind=4), intent(out)   :: A_open            ! Photosyn. rate (op.)   [umol/m2/s]
       real(kind=4), intent(out)   :: A_closed          ! Photosyn. rate (cl.)   [umol/m2/s]
-      real(kind=4), intent(out)   :: A_light           ! Photosyn. rate (cl.)   [umol/m2/s]
-      real(kind=4), intent(out)   :: A_rubp            ! Photosyn. rate (cl.)   [umol/m2/s]
-      real(kind=4), intent(out)   :: A_co2             ! Photosyn. rate (cl.)   [umol/m2/s]
+      real(kind=4), intent(out)   :: A_light           ! Photosyn. rate (light) [umol/m2/s]
+      real(kind=4), intent(out)   :: A_rubp            ! Photosyn. rate (RuBP)  [umol/m2/s]
+      real(kind=4), intent(out)   :: A_co2             ! Photosyn. rate (CO2)   [umol/m2/s]
       real(kind=4), intent(out)   :: gsw_open          ! St. cnd. of H2O  (op.) [  kg/m2/s]
       real(kind=4), intent(out)   :: gsw_closed        ! St. cnd. of H2O  (cl.) [  kg/m2/s]
-      real(kind=4), intent(out)   :: lsfc_shv_open     ! Leaf sfc. sp.hum.(op.) [    kg/kg] 
+      real(kind=4), intent(out)   :: lsfc_shv_open     ! Leaf sfc. sp.hum.(op.) [    kg/kg]
       real(kind=4), intent(out)   :: lsfc_shv_closed   ! Leaf sfc. sp.hum.(cl.) [    kg/kg]
       real(kind=4), intent(out)   :: lsfc_co2_open     ! Leaf sfc. CO2    (op.) [ umol/mol]
       real(kind=4), intent(out)   :: lsfc_co2_closed   ! Leaf sfc. CO2    (cl.) [ umol/mol]
@@ -124,752 +129,643 @@ module farq_katul
       real(kind=4), intent(out)   :: lint_co2_closed   ! Intercell. CO2   (cl.) [ umol/mol]
       real(kind=4), intent(out)   :: leaf_resp         ! Leaf respiration rate  [umol/m2/s]
       real(kind=4), intent(out)   :: vmout             ! Max. Rubisco capacity  [umol/m2/s]
+      real(kind=4), intent(out)   :: jmout             ! Max. electron transp.  [umol/m2/s]
+      real(kind=4), intent(out)   :: tpmout            ! Max. triose phoshphate [umol/m2/s]
+      real(kind=4), intent(out)   :: jactout           ! Act. electron transp.  [umol/m2/s]
       real(kind=4), intent(out)   :: comppout          ! GPP compensation point [ umol/mol]
       integer     , intent(out)   :: limit_flag        ! Photosyn. limit. flag  [      ---]
+
+      !----- Local variables. -------------------------------------------------------------!
+      real(kind=8)                :: f_plastic8        ! Plasticity factor
+      real(kind=8)                :: lambda8           ! marginal water use efficiency
+      real(kind=4)                :: water_stress_factor !factor to represent water stress on photosystems
+      real(kind=8)                :: opt_ci            ! ci of the optial solution [mol CO2/mol air]
+      real(kind=8)                :: opt_fc            ! optimal CO2 assimilation rate [molCO2/m2/s]
+      real(kind=8)                :: opt_gsc           ! optimal stomatal conductance  [mol/m2/s]
+      real(kind=8)                :: opt_ci_closed     ! ci under closed stomata   [mol CO2/mol air]
+      real(kind=8)                :: opt_fc_closed     ! fc under closed stomata       [molCO2/m2/s]
+      real(kind=8)                :: opt_gsc_closed    ! gsc under closed stomata      [mol/m2/s]
+      real(kind=8)                :: opt_fc_rubp       ! RuBisco limited assimilation  [molCO2/m2/s]
+      real(kind=8)                :: opt_fc_light      ! Light   limited assimilation  [molCO2/m2/s]
+      real(kind=8)                :: opt_fc_3rd        ! TPU/CO2 limited assimilation  [molCO2/m2/s]
       !----- External function. -----------------------------------------------------------!
-      real(kind=4)    , external      :: sngloff     ! Safe double -> single precision
-      !----- Local Variables    -----------------------------------------------------------!
-      real(kind=4)                :: blyr_cond_h2o      ! leaf boundary layer h2o conductance
-      real(kind=4)                :: blyr_cond_co2      ! leaf boundary layer co2 conductance
-      real(kind=4)                :: stom_cond_h2o      ! leaf stomata h2o conductance
-      real(kind=4)                :: stom_cond_co2      ! leaf stomata co2 conductance
-      real(kind=4)                :: leaf_o2            ! O2 concentration  mmol/mol
-      real(kind=4)                :: par                ! PAR          micromol/m2/s
-      real(kind=4)                :: leaf_temp_degC     ! leaf_temperature in degree C
-      real(kind=4)                :: can_vpr_prss       ! canopy vapor pressure in kPa
-      real(kind=4)                :: Vcmax              ! current Vcmax  umol/m2/s
-      real(kind=4)                :: Vcmax25            ! current Vcmax at 25 degC umol/m2/s
-      real(kind=4)                :: Jmax               ! current Jmax  umol/m2/s
-      real(kind=4)                :: Jmax25             ! current Jmax at 25 degC umol/m2/s
-      real(kind=4)                :: Jmax15             ! current Jmax at 15 degC umol/m2/s
-      real(kind=4)                :: Jrate              ! current Jrate umol/m2/s
-      real(kind=4)                :: Rdark              ! current dark respiration rate umol/m2/s
-      real(kind=4)                :: cuticular_gsc      ! current cuticular_conductance for CO2 mol/m2/s
-      real(kind=4)                :: lambda             ! current lambda factor    numo/mol/kPa
-      real(kind=4)                :: down_factor        ! photosynthetic down-regulation factor
-      real(kind=4)                :: aero_resistance    ! aerodynamic resistance
-      real(kind=4)                :: accepted_gsc       ! gsc solved from optimization scheme mol/m2/s
-      real(kind=4)                :: accepted_fc        ! CO2 flux solved from optimization scheme umol/m2/s
-      real(kind=4)                :: accepted_ci        ! Internal CO2 concentration ppm
-      real(kind=4)                :: leaf_vpr_prss      ! leaf internal vapor pressure  in kPa
-      real(kind=4)                :: cp                 ! constants in photosynthesis  umol/mol
-      real(kind=4)                :: kc                 ! constants in photosynthesis  umol/mol
-      real(kind=4)                :: ko                 ! constants in photosynthesis  umol/mol
-      real(kind=4)                :: dfcdg              ! variables used in optimization scheme
-      real(kind=4)                :: dfedg              ! variables used in optimization scheme
-      real(kind=4)                :: d2fcdg2            ! variables used in optimization scheme
-      real(kind=4)                :: d2fedg2            ! variables used in optimization scheme
-      real(kind=4)                :: delta_g            ! variables used in optimization scheme
-      real(kind=4)                :: a1gk,a2gk          ! variables used in optimization scheme
-      real(kind=4)                :: k1ci,k2ci,k3ci,k4ci! variables used in optimization scheme
-      real(kind=4)                :: test_gsc           ! variables used in optimization scheme
-      real(kind=4)                :: test_gV            ! variables used in optimization scheme
-      real(kind=4)                :: test_fcV           ! variables used in optimization scheme
-      real(kind=4)                :: test_ciV           ! variables used in optimization scheme
-      real(kind=4)                :: test_gJ            ! variables used in optimization scheme
-      real(kind=4)                :: test_fcJ           ! variables used in optimization scheme
-      real(kind=4)                :: test_ciJ           ! variables used in optimization scheme
-      integer                     :: iter               ! variables used in optimization scheme
-      real(kind=4)                :: testfc             ! variables used in optimization scheme
-      real(kind=4)                :: testci             ! variables used in optimization scheme
-      real(kind=4)                :: greeness           ! Leaf "Greeness"           [   0 to 1]
-      real           ,parameter   :: Jmax_vmhor_coef = 5./7.  ! fraction of Jmax  vmhor to Vcmax vmhor estimated from Kattge et al. 2007
-      integer                     :: k
-      logical                     :: flg_resolvable
-      logical, parameter          :: debug_flag = .false.
-    
-
-      !-------------------    Define some constants....
-      leaf_o2           = o2_ref * 1000.                             ! convert to mmol/mol
-      par               = leaf_par * 4.6                             ! convert to micromol/m2/s
-      leaf_temp_degC    = leaf_temp - t00                            ! convert to degC
-      leaf_vpr_prss     = eslf(leaf_temp) * 0.001                    ! in kPa
-      can_vpr_prss      = can_shv * can_prss * 0.001                 ! in kPa
+      real(kind=4)    , external  :: sngloff           ! Safe double -> single precision
       !------------------------------------------------------------------------------------!
-
-
-
-      !------------------------------------------------------------------------------------!
-      ! Calculate temperature dependence and other derived variables
-      !------------------------------------------------------------------------------------!
-      select case (iphysiol) 
-      case (0,1)
-          ! We go for the Arrhenius form as in farq_leuning module
-          Vcmax25 = Vcmax15 &
-                  * mod_arrhenius(298.15,                 &
-                                  vm_hor(ipft),           &
-                                  vm_low_temp(ipft),      &
-                                  vm_high_temp(ipft),     &
-                                  vm_decay_elow(ipft),    &
-                                  vm_decay_ehigh(ipft),   &
-                                  .true.)
-
-          Jmax25 = Vcmax25 * 1.97 ! Leuning 1997, Wullschlegger et al. 1991
-                                  ! Other values like 1.67 is also reported
-                                  ! based on the temperature dependence used
-
-          Jmax15 = Jmax25 &
-                 /  mod_arrhenius(298.15,                 &
-                        vm_hor(ipft) * Jmax_vmhor_coef,   & 
-                        vm_low_temp(ipft),                &
-                        vm_high_temp(ipft),               &
-                        vm_decay_elow(ipft),              &
-                        vm_decay_ehigh(ipft),             &
-                        .true.)
-    
-          ! calculate the Vcmax Jmax and Rd at current T
-          Vcmax = Vcmax15                              &
-                * mod_arrhenius(leaf_temp,             &
-                       vm_hor(ipft),                   &
-                       vm_low_temp(ipft),              &
-                       vm_high_temp(ipft),             &
-                       vm_decay_elow(ipft),            &
-                       vm_decay_ehigh(ipft),           &
-                       .true.)
-
-          Jmax = Jmax15                                &
-               * mod_arrhenius(leaf_temp,              &
-                     vm_hor(ipft) * Jmax_vmhor_coef,   &
-                     vm_low_temp(ipft),                &
-                     vm_high_temp(ipft),               &
-                     vm_decay_elow(ipft),              &
-                     vm_decay_ehigh(ipft),             &
-                     .true.)
-
-          Rdark = Vcmax15                              &
-                * dark_respiration_factor(ipft)        &
-                * mod_arrhenius(leaf_temp,             &
-                      rd_hor(ipft),                    &
-                      rd_low_temp(ipft),               &
-                      rd_high_temp(ipft),              &
-                      rd_decay_elow(ipft),             &
-                      rd_decay_ehigh(ipft),            &
-                      .true.)
-
-          cp = compp_refval * mod_arrhenius(leaf_temp,compp_hor,0.,0.,0.,0.,.false.) / umol_2_mol
-          kc = kco2_refval * mod_arrhenius(leaf_temp,kco2_hor,0.,0.,0.,0.,.false.)   / umol_2_mol
-          ko = ko2_refval * mod_arrhenius(leaf_temp,ko2_hor,0.,0.,0.,0.,.false.)    / umol_2_mol
-
-      case (2,3)
-          ! Use Q10 from Collatz et al. 1991 
-          Vcmax25 = Vcmax15                             &
-                  * mod_collatz(298.15,                 &
-                                vm_q10(ipft),           &
-                                vm_low_temp(ipft),      &
-                                vm_high_temp(ipft),     &
-                                vm_decay_elow(ipft),    &
-                                vm_decay_ehigh(ipft),   &
-                                .true.)
-
-          Jmax25 = Vcmax25 * 1.97 ! Leuning 1997, Wullschlegger et al. 1991
-                                  ! Other values like 1.67 is also reported
-                                  ! based on the temperature dependence used
-
-          Jmax15 = Jmax25 &
-                 /  mod_collatz(298.15,                 &
-                        vm_q10(ipft),                   & ! assume Jmax has the same q10 as Vcmax
-                        vm_low_temp(ipft),              &
-                        vm_high_temp(ipft),             &
-                        vm_decay_elow(ipft),            &
-                        vm_decay_ehigh(ipft),           &
-                        .true.)
-    
-          ! calculate the Vcmax Jmax and Rd at current T
-          Vcmax = Vcmax15                              &
-                * mod_collatz(leaf_temp,               &
-                       vm_q10(ipft),                   &
-                       vm_low_temp(ipft),              &
-                       vm_high_temp(ipft),             &
-                       vm_decay_elow(ipft),            &
-                       vm_decay_ehigh(ipft),           &
-                       .true.)
-
-          Jmax = Jmax15                                &
-               * mod_collatz(leaf_temp,                &
-                     vm_q10(ipft),                     &
-                     vm_low_temp(ipft),                &
-                     vm_high_temp(ipft),               &
-                     vm_decay_elow(ipft),              &
-                     vm_decay_ehigh(ipft),             &
-                     .true.)
-
-          Rdark = Vcmax15                              &
-                * dark_respiration_factor(ipft)        &
-                * mod_collatz(leaf_temp,               &
-                      rd_q10(ipft),                    &
-                      rd_low_temp(ipft),               &
-                      rd_high_temp(ipft),              &
-                      rd_decay_elow(ipft),             &
-                      rd_decay_ehigh(ipft),            &
-                      .true.)
-
-          cp = compp_refval * mod_collatz(leaf_temp,compp_q10,0.,0.,0.,0.,.false.) / umol_2_mol
-          kc = kco2_refval  * mod_collatz(leaf_temp,kco2_q10,0.,0.,0.,0.,.false.)   / umol_2_mol
-          ko = ko2_refval   * mod_collatz(leaf_temp,ko2_q10,0.,0.,0.,0.,.false.)    / umol_2_mol
-
-      case (4)
-          ! Vcmax, Jmax Temperature dependence according to Harley et al. 1991
-          ! CLM parameters for Rd Bonan et al. 2011
-          ! This was used in Xu et al. 2016 New Phyt.
-
-          Vcmax25 = Vcmax15                               &
-                  / harley_arrhenius(15.+273.15,298.15,   &
-                                     58.52,          & ! Hv
-                                     0.710,          & ! Sv
-                                     220.0)            ! Hd
-          Jmax25 = Vcmax25 * 1.97
-
-          ! calculate the Vcmax Jmax and Rd at current T
-          Vcmax = Vcmax25                                 &
-                * harley_arrhenius(leaf_temp,298.15,        &
-                                58.52,                  & ! Hv
-                                0.710,                  & ! Sv
-                                220.0)                    ! Hd
-
-
-          ! Jmax
-          Jmax = Jmax25                                   &
-               * harley_arrhenius(leaf_temp,298.15,&
-                                37.10,                  & ! Hv
-                                0.710,                  & ! Sv
-                                220.)                     ! Hd
-
-          ! Rd
-          Rdark = Vcmax25 * dark_respiration_factor(ipft)   &
-                * harley_arrhenius(leaf_temp,298.15,      &
-                                64.5,                       & ! Hv
-                                0.71,                       & ! Sv
-                                220.)                         ! Hd
-
-          ! MLO. Replaced hard-coded molar gas constant with the declared parameter.
-          cp = exp(19.02-37830./(rmol * leaf_temp ))
-          kc = exp(38.05-79430./(rmol * leaf_temp ))
-          ko = exp(20.30-36380./(rmol * leaf_temp ))
-
-      end select
-    
-      !------------------------------------------------------------------------------------!
-
-      ! calculate greeness
-      if (leaf_aging_factor > 0.01 .and. green_leaf_factor > 0.0001) then
-         greeness = leaf_aging_factor / green_leaf_factor
-      else
-         greeness = 1.0
-      end if
-
-      !------------------------------------------------------------------------------------!
-      ! correcting for water stress impact on realized Vcmax
-      !------------------------------------------------------------------------------------!
-      select case (h2o_plant_lim)
-      case (4)
-          ! down scale Vcmax, Jmax, lambda using leaf_psi
-          ! parameters are kind of arbitrary from Xu et al. 2016 New Phyt.
-          down_factor = max(1e-6,min(1.0, &
-                        1. / (1. + (leaf_psi / leaf_psi_tlp(ipft)) ** 6.0)))
-          lambda =  stoma_lambda(ipft) * can_co2 / 400. * exp(stoma_beta(ipft) * leaf_psi)
-      case default
-          ! use fsw to account for water stress outside of this module
-          down_factor = 1.
-          lambda =  stoma_lambda(ipft) * can_co2 / 400.
-      end select
-
-      Jmax      = Jmax * down_factor * greeness
-      Vcmax     = Vcmax * down_factor * greeness
-
-      !------------------------------------------------------------------------------------!
-
       
+      !----- Initialise limit_flag to night time value. -----------------------------------!
+      limit_flag = 0
       !------------------------------------------------------------------------------------!
-      ! Solve the optimization
+
+
+
       !------------------------------------------------------------------------------------!
-      cuticular_gsc = cuticular_cond(ipft) * gsw_2_gsc * 1.0e-6 ! convert to mol/m2/s
-
-      ! initialize limit_flag as 0
-      limit_flag      = 0
-      ! Solve the quadratic function for light-limited photosynthesis
-      if (photosyn_pathway(ipft) == 3) then
-          Jrate = ((Jmax+0.385*par) -   &
-                  sqrt((Jmax+0.385*par)**2-4.*0.7*0.385*Jmax*par))/1.4
-      elseif (photosyn_pathway(ipft) == 4) then
-          ! this is still under test
-          Jrate = quantum_efficiency(ipft) * par  
-      endif
-
-      ! calcualte aerodynamic resistance
-      if (leaf_gbw > 0.) then
-          aero_resistance = mmdry / (leaf_gbw * gbw_2_gbc)
-      else
-          aero_resistance = 1e10
-      endif
-
-      flg_resolvable = (Jmax /= 0.) .and. (Vcmax /= 0.) .and. &
-                       (aero_resistance < 1e8) .and.(cuticular_gsc > 1e-8)
-
-      if (flg_resolvable) then
-        ! 1. Rubisco-limited photosynthesis
-        a1gk = Vcmax
-        a2gk = kc * (1. + leaf_o2 / ko)
-        k1ci = a1gk / can_co2 - Rdark / can_co2
-        k2ci = a1gk * aero_resistance / can_co2 - Rdark * aero_resistance / can_co2 - 1. + a2gk / can_co2
-        k3ci = -a1gk*cp/can_co2/can_co2-Rdark*a2gk/can_co2/can_co2
-        k4ci = -a1gk*cp/can_co2*aero_resistance/can_co2-Rdark*a2gk/can_co2*aero_resistance/can_co2-a2gk/can_co2
-       
-
-        if(leaf_vpr_prss > can_vpr_prss) then
-            ! Use newton's method to find the zero point of 
-            ! start with gsw from last time
-            if ((.not. isnan(last_gV)) .and. last_gV > 1e-10) then
-               test_gsc = last_gV
-            else
-               test_gsc = cuticular_gsc
-            endif
-           
-            do iter = 1, 500
-                ! calculate dfcdg - dfedg
-                call fluxsolver(test_gsc, aero_resistance, can_co2, k1ci, k2ci, k3ci, k4ci, testci, testfc)
-                call deriv_fc(test_gsc, aero_resistance, k1ci, k2ci, k3ci, k4ci, can_co2, testci, dfcdg)
-            
-                dfedg = lambda / gsw_2_gsc * (leaf_vpr_prss - can_vpr_prss) / &
-                       (1. + gbw_2_gbc/gsw_2_gsc * test_gsc * aero_resistance) ** 2
-
-                call deriv_dfcdg(test_gsc, aero_resistance, k1ci, k2ci, k3ci, k4ci,can_co2,testci,dfcdg,d2fcdg2)
-                d2fedg2 = - 2. * gbw_2_gbc/gsw_2_gsc * aero_resistance / &
-                          (gbw_2_gbc/gsw_2_gsc * test_gsc * aero_resistance + 1) * dfedg
-
-                ! calculate the derivative of dfcdg - dfedg
-                if (d2fcdg2 - d2fedg2 == 0) then
-                    delta_g = 0.
-                else
-                    delta_g = - (dfcdg - dfedg) / (d2fcdg2 - d2fedg2)
-                endif
-
-                ! control exit
-
-                if (abs(dfcdg - dfedg) < 1e-4 .or.                              &  ! converge
-                    (test_gsc < cuticular_gsc .and. dfcdg-dfedg < 0.) .or.      &  ! close stomatal
-                    (test_gsc < cuticular_gsc .and. isnan(dfcdg-dfedg)) .or.    &  ! close stomatal
-                    (test_gsc + delta_g <= 0.)                 .or.             &  ! unrealistic values
-                    (isnan(delta_g))                           .or.             &  ! unrealistic values
-                    (delta_g == 0.)                            .or.             &  ! trapped
-                    (test_gsc > 1.0 .and. dfcdg-dfedg > 0.)                     &  ! fully open stomatal
-                   ) then
-                    exit
-                endif
-
-                test_gsc = test_gsc + delta_g
-
-            enddo
-
-            ! check the case that a negative or no optimal value is found
-            if (test_gsc < cuticular_gsc .or. isnan(test_gsc)) then 
-                test_gsc = cuticular_gsc
-            endif
-                
-            ! Check the case that a large gsc value is found
-            if (test_gsc > 1.0) then
-               if (par > 0. .and. dfcdg-dfedg > 0.) then ! light
-                    test_gsc = 1.0
-               else ! dark
-                    test_gsc = cuticular_gsc 
-               endif
-            endif
-
-            call fluxsolver(test_gsc, aero_resistance, can_co2, k1ci, k2ci, k3ci, k4ci, testci, testfc)
-
-            last_gV = test_gsc
-            
-            test_gV = test_gsc
-            test_fcV = testfc
-            test_ciV = testci
-          
-        else
-          ! canopy air is saturated...
-            test_ciV = can_co2
-            test_gV = 1000. / aero_resistance
-            call fluxsolver(test_gV, aero_resistance, can_co2, k1ci, k2ci, k3ci, k4ci, testci,test_fcV)
-        endif
+      !     Copy the meteorological forcing to the "met" structure.  Notice that some      !
+      ! variables go through unit conversions, and all variables are converted to double   !
+      ! precision.                                                                         !
+      !------------------------------------------------------------------------------------!
+      !----- 1. Variables that remain with the same units. --------------------------------!
+      met(ib)%leaf_temp    = dble(leaf_temp)
+      met(ib)%can_rhos     = dble(can_rhos )
+      met(ib)%can_prss     = dble(can_prss )
+      met(ib)%can_o2       = o2_ref8
+      !----- 2. Convert specific humidity to mol/mol. -------------------------------------!
+      met(ib)%can_shv      = epi8 * dble(can_shv) 
+      !----- 3. Convert CO2 to mol/mol. ---------------------------------------------------!
+      met(ib)%can_co2      = dble(can_co2) * umol_2_mol8
+      !----- 4. Convert W/m2 to mol/m2/s. -------------------------------------------------!
+      met(ib)%par          = dble(leaf_par) * Watts_2_Ein8
+      !------------------------------------------------------------------------------------!
+      !  5. Intercellular specific humidity, which is assumed to be at saturation          !
+      !     given the leaf temperature.  We convert it to mol/mol.                         !
+      !------------------------------------------------------------------------------------!
+      met(ib)%lint_shv    = epi8 * dble(lint_shv)
+      !------------------------------------------------------------------------------------!
+      !  6. Find the conductivities for water and carbon.  The input for water is in       !
+      !     kg/m2/s, and here we convert to mol/m2/s.  The convertion coefficient from     !
+      !     water to carbon dioxide comes from M09's equation B14.  Here we multiply by    !
+      !     the effective area for transpiration, depending on whether the leaves of this  !
+      !     plant functional type are hypo-stomatous, symmetrical, or amphistomatous.      !
+      !------------------------------------------------------------------------------------!
+      met(ib)%blyr_cond_h2o = dble(leaf_gbw)  * mmdryi8 * effarea_transp(ipft)
+      met(ib)%blyr_cond_co2 = gbw_2_gbc8 * met(ib)%blyr_cond_h2o
+      !------------------------------------------------------------------------------------!
 
 
-        ! 2. Repeat calculation for light-limited case
-        Jrate = Jrate * 0.25
-        a1gk = Jrate
-        a2gk = 2. * cp
-        k1ci = a1gk / can_co2 - Rdark / can_co2
-        k2ci = a1gk * aero_resistance / can_co2 - Rdark * aero_resistance / can_co2 - 1. + a2gk / can_co2
-        k3ci = -a1gk*cp/can_co2/can_co2-Rdark*a2gk/can_co2/can_co2
-        k4ci = -a1gk*cp/can_co2*aero_resistance/can_co2-Rdark*a2gk/can_co2*aero_resistance/can_co2-a2gk/can_co2
-    
-        if(leaf_vpr_prss > can_vpr_prss)then
-        ! Use newton's method to find the zero point of 
-        ! start with gsw from last time
-            if ((.not. isnan(last_gJ)) .and. last_gJ > 1e-10) then
-               test_gsc = last_gJ
-            else
-               test_gsc = cuticular_gsc 
-            endif
 
-            do iter = 1, 500
-                ! calculate dfcdg - dfedg
-                call fluxsolver(test_gsc, aero_resistance, can_co2, k1ci, k2ci, k3ci, k4ci, testci, testfc)
-                call deriv_fc(test_gsc, aero_resistance, k1ci, k2ci, k3ci, k4ci, can_co2, testci, dfcdg)
-            
-                dfedg = lambda / gsw_2_gsc * (leaf_vpr_prss - can_vpr_prss) / &
-                        (1. + gbw_2_gbc/gsw_2_gsc * test_gsc * aero_resistance) ** 2
-                
-
-                call deriv_dfcdg(test_gsc, aero_resistance, k1ci, k2ci, k3ci, k4ci,can_co2,testci,dfcdg,d2fcdg2)
-                d2fedg2 = -2. * gbw_2_gbc/gsw_2_gsc * aero_resistance / &
-                          (gbw_2_gbc/gsw_2_gsc * test_gsc * aero_resistance + 1) * dfedg
-    
-                ! calculate the derivative of dfcdg - dfedg
-                if (d2fcdg2 - d2fedg2 == 0.) then
-                    delta_g = 0.
-                else
-                    delta_g = - (dfcdg - dfedg) / (d2fcdg2 - d2fedg2)
-                endif
-
-                ! control exit
-                if (abs(dfcdg - dfedg) < 1e-4 .or.                              &   ! converge
-                    (test_gsc < cuticular_gsc .and. dfcdg-dfedg < 0.) .or.      &   ! close stomatal
-                    (test_gsc < cuticular_gsc .and. isnan(dfcdg-dfedg)) .or.    &   ! close stomatal
-                    (test_gsc + delta_g <= 0.)                 .or.             &   ! unrealistic values
-                    (isnan(delta_g))                           .or.             &   ! unrealistic values
-                    (delta_g == 0.)                 .or.                        &   ! trapped
-                    (test_gsc > 1.0 .and. dfcdg-dfedg > 0.)                     &   ! fullyopen stomatal
-                   ) then
-                            exit
-                endif
-
-                test_gsc = test_gsc + delta_g
-
-            enddo
-
-            if (test_gsc < cuticular_gsc .or. isnan(test_gsc)) then
-                test_gsc = cuticular_gsc
-            endif
-            
-            if (test_gsc > 1.0) then 
-                if (par > 0. .and. dfcdg-dfedg>0.) then ! light
-                    test_gsc = 1.0
-                else ! dark
-                    test_gsc = cuticular_gsc 
-                endif
-            endif
-
-            call fluxsolver(test_gsc, aero_resistance, can_co2, k1ci, k2ci, k3ci, k4ci, testci, testfc)
-            last_gJ = test_gsc
-            test_gJ = test_gsc
-            test_fcJ = testfc
-            test_ciJ = testci
-
-        else
-            test_ciJ = can_co2
-            test_gJ = 1000. / aero_resistance
-            call fluxsolver(test_gJ, aero_resistance, can_co2, k1ci, k2ci, k3ci, k4ci, testci,test_fcJ)
-        endif
+      !------------------------------------------------------------------------------------!
+      !     Load physiological parameters that are PFT-dependent to the thispft structure. !
+      ! Convert all variables to mol and Kelvin, when needed.                              !
+      !------------------------------------------------------------------------------------!
+      thispft(ib)%photo_pathway    = photosyn_pathway(ipft)
+      thispft(ib)%b                = dble(cuticular_cond(ipft)) * umol_2_mol8
+      thispft(ib)%vm_low_temp      = dble(vm_low_temp(ipft))  + t008
+      thispft(ib)%vm_high_temp     = dble(vm_high_temp(ipft)) + t008
+      thispft(ib)%vm_hor           = dble(vm_hor(ipft))
+      thispft(ib)%vm_q10           = dble(vm_q10(ipft))
+      thispft(ib)%vm_decay_elow    = dble(vm_decay_elow(ipft))
+      thispft(ib)%vm_decay_ehigh   = dble(vm_decay_ehigh(ipft))
+      thispft(ib)%jm_low_temp      = dble(jm_low_temp(ipft))  + t008
+      thispft(ib)%jm_high_temp     = dble(jm_high_temp(ipft)) + t008
+      thispft(ib)%jm_hor           = dble(jm_hor(ipft))
+      thispft(ib)%jm_q10           = dble(jm_q10(ipft))
+      thispft(ib)%jm_decay_elow    = dble(jm_decay_elow(ipft))
+      thispft(ib)%jm_decay_ehigh   = dble(jm_decay_ehigh(ipft))
+      thispft(ib)%rd_low_temp      = dble(rd_low_temp(ipft))  + t008
+      thispft(ib)%rd_high_temp     = dble(rd_high_temp(ipft)) + t008
+      thispft(ib)%rd_hor           = dble(rd_hor(ipft))
+      thispft(ib)%rd_q10           = dble(rd_q10(ipft))
+      thispft(ib)%rd_decay_elow    = dble(rd_decay_elow(ipft))
+      thispft(ib)%rd_decay_ehigh   = dble(rd_decay_ehigh(ipft))
+      thispft(ib)%alpha0           = dble(quantum_efficiency(ipft))
+      thispft(ib)%curvpar          = dble(curvpar_electron(ipft))
+      thispft(ib)%phi_psII         = dble(qyield_psII     (ipft))
+      !------------------------------------------------------------------------------------!
 
 
-        if(test_fcV < test_fcJ)then
-            accepted_fc  = test_fcV
-            accepted_gsc = test_gV
-            accepted_ci  = test_ciV
-            limit_flag = 2 ! limited by RuBisCo
-        else
-            accepted_fc   = test_fcJ
-            accepted_gsc  = test_gJ
-            accepted_ci   = test_ciJ
-            limit_flag = 1 ! limited by light
-        endif
 
-        ! record output
-        A_rubp = test_fcV
-        A_light = test_fcJ
-        A_co2 = min(A_rubp,A_light)
-    else  ! not resolvable
-        accepted_gsc     = cuticular_gsc
-        accepted_fc      = -Rdark
-        accepted_ci      = can_co2
-        A_rubp = -Rdark
-        A_light = -Rdark
-        A_co2 = -Rdark
 
-    endif
+      !------------------------------------------------------------------------------------!
+      !     Set Vm0 and find terms that typically depend upon Vm0 (Rd0, Jm0, TPm0).        !
+      ! This may be the default parameters, but in case trait plasticity is enabled, they  !
+      ! must be down-regulated.  Convert the resulting terms to mol/m2/s.                  !
+      !     If no plasticity is applied, vm_bar and rd_bar will be qual to vm0 and rd0     !
+      ! and f_plastic8 will be 1. Therefore it also works for this scenario.               !
+      !     Jm0, and TPm0 are all scaled with the vm_bar:Vm0 ratio.                        !
+      !------------------------------------------------------------------------------------!
+      thispft(ib)%vm0  = dble(vm_bar) * umol_2_mol8
+      thispft(ib)%rd0  = dble(rd_bar) * umol_2_mol8
+      f_plastic8       = dble(vm_bar) / dble(vm0(ipft))
+      thispft(ib)%jm0  = f_plastic8 * dble(jm0 (ipft)) * umol_2_mol8
+      thispft(ib)%TPm0 = f_plastic8 * dble(TPm0(ipft)) * umol_2_mol8
+      !------------------------------------------------------------------------------------!
 
-    if (debug_flag) then
-       write (unit=*,fmt='(80a)')         ('=',k=1,80)
-       write (unit=*,fmt='(a)')           'Katul Stomatal Scheme Quality Check:'
-       write (unit=*,fmt='(a,1x,i9)')   ' + HOUR:                ',current_time%hour
-       write (unit=*,fmt='(a,1x,i9)')   ' + PFT:                 ',ipft
-       write (unit=*,fmt='(a,1x,l9)')   ' + RESOLVABLE:          ',flg_resolvable
-       write (unit=*,fmt='(a,1x,es12.4)')   ' + PSI_LEAF:            ',leaf_psi
-       write (unit=*,fmt='(a,1x,es12.4)')   ' + PAR:                 ',par
-       write (unit=*,fmt='(a,1x,es12.4)')   ' + Vcmax25:             ',Vcmax25
-       write (unit=*,fmt='(a,1x,es12.4)')   ' + Vcmax:               ',Vcmax
-       write (unit=*,fmt='(a,1x,es12.4)')   ' + Jmax25:              ',Jmax25
-       write (unit=*,fmt='(a,1x,es12.4)')   ' + Jmax:                ',Jmax
-       write (unit=*,fmt='(a,1x,es12.4)')   ' + lambda:              ',lambda
-       write (unit=*,fmt='(a,1x,es12.4)')   ' + test_gV:             ',test_gV
-       write (unit=*,fmt='(a,1x,es12.4)')   ' + test_gJ:             ',test_gJ
-       write (unit=*,fmt='(a,1x,es12.4)')   ' + test_fcV:            ',test_fcV
-       write (unit=*,fmt='(a,1x,es12.4)')   ' + test_fcJ:            ',test_fcJ
-       write (unit=*,fmt='(a,1x,es12.4)')   ' + Rdark:               ',Rdark
-       write (unit=*,fmt='(a,1x,es12.4)')   ' + aero_resistance      ',aero_resistance
-       write (unit=*,fmt='(a,1x,es12.4)')   ' + cuticular_gsc        ',cuticular_gsc
-    endif
-!-------------------- copy the solution to output-----------------------!
-    A_closed        = -Rdark                ! umol/m2/s
-    A_open          = accepted_fc           ! umol/m2/s
-    leaf_resp       = Rdark
 
-    gsw_closed      = cuticular_gsc / gsw_2_gsc  &
-                    * mmdry / sngloff(effarea_transp(ipft),tiny_offset)  ! convert to kg/m2/s
-    gsw_open        = accepted_gsc / gsw_2_gsc  &
-                    * mmdry / sngloff(effarea_transp(ipft),tiny_offset)  ! convert to kg/m2/s
 
-    !------------------- these variables are not tracked....
-    blyr_cond_h2o   = leaf_gbw * mmdryi * sngloff(effarea_transp(ipft),tiny_offset)
-    stom_cond_h2o   = cuticular_gsc / gsw_2_gsc
-    lsfc_shv_closed = ( stom_cond_h2o * lint_shv + blyr_cond_h2o * can_shv)                 &
-                    / ( stom_cond_h2o + blyr_cond_h2o)  
-    stom_cond_h2o   = accepted_gsc / gsw_2_gsc
-    lsfc_shv_open   = ( stom_cond_h2o * lint_shv + blyr_cond_h2o * can_shv)                 &
-                    / ( stom_cond_h2o + blyr_cond_h2o)  
+      lambda8 = dble(stoma_lambda(ipft) * can_co2 / 400.)
+      !stomata marginal water use efficiency
+      !the co2 correcting factor is based on Manzoni et al. paper
 
-    blyr_cond_co2   = blyr_cond_h2o * gbw_2_gbc
-    lsfc_co2_open   = can_co2 - A_open / blyr_cond_co2
-    lsfc_co2_closed = can_co2 - A_closed / blyr_cond_co2
+      !update photosynthetic parameters with water stress
+      select case (h2o_plant_lim)
+      case (0,1,2,3)
+          ! use fsw to account for water stress in photosyn_driv
+          water_stress_factor = 1.
+      case (4)
+          ! down scale Vm, Jm, TPm
+          ! These values will decrease by ~10% when leaf_psi 
+          ! is equal to leaf_psi_tlp [a test value, no real data to
+          ! parameterize it. However, leaf functions usually start
+          ! to deteriorate after turgor is lost]
+          water_stress_factor = max(1e-6,           &
+                                min(1.0,            &
+                                    1. / (1. +      &
+                                    0.1 * (leaf_psi / leaf_psi_tlp(ipft)) ** 6.0)))
+          lambda8 = lambda8 * dble(exp(stoma_beta(ipft) * dmax_leaf_psi))
+      end select
+         
+      thispft(ib)%vm0  = thispft(ib)%vm0 * dble(water_stress_factor)
+      thispft(ib)%jm0  = thispft(ib)%jm0 * dble(water_stress_factor)
+      thispft(ib)%TPm0  = thispft(ib)%TPm0 * dble(water_stress_factor)
+      thispft(ib)%alpha0  = thispft(ib)%alpha0 * dble(water_stress_factor)
 
-    stom_cond_co2   = cuticular_gsc
-    lint_co2_closed = lsfc_co2_closed - A_closed / stom_cond_co2
-    stom_cond_co2   = accepted_gsc
-    lint_co2_open   = lsfc_co2_open   - A_open   / stom_cond_co2
+      !------------------------------------------------------------------------------------!
+      !     Compute the photosynthesis and leaf respiration parameters that depend on      !
+      ! temperature, according to the parameters defined in the "thispft" structure and    !
+      ! the functional form chosen by the user.  The variables that are defined there are: !
+      ! - alpha     - the quantum yield, which may be a function of temperature.           !
+      ! - Vm        - the maximum capacity of Rubisco to perform the carboxylase function. !
+      ! - Jm        - the maximum electron transport rate.                                 !
+      ! - J         - the actual electron transport rate.                                  !
+      ! - TPm       - the maximum triose phosphate utilisation rate.                       !
+      ! - leaf_resp - the leaf respiration.                                                !
+      ! - compp     - the CO2 compensation point for gross photosynthesis (Gamma*)         !
+      ! - kco2      - Michaelis-Mentel coefficient for CO2                                 !
+      ! - ko2       - Michaelis-Mentel coefficient for O2.                                 !
+      !------------------------------------------------------------------------------------!
+      call comp_photo_tempfun(ib,leaf_aging_factor,green_leaf_factor)
+      !------------------------------------------------------------------------------------!
 
-    vmout           = Vcmax
-    comppout        = cp * umol_2_mol
 
-    return
+      !------------------------------------------------------------------------------------!
+      ! Perform Optimization
+      !------------------------------------------------------------------------------------!
+      call optimization_solver8(ib,lambda8,                                                &
+                                opt_ci,opt_fc,opt_gsc,                                     &
+                                opt_ci_closed,opt_fc_closed,opt_gsc_closed,                &
+                                opt_fc_rubp,opt_fc_light,opt_fc_3rd,                       &
+                                limit_flag)
+      !------------------------------------------------------------------------------------!
+      
 
-  end subroutine katul_lphys
-
-  !==========================================================
-
-  
-  !=======================================================================================!
-  !=======================================================================================!
-  ! SUBROUTINE FLUXSOLVER
-  !> \brief Solve carbon flux (fc)
-  !---------------------------------------------------------------------------------------!
-  subroutine fluxsolver(g, ra, ca, k1, k2, k3, k4, ci,fc)
-    implicit none
-    
-    real, intent(in) :: g, k1,k2, k3,k4, ra, ca
-    real, intent(out) :: ci, fc
-    real :: cip, cim, rad
-    
-    rad = sqrt((k1/g+k2)**2 - 4. * (k3/g + k4))
-    
-    cip = ca * (-(k1/g+k2) + rad)/2.
-    cim = ca * (-(k1/g+k2) - rad)/2.
-    
-    ci = cip
-    
-    fc = (ca - ci) / (1./g + ra)
-    
-    return
-  end subroutine fluxsolver
-  !=======================================================================================!
-  
-  !=======================================================================================!
-  !=======================================================================================!
-  ! SUBROUTINE DERIV_FC
-  !> \brief Calculate the derivation of carbon flux with respect to g
-  !---------------------------------------------------------------------------------------!
-  subroutine deriv_fc(g, ra, k1, k2, k3, k4, ca, ci, dfcdg)
-    implicit none
-    
-    real, intent(in) :: g, ra, k1, k2, k3, k4, ca, ci
-    real, intent(out) :: dfcdg
-    real :: dcidg, myroot
-    
-    myroot = sqrt((k1/g+k2)**2-4.*(k3/g+k4))
-    
-    dcidg = ca * (0.5*k1/g**2 +   &
-         0.25/myroot*(-2.*k1**2/g**3-2.*k1*k2/g**2+4.*k3/g**2))
-    
-    dfcdg = ((1./g+ra)*(-dcidg) - (ca-ci)*(-1./g**2))/(1./g+ra)**2
-    
-    return
-  end subroutine deriv_fc
-  !======================================================
-
-  !=======================================================================================!
-  !=======================================================================================!
-  ! SUBROUTINE DERIV_DFCDG
-  !> \brief Calculate the derivation of dfcdg with respect to g
-  !---------------------------------------------------------------------------------------!
-  subroutine deriv_dfcdg(g, ra, k1, k2, k3, k4,ca,ci,dfcdg,d2fcdg2)
-    implicit none
-    real, intent(in) :: g,ra,k1,k2,k3,k4,ca,ci,dfcdg
-    real, intent(out) :: d2fcdg2
-    real :: t1, t2
-
-    t1 = 4. * k3 / g - 2. * k1 * (k2 + k1/g) / g
-    t2 = sqrt((k1/g + k2) ** 2 - 4. * (k3/g + k4))
-
-    d2fcdg2 = 1. / ((ra + 1./g) * g ** 2) * ( &
-                ca / 2. * (t1 ** 2 / (4. * t2 ** 3) - &
-                (k1 ** 2 / g ** 2 - t1) / t2 + 2. * k1 * g) + &
-                2. * dfcdg - 2. * (ca - ci) / (g * (ra + 1./g)))
-
-    return
-  end subroutine deriv_dfcdg
-  !======================================================
-
-  !=======================================================================================!
-  !=======================================================================================!
-  ! FUNCTION HARLEY_ARRHENIUS
-  !> \brief   Arrhenius equation for photosynthetic temperature dependence based
-  !> on Harley et al. 1991
-  !> \details This function does not consider low temperature cut-off... 
-  !---------------------------------------------------------------------------------------!
-  real(kind=4) function harley_arrhenius(Tleaf,Tref,Hv,Sv,Hd)
-  implicit none
-      real, intent(in) :: Tleaf  ! K
-      real, intent(in) :: Tref   ! K
-      real, intent(in) :: Hv     ! kJ/mol
-      real, intent(in) :: Sv     ! kJ/mol/K
-      real, intent(in) :: Hd     ! kJ/mol
-
-      real,  parameter :: R = 8.314e-3 !kJ/mol/K
-
-      harley_arrhenius = exp(Hv/(R * Tref)    &
-             * (1 - Tref/Tleaf))    &
-             / (1 + exp((Sv * Tleaf - Hd) / (R * Tleaf)))
+      !------------------------------------------------------------------------------------!
+      !    Copy the solution to the standard output variables.  Here we convert the values !
+      ! back to the standard ED units                                                      !
+      !------------------------------------------------------------------------------------!
+      !----- Carbon demand, convert them to [umol/m2/s]. ----------------------------------!
+      A_closed       = sngloff(opt_fc_closed              * mol_2_umol8 , tiny_offset)
+      A_open         = sngloff(opt_fc                     * mol_2_umol8 , tiny_offset)
+      A_light        = sngloff(opt_fc_light               * mol_2_umol8 , tiny_offset)
+      A_rubp         = sngloff(opt_fc_rubp                * mol_2_umol8 , tiny_offset)
+      A_co2          = sngloff(opt_fc_3rd                 * mol_2_umol8 , tiny_offset)
+      !----- Stomatal resistance, convert the conductances to [kg/m2/s]. ------------------!
+      gsw_closed     = sngloff(opt_gsc_closed * gsc_2_gsw8 * mmdry8 / effarea_transp(ipft)  &
+                              , tiny_offset)
+      gsw_open       = sngloff(opt_gsc * gsc_2_gsw8 * mmdry8 / effarea_transp(ipft)  &
+                              , tiny_offset)
+      !----- Leaf surface specific humidity, convert them to [kg/kg]. ---------------------!
+      lsfc_shv_closed = sngloff((opt_gsc_closed * gsc_2_gsw8 * met(ib)%lint_shv    &
+                                +met(ib)%blyr_cond_h2o * met(ib)%can_shv)   &
+                                / (opt_gsc_closed * gsc_2_gsw8 + met(ib)%blyr_cond_h2o) * ep8         , tiny_offset)
+      lsfc_shv_open = sngloff((opt_gsc * gsc_2_gsw8 * met(ib)%lint_shv    &
+                                +met(ib)%blyr_cond_h2o * met(ib)%can_shv)   &
+                                / (opt_gsc * gsc_2_gsw8 + met(ib)%blyr_cond_h2o) * ep8         , tiny_offset)
+      !----- Leaf surface CO2 concentration, convert them to [umol/mol]. ------------------!
+      lsfc_co2_closed = sngloff((met(ib)%can_co2 - opt_fc_closed / met(ib)%blyr_cond_co2)     * mol_2_umol8 , tiny_offset)
+      lsfc_co2_open   = sngloff((met(ib)%can_co2 - opt_fc / met(ib)%blyr_cond_co2)     * mol_2_umol8 , tiny_offset)
+      !----- Intercellular carbon dioxide concentration, convert them to [umol/mol]. ------!
+      lint_co2_closed = sngloff(opt_ci_closed     * mol_2_umol8 , tiny_offset)
+      lint_co2_open   = sngloff(opt_ci       * mol_2_umol8 , tiny_offset)
+      !----- Leaf respiration [umol/m2/s]. ------------------------------------------------!
+      leaf_resp       = sngloff(aparms(ib)%leaf_resp      * mol_2_umol8 , tiny_offset)
+      !----- Maximum Rubisco capacity to perform the carboxylase function [umol/m2/s]. ----!
+      vmout           = sngloff(aparms(ib)%vm             * mol_2_umol8 , tiny_offset)
+      !----- Maximum electron transport rate [umol/m2/s]. ---------------------------------!
+      jmout           = sngloff(aparms(ib)%jm             * mol_2_umol8 , tiny_offset)
+      !----- Maximum triose phosphate utilisation rate [umol/m2/s]. -----------------------!
+      tpmout          = sngloff(aparms(ib)%tpm            * mol_2_umol8 , tiny_offset)
+      !----- Actual electron transport rate [umol/m2/s]. ----------------------------------!
+      jactout         = sngloff(aparms(ib)%jact           * mol_2_umol8 , tiny_offset)
+      !----- Gross photosynthesis compensation point, convert it to [umol/mol]. -----------!
+      comppout        = sngloff(aparms(ib)%compp          * mol_2_umol8 , tiny_offset)
+      !------------------------------------------------------------------------------------!
       return
+   end subroutine katul_lphys
+   !=======================================================================================!
+   !=======================================================================================!
 
-  end function harley_arrhenius
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   ! SUBROUTINE OPTIMIZATION_SOLVER8
+   !> \brief   Solver for the stomatal optimization problem
+   !> \details Use Regular Falsi to search for the optimum
+   !> \author Xiangtao Xu, 19 MAY 2018
+   !---------------------------------------------------------------------------------------!
+    subroutine optimization_solver8(ib,lambda,                                             &
+                                    opt_ci,opt_fc,opt_gsc,                                 &
+                                    opt_ci_closed,opt_fc_closed, opt_gsc_closed,           &
+                                    opt_fc_rubp,opt_fc_light,opt_fc_3rd,                   &
+                                    limit_flag)
+    use c34constants,    only : met                      & ! intent(in)
+                              , aparms                   & ! intent(in) 
+                              , thispft                  ! ! intent(in)
+    use farq_leuning,    only : find_twilight_min        ! ! function
+    use physiology_coms, only : gsw_2_gsc8               ! ! intent(in)
+    use consts_coms,     only : tiny_num8                ! ! intent(in)
+    implicit none
+        !------ Arguments. ------------------------------------------------------------------!
+        integer     , intent(in)    :: ib           !! Multithread ID
+        real(kind=8), intent(in)    :: lambda       !! Marginal water use efficiency i.e. the langrangian multiplier in the optimization problem
+        real(kind=8), intent(out)   :: opt_ci       !! Intercellular CO2 under optimized gsc [molCO2/molAir]
+        real(kind=8), intent(out)   :: opt_fc       !! CO2 assimilation rate under opt gsc   [molCO2/m2/s]
+        real(kind=8), intent(out)   :: opt_gsc      !! The optimal gsc                       [mol/m2/s]
+        real(kind=8), intent(out)   :: opt_ci_closed!! Intercellular CO2 under closed gsc [molCO2/molAir]
+        real(kind=8), intent(out)   :: opt_gsc_closed !! gsc under closed stomata [mol/m2/s]
+        real(kind=8), intent(out)   :: opt_fc_closed!! Assimilation rate under closed stomata[molCO2/m2/s]
+        real(kind=8), intent(out)   :: opt_fc_rubp  !! Rubisco limited assimilation rate     [molCO2/m2/s]
+        real(kind=8), intent(out)   :: opt_fc_light !! light limited assimilation rate       [molCO2/m2/s]
+        real(kind=8), intent(out)   :: opt_fc_3rd   !! TPU/CO2 limited assimilation rate     [molCO2/m2/s]
+        integer,      intent(out)   :: limit_flag   !! Flag for photosynthesislimitation
+
+        !------ Local Variables  ------------------------------------------------------------!
+        real(kind=8), parameter     :: gsc_max = 1.5  ! maximum gsc allowed
+        real(kind=8)                :: gsc_min        ! minimum gsc allowed
+        real(kind=8)                :: par_twilight_min ! Minimum daytime radiation [mol/m2/s]
+        logical                     :: is_resolvable
+        real(kind=8)                :: rfx_lower      ! lower boundary X of regula falsi
+        real(kind=8)                :: rfx_upper      ! upper boundary X of regula falsi
+        real(kind=8)                :: rfy_lower      ! lower boundary Y of regula falsi
+        real(kind=8)                :: rfy_upper      ! upper boundary Y of regula falsi
+        real(kind=8)                :: rfx_new        ! new boundary X of regula falsi
+        real(kind=8)                :: rfy_new        ! new boundary Y of regula falsi
+        integer                     :: rf_side        ! side of current x relative to the root in regula falsi
+        integer                     :: iter           ! iteration index
+        integer, parameter          :: iter_max = 600 ! Maximum number of iteration
+        real(kind=8), parameter     :: dg_min = 1.d-4 ! Tolerance of difference
+        real(kind=8)                :: test_gsc       
+        real(kind=8)                :: test_fc
+        real(kind=8)                :: test_fe
+        real(kind=8)                :: test_ci
+        real(kind=8)                :: test_dcidg
+        real(kind=8)                :: test_dfcdg
+        real(kind=8)                :: test_dfedg
+        real(kind=8)                :: test_fc_light
+        real(kind=8)                :: test_fc_rubp
+        real(kind=8)                :: test_fc_3rd
+        !------------------------------------------------------------------------------------!
+        gsc_min = thispft(ib)%b * gsw_2_gsc8 
+  
+  
+     
+        ! There are extreme cases when blyr_cond_co2 is too small or light is too low
+        ! In this case, we do not solve optimization and choose to close stomata
+        par_twilight_min = find_twilight_min(ib)
+        is_resolvable = (met(ib)%blyr_cond_co2 > tiny_num8) .and. (met(ib)%par >= par_twilight_min)
+        if (is_resolvable) then
+            ! If resolvable use Regular Falsi to solve the optimization problem
+            ! the purpose is to find a root for dfcdg - lambda * dfedg = 0
+         
+            ! initial range of gsc is cuticular_gsc and gsc_max
+            rfx_lower = gsc_min / 2.d0 ! a very small value, half of cuticular conductance
+            rfx_upper = gsc_max * 20.d0 ! a very large value
+  
+            ! calculate the y values for rfx_lower
+            call photosynthesis_stomata_solver8(ib,rfx_lower,                                     &
+                                                test_fc_light,test_fc_rubp,test_fc_3rd,           &
+                                                test_ci,test_fc,test_fe,                          &
+                                                test_dcidg,test_dfcdg,test_dfedg,                 &
+                                                limit_flag)
+            rfy_lower = test_dfcdg - lambda * test_dfedg 
+  
+  
+            ! do it again for rfx_upper
+            call photosynthesis_stomata_solver8(ib,rfx_upper,                                     &
+                                                test_fc_light,test_fc_rubp,test_fc_3rd,           &
+                                                test_ci,test_fc,test_fe,                          &
+                                                test_dcidg,test_dfcdg,test_dfedg,                 &
+                                                limit_flag)
+            rfy_upper = test_dfcdg - lambda * test_dfedg 
+  
+  
+            ! Start iteration
+            iter = 0
+  
+            ! check whether the y values have the same sign
+            if (rfy_lower * rfy_upper >= 0.d0) then
+                ! In this case, there is no root within the given range
+                ! if rfy_lower is positive, we take the value of rfx_upper
+                ! else we take the value of rfx_lower
+                if  (rfy_lower > 0.) then
+                    test_gsc = rfx_upper
+                else
+                    test_gsc = rfx_lower
+                endif
+            else
+                ! There is at least one root
+                ! Run regula falsi
+                rf_side = 0 !
+                do iter = 1, iter_max
+                    ! exit condition
+                    if (abs(rfx_lower - rfx_upper) .le. dg_min) then
+                        exit
+                    endif
+  
+                    ! update rfx and rfy with Illinois Method
+                    rfx_new = (rfx_lower * rfy_upper - rfx_upper * rfy_lower) / (rfy_upper - rfy_lower)
+                    call photosynthesis_stomata_solver8(ib,rfx_new,                                       &
+                                                        test_fc_light,test_fc_rubp,test_fc_3rd,           &
+                                                        test_ci,test_fc,test_fe,                          &
+                                                        test_dcidg,test_dfcdg,test_dfedg,                 &
+                                                        limit_flag)
+                    rfy_new = test_dfcdg - lambda * test_dfedg
+  
+                    if (rfy_new * rfy_lower > 0.d0) then
+                        ! the new point has the same sign as the lower
+                        ! update the lower
+                        rfx_lower = rfx_new
+                        rfy_lower = rfy_new
+  
+                        ! Illinois Method, improve efficiency
+                        if (rf_side == -1) then
+                            rfy_upper = rfy_upper / 2.d0
+                        endif
+  
+                        rf_side = -1
+                    elseif (rfy_new * rfy_upper > 0.d0) then
+                        ! the new point has the same sign as the upper
+                        ! update the lower
+                        rfx_upper = rfx_new
+                        rfy_upper = rfy_new
+  
+                        ! Illinois Method, improve efficiency
+                        if (rf_side == 1) then
+                            rfy_lower = rfy_lower / 2.d0
+                        endif
+  
+                        rf_side = 1
+  
+                    else
+                        ! numerically they are the same
+                        exit
+                    endif
+                enddo
+  
+                test_gsc = (rfx_lower + rfx_upper) / 2.d0
+            endif
+  
+            ! final gsc should be bounded within gsc_min and gsc_max
+            test_gsc = max(gsc_min,min(test_gsc,gsc_max))
+  
+            ! calculate the realized fc, ci
+            call photosynthesis_stomata_solver8(ib,test_gsc,                                     &
+                                                test_fc_light,test_fc_rubp,test_fc_3rd,           &
+                                                test_ci,test_fc,test_fe,                          &
+                                                test_dcidg,test_dfcdg,test_dfedg,                 &
+                                                limit_flag)
+  
+            opt_fc       = test_fc
+            opt_ci       = test_ci
+            opt_gsc      = test_gsc
+            opt_fc_rubp  = test_fc_rubp
+            opt_fc_light = test_fc_light
+            opt_fc_3rd   = test_fc_3rd
+            opt_fc_closed = -aparms(ib)%leaf_resp
+            opt_gsc_closed = gsc_min
+            opt_ci_closed = met(ib)%can_co2 - opt_fc_closed /                   &
+                            (opt_gsc_closed * met(ib)%blyr_cond_co2) *          &
+                            (opt_gsc_closed + met(ib)%blyr_cond_co2)
+        else  ! not resolvable
+            limit_flag   = 0 ! night-time limitation
+            opt_gsc      = gsc_min ! cuticular conductance
+            opt_fc       = -aparms(ib)%leaf_resp
+            opt_ci       = met(ib)%can_co2 + aparms(ib)%leaf_resp / opt_gsc
+            opt_fc_rubp  = -aparms(ib)%leaf_resp
+            opt_fc_light = -aparms(ib)%leaf_resp
+            opt_fc_3rd   = -aparms(ib)%leaf_resp
+            opt_fc_closed = -aparms(ib)%leaf_resp
+            opt_gsc_closed = gsc_min
+            opt_ci_closed = met(ib)%can_co2 - opt_fc_closed /                   &
+                            (opt_gsc_closed * met(ib)%blyr_cond_co2) *          &
+                            (opt_gsc_closed + met(ib)%blyr_cond_co2)
+        endif
+  
+        return
+
+    end subroutine optimization_solver8
+   !=======================================================================================!
+   !=======================================================================================!
+      
+   !=======================================================================================!
+   !=======================================================================================!
+   ! SUBROUTINE PHOTOSYNTHESIS_STOMATA_SOLVER8
+   !> \brief   Solver for photosynthesis and its derivatives wrt. gsc
+   !> \details Both C3 and C4 have three cases of limitation:\n
+   !> C3: Light, RuBisCO, TPU\n
+   !> C4: Light, RuBisCO, CO2\n
+   !> This subroutine calculates them all together and select the scenario with the smallest co2
+   !> assimilation
+   !> \author Xiangtao Xu, 19 MAY 2018
+   !---------------------------------------------------------------------------------------!
+    subroutine photosynthesis_stomata_solver8(ib,gsc,fc_light,fc_rubp,fc_3rd,  &
+                                              ci,fc,fe,dcidg,dfcdg,dfedg,limit_flag)
+    use c34constants,    only : met                      & ! intent(in)
+                              , aparms                   & ! intent(in) 
+                              , thispft                  ! ! intent(in)
+    use physiology_coms, only : gsc_2_gsw8               & ! intent(in)
+                              , klowco28                 ! ! intent(in)
+    use consts_coms,     only : tiny_num8                ! ! intent(in)
+    implicit none
+        !------ Arguments. ------------------------------------------------------------------!
+        integer     , intent(in)    :: ib           !! Multithread ID
+        real(kind=8), intent(in)    :: gsc          !! input stomatal conductance for CO2,   [mol/m2/s]
+        real(kind=8), intent(out)   :: fc_light     !! light limited assimilation rate       [molCO2/m2/s]
+        real(kind=8), intent(out)   :: fc_rubp      !! Rubisco limited assimilation rate     [molCO2/m2/s]
+        real(kind=8), intent(out)   :: fc_3rd       !! TPU/CO2 limited assimilation rate     [molCO2/m2/s]
+        real(kind=8), intent(out)   :: ci           !! Intercellular CO2 under gsc           [molCO2/molAir]
+        real(kind=8), intent(out)   :: fc           !! Realized assimilation rate under gsc  [molCO2/m2/s]
+        real(kind=8), intent(out)   :: fe           !! transpiration                         [molH2O/m2/s]
+        real(kind=8), intent(out)   :: dcidg        !! derivative of ci wrt. gsc
+        real(kind=8), intent(out)   :: dfcdg        !! derivative of fc wrt. gsc
+        real(kind=8), intent(out)   :: dfedg        !! derivative of fe wrt. gsc
+        integer,      intent(out)   :: limit_flag   !! Flag for photosynthesislimitation
+
+        !------ Local Variables  ------------------------------------------------------------!
+        real(kind=8)                :: gsbc         !! CO2 conductance from canopy air space to leaf (stomata + boundary layer)
+        real(kind=8)                :: gsbw         !! H2O conductance from canopy air space to leaf (stomata + boundary layer)
+        real(kind=8)                :: k1,k2        !! Variable used in photosynthesis equation
+        real(kind=8)                :: a,b,c        !! Coefficients of the quadratic equation to solve ci
+        real(kind=8)                :: rad          !! sqrt(b2-4ac)
+        real(kind=8)                :: dbdg,dcdg    !! derivatives of b,c wrt. gsc
+        real(kind=8)                :: ci_rubp      !! ci for rubp-limited scenario
+        real(kind=8)                :: dcidg_rubp   !! derivative of ci wrt. gsc for rubp-limited scenario
+        real(kind=8)                :: dfcdg_rubp   !! derivative of fc wrt. gsc for rubp-limited scenario
+        real(kind=8)                :: ci_light     !! ci for light-limited scenario
+        real(kind=8)                :: dcidg_light  !! derivative of ci wrt. gsc for light-limited scenario
+        real(kind=8)                :: dfcdg_light  !! derivative of fc wrt. gsc for light-limited scenario
+        real(kind=8)                :: ci_3rd       !! ci for TPU/CO2-limited scenario
+        real(kind=8)                :: dcidg_3rd    !! derivative of ci wrt. gsc for TPU/CO2-limited scenario
+        real(kind=8)                :: dfcdg_3rd    !! derivative of fc wrt. gsc for TPU/CO2-limited scenario
+
+        !------------------------------------------------------------------------------------!
+
+
+        !------------------------------------------------------------------------------------!
+        ! First calculate fc, ci, and their derivatives
+        ! A = k1 * (ci - compp) / (ci + k2) - leaf_resp
+        ! ci ** 2 + b * ci + c = 0.
+        !------------------------------------------------------------------------------------!
+        gsbc = gsc * met(ib)%blyr_cond_co2 / (gsc + met(ib)%blyr_cond_co2) 
+        gsbw = gsc * gsc_2_gsw8 * met(ib)%blyr_cond_h2o / (gsc * gsc_2_gsw8 + met(ib)%blyr_cond_h2o) 
+        select case (thispft(ib)%photo_pathway)
+        case (3)
+            ! C3 plant
+
+            !-------------!
+            ! RUBP limited
+            !-------------!
+            k1 = aparms(ib)%vm
+            k2 = aparms(ib)%kco2 * (1.d0 + met(ib)%can_o2 / aparms(ib)%ko2)
+
+            a = 1.d0
+            b = (k2 - met(ib)%can_co2 + (k1 - aparms(ib)%leaf_resp) / gsbc)
+            c = (-k1 * aparms(ib)%compp - k2 * aparms(ib)%leaf_resp) / gsbc - k2 * met(ib)%can_co2
+
+            ! solve the quadratic equation
+            rad = sqrt(b ** 2 - 4.d0 * a * c)
+            ci_rubp = - (b - rad) / (2.d0 * a)
+            fc_rubp = gsbc * (met(ib)%can_co2 - ci_rubp)
+
+            ! calculate derivatives
+            dbdg = -(k1 - aparms(ib)%leaf_resp) / gsc ** 2 ! Note that gbc cancelled out
+            dcdg = (k1 * aparms(ib)%compp + k2 * aparms(ib)%leaf_resp) / gsc ** 2 !Note that gbc cancelled out
+
+            if (abs(rad) < tiny_num8 ) then
+                ! rad is effectively zero
+                dcidg_rubp = -5.d-1 * dbdg
+            else
+                dcidg_rubp = -5.d-1 * dbdg + (5.d-1 * b * dbdg - dcdg) / rad
+            endif
+            dfcdg_rubp = (gsbc / gsc) ** 2 * (met(ib)%can_co2 - ci_rubp) &
+                    + gsbc * (-1.d0 * dcidg_rubp)
+
+
+            !-------------!
+            ! Light limited
+            !-------------!
+            k1 = aparms(ib)%jact / 4.d0
+            k2 = 2.d0 * aparms(ib)%compp
+
+            a = 1.d0
+            b = (k2 - met(ib)%can_co2 + (k1 - aparms(ib)%leaf_resp) / gsbc)
+            c = (-k1 * aparms(ib)%compp - k2 * aparms(ib)%leaf_resp) / gsbc - k2 * met(ib)%can_co2
+
+            rad = sqrt(b ** 2 - 4.d0 * a * c)
+            ci_light = - (b - rad) / (2.d0 * a)
+            fc_light = gsbc * (met(ib)%can_co2 - ci_light)
+
+            ! calculate derivatives
+            dbdg = -(k1 - aparms(ib)%leaf_resp) / gsc ** 2 ! Note that gbc cancelled out
+            dcdg = (k1 * aparms(ib)%compp + k2 * aparms(ib)%leaf_resp) / gsc ** 2 !Note that gbc cancelled out
+
+            if (abs(rad) < tiny_num8 ) then
+                ! rad is effectively zero
+                dcidg_light = -5.d-1 * dbdg
+            else
+                dcidg_light = -5.d-1 * dbdg + (5.d-1 * b * dbdg - dcdg) / rad
+            endif
+            dfcdg_light = (gsbc / gsc) ** 2 * (met(ib)%can_co2 - ci_light) &
+                    + gsbc * (-1.d0 * dcidg_light)
+
+
+
+            !-------------!
+            ! TPU limited
+            !-------------!
+            ! This is a linear case
+            fc_3rd = 3.d0 * aparms(ib)%tpm - aparms(ib)%leaf_resp
+            ci_3rd = met(ib)%can_co2 - fc_3rd / gsbc 
+
+            ! calculate derivatives
+            dcidg_3rd = fc_3rd / gsc ** 2 ! note gbc cancelledout
+            dfcdg_3rd = 0. ! constant fc
+
+
+        case (4)
+            ! C4 plant
+            !-------------!
+            ! RUBP limited, linear case
+            !-------------!
+            fc_rubp = aparms(ib)%vm - aparms(ib)%leaf_resp
+            ci_rubp = met(ib)%can_co2 - fc_rubp / gsbc 
+
+            ! calculate derivatives
+            dcidg_rubp = fc_rubp / gsc ** 2 ! note gbc cancelledout
+            dfcdg_rubp = 0. ! constant fc
+
+            !-------------!
+            ! Light limited, linear case
+            !-------------!
+            fc_light = aparms(ib)%jact / 4.d0 - aparms(ib)%leaf_resp
+            ci_light = met(ib)%can_co2 - fc_light / gsbc
+
+            ! calculate derivatives
+            dcidg_light = fc_light / gsc ** 2 ! note gbc cancelledout
+            dfcdg_light = 0. ! constant fc
+
+
+            !-------------!
+            ! CO2 limited, linear case
+            !-------------!
+            ci_3rd = (aparms(ib)%leaf_resp + gsbc * met(ib)%can_co2) / (klowco28 * aparms(ib)%vm + gsbc)
+            fc_3rd = gsbc * (met(ib)%can_co2 - ci_3rd)
+
+            ! calculate derivatives
+            dcidg_3rd = (klowco28 * aparms(ib)%vm - aparms(ib)%leaf_resp) &
+                    / (klowco28 * aparms(ib)%vm + gsbc) ** 2            &
+                    * (gsbc / gsc) ** 2
+            dfcdg_3rd = (gsbc / gsc) ** 2 * (met(ib)%can_co2 - ci_3rd) &
+                    + gsbc * (-1.d0 * dcidg_3rd)
+
+        end select
+        !------------------------------------------------------------------------------------!
+
+        !------------------------------------------------------------------------------------!
+        ! Second, Calculate fe and dfedg
+        !------------------------------------------------------------------------------------!
+        fe = gsbw * (met(ib)%lint_shv - met(ib)%can_shv)
+        dfedg = (met(ib)%lint_shv - met(ib)%can_shv) &
+              * (gsbw / (gsc * gsc_2_gsw8))**2 * gsc_2_gsw8  
+        !------------------------------------------------------------------------------------!
+
+
+
+        !------------------------------------------------------------------------------------!
+        ! Third, compare fc and set limit flag
+        !------------------------------------------------------------------------------------!
+        if ((fc_light <= fc_rubp) .and. &
+            (fc_light <= fc_3rd)) then
+            ! light-limited
+            fc = fc_light
+            ci = ci_light
+            dcidg = dcidg_light
+            dfcdg = dfcdg_light
+            limit_flag = 1
+        elseif (fc_rubp <= fc_3rd) then
+            ! RubisCO limited
+            fc = fc_rubp
+            ci = ci_rubp
+            dcidg = dcidg_rubp
+            dfcdg = dfcdg_rubp
+            limit_flag = 2
+        else
+            ! Triose Phosphate Utilisation or CO2 limited
+            fc = fc_3rd
+            ci = ci_3rd
+            dcidg = dcidg_3rd
+            dfcdg = dfcdg_3rd
+            limit_flag = 3
+        endif
+        !------------------------------------------------------------------------------------!
+
+
+        return
+    end subroutine photosynthesis_stomata_solver8 
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+  end module farq_katul
   !=======================================================================================!
   !=======================================================================================!
-
-  !=======================================================================================!
-  !=======================================================================================!
-  ! FUNCTION MOD_ARRHENIUS     
-  !> \brief   Arrhenius equation for photosynthetic temperature dependence
-  !> with high and low temperature modification
-  !---------------------------------------------------------------------------------------!
-  real(kind=4) function mod_arrhenius(Tleaf,hor,Tlow,Thigh,decay_elow,decay_ehigh,is_decay) 
-      use physiology_coms, only : tphysrefi ! ! intent(in)
-      use consts_coms,     only : lnexp_min & ! intent(in)
-                                , lnexp_max & ! intent(in)
-                                , t00       ! ! intent(in)
-      implicit none
-      !-------------------- Arguments. -----------------------------------!
-      real(kind=4), intent(in) :: Tleaf       ! leaf temperature [K]
-      real(kind=4), intent(in) :: hor         ! activation energy / gas constant [K]
-      real(kind=4), intent(in) :: Tlow        ! low tempeature threshold [degC]
-      real(kind=4), intent(in) :: Thigh       ! high tempeature threshold [degC]
-      real(kind=4), intent(in) :: decay_elow  ! Decay rate under low temperature
-      real(kind=4), intent(in) :: decay_ehigh ! Decay rate under high temperature
-      logical, intent(in)      :: is_decay    ! whether to include decay
-
-      !-------------------- Local vars -----------------------------------!
-      real(kind=4)  :: lnexp      ! term that go to the exponential
-      real(kind=4)  :: lnexplow   ! term that go to the exponential
-      real(kind=4)  :: lnexphigh  ! term that go to the exponential
-
-      !------------------------------------------------------------------------------------!
-      !     Find the term that goes to the exponential term, and check its size.  This is  !
-      ! to avoid floating point exceptions due to overflow or underflow.                   !
-      !------------------------------------------------------------------------------------!
-      lnexp = hor * (tphysrefi - 1.0/Tleaf)
-      !------------------------------------------------------------------------------------!
-
-      !------------------------------------------------------------------------------------!
-      !     If the exponential factor is tiny, make it zero, otherwise compute the actual  !
-      ! function.                                                                          !
-      !------------------------------------------------------------------------------------!
-      if (lnexp < lnexp_min) then
-         mod_arrhenius = 0.
-      else
-         mod_arrhenius = exp(lnexp)
-      end if
-      !------------------------------------------------------------------------------------!
-
-      if (is_decay) then
-          !---------------------------------------------------------------------------------!
-          !    Compute the functions that will control the Vm function for low and high     !
-          ! temperature.  In order to avoid floating point exceptions, we check whether the !
-          ! temperature will make the exponential too large or too small.                   !
-          !---------------------------------------------------------------------------------!
-          !----- Low temperature. ----------------------------------------------------------!
-          lnexplow  = decay_elow * (Tlow  - (Tleaf - t00))
-          lnexplow  = max(lnexp_min,min(lnexp_max,lnexplow))
-          !----- High temperature. ---------------------------------------------------------!
-          lnexphigh = decay_ehigh * ((Tleaf-t00) - Thigh)
-          lnexphigh = max(lnexp_min,min(lnexp_max,lnexphigh))
-          !---------------------------------------------------------------------------------!
-
-          mod_arrhenius = mod_arrhenius / ( (1. + exp(lnexplow)) * (1. + exp(lnexphigh)))
-      endif
-
-      return
-
-  end function mod_arrhenius
-  !=======================================================================================!
-  !=======================================================================================!
-
-
-  !=======================================================================================!
-  !=======================================================================================!
-  ! FUNCTION MOD_COLLATZ
-  !> \brief Photosynthetic temperature dependence based on Collatz et al. 1991,
-  !> using Q10 with high and low temperature modification
-  !---------------------------------------------------------------------------------------!
-  real(kind=4) function mod_collatz(temp,q10,Tlow,Thigh,decay_elow,decay_ehigh,is_decay)
-     use physiology_coms, only : tphysref  & ! intent(in)
-                               , fcoll     ! ! intent(in)
-     use consts_coms,     only : lnexp_min & ! intent(in)
-                               , lnexp_max & ! intent(in)
-                               , t00       ! ! intent(in)
-     implicit none
-     !----- Arguments. -------------------------------------------------------------------!
-     real(kind=4), intent(in) :: temp        ! Temperature                         [    K]
-     real(kind=4), intent(in) :: q10         ! Exponential coefficient             [    K]
-     real(kind=4), intent(in) :: Tlow        ! low tempeature threshold [degC]
-     real(kind=4), intent(in) :: Thigh       ! high tempeature threshold [degC]
-     real(kind=4), intent(in) :: decay_elow  ! Decay rate under low temperature
-     real(kind=4), intent(in) :: decay_ehigh ! Decay rate under high temperature
-     logical, intent(in)      :: is_decay    ! whether to include decay
-     !-------------------- Local vars -----------------------------------!
-     real(kind=4)  :: lnexphigh  ! term that go to the exponential
-     real(kind=4)  :: lnexplow   ! term that go to the exponential
-
-     !------------------------------------------------------------------------------------!
-     !     If the exponential factor is tiny, make it zero, otherwise compute the actual  !
-     ! function.                                                                          !
-     !------------------------------------------------------------------------------------!
-     mod_collatz = q10 ** (fcoll * (temp - tphysref))
-     !------------------------------------------------------------------------------------!
-     if (is_decay) then
-         !---------------------------------------------------------------------------------!
-         !    Compute the functions that will control the Vm function for low and high     !
-         ! temperature.  In order to avoid floating point exceptions, we check whether the !
-         ! temperature will make the exponential too large or too small.                   !
-         !---------------------------------------------------------------------------------!
-         !----- Low temperature. ----------------------------------------------------------!
-         lnexplow  = decay_elow * (Tlow  - (temp - t00))
-         lnexplow  = max(lnexp_min,min(lnexp_max,lnexplow))
-         !----- High temperature. ---------------------------------------------------------!
-         lnexphigh = decay_ehigh * ((temp-t00) - Thigh)
-         lnexphigh = max(lnexp_min,min(lnexp_max,lnexphigh))
-         !---------------------------------------------------------------------------------!
-
-         mod_collatz = mod_collatz / ( (1. + exp(lnexplow)) * (1. + exp(lnexphigh)))
-     endif
-
-     return
-  end function mod_collatz
-  !=======================================================================================!
-  !=======================================================================================!
-
-end module farq_katul

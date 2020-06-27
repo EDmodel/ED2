@@ -252,6 +252,7 @@ module rk4_coms
       real(kind=8), pointer, dimension(:) :: gpp          ! Gross primary prod. [umol/m2/s]
       real(kind=8), pointer, dimension(:) :: leaf_resp    ! Leaf respiration    [umol/m2/s]
       real(kind=8), pointer, dimension(:) :: root_resp    ! Root respiration    [umol/m2/s]
+      real(kind=8), pointer, dimension(:) :: stem_resp    ! Root respiration    [umol/m2/s]
       !-----------------------------------------------------------------------------------!
 
 
@@ -1282,6 +1283,7 @@ module rk4_coms
       allocate(y%gpp                (    maxcohort))
       allocate(y%leaf_resp          (    maxcohort))
       allocate(y%root_resp          (    maxcohort))
+      allocate(y%stem_resp          (    maxcohort))
 
       allocate(y%wflxlc             (    maxcohort))
       allocate(y%wflxwc             (    maxcohort))
@@ -1413,6 +1415,7 @@ module rk4_coms
       nullify(y%gpp                )
       nullify(y%leaf_resp          )
       nullify(y%root_resp          )
+      nullify(y%stem_resp          )
 
       nullify(y%wflxlc             )
       nullify(y%wflxwc             )
@@ -1518,6 +1521,7 @@ module rk4_coms
       if (associated(y%gpp                )) y%gpp                 = 0.d0
       if (associated(y%leaf_resp          )) y%leaf_resp           = 0.d0
       if (associated(y%root_resp          )) y%root_resp           = 0.d0
+      if (associated(y%stem_resp          )) y%stem_resp           = 0.d0
 
       if (associated(y%wflxlc             )) y%wflxlc              = 0.d0
       if (associated(y%wflxwc             )) y%wflxwc              = 0.d0
@@ -1623,6 +1627,7 @@ module rk4_coms
       if (associated(y%gpp                )) deallocate(y%gpp                )
       if (associated(y%leaf_resp          )) deallocate(y%leaf_resp          )
       if (associated(y%root_resp          )) deallocate(y%root_resp          )
+      if (associated(y%stem_resp          )) deallocate(y%stem_resp          )
 
       if (associated(y%wflxlc             )) deallocate(y%wflxlc             )
       if (associated(y%wflxwc             )) deallocate(y%wflxwc             )

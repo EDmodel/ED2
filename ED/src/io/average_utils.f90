@@ -182,6 +182,10 @@ module average_utils
                                                   + cpatch%fmean_root_resp     (ico)       &
                                                   * cpatch%nplant              (ico)       &
                                                   * patch_wgt
+                  cgrid%fmean_stem_resp     (ipy) = cgrid%fmean_stem_resp      (ipy)       &
+                                                  + cpatch%fmean_stem_resp     (ico)       &
+                                                  * cpatch%nplant              (ico)       &
+                                                  * patch_wgt
                   cgrid%fmean_leaf_growth_resp(ipy) = cgrid%fmean_leaf_growth_resp  (ipy)  &
                                                     + cpatch%fmean_leaf_growth_resp (ico)  &
                                                     * cpatch%nplant                 (ico)  &
@@ -1210,6 +1214,7 @@ module average_utils
                   !------------------------------------------------------------------------!
                   cpatch%fmean_plresp(ico) = cpatch%fmean_leaf_resp         (ico)          &
                                            + cpatch%fmean_root_resp         (ico)          &
+                                           + cpatch%fmean_stem_resp         (ico)          &
                                            + cpatch%fmean_leaf_storage_resp (ico)          &
                                            + cpatch%fmean_root_storage_resp (ico)          &
                                            + cpatch%fmean_sapa_storage_resp (ico)          &
@@ -1327,6 +1332,7 @@ module average_utils
          cgrid%fmean_npp               (  ipy) = 0.0
          cgrid%fmean_leaf_resp         (  ipy) = 0.0
          cgrid%fmean_root_resp         (  ipy) = 0.0
+         cgrid%fmean_stem_resp         (  ipy) = 0.0
          cgrid%fmean_leaf_growth_resp  (  ipy) = 0.0
          cgrid%fmean_root_growth_resp  (  ipy) = 0.0
          cgrid%fmean_sapa_growth_resp  (  ipy) = 0.0
@@ -1615,6 +1621,7 @@ module average_utils
                   cpatch%fmean_npp               (ico) = 0.0
                   cpatch%fmean_leaf_resp         (ico) = 0.0
                   cpatch%fmean_root_resp         (ico) = 0.0
+                  cpatch%fmean_stem_resp         (ico) = 0.0
                   cpatch%fmean_leaf_growth_resp  (ico) = 0.0
                   cpatch%fmean_root_growth_resp  (ico) = 0.0
                   cpatch%fmean_sapa_growth_resp  (ico) = 0.0
@@ -1806,6 +1813,9 @@ module average_utils
                                           * frqsum_o_daysec
          cgrid%dmean_root_resp      (ipy) = cgrid%dmean_root_resp      (ipy)               &
                                           + cgrid%fmean_root_resp      (ipy)               &
+                                          * frqsum_o_daysec
+         cgrid%dmean_stem_resp      (ipy) = cgrid%dmean_stem_resp      (ipy)               &
+                                          + cgrid%fmean_stem_resp      (ipy)               &
                                           * frqsum_o_daysec
          cgrid%dmean_leaf_growth_resp  (ipy) = cgrid%dmean_leaf_growth_resp(ipy)           &
                                              + cgrid%fmean_leaf_growth_resp(ipy)           &
@@ -2469,6 +2479,9 @@ module average_utils
                   cpatch%dmean_root_resp     (ico) = cpatch%dmean_root_resp     (ico)      &
                                                    + cpatch%fmean_root_resp     (ico)      &
                                                    * frqsum_o_daysec
+                  cpatch%dmean_stem_resp     (ico) = cpatch%dmean_stem_resp     (ico)      &
+                                                   + cpatch%fmean_stem_resp     (ico)      &
+                                                   * frqsum_o_daysec
                   cpatch%dmean_leaf_growth_resp(ico) = cpatch%dmean_leaf_growth_resp (ico) &
                                                      + cpatch%fmean_leaf_growth_resp (ico) &
                                                      * frqsum_o_daysec
@@ -2774,6 +2787,8 @@ module average_utils
                   cpatch%today_leaf_resp    (ico) = cpatch%today_leaf_resp    (ico)        &
                                                   * day_seci
                   cpatch%today_root_resp    (ico) = cpatch%today_root_resp    (ico)        &
+                                                  * day_seci
+                  cpatch%today_stem_resp    (ico) = cpatch%today_stem_resp    (ico)        &
                                                   * day_seci
                   !------------------------------------------------------------------------!
                end do cohortloop
@@ -3457,6 +3472,7 @@ module average_utils
                   cpatch%today_gpp_mlmax    (ico) = 0.0
                   cpatch%today_leaf_resp    (ico) = 0.0
                   cpatch%today_root_resp    (ico) = 0.0
+                  cpatch%today_stem_resp    (ico) = 0.0
                end do
                !---------------------------------------------------------------------------!
             end do
@@ -3596,6 +3612,7 @@ module average_utils
          cgrid%dmean_npp                (ipy) = 0.0
          cgrid%dmean_leaf_resp          (ipy) = 0.0
          cgrid%dmean_root_resp          (ipy) = 0.0
+         cgrid%dmean_stem_resp          (ipy) = 0.0
          cgrid%dmean_leaf_growth_resp   (ipy) = 0.0
          cgrid%dmean_root_growth_resp   (ipy) = 0.0
          cgrid%dmean_sapa_growth_resp   (ipy) = 0.0
@@ -3862,6 +3879,7 @@ module average_utils
                   cpatch%dmean_npp               (ico) = 0.0
                   cpatch%dmean_leaf_resp         (ico) = 0.0
                   cpatch%dmean_root_resp         (ico) = 0.0
+                  cpatch%dmean_stem_resp         (ico) = 0.0
                   cpatch%dmean_leaf_growth_resp  (ico) = 0.0
                   cpatch%dmean_root_growth_resp  (ico) = 0.0
                   cpatch%dmean_sapa_growth_resp  (ico) = 0.0
@@ -4162,6 +4180,9 @@ module average_utils
                                              * ndaysi
          cgrid%mmean_root_resp         (ipy) = cgrid%mmean_root_resp         (ipy)         &
                                              + cgrid%dmean_root_resp         (ipy)         &
+                                             * ndaysi
+         cgrid%mmean_stem_resp         (ipy) = cgrid%mmean_stem_resp         (ipy)         &
+                                             + cgrid%dmean_stem_resp         (ipy)         &
                                              * ndaysi
          cgrid%mmean_leaf_growth_resp  (ipy) = cgrid%mmean_leaf_growth_resp  (ipy)         &
                                              + cgrid%dmean_leaf_growth_resp  (ipy)         &
@@ -5170,6 +5191,9 @@ module average_utils
                   cpatch%mmean_vm_bar          (ico) = cpatch%mmean_vm_bar          (ico)  &
                                                      + cpatch%vm_bar                (ico)  &
                                                      * ndaysi
+                  cpatch%mmean_rd_bar          (ico) = cpatch%mmean_rd_bar          (ico)  &
+                                                     + cpatch%rd_bar                (ico)  &
+                                                     * ndaysi
                   cpatch%mmean_sla             (ico) = cpatch%mmean_sla             (ico)  &
                                                      + cpatch%sla                   (ico)  &
                                                      * ndaysi
@@ -5248,6 +5272,9 @@ module average_utils
                                                      * ndaysi
                   cpatch%mmean_root_resp       (ico) = cpatch%mmean_root_resp       (ico)  &
                                                      + cpatch%dmean_root_resp       (ico)  &
+                                                     * ndaysi
+                  cpatch%mmean_stem_resp       (ico) = cpatch%mmean_stem_resp       (ico)  &
+                                                     + cpatch%dmean_stem_resp       (ico)  &
                                                      * ndaysi
                   cpatch%mmean_leaf_growth_resp(ico) = cpatch%mmean_leaf_growth_resp(ico)  &
                                                      + cpatch%dmean_leaf_growth_resp(ico)  &
@@ -5993,6 +6020,7 @@ module average_utils
          cgrid%mmean_npp                  (ipy) = 0.0
          cgrid%mmean_leaf_resp            (ipy) = 0.0
          cgrid%mmean_root_resp            (ipy) = 0.0
+         cgrid%mmean_stem_resp            (ipy) = 0.0
          cgrid%mmean_leaf_growth_resp     (ipy) = 0.0
          cgrid%mmean_root_growth_resp     (ipy) = 0.0
          cgrid%mmean_sapa_growth_resp     (ipy) = 0.0
@@ -6351,6 +6379,7 @@ module average_utils
                cohortloop: do ico=1,cpatch%ncohorts
                   cpatch%mmean_thbark             (ico) = 0.0
                   cpatch%mmean_vm_bar             (ico) = 0.0
+                  cpatch%mmean_rd_bar             (ico) = 0.0
                   cpatch%mmean_sla                (ico) = 0.0
                   cpatch%mmean_llspan             (ico) = 0.0
                   cpatch%mmean_lai                (ico) = 0.0
@@ -6377,6 +6406,7 @@ module average_utils
                   cpatch%mmean_npp                (ico) = 0.0
                   cpatch%mmean_leaf_resp          (ico) = 0.0
                   cpatch%mmean_root_resp          (ico) = 0.0
+                  cpatch%mmean_stem_resp          (ico) = 0.0
                   cpatch%mmean_leaf_growth_resp   (ico) = 0.0
                   cpatch%mmean_root_growth_resp   (ico) = 0.0
                   cpatch%mmean_sapa_growth_resp   (ico) = 0.0
@@ -6594,6 +6624,9 @@ module average_utils
                                                * ndaysi
          cgrid%qmean_root_resp         (t,ipy) = cgrid%qmean_root_resp         (t,ipy)     &
                                                + cgrid%fmean_root_resp           (ipy)     &
+                                               * ndaysi
+         cgrid%qmean_stem_resp         (t,ipy) = cgrid%qmean_stem_resp         (t,ipy)     &
+                                               + cgrid%fmean_stem_resp           (ipy)     &
                                                * ndaysi
          cgrid%qmean_leaf_growth_resp  (t,ipy) = cgrid%qmean_leaf_growth_resp  (t,ipy)     &
                                                + cgrid%fmean_leaf_growth_resp    (ipy)     &
@@ -7421,6 +7454,9 @@ module average_utils
                   cpatch%qmean_root_resp     (t,ico) = cpatch%qmean_root_resp     (t,ico)  &
                                                      + cpatch%fmean_root_resp       (ico)  &
                                                      * ndaysi
+                  cpatch%qmean_stem_resp     (t,ico) = cpatch%qmean_stem_resp     (t,ico)  &
+                                                     + cpatch%fmean_stem_resp       (ico)  &
+                                                     * ndaysi
                   cpatch%qmean_leaf_growth_resp  (t,ico) = cpatch%qmean_leaf_growth_resp  (t,ico) &
                                                          + cpatch%fmean_leaf_growth_resp    (ico) &
                                                          * ndaysi
@@ -7507,6 +7543,9 @@ module average_utils
                                                      * ndaysi
                   cpatch%qmean_a_net         (t,ico) = cpatch%qmean_a_net         (t,ico)  &
                                                      + cpatch%fmean_a_net           (ico)  &
+                                                     * ndaysi
+                  cpatch%qmean_a_light       (t,ico) = cpatch%qmean_a_light       (t,ico)  &
+                                                     + cpatch%fmean_a_light         (ico)  &
                                                      * ndaysi
                   cpatch%qmean_a_rubp        (t,ico) = cpatch%qmean_a_rubp        (t,ico)  &
                                                      + cpatch%fmean_a_rubp          (ico)  &
@@ -8066,6 +8105,7 @@ module average_utils
          cgrid%qmean_npp                (:,ipy) = 0.0
          cgrid%qmean_leaf_resp          (:,ipy) = 0.0
          cgrid%qmean_root_resp          (:,ipy) = 0.0
+         cgrid%qmean_stem_resp          (:,ipy) = 0.0
          cgrid%qmean_leaf_growth_resp   (:,ipy) = 0.0
          cgrid%qmean_root_growth_resp   (:,ipy) = 0.0
          cgrid%qmean_sapa_growth_resp   (:,ipy) = 0.0
@@ -8370,6 +8410,7 @@ module average_utils
                   cpatch%qmean_npp                 (:,ico) = 0.0
                   cpatch%qmean_leaf_resp           (:,ico) = 0.0
                   cpatch%qmean_root_resp           (:,ico) = 0.0
+                  cpatch%qmean_stem_resp           (:,ico) = 0.0
                   cpatch%qmean_leaf_growth_resp    (:,ico) = 0.0
                   cpatch%qmean_root_growth_resp    (:,ico) = 0.0
                   cpatch%qmean_sapa_growth_resp    (:,ico) = 0.0

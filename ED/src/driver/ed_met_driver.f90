@@ -325,6 +325,7 @@ module ed_met_driver
       use met_driver_coms   , only : nformats         & ! intent(in)
                                    , ishuffle         & ! intent(in)
                                    , met_names        & ! intent(in)
+                                   , met_vars         & ! intent(in)
                                    , met_nv           & ! intent(in)
                                    , met_interp       & ! intent(in)
                                    , met_frq          & ! intent(in)
@@ -359,6 +360,7 @@ module ed_met_driver
       integer, dimension(8)           :: seedtime
       real                            :: rndnow
       logical                         :: exans
+      logical                         :: not_cycle_co2
       !----- Local constants --------------------------------------------------------------!
       character(len=3), dimension(12), parameter :: mname = (/ 'JAN', 'FEB', 'MAR', 'APR'  &
                                                              , 'MAY', 'JUN', 'JUL', 'AUG'  &
@@ -534,7 +536,17 @@ module ed_met_driver
 
          !----- Loop over the different file formats --------------------------------------!
          formloop: do iformat = 1, nformats
-            
+               
+            !------------------------------------------------------------------------------!
+            !   SPECIAL CASE FOR CO2:                                                      !
+            !     Usually we do not want to cycle CO2 but only the other meteorology.      !
+            !     Here, we overwrite year_use with current_time%year if CO2 is provided    !
+            !     independently.                                                           !
+            !------------------------------------------------------------------------------!
+            not_cycle_co2 = (met_nv(iformat) == 1 .and. trim(met_vars(iformat,1)) == 'co2')
+            if (not_cycle_co2) then
+               year_use = current_time%year
+            endif
             !----- Create the file name and check whether it exists. ----------------------!
             write(infile,fmt='(a,i4.4,a,a)')   trim(met_names(iformat)), year_use          &
                                               ,mname(current_time%month),'.h5'
@@ -589,6 +601,10 @@ module ed_met_driver
             iyear = y2 - iyeara + 1
             year_use_2 = metyears(iyear)
             
+            ! Again consider the special case of not cycling co2
+            if (not_cycle_co2) then
+                year_use_2 = y2
+            endif
             !----- Now, open the file once. -----------------------------------------------!
             write(infile,fmt='(a,i4.4,a,a)')  trim(met_names(iformat)), year_use_2         &
                                              ,mname(m2),'.h5'
@@ -667,6 +683,7 @@ module ed_met_driver
       integer                         :: y2
       integer                         :: year_use_2
       logical                         :: exans
+      logical                         :: not_cycle_co2
       !----- Local constants --------------------------------------------------------------!
       character(len=3), dimension(12), parameter :: mname = (/ 'JAN', 'FEB', 'MAR', 'APR'  &
                                                              , 'MAY', 'JUN', 'JUL', 'AUG'  &
@@ -697,6 +714,16 @@ module ed_met_driver
          !----- Loop over the different file formats --------------------------------------!
          formloop: do iformat = 1, nformats
             
+            !------------------------------------------------------------------------------!
+            !   SPECIAL CASE FOR CO2:                                                      !
+            !     Usually we do not want to cycle CO2 but only the other meteorology.      !
+            !     Here, we overwrite year_use with current_time%year if CO2 is provided    !
+            !     independently.                                                           !
+            !------------------------------------------------------------------------------!
+            not_cycle_co2 = (met_nv(iformat) == 1 .and. trim(met_vars(iformat,1)) == 'co2')
+            if (not_cycle_co2) then
+                year_use = current_time%year
+            endif
             !----- Create the file name and check whether it exists. ----------------------!
             write(infile,'(a,i4.4,a,a)')trim(met_names(iformat)), year_use,   &
                  mname(current_time%month),'.h5'
@@ -764,6 +791,11 @@ module ed_met_driver
                   year_use_2 = year_use_2 + ncyc
                end do
             end if
+
+            ! Again, consider the special case for not_cycle_co2
+            if (not_cycle_co2) then
+                year_use_2 = y2
+            endif
             
             !----- Now, open the file once. -----------------------------------------------!
             write(infile,fmt='(a,i4.4,a,a)')  trim(met_names(iformat)), year_use_2         &

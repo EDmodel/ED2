@@ -290,6 +290,8 @@ module pft_coms
    !---------------------------------------------------------------------------------------!
    real, dimension(n_pft) :: dark_respiration_factor
    !---------------------------------------------------------------------------------------!
+   !----- Parameters that control the dark respiraiton rate (TRAIT_PLASTICITY = 3). -------!
+   real, dimension(n_pft) :: kplastic_rd0  ! Expansion factor for dark respiration
 
    !---------------------------------------------------------------------------------------!
    !    This variable sets the rate of electron transport.  It is dimensionless            !
@@ -310,6 +312,35 @@ module pft_coms
 
    !----- Turnover rate of plant storage pools [1/year]. ----------------------------------!
    real, dimension(n_pft) :: storage_turnover_rate 
+
+   !---------------------------------------------------------------------------------------!
+   !    This variable sets the stem maintainence respiration rate per unit surface area    !
+   ! at the referenence temperature of 15C. Its units is umol_CO2/m2_stem_surface/s.       !
+   !---------------------------------------------------------------------------------------!
+   real, dimension(n_pft) :: stem_respiration_factor
+
+   !---------------------------------------------------------------------------------------!
+   !    This variable sets the scaling relationship of stem maintenance respiration rate   !
+   ! with plant size (DBH). Its units is /cm_DBH                                           !
+   !---------------------------------------------------------------------------------------!
+   real, dimension(n_pft) :: stem_resp_size_scaler
+
+   !----- Temperature [C] below which stem metabolic activity begins to rapidly decline. --!
+   real, dimension(n_pft) :: srf_low_temp 
+
+   !----- Temperature [C] above which stem metabolic activity begins to rapidly decline. --!
+   real, dimension(n_pft) :: srf_high_temp 
+
+   !----- Decay factors for the exponential correction. -----------------------------------!
+   real, dimension(n_pft) :: srf_decay_elow
+   real, dimension(n_pft) :: srf_decay_ehigh
+
+   !----- Exponent for Rr in the Arrhenius equation [K]. ----------------------------------!
+   real, dimension(n_pft) :: srf_hor 
+
+   !----- Base (Q10 term) for respiration in Collatz equation. ----------------------------!
+   real, dimension(n_pft) :: srf_q10
+
 
    !---------------------------------------------------------------------------------------!
    !    This variable sets the contribution of roots to respiration at the reference       !
@@ -393,6 +424,16 @@ module pft_coms
 
    real :: m3_scale
    real :: m3_slope
+
+   !---------------------------------------------------------------------------------------!
+   !     This variable controls the hydraulic failure moratlity at reference PLC           !
+   !---------------------------------------------------------------------------------------!
+   real, dimension(n_pft) :: hydro_mort0
+   
+   !---------------------------------------------------------------------------------------!
+   !     This variable controls the sensitivity of hydrauilic failure mortality to PLC     !
+   !---------------------------------------------------------------------------------------!
+   real, dimension(n_pft) :: hydro_mort1
 
    !---------------------------------------------------------------------------------------!
    !     This variable sets up the relative carbon balance when plants are experiencing    !
@@ -821,6 +862,9 @@ module pft_coms
    real   , dimension(n_pft) :: r_fract
    !----- Curvature term for asymptote. ---------------------------------------------------!
    real   , dimension(n_pft) :: r_cv50
+   !----- How much carbon plants decide to save in bstorage from growth and reproduction --!
+   !----- In terms of times to reflush the whole canopy and fine roots                   --!
+   real   , dimension(n_pft) :: storage_reflush_times
    !----- External input of seeds [kgC/m2/year]. ------------------------------------------!
    real   , dimension(n_pft) :: seed_rain
    !----- Fraction of seed dispersal that is gridcell-wide. -------------------------------!

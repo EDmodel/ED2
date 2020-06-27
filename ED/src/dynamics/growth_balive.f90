@@ -57,7 +57,8 @@ module growth_balive
       use budget_utils        , only : reset_cbudget_committed    ! ! sub-routine
       use update_derived_utils, only : update_patch_derived_props ! ! sub-routine
       use plant_hydro         , only : rwc2tw                     & ! sub-routine
-                                     , twi2twe                    ! ! sub-routine
+                                     , twi2twe                    & ! sub-routine
+                                     , update_plc                 ! ! sub-routine
 
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
@@ -325,6 +326,12 @@ module growth_balive
                                              ,storage_maintenance,npp_actual,npp_pot )
                   !------------------------------------------------------------------------!
 
+                  !------------------------------------------------------------------------!
+                  !      Find the percentage loss of xylem conductance if applicable (used !
+                  ! to estimate hydraulic failure mortality).                              !
+                  !------------------------------------------------------------------------!
+                  call update_plc(cpatch,ico)
+                  !------------------------------------------------------------------------!
 
 
                   !------------------------------------------------------------------------!
@@ -369,7 +376,7 @@ module growth_balive
                      !---------------------------------------------------------------------!
                      !    New grasses may update height and "DBH" every day.               !
                      !---------------------------------------------------------------------!
-                     cpatch%hite(ico) = bl2h(cpatch%bleaf(ico), ipft)
+                     cpatch%hite(ico) = bl2h(cpatch%bleaf(ico), cpatch%sla(ico), ipft)
                      cpatch%dbh(ico)  = h2dbh(cpatch%hite(ico), ipft)
                      !---------------------------------------------------------------------!
                  else
@@ -437,7 +444,7 @@ module growth_balive
                   !------------------------------------------------------------------------!
                   call mortality_rates(cpatch,ico,csite%avg_daily_temp(ipa),csite%age(ipa) &
                                       ,csite%dist_type(ipa))
-                  dlnndt   = - sum(cpatch%mort_rate(1:4,ico))
+                  dlnndt   = - sum(cpatch%mort_rate(1:5,ico))
                   !------------------------------------------------------------------------!
 
                   !----- Update monthly mortality rates [1/month]. ------------------------!
@@ -498,7 +505,7 @@ module growth_balive
                   !----- Update bark thickness. -------------------------------------------!
                   cpatch%thbark(ico)  = size2xb( cpatch%dbh(ico),cpatch%hite(ico)          &
                                                , cpatch%bbarka(ico),cpatch%bbarkb(ico)     &
-                                               , cpatch%pft(ico) )
+                                               , cpatch%sla(ico),cpatch%pft(ico) )
                   !------------------------------------------------------------------------!
 
 
@@ -857,7 +864,9 @@ module growth_balive
          !---------------------------------------------------------------------------------!
 
          !----- Find the metabolic respiration, assumed to be the same for all NPP. -------!
-         metab_resp    = cpatch%today_leaf_resp(ico) + cpatch%today_root_resp(ico)
+         metab_resp    = cpatch%today_leaf_resp(ico)                                       & 
+                       + cpatch%today_root_resp(ico)                                       &
+                       + cpatch%today_stem_resp(ico)                                       
          !---------------------------------------------------------------------------------!
 
 
@@ -1119,28 +1128,29 @@ module growth_balive
 
          if (first_time(ipft)) then
             first_time(ipft) = .false.
-            write (unit=30+ipft,fmt='(a10,28(1x,a18))')                                    &
+            write (unit=30+ipft,fmt='(a10,29(1x,a18))')                                    &
                '      TIME','             PATCH','            COHORT','            NPLANT' &
                            ,'         TODAY_NPP','  LEAF_GROWTH_RESP','  ROOT_GROWTH_RESP' &
                            ,'  SAPA_GROWTH_RESP','  SAPB_GROWTH_RESP',' BARKA_GROWTH_RESP' &
                            ,' BARKB_GROWTH_RESP','         TODAY_GPP','TODAY_GPP_LIGHTMAX' &
                            ,'TODAY_GPP_MOISTMAX','   TODAY_GPP_MLMAX','   TODAY_LEAF_RESP' &
-                           ,'   TODAY_ROOT_RESP','TODAY_NPP_LIGHTMAX','TODAY_NPP_MOISTMAX' &
-                           ,'   TODAY_NPP_MLMAX','                CB','       CB_LIGHTMAX' &
-                           ,'       CB_MOISTMAX','          CB_MLMAX','  LEAF_MAINTENANCE' &
-                           ,'  ROOT_MAINTENANCE',' BARKA_MAINTENANCE',' BARKB_MAINTENANCE' &
-                           , ' STOR_MAINTENANCE'
+                           ,'   TODAY_ROOT_RESP','   TODAY_STEM_RESP','TODAY_NPP_LIGHTMAX' &
+                           ,'TODAY_NPP_MOISTMAX','   TODAY_NPP_MLMAX','                CB' &
+                           ,'       CB_LIGHTMAX','       CB_MOISTMAX','          CB_MLMAX' &
+                           ,'  LEAF_MAINTENANCE','  ROOT_MAINTENANCE',' BARKA_MAINTENANCE' &
+                           ,' BARKB_MAINTENANCE', ' STOR_MAINTENANCE'
          end if
 
-         write(unit=30+ipft,fmt='(2(i2.2,a1),i4.4,2(1x,i18),27(1x,es18.5))')               &
+         write(unit=30+ipft,fmt='(2(i2.2,a1),i4.4,2(1x,i18),28(1x,es18.5))')               &
               current_time%month,'/',current_time%date,'/',current_time%year               &
-             ,ipa,ico,cpatch%nplant(ico),npp_actual,cpatch%leaf_growth_resp(ico)            &
+             ,ipa,ico,cpatch%nplant(ico),npp_actual,cpatch%leaf_growth_resp(ico)           &
              ,cpatch%root_growth_resp(ico),cpatch%sapa_growth_resp(ico)                    &
              ,cpatch%sapb_growth_resp(ico),cpatch%barka_growth_resp(ico)                   &
              ,cpatch%barkb_growth_resp(ico),cpatch%today_gpp(ico)                          &
              ,cpatch%today_gpp_lightmax(ico),cpatch%today_gpp_moistmax(ico)                &
              ,cpatch%today_gpp_mlmax(ico),cpatch%today_leaf_resp(ico)                      &
-             ,cpatch%today_root_resp(ico),npp_lightmax,npp_moistmax,npp_mlmax              &
+             ,cpatch%today_root_resp(ico),cpatch%today_stem_resp(ico)                      &       
+             ,npp_lightmax,npp_moistmax,npp_mlmax                                          &
              ,cpatch%cb(13,ico),cpatch%cb_lightmax(13,ico),cpatch%cb_moistmax(13,ico)      &
              ,cpatch%cb_mlmax(13,ico),cpatch%leaf_maintenance(ico)                         &
              ,cpatch%root_maintenance(ico),cpatch%barka_maintenance(ico)                   &
@@ -1305,7 +1315,7 @@ module growth_balive
          !     Maximum bleaf that the allometric relationship would allow.  If the plant   !
          ! is drought stressed (elongf<1), we down-regulate allocation to balive.          !
          !---------------------------------------------------------------------------------!
-         bleaf_max     = size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft)
+         bleaf_max     = size2bl(cpatch%dbh(ico),cpatch%hite(ico),cpatch%sla(ico),ipft)
          height_aim    = cpatch%hite(ico)
          !---------------------------------------------------------------------------------!
       end if
@@ -1369,7 +1379,8 @@ module growth_balive
             !        net growth (i.e. increment from the value of btissue before           !
             !        maintenance was applied) is the same every day.                       !
             !------------------------------------------------------------------------------!
-            if ( iallom == 3 .and. (.not. (is_grass(ipft) .and. igrass == 1)) ) then
+            if ( (iallom == 3 .or. iallom == 4)                                            &
+                .and. (.not. (is_grass(ipft) .and. igrass == 1)) ) then
                if (delta_bleaf >= tiny_num) then
                   gtf_bleaf = ( cpatch%leaf_maintenance(ico)                               &
                               + gr_tfact0 * (delta_bleaf - cpatch%leaf_maintenance(ico)) ) &
@@ -1951,7 +1962,7 @@ module growth_balive
          ! phenology_status=1 yet.                                                         !
          ! MLO - I don't see problems as long as phenology(grass) is evergreen.            !
          !---------------------------------------------------------------------------------!
-         bl_max = size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft)                           &
+         bl_max = size2bl(cpatch%dbh(ico),cpatch%hite(ico),cpatch%sla(ico),ipft)           &
                 * green_leaf_factor * cpatch%elongf(ico)
          bl_pot = cpatch%bleaf(ico) + npp_pot
 
@@ -2159,7 +2170,7 @@ module growth_balive
 
 
       !----- First, find the minimum possible scale for each pool. ------------------------!
-      bleaf_ok_min     = size2bl(min_dbh(ipft),hgt_min(ipft),ipft)
+      bleaf_ok_min     = size2bl(min_dbh(ipft),hgt_min(ipft),cpatch%sla(ico),ipft)
       broot_ok_min     = q(ipft) * bleaf_ok_min
       bsapwooda_ok_min =     agf_bs(ipft)  * qsw  (ipft) * cpatch%hite(ico) * bleaf_ok_min
       bsapwoodb_ok_min = (1.-agf_bs(ipft)) * qsw  (ipft) * cpatch%hite(ico) * bleaf_ok_min

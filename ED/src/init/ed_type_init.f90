@@ -29,6 +29,7 @@ module ed_type_init
                                 , Vm0                & ! intent(in)
                                 , Vm0_v0             & ! intent(in)
                                 , Vm0_v1             & ! intent(in)
+                                , Rd0                & ! intent(in)
                                 , small_psi_min      ! ! intent(in)
       use canopy_air_coms, only : f_bndlyr_init      ! ! intent(in)
       use rk4_coms       , only : effarea_transp     & ! intent(in)
@@ -168,9 +169,16 @@ module ed_type_init
          cpatch%sla   (ico) = SLA(ipft)
          !---------------------------------------------------------------------------------!
       end select
+      ! Always use tabulated values for rd_bar
+      ! XX->MLO Check whether this is OK for your trait economics scenario
+      cpatch%rd_bar(ico) = Rd0(ipft)
       !------------------------------------------------------------------------------------!
 
 
+      !------ State variables for new mortality -------------------------------------------!
+      cpatch%plc_monthly     (1:13,ico) = 0.
+      cpatch%ddbh_monthly    (1:13,ico) = 0.
+      !------------------------------------------------------------------------------------!
 
 
       !------------------------------------------------------------------------------------!
@@ -249,8 +257,6 @@ module ed_type_init
       cpatch%wflux_gw_layer    (:,ico) = 0.
       cpatch%high_leaf_psi_days  (ico) = 0
       cpatch%low_leaf_psi_days   (ico) = 0
-      cpatch%last_gV             (ico) = 0.
-      cpatch%last_gJ             (ico) = 0.
       !------------------------------------------------------------------------------------!
 
 
@@ -289,6 +295,7 @@ module ed_type_init
       !------------------------------------------------------------------------------------!
       cpatch%today_leaf_resp       (ico) = 0.0
       cpatch%today_root_resp       (ico) = 0.0
+      cpatch%today_stem_resp       (ico) = 0.0
       cpatch%today_gpp             (ico) = 0.0
       cpatch%today_nppleaf         (ico) = 0.0
       cpatch%today_nppfroot        (ico) = 0.0
@@ -313,6 +320,7 @@ module ed_type_init
       cpatch%gpp                   (ico) = 0.0
       cpatch%leaf_respiration      (ico) = 0.0
       cpatch%root_respiration      (ico) = 0.0
+      cpatch%stem_respiration      (ico) = 0.0
       cpatch%leaf_growth_resp      (ico) = 0.0
       cpatch%root_growth_resp      (ico) = 0.0
       cpatch%sapa_growth_resp      (ico) = 0.0
@@ -398,6 +406,7 @@ module ed_type_init
       cpatch%fmean_npp               (ico) = 0.0
       cpatch%fmean_leaf_resp         (ico) = 0.0
       cpatch%fmean_root_resp         (ico) = 0.0
+      cpatch%fmean_stem_resp         (ico) = 0.0
       cpatch%fmean_leaf_growth_resp  (ico) = 0.0
       cpatch%fmean_root_growth_resp  (ico) = 0.0
       cpatch%fmean_sapa_growth_resp  (ico) = 0.0
@@ -501,6 +510,7 @@ module ed_type_init
          cpatch%dmean_npp               (ico) = 0.0
          cpatch%dmean_leaf_resp         (ico) = 0.0
          cpatch%dmean_root_resp         (ico) = 0.0
+         cpatch%dmean_stem_resp         (ico) = 0.0
          cpatch%dmean_leaf_growth_resp  (ico) = 0.0
          cpatch%dmean_root_growth_resp  (ico) = 0.0
          cpatch%dmean_sapa_growth_resp  (ico) = 0.0
@@ -587,6 +597,7 @@ module ed_type_init
          cpatch%mmean_npp                 (ico) = 0.0
          cpatch%mmean_leaf_resp           (ico) = 0.0
          cpatch%mmean_root_resp           (ico) = 0.0
+         cpatch%mmean_stem_resp           (ico) = 0.0
          cpatch%mmean_leaf_growth_resp    (ico) = 0.0
          cpatch%mmean_root_growth_resp    (ico) = 0.0
          cpatch%mmean_sapa_growth_resp    (ico) = 0.0
@@ -655,6 +666,7 @@ module ed_type_init
          cpatch%mmean_intercepted_aw      (ico) = 0.0
          cpatch%mmean_wshed_wg            (ico) = 0.0
          cpatch%mmean_vm_bar              (ico) = 0.0
+         cpatch%mmean_rd_bar              (ico) = 0.0
          cpatch%mmean_sla                 (ico) = 0.0
          cpatch%mmean_llspan              (ico) = 0.0
          cpatch%mmean_lai                 (ico) = 0.0
@@ -715,6 +727,7 @@ module ed_type_init
          cpatch%qmean_npp               (:,ico) = 0.0
          cpatch%qmean_leaf_resp         (:,ico) = 0.0
          cpatch%qmean_root_resp         (:,ico) = 0.0
+         cpatch%qmean_stem_resp         (:,ico) = 0.0
          cpatch%qmean_leaf_growth_resp  (:,ico) = 0.0
          cpatch%qmean_root_growth_resp  (:,ico) = 0.0
          cpatch%qmean_sapa_growth_resp  (:,ico) = 0.0
@@ -1498,6 +1511,7 @@ module ed_type_init
                                , Vm0_v0             & ! intent(in)
                                , Vm0_v1             & ! intent(in)
                                , Vm0                & ! intent(in)
+                               , Rd0                & ! intent(in)
                                , phenology          ! ! intent(in)
       use phenology_coms, only : vm0_tran           & ! intent(in)
                                , vm0_slope          & ! intent(in)
@@ -1649,6 +1663,8 @@ module ed_type_init
             !------------------------------------------------------------------------------!
          end select
          !---------------------------------------------------------------------------------!
+         ! Use tabulated values, XX->MLO Check whether this is compatible with your economics trait scenario
+         cpoly%rd_bar_toc(ipft,:) = Rd0(ipft)
       end do
       !------------------------------------------------------------------------------------!
 
@@ -1973,6 +1989,7 @@ module ed_type_init
          cgrid%fmean_npp                  (ipy) = 0.0
          cgrid%fmean_leaf_resp            (ipy) = 0.0
          cgrid%fmean_root_resp            (ipy) = 0.0
+         cgrid%fmean_stem_resp            (ipy) = 0.0
          cgrid%fmean_leaf_growth_resp     (ipy) = 0.0
          cgrid%fmean_root_growth_resp     (ipy) = 0.0
          cgrid%fmean_sapa_growth_resp     (ipy) = 0.0
@@ -2150,6 +2167,7 @@ module ed_type_init
             cgrid%dmean_npp                  (ipy) = 0.0
             cgrid%dmean_leaf_resp            (ipy) = 0.0
             cgrid%dmean_root_resp            (ipy) = 0.0
+            cgrid%dmean_stem_resp            (ipy) = 0.0
             cgrid%dmean_leaf_growth_resp     (ipy) = 0.0
             cgrid%dmean_root_growth_resp     (ipy) = 0.0
             cgrid%dmean_sapa_growth_resp     (ipy) = 0.0
@@ -2306,6 +2324,7 @@ module ed_type_init
             cgrid%mmean_npp                  (ipy) = 0.0
             cgrid%mmean_leaf_resp            (ipy) = 0.0
             cgrid%mmean_root_resp            (ipy) = 0.0
+            cgrid%mmean_stem_resp            (ipy) = 0.0
             cgrid%mmean_leaf_growth_resp     (ipy) = 0.0
             cgrid%mmean_root_growth_resp     (ipy) = 0.0
             cgrid%mmean_sapa_growth_resp     (ipy) = 0.0
@@ -2547,6 +2566,7 @@ module ed_type_init
             cgrid%qmean_npp                (:,ipy) = 0.0
             cgrid%qmean_leaf_resp          (:,ipy) = 0.0
             cgrid%qmean_root_resp          (:,ipy) = 0.0
+            cgrid%qmean_stem_resp          (:,ipy) = 0.0
             cgrid%qmean_leaf_growth_resp   (:,ipy) = 0.0
             cgrid%qmean_root_growth_resp   (:,ipy) = 0.0
             cgrid%qmean_sapa_growth_resp   (:,ipy) = 0.0

@@ -470,6 +470,8 @@ recursive subroutine read_ed_xml_config(filename)
 !! Leaf Respiration
            call getConfigREAL  ('dark_respiration_factor','pft',i,rval,texist)
            if(texist) dark_respiration_factor(myPFT) = sngloff(rval,tiny_offset)
+           call getConfigREAL  ('kplastic_rd0','pft',i,rval,texist)
+           if(texist) kplastic_rd0(myPFT) = sngloff(rval,tiny_offset)
            call getConfigREAL  ('Rd_low_temp','pft',i,rval,texist)
            if(texist) Rd_low_temp(myPFT) = sngloff(rval,tiny_offset)
            call getConfigREAL  ('Rd_high_temp','pft',i,rval,texist)
@@ -527,6 +529,27 @@ recursive subroutine read_ed_xml_config(filename)
            if(texist) f_labile_leaf(myPFT) = sngloff(rval,tiny_offset)
            call getConfigREAL  ('f_labile_stem','pft',i,rval,texist)
            if(texist) f_labile_stem(myPFT) = sngloff(rval,tiny_offset)
+           call getConfigREAL  ('stem_respiration_factor','pft',i,rval,texist)
+           if(texist) stem_respiration_factor(myPFT) = sngloff(rval,tiny_offset)
+           call getConfigREAL  ('stem_resp_size_scaler','pft',i,rval,texist)
+           if(texist) stem_resp_size_scaler(myPFT) = sngloff(rval,tiny_offset)
+           call getConfigREAL  ('srf_low_temp','pft',i,rval,texist)
+           if(texist) srf_low_temp(myPFT) = sngloff(rval,tiny_offset)
+           call getConfigREAL  ('srf_high_temp','pft',i,rval,texist)
+           if(texist) srf_high_temp(myPFT) = sngloff(rval,tiny_offset)
+           call getConfigREAL  ('srf_decay_e','pft',i,rval,texist)
+           if (texist) then
+              srf_decay_elow (myPFT) = sngloff(rval,tiny_offset)
+              srf_decay_ehigh(myPFT) = sngloff(rval,tiny_offset)
+           end if
+           call getConfigREAL  ('srf_decay_elow','pft',i,rval,texist)
+           if(texist) srf_decay_elow(myPFT) = sngloff(rval,tiny_offset)
+           call getConfigREAL  ('srf_decay_ehigh','pft',i,rval,texist)
+           if(texist) srf_decay_ehigh(myPFT) = sngloff(rval,tiny_offset)
+           call getConfigREAL  ('srf_hor','pft',i,rval,texist)
+           if(texist) srf_hor(myPFT) = sngloff(rval,tiny_offset)
+           call getConfigREAL  ('srf_q10','pft',i,rval,texist)
+           if(texist) srf_q10(myPFT) = sngloff(rval,tiny_offset)
            call getConfigREAL  ('root_respiration_factor','pft',i,rval,texist)
            if(texist) root_respiration_factor(myPFT) = sngloff(rval,tiny_offset)
            call getConfigREAL  ('rrf_low_temp','pft',i,rval,texist)
@@ -558,6 +581,10 @@ recursive subroutine read_ed_xml_config(filename)
            if(texist) mort2(myPFT) = sngloff(rval,tiny_offset)
            call getConfigREAL  ('mort3','pft',i,rval,texist)
            if(texist) mort3(myPFT) = sngloff(rval,tiny_offset)
+           call getConfigREAL  ('hydro_mort0','pft',i,rval,texist)
+           if(texist) hydro_mort0(myPFT) = sngloff(rval,tiny_offset)
+           call getConfigREAL  ('hydro_mort1','pft',i,rval,texist)
+           if(texist) hydro_mort1(myPFT) = sngloff(rval,tiny_offset)
            call getConfigREAL  ('cbr_severe_stress','pft',i,rval,texist)
            if(texist) cbr_severe_stress(myPFT) = sngloff(rval,tiny_offset)
            call getConfigREAL  ('seedling_mortality','pft',i,rval,texist)
@@ -833,6 +860,8 @@ recursive subroutine read_ed_xml_config(filename)
            if(texist) nonlocal_dispersal(myPFT) = sngloff(rval,tiny_offset)
            call getConfigREAL  ('repro_min_h','pft',i,rval,texist)
            if(texist) repro_min_h(myPFT) = sngloff(rval,tiny_offset)
+           call getConfigREAL  ('storage_reflush_times','pft',i,rval,texist)
+           if(texist) storage_reflush_times(myPFT) = sngloff(rval,tiny_offset)
 
 !!! OTHER / derived
            call getConfigREAL  ('seed_rain','pft',i,rval,texist)
@@ -1524,8 +1553,17 @@ recursive subroutine read_ed_xml_config(filename)
         call getConfigINT  ('istruct_growth_scheme','physiology',i,ival,texist)
         if(texist) istruct_growth_scheme = ival
 
+        call getConfigINT  ('istem_respiration_scheme','physiology',i,ival,texist)
+        if(texist) istem_respiration_scheme = ival
+
         call getConfigINT  ('trait_plasticity_scheme','physiology',i,ival,texist)
         if(texist) trait_plasticity_scheme = ival
+
+        call getConfigINT  ('carbon_mortality_scheme','physiology',i,ival,texist)
+        if(texist) carbon_mortality_scheme = ival
+
+        call getConfigINT  ('hydraulic_mortality_scheme','physiology',i,ival,texist)
+        if(texist) hydraulic_mortality_scheme = ival
 
         call libxml2f90__ll_selecttag('UP','config',1) !move back up to top level
      enddo
@@ -1951,6 +1989,7 @@ subroutine write_ed_xml_config
 
 !! LEAF RESPIRATION
         call putConfigREAL("dark_respiration_factor",dark_respiration_factor(i))
+        call putConfigREAL("kplastic_rd0"           ,kplastic_rd0           (i))
         call putConfigREAL("Rd0"                    ,Rd0                    (i))
         call putConfigREAL("Rd_low_temp"            ,Rd_low_temp            (i))
         call putConfigREAL("Rd_high_temp"           ,Rd_high_temp           (i))
@@ -1979,6 +2018,14 @@ subroutine write_ed_xml_config
         call putConfigREAL("storage_turnover_rate"  ,storage_turnover_rate  (i))
         call putConfigREAL("f_labile_leaf"          ,f_labile_leaf          (i))
         call putConfigREAL("f_labile_stem"          ,f_labile_stem          (i))
+        call putConfigREAL("stem_respiration_factor",stem_respiration_factor(i))
+        call putConfigREAL("stem_resp_size_scaler"  ,stem_resp_size_scaler  (i))
+        call putConfigREAL("srf_low_temp"           ,srf_low_temp           (i))
+        call putConfigREAL("srf_high_temp"          ,srf_high_temp          (i))
+        call putConfigREAL("srf_decay_elow"         ,srf_decay_elow         (i))
+        call putConfigREAL("srf_decay_ehigh"        ,srf_decay_ehigh        (i))
+        call putConfigREAL("srf_hor"                ,srf_hor                (i))
+        call putConfigREAL("srf_q10"                ,srf_q10                (i))
         call putConfigREAL("root_respiration_factor",root_respiration_factor(i))
         call putConfigREAL("rrf_low_temp"           ,rrf_low_temp           (i))
         call putConfigREAL("rrf_high_temp"          ,rrf_high_temp          (i))
@@ -1993,6 +2040,8 @@ subroutine write_ed_xml_config
         call putConfigREAL("mort1",mort1(i))
         call putConfigREAL("mort2",mort2(i))
         call putConfigREAL("mort3",mort3(i))
+        call putConfigREAL("hydro_mort0",hydro_mort0(i))
+        call putConfigREAL("hydro_mort1",hydro_mort1(i))
         call putConfigREAL("cbr_severe_stress",cbr_severe_stress(i))
         call putConfigREAL("seedling_mortality",seedling_mortality(i))
 
@@ -2141,6 +2190,7 @@ subroutine write_ed_xml_config
         call putConfigREAL("nonlocal_dispersal",nonlocal_dispersal(i))
         call putConfigREAL("repro_min_h",repro_min_h(i))
         call putConfigREAL("min_recruit_size",min_recruit_size(i))
+        call putConfigREAL("storage_reflush_times", storage_reflush_times(i))
 
      !! OTHER
         call putConfigREAL("seed_rain",        seed_rain(i))
@@ -2406,7 +2456,10 @@ subroutine write_ed_xml_config
      call putConfigINT("plant_hydro_scheme",plant_hydro_scheme)
      call putConfigINT("istomata_scheme",istomata_scheme)
      call putConfigINT("istruct_growth_scheme",istruct_growth_scheme)
+     call putConfigINT("istem_respiration_scheme",istem_respiration_scheme)
      call putConfigINT("trait_plasticity_scheme",trait_plasticity_scheme)
+     call putConfigINT("carbon_mortality_scheme",carbon_mortality_scheme)
+     call putConfigINT("hydraulic_mortality_scheme",hydraulic_mortality_scheme)
   call libxml2f90_ll_closetag("physiology")
 
   !************   INITIAL CONDITIONS  *****************
@@ -2469,7 +2522,7 @@ subroutine putConfigREAL(tag,rvalue)
   real,intent(in) :: rvalue
   character(str_len) :: value
   integer :: lenval 
-  write(value,"(f20.10)") rvalue
+  write(value,"(f40.10)") rvalue
   lenval = len(trim(value))
   call libxml2f90_ll_opentag(tag)
   call libxml2f90_ll_addid(trim(tag),lenval,trim(value))

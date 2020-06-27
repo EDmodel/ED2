@@ -97,10 +97,13 @@ subroutine copy_nl(copy_type)
                                    , plant_hydro_scheme        & ! intent(out)
                                    , istomata_scheme           & ! intent(out)
                                    , istruct_growth_scheme     & ! intent(out)
+                                   , istem_respiration_scheme  & ! intent(out)
                                    , trait_plasticity_scheme   & ! intent(out)
                                    , iddmort_scheme            & ! intent(out)
                                    , cbr_scheme                & ! intent(out)
                                    , ddmort_const              & ! intent(out)
+                                   , carbon_mortality_scheme   & ! intent(out)
+                                   , hydraulic_mortality_scheme& ! intent(out)
                                    , n_plant_lim               & ! intent(out)
                                    , vmfact_c3                 & ! intent(out)
                                    , vmfact_c4                 & ! intent(out)
@@ -426,10 +429,13 @@ subroutine copy_nl(copy_type)
       plant_hydro_scheme        = nl%plant_hydro_scheme
       istomata_scheme           = nl%istomata_scheme
       istruct_growth_scheme     = nl%istruct_growth_scheme
+      istem_respiration_scheme  = nl%istem_respiration_scheme
       trait_plasticity_scheme   = nl%trait_plasticity_scheme
       iddmort_scheme            = nl%iddmort_scheme
       cbr_scheme                = nl%cbr_scheme
       ddmort_const              = nl%ddmort_const
+      carbon_mortality_scheme   = nl%carbon_mortality_scheme
+      hydraulic_mortality_scheme= nl%hydraulic_mortality_scheme
       vmfact_c3                 = nl%vmfact_c3
       vmfact_c4                 = nl%vmfact_c4
       mphoto_trc3               = nl%mphoto_trc3

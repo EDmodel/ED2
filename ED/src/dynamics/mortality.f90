@@ -19,6 +19,8 @@ module mortality
                                , mort1                      & ! intent(in)
                                , mort2                      & ! intent(in)
                                , mort3                      & ! intent(in)
+                               , hydro_mort0                & ! intent(in)
+                               , hydro_mort1                & ! intent(in)
                                , plant_min_temp             & ! intent(in)
                                , frost_mort                 & ! intent(in)
                                , cbr_severe_stress          ! ! intent(in)
@@ -26,7 +28,7 @@ module mortality
                                , treefall_hite_threshold    & ! intent(in)
                                , time2canopy                ! ! intent(in)
       use ed_max_dims   , only : n_pft                      ! ! intent(in)
-      use ed_misc_coms  , only : economics_scheme           ! ! intent(in)
+      use physiology_coms,only : carbon_mortality_scheme
       use consts_coms   , only : lnexp_min                  & ! intent(in)
                                , lnexp_max                  ! ! intent(in)
       implicit none
@@ -41,11 +43,12 @@ module mortality
       real                        :: temp_dep        ! Temp. function  (frost mortality)
       real                        :: expmort         ! Carbon-balance term
       real                        :: cbr_use         ! Bounded carbon balance.
+      real                        :: growth_past_year! DBH growth rates in the past year
       !------------------------------------------------------------------------------------!
 
 
       !----- Assume happy end, all plants survive... --------------------------------------!
-      cpatch%mort_rate(1:4,ico) = 0.0
+      cpatch%mort_rate(1:5,ico) = 0.0
       ipft = cpatch%pft(ico)
 
       !------------------------------------------------------------------------------------!
@@ -61,7 +64,13 @@ module mortality
       !------------------------------------------------------------------------------------!
       cbr_use = max(cpatch%cbr_bar(ico),cbr_severe_stress(ipft))
       expmort = max( lnexp_min, min( lnexp_max,mort2(ipft) * ( cbr_use - mort0(ipft) ) ) )
-      select case (economics_scheme)
+      select case (carbon_mortality_scheme)
+      case (2)
+         !----- Camac et al (2017).  But use absolute growth rates ------------------------!
+         growth_past_year = sum(cpatch%ddbh_monthly(1:12,ico)) / 12.0
+         expmort = max( lnexp_min, min( lnexp_max, mort2(ipft) * growth_past_year))
+         cpatch%mort_rate(2,ico) = mort1(ipft) * exp(expmort)
+
       case (1)
          !----- Camac et al (2017).  Mind the minus sign. ---------------------------------!
          cpatch%mort_rate(2,ico) = mort1(ipft) * exp(-expmort)
@@ -104,14 +113,19 @@ module mortality
       cpatch%mort_rate(4,ico) = frost_mort(ipft) * temp_dep
       !------------------------------------------------------------------------------------!
 
-
+      !------------------------------------------------------------------------------------!
+      ! 5. Hydraulic failure moratlity. Exponential increases of mortality rates with PLC  !
+      !------------------------------------------------------------------------------------!
+      cpatch%mort_rate(5,ico) = sum( hydro_mort0(ipft) *                                   &
+                                     cpatch%plc_monthly(1:12,ico) ** hydro_mort1(ipft)     &
+                                   ) / 12.0
 
       !------------------------------------------------------------------------------------!
-      ! 5. Disturbance rate mortality.  This is not used by the cohort dynamics, instead   !
+      ! 6. Disturbance rate mortality.  This is not used by the cohort dynamics, instead   !
       !    this is just to account for the lost density due to the patch creation.  This   !
       !    mortality will be determined by the disturbance_mortality subroutine, not here. !
       !------------------------------------------------------------------------------------!
-      !cpatch%mort_rate(5,ico) = TBD
+      !cpatch%mort_rate(6,ico) = TBD
       !------------------------------------------------------------------------------------!
 
       return
@@ -187,9 +201,9 @@ module mortality
       !------------------------------------------------------------------------------------!
       do ico=1,cpatch%ncohorts
          if ( a_factor(ico) < almost_one ) then
-            cpatch%mort_rate(5,ico) = log( 1.0 / (1.0 - a_factor(ico)) )
+            cpatch%mort_rate(6,ico) = log( 1.0 / (1.0 - a_factor(ico)) )
          else
-            cpatch%mort_rate(5,ico) = lnexp_max
+            cpatch%mort_rate(6,ico) = lnexp_max
          end if
       end do
       !------------------------------------------------------------------------------------!

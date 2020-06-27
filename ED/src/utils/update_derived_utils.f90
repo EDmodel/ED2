@@ -51,8 +51,8 @@ module update_derived_utils
    !     This subroutine will assign values derived from the basic properties of a given   !
    ! cohort.                                                                               !
    !---------------------------------------------------------------------------------------!
-   subroutine update_cohort_derived_props(cpatch,ico,lsl,new_year,llspan_toc,vm_bar_toc    &
-                                         ,sla_toc)
+   subroutine update_cohort_derived_props(cpatch,ico,lsl,new_year,llspan_toc            &
+                                         ,vm_bar_toc,rd_bar_toc,sla_toc)
       use ed_state_vars  , only : patchtype               ! ! structure
       use pft_coms       , only : is_grass                ! ! function
       use allometry      , only : bd2dbh                  & ! function
@@ -82,6 +82,7 @@ module update_derived_utils
       logical        , intent(in) :: new_year
       real           , intent(in) :: llspan_toc
       real           , intent(in) :: vm_bar_toc
+      real           , intent(in) :: rd_bar_toc
       real           , intent(in) :: sla_toc
       !----- Local variables --------------------------------------------------------------!
       real                        :: bleaf_max
@@ -111,8 +112,8 @@ module update_derived_utils
       !----- Get DBH and height -----------------------------------------------------------!
       if (is_grass(ipft) .and. igrass == 1) then
           !---- New grasses get dbh_effective and height from bleaf. ----------------------!
-          cpatch%dbh(ico)  = bl2dbh(cpatch%bleaf(ico), ipft)
-          cpatch%hite(ico) = bl2h  (cpatch%bleaf(ico), ipft)
+          cpatch%dbh(ico)  = bl2dbh(cpatch%bleaf(ico), cpatch%sla(ico), ipft)
+          cpatch%hite(ico) = bl2h  (cpatch%bleaf(ico), cpatch%sla(ico), ipft)
       else
           !---- Trees and old grasses get dbh from bdead. ---------------------------------!
           cpatch%dbh(ico)  = bd2dbh(ipft, cpatch%bdeada(ico), cpatch%bdeadb(ico))
@@ -147,7 +148,8 @@ module update_derived_utils
       if ((.not. is_grass(ipft)) .or. igrass /= 1) then
          select case (cpatch%phenology_status(ico))
          case (0)
-            bleaf_max = size2bl(cpatch%dbh(ico),cpatch%hite(ico),cpatch%pft(ico))
+            bleaf_max = size2bl(cpatch%dbh(ico),cpatch%hite(ico)                           &
+                               ,cpatch%sla(ico),cpatch%pft(ico))
             if (cpatch%bleaf(ico) < bleaf_max) cpatch%phenology_status(ico) = 1
          end select
       end if
@@ -160,10 +162,12 @@ module update_derived_utils
       !------------------------------------------------------------------------------------!
       select case (trait_plasticity_scheme)
       case (-1,1) ! Update trait every year
-         if (new_year) call update_cohort_plastic_trait(cpatch,ico                         &
-                                                       ,llspan_toc,vm_bar_toc,sla_toc)
-      case (-2,2) ! Update trait every month
-         call update_cohort_plastic_trait(cpatch,ico,llspan_toc,vm_bar_toc,sla_toc)
+         if (new_year) call update_cohort_plastic_trait(cpatch,ico,.false.                 &
+                                                       ,llspan_toc,vm_bar_toc              &
+                                                       ,rd_bar_toc,sla_toc)
+      case (-2,2,3) ! Update trait every month
+         call update_cohort_plastic_trait(cpatch,ico,.false.                               &
+                                         ,llspan_toc,vm_bar_toc,rd_bar_toc,sla_toc)
       end select
       !------------------------------------------------------------------------------------!
 
@@ -182,7 +186,7 @@ module update_derived_utils
                                    ,cpatch%bsapwooda(ico),cpatch%bbarka(ico)               &
                                    ,cpatch%pft(ico))
       cpatch%thbark(ico)  = size2xb(cpatch%dbh(ico),cpatch%hite(ico),cpatch%bbarka(ico)    &
-                                   ,cpatch%bbarkb(ico),cpatch%pft(ico))
+                                   ,cpatch%bbarkb(ico),cpatch%sla(ico),cpatch%pft(ico))
       !------------------------------------------------------------------------------------!
 
 
@@ -211,9 +215,11 @@ module update_derived_utils
    !< trees. Biogesciences, 7(6):1833-1859. doi:10.5194/bg-7-1833-2010.\n
    !=======================================================================================!
    !---------------------------------------------------------------------------------------!
-   subroutine update_cohort_plastic_trait(cpatch,ico,llspan_toc,vm_bar_toc,sla_toc)
+   subroutine update_cohort_plastic_trait(cpatch,ico,is_instant                            &
+                                         ,llspan_toc,vm_bar_toc,rd_bar_toc,sla_toc)
       use ed_state_vars  , only : patchtype               ! ! structure
       use pft_coms       , only : kplastic_vm0            & ! intent(in)
+                                , kplastic_rd0            & ! intent(in)
                                 , kplastic_sla            & ! intent(in)
                                 , kplastic_ll             & ! intent(in)
                                 , eplastic_vm0            & ! intent(in)
@@ -228,12 +234,15 @@ module update_derived_utils
       use allometry      , only : size2bl                 ! ! function
       use physiology_coms, only : trait_plasticity_scheme ! ! intent(in)
       use phenology_coms , only : llspan_inf              ! ! intent(in)
+      use ed_misc_coms   , only : iallom                  ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(patchtype), target     :: cpatch       ! Current patch
       integer        , intent(in) :: ico          ! Cohort index
+      logical        , intent(in) :: is_instant   ! whether to change trait instantaneously
       real           , intent(in) :: llspan_toc   ! Leaf lifespan           (top-of-canopy)
       real           , intent(in) :: vm_bar_toc   ! Photosynthetic capacity (top-of-canopy)
+      real           , intent(in) :: rd_bar_toc   ! Dark respiration rate   (top-of-canopy)
       real           , intent(in) :: sla_toc      ! Specific leaf area      (top-of-canopy)
       !----- Local variables --------------------------------------------------------------!
       integer                     :: ipft         ! Alias for current PFT
@@ -243,6 +252,8 @@ module update_derived_utils
       real                        :: lnexp        ! FPE-safe exponential test
       real                        :: new_sla      ! Updated SLA
       real                        :: sla_scaler   ! Scaling factor for SLA
+      real                        :: trait_change_frac ! fractional change of traits
+      logical                     :: instant_change_flag ! Whether allow instantaneous trait change
       !------------------------------------------------------------------------------------!
 
 
@@ -264,7 +275,8 @@ module update_derived_utils
       if (ico > 1) then
          !----- Accumulate LAI from the top cohort to current cohort. ---------------------!
          do jco = 1,ico-1
-            bl_max      = size2bl(cpatch%dbh(jco),cpatch%hite(jco),cpatch%pft(jco))
+            bl_max      = size2bl(cpatch%dbh(jco),cpatch%hite(jco)                         &
+                                 ,cpatch%sla(jco),cpatch%pft(jco))
             max_cum_lai = max_cum_lai + bl_max * cpatch%sla(jco) * cpatch%nplant(jco)
          end do
          !---------------------------------------------------------------------------------!
@@ -279,14 +291,55 @@ module update_derived_utils
       !     Note that the sign of kplastic_vm0 is typically negative, so this should       !
       !     reduce Vm0.                                                                    !
       !------------------------------------------------------------------------------------!
-      lnexp              = max(lnexp_min,kplastic_vm0(ipft) * max_cum_lai)
-      cpatch%vm_bar(ico) = vm_bar_toc * exp(lnexp)
+      select case (trait_plasticity_scheme)
+      case (3)
+        !--------------------------------------------------------------------------------------------!  
+        ! use leaf longevity to determine how much trait can change with the assumption that trait
+        ! can only change after leaf replacement
+        !--------------------------------------------------------------------------------------------!  
+        lnexp              = max(lnexp_min,kplastic_vm0(ipft) * max_cum_lai)
+        trait_change_frac  = vm_bar_toc * exp(lnexp) / cpatch%vm_bar(ico) - 1.
+        
+        !--------------------------------------------------------------------------------------------!  
+        ! modify the trait_change_frac based on how much leaf has turned over within a month (i.e.
+        ! the update frequency). Meanwhile, two special cases are considered here. (1) when the
+        ! total frac_change is smaller than 5%, we just allow for the change. Otherwise, the trait
+        ! can never reach the target value; (2) for new cohorts or initialized runs that are
+        ! marked by the is_instant flag
+        !--------------------------------------------------------------------------------------------!
+        instant_change_flag = (abs(trait_change_frac) < 0.05) .or. is_instant
+        trait_change_frac = trait_change_frac                                          &
+                          * merge(1., min(1.,1. / cpatch%llspan(ico)),instant_change_flag)
+        cpatch%vm_bar(ico) = cpatch%vm_bar(ico) * (1. + trait_change_frac)
+      case default
+        lnexp              = max(lnexp_min,kplastic_vm0(ipft) * max_cum_lai)
+        cpatch%vm_bar(ico) = vm_bar_toc * exp(lnexp)
+      end select
+      !------------------------------------------------------------------------------------!
+
+      !------------------------------------------------------------------------------------!
+      ! 3.  Update Rd0.  This should be defined at the top of canopy [sun-lit leaves].     !
+      !     Note that the sign of kplastic_rd0 is typically negative, so this should       !
+      !     reduce Rd0. We only update Rd0 when trait_plasticity_scheme is 3      !
+      !------------------------------------------------------------------------------------!
+      select case (trait_plasticity_scheme)
+      case (3)
+        !------------------------------------------------------------------------------------!
+        ! Check the plasticity for vm0 above for details                                     !
+        !------------------------------------------------------------------------------------!
+        lnexp              = max(lnexp_min,kplastic_rd0(ipft) * max_cum_lai)
+        trait_change_frac  = rd_bar_toc * exp(lnexp) / cpatch%rd_bar(ico) - 1.
+        instant_change_flag = (abs(trait_change_frac) < 0.05) .or. is_instant
+        trait_change_frac = trait_change_frac                                          &
+                          * merge(1., min(1.,1. / cpatch%llspan(ico)),instant_change_flag)
+        cpatch%rd_bar(ico) = cpatch%rd_bar(ico) * (1. + trait_change_frac)
+
+      end select
       !------------------------------------------------------------------------------------!
 
 
-
       !------------------------------------------------------------------------------------!
-      ! 3.  Update SLA.  Decide whether to use the bottom or top of the canopy as the      !
+      ! 4.  Update SLA.  Decide whether to use the bottom or top of the canopy as the      !
       !     reference.                                                                     !
       !------------------------------------------------------------------------------------!
       select case (trait_plasticity_scheme)
@@ -299,13 +352,23 @@ module update_derived_utils
          !------ SLA is defined at the bottom of canopy, use height to change SLA. --------!
          new_sla = sla_toc / (1. + lma_slope(ipft) * cpatch%hite(ico))
          !---------------------------------------------------------------------------------!
+      case (3)
+        !------------------------------------------------------------------------------------!
+        ! Check the plasticity for vm0 above for details                                     !
+        !------------------------------------------------------------------------------------!
+        lnexp              = max(lnexp_min,kplastic_sla(ipft) * max_cum_lai)
+        trait_change_frac  = sla_toc * exp(lnexp) / cpatch%sla(ico) - 1.
+        instant_change_flag = (abs(trait_change_frac) < 0.05) .or. is_instant
+        trait_change_frac = trait_change_frac                                          &
+                          * merge(1., min(1.,1. / cpatch%llspan(ico)),instant_change_flag)
+        new_sla = cpatch%sla(ico) * (1. + trait_change_frac)
       end select
       !------------------------------------------------------------------------------------!
 
 
 
       !------------------------------------------------------------------------------------!
-      ! 4.  Here we also need to retrospectively change leaf level state variables because !
+      ! 5.  Here we also need to retrospectively change leaf level state variables because !
       !     the leaf area has changed while we want to keep the flux the same. This is     !
       !     necessary for plant hydraulic calculations, which uses the water fluxes from   !
       !     'Last Timestep'.  For now we only update psi_open and psi_closed, which will   !
@@ -316,12 +379,31 @@ module update_derived_utils
       cpatch%sla       (ico) = new_sla
       cpatch%psi_open  (ico) = cpatch%psi_open  (ico) * sla_scaler
       cpatch%psi_closed(ico) = cpatch%psi_closed(ico) * sla_scaler
+
+      ! Since SLA is changed, we might need to adjust leaf biomass if leaf area based 
+      ! allometry is used
+      select case (iallom)
+      case (4)
+        bl_max = size2bl(cpatch%dbh(ico),cpatch%hite(ico),cpatch%sla(ico),cpatch%pft(ico))
+
+        if (cpatch%bleaf(ico) > bl_max) then
+            ! if the new bl_max is smaller than current bleaf, we need to dump
+            ! the extra carbon into bstorage and change phenology_status
+            cpatch%bstorage(ico) = cpatch%bstorage(ico)             &
+                                 + (cpatch%bleaf(ico) - bl_max)
+
+            ! Water content will be updated later in structural_growth
+            cpatch%bleaf(ico) = bl_max
+
+            cpatch%phenology_status(ico) = 0
+        endif
+      end select
       !------------------------------------------------------------------------------------!
 
 
 
       !------------------------------------------------------------------------------------!
-      ! 5.  Update leaf life span.                                                         !
+      ! 6.  Update leaf life span.                                                         !
       !------------------------------------------------------------------------------------!
       if (leaf_turnover_rate(ipft) > 0.0) then
          !---------------------------------------------------------------------------------!
@@ -347,6 +429,17 @@ module update_derived_utils
                                * ( cpatch%vm_bar(ico) / vm_bar_toc ) ** eplastic_vm0(ipft) &
                                * ( cpatch%sla   (ico) / sla_toc    ) ** eplastic_sla(ipft)
             !------------------------------------------------------------------------------!
+         case (3)
+            !------------------------------------------------------------------------------!
+            ! Check the plasticity for vm0 above for details                               !
+            !------------------------------------------------------------------------------!
+            lnexp              = max(lnexp_min,kplastic_ll(ipft) * max_cum_lai)
+            trait_change_frac  = llspan_toc * exp(lnexp) / cpatch%llspan(ico) - 1.
+            instant_change_flag = (abs(trait_change_frac) < 0.05) .or. is_instant
+            trait_change_frac = trait_change_frac                                          &
+                            * merge(1., min(1.,1. / cpatch%llspan(ico)),instant_change_flag)
+            cpatch%llspan(ico) = min(llspan_inf,cpatch%llspan(ico) * (1. + trait_change_frac))
+
          end select
          !---------------------------------------------------------------------------------!
       else
@@ -1824,9 +1917,11 @@ module update_derived_utils
          cpatch%today_gpp_mlmax    (ico) = cpatch%today_gpp_mlmax    (ico) * mult
          cpatch%today_leaf_resp    (ico) = cpatch%today_leaf_resp    (ico) * mult
          cpatch%today_root_resp    (ico) = cpatch%today_root_resp    (ico) * mult
+         cpatch%today_stem_resp    (ico) = cpatch%today_stem_resp    (ico) * mult
          cpatch%gpp                (ico) = cpatch%gpp                (ico) * mult
          cpatch%leaf_respiration   (ico) = cpatch%leaf_respiration   (ico) * mult
          cpatch%root_respiration   (ico) = cpatch%root_respiration   (ico) * mult
+         cpatch%stem_respiration   (ico) = cpatch%stem_respiration   (ico) * mult
          cpatch%leaf_water         (ico) = cpatch%leaf_water         (ico) * mult
          cpatch%leaf_water_im2     (ico) = cpatch%leaf_water_im2     (ico) * mult
          cpatch%leaf_hcap          (ico) = cpatch%leaf_hcap          (ico) * mult
@@ -2064,7 +2159,7 @@ module update_derived_utils
          else
              !--use dbh for trees
              lai_pot = cpatch%nplant(ico) * cpatch%sla(ico)                                &
-                     * size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft)
+                     * size2bl(cpatch%dbh(ico),cpatch%hite(ico),cpatch%sla(ico),ipft)
          end if
          !---------------------------------------------------------------------------------!
 

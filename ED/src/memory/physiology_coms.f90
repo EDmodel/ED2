@@ -125,6 +125,18 @@ module physiology_coms
    !< deciduous PFTs enough carbon to flush new leaves when growing season comes
    !---------------------------------------------------------------------------------------!
 
+   integer               :: istem_respiration_scheme
+   !---------------------------------------------------------------------------------------!
+   !< ISTEM_RESPIRATION_SCHEME -- Different methods to calculate respiration from stem metabolism.\n
+   !<                             0. No explicit stem respiration (default by ED2.2 and before) \n
+   !<                             1. Calculate stem respiration with stem surface area and 
+   !< per area respiration rate, which is a function of temperature and tree size based on
+   !< measurements on tropical trees by Chambers et al. (2004). Note that the calculation of
+   !< surface area uses WAI. So if IBRANCH_THERMO is set to 0. All branch surface areas will
+   !< be ignored.
+   !---------------------------------------------------------------------------------------!
+
+
    integer               :: istomata_scheme
    !---------------------------------------------------------------------------------------!
    !< ISTOMATA_SCHEME -- Which stomatal conductance model to use.\n
@@ -198,7 +210,28 @@ module physiology_coms
    integer              :: cbr_scheme
    !---------------------------------------------------------------------------------------!
 
+   integer               :: carbon_mortality_scheme
+   !---------------------------------------------------------------------------------------!
+   !< CARBON_MORTALITY_SCHEME - Different methods to calculate negative carbon balance
+   !< mortality.\n
+   !<                           0. (ED-2.2 default) ED-1 original formulation 
+   !<                              (Moorcroft et al. 2001)\n
+   !<                           1. (ED-2.2 Alternative) trait-dependent exponential model by 
+   !< Camac et al. 2018 but uses CB instead of growth
+   !<                           2. (ED-2.2 Alternative) trait-dependent exponential model by 
+   !< Camac et al. 2018 and use actual growth rates
+   !---------------------------------------------------------------------------------------!
 
+
+   integer               :: hydraulic_mortality_scheme
+   !---------------------------------------------------------------------------------------!
+   !< HYDRAULIC_MORTALITY_SCHEME - Different methods to calculate hydraulic failure
+   !< mortality.\n
+   !<                           0. (ED-2.2 default) No hydraulic failure mortality
+   !<                              (Moorcroft et al. 2001)\n
+   !<                           1. (Beta) hydraulic failure mortality based on monthly 
+   !< mean xylem percentage loss of conductance (PLC)
+   !---------------------------------------------------------------------------------------!
 
 
    !---------------------------------------------------------------------------------------!

@@ -998,7 +998,8 @@ module canopy_struct_dynamics
                else
                    !--use dbh for trees
                    waiuse = 1.d-1 * initp%nplant(ico) * dble(cpatch%sla(ico))              &
-                          * dble(size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft))
+                          * dble(size2bl(cpatch%dbh(ico),cpatch%hite(ico)                  &
+                                        ,cpatch%sla(ico),ipft))
                end if
                !---------------------------------------------------------------------------!
 
@@ -1071,7 +1072,8 @@ module canopy_struct_dynamics
                   ! singularity.                                                           !
                   !------------------------------------------------------------------------!
                   tai_drygrass = dble( elongf_min                                          &
-                                     * size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft))
+                                     * size2bl(cpatch%dbh(ico),cpatch%hite(ico)            &
+                                              ,cpatch%sla(ico),ipft))
                   ladcohort    = tai_drygrass / (htopcrown - hbotcrown)
                   !------------------------------------------------------------------------!
                else

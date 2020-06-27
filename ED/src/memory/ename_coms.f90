@@ -144,6 +144,7 @@ module ename_coms
       integer                                           :: plant_hydro_scheme
       integer                                           :: istomata_scheme
       integer                                           :: istruct_growth_scheme
+      integer                                           :: istem_respiration_scheme
       integer                                           :: trait_plasticity_scheme
       integer                                           :: growth_resp_scheme
       integer                                           :: storage_resp_scheme
@@ -173,6 +174,8 @@ module ename_coms
       integer                                           :: iddmort_scheme
       integer                                           :: cbr_scheme
       real                                              :: ddmort_const
+      integer                                           :: carbon_mortality_scheme
+      integer                                           :: hydraulic_mortality_scheme
       real                                              :: vmfact_c3
       real                                              :: vmfact_c4
       real                                              :: mphoto_trc3
@@ -438,6 +441,7 @@ module ename_coms
       enl%plant_hydro_scheme        = undef_integer
       enl%istomata_scheme           = undef_integer
       enl%istruct_growth_scheme     = undef_integer
+      enl%istem_respiration_scheme  = undef_integer
       enl%trait_plasticity_scheme   = undef_integer
       enl%growth_resp_scheme        = undef_integer
       enl%storage_resp_scheme       = undef_integer
@@ -467,6 +471,8 @@ module ename_coms
       enl%iddmort_scheme            = undef_integer
       enl%cbr_scheme                = undef_integer
       enl%ddmort_const              = undef_real
+      enl%carbon_mortality_scheme   = undef_real
+      enl%hydraulic_mortality_scheme= undef_real
       enl%vmfact_c3                 = undef_real
       enl%vmfact_c4                 = undef_real
       enl%mphoto_trc3               = undef_real

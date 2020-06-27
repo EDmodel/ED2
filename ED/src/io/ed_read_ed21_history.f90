@@ -25,6 +25,7 @@ subroutine read_ed21_history_file
                                   , include_these_pft           & ! intent(in)
                                   , leaf_turnover_rate          & ! intent(in)
                                   , vm0                         & ! intent(in)
+                                  , rd0                         & ! intent(in)
                                   , sla                         ! ! intent(in)
    use ed_misc_coms        , only : sfilin                      & ! intent(in)
                                   , imonthh                     & ! intent(in)
@@ -690,7 +691,7 @@ subroutine read_ed21_history_file
                            !---------------------------------------------------------------!
                            !     Initialise size and structural pools.                     !
                            !---------------------------------------------------------------!
-                           if (iallom == 3) then
+                           if ((iallom == 3 .or. iallom == 4)) then
                               !----- New allometry, initialise with DBH. ------------------!
                               cpatch%hite(ico)   = dbh2h (ipft,cpatch%dbh  (ico))
                               bdeadx             = size2bd(cpatch%dbh(ico)                 &
@@ -740,6 +741,7 @@ subroutine read_ed21_history_file
                            !---------------------------------------------------------------!
                            cpatch%bleaf(ico)     = size2bl( cpatch%dbh (ico)               &
                                                           , cpatch%hite(ico)               &
+                                                          , cpatch%sla (ico)               &
                                                           , ipft )
                            cpatch%broot   (ico)  = cpatch%bleaf(ico) * q(ipft)
                            cpatch%bsapwooda(ico) = agf_bs(ipft) * cpatch%bleaf(ico)        &
@@ -899,6 +901,22 @@ subroutine read_ed21_history_file
 
 
 
+                           !---------------------------------------------------------------!
+                           !     In case we are representing trait plasticity, update      !
+                           ! traits (SLA, Vm0).  This must be done before calculating LAI. !
+                           !---------------------------------------------------------------!
+                           select case (trait_plasticity_scheme)
+                           case (0)
+                              continue
+                           case default
+                              call update_cohort_plastic_trait(cpatch,ico,.true.           &
+                                                        ,leaf_lifespan(cpatch%pft(ico))    &
+                                                        ,vm0(cpatch%pft(ico))              &
+                                                        ,rd0(cpatch%pft(ico))              &
+                                                        ,sla(cpatch%pft(ico)) )
+                           end select
+
+                           !---------------------------------------------------------------!
                            !----- Compute the above-ground biomass. -----------------------!
                            cpatch%agb    (ico) = ed_biomass(cpatch, ico)
                            cpatch%basarea(ico) = pio4 * cpatch%dbh(ico) * cpatch%dbh(ico)
@@ -912,24 +930,11 @@ subroutine read_ed21_history_file
                                                         , cpatch%hite     (ico)            &
                                                         , cpatch%bbarka   (ico)            &
                                                         , cpatch%bbarkb   (ico)            &
+                                                        , cpatch%sla      (ico)            &
                                                         , cpatch%pft      (ico) )
 
 
 
-                           !---------------------------------------------------------------!
-                           !     In case we are representing trait plasticity, update      !
-                           ! traits (SLA, Vm0).  This must be done before calculating LAI. !
-                           !---------------------------------------------------------------!
-                           select case (trait_plasticity_scheme)
-                           case (0)
-                              continue
-                           case default
-                              call update_cohort_plastic_trait(cpatch,ico                  &
-                                                        ,leaf_lifespan(cpatch%pft(ico))    &
-                                                        ,vm0(cpatch%pft(ico))              &
-                                                        ,sla(cpatch%pft(ico)) )
-                           end select
-                           !---------------------------------------------------------------!
 
 
                            !----- Assign LAI, WAI, and CAI --------------------------------!
@@ -1061,6 +1066,7 @@ subroutine read_ed21_history_unstruct
                                   , include_these_pft           & ! intent(in)
                                   , leaf_turnover_rate          & ! intent(in)
                                   , vm0                         & ! intent(in)
+                                  , rd0                         & ! intent(in)
                                   , sla                         ! ! intent(in)
    use ed_misc_coms        , only : sfilin                      & ! intent(in)
                                   , ied_init_mode               & ! intent(in)
@@ -2076,7 +2082,7 @@ subroutine read_ed21_history_unstruct
                            !---------------------------------------------------------------!
                            !     Initialise size and structural pools.                     !
                            !---------------------------------------------------------------!
-                           if (iallom == 3) then
+                           if (iallom == 3 .or. iallom == 4) then
                               !----- New allometry, initialise with DBH. ------------------!
                               cpatch%hite(ico)   = dbh2h (ipft,cpatch%dbh  (ico))
                               bdeadx             = size2bd(cpatch%dbh(ico)                 &
@@ -2125,6 +2131,7 @@ subroutine read_ed21_history_unstruct
                            !---------------------------------------------------------------!
                            cpatch%bleaf(ico)     = size2bl( cpatch%dbh (ico)               &
                                                           , cpatch%hite(ico)               &
+                                                          , cpatch%sla (ico)               &
                                                           , ipft )
                            cpatch%broot(ico)     = cpatch%bleaf(ico) * q(ipft)
                            cpatch%bsapwooda(ico) = agf_bs(ipft) * cpatch%bleaf(ico)        &
@@ -2283,6 +2290,22 @@ subroutine read_ed21_history_unstruct
                            !---------------------------------------------------------------!
 
 
+                           !---------------------------------------------------------------!
+                           !     In case we are representing trait plasticity, update      !
+                           ! traits (SLA, Vm0).  This must be done before calculating LAI. !
+                           !---------------------------------------------------------------!
+                           select case (trait_plasticity_scheme)
+                           case (0)
+                              continue
+                           case default
+                              call update_cohort_plastic_trait(cpatch,ico,.true.           &
+                                                        ,leaf_lifespan(cpatch%pft(ico))    &
+                                                        ,vm0(cpatch%pft(ico))              &
+                                                        ,rd0(cpatch%pft(ico))              &
+                                                        ,sla(cpatch%pft(ico)) )
+                           end select
+
+                           !---------------------------------------------------------------!
                            !----- Compute the above-ground biomass. -----------------------!
                            cpatch%agb    (ico) = ed_biomass(cpatch, ico)
                            cpatch%basarea(ico) = pio4 * cpatch%dbh(ico) * cpatch%dbh(ico)
@@ -2296,25 +2319,12 @@ subroutine read_ed21_history_unstruct
                                                         , cpatch%hite     (ico)            &
                                                         , cpatch%bbarka   (ico)            &
                                                         , cpatch%bbarkb   (ico)            &
+                                                        , cpatch%sla      (ico)            &
                                                         , cpatch%pft      (ico) )
                            !---------------------------------------------------------------!
 
 
 
-                           !---------------------------------------------------------------!
-                           !     In case we are representing trait plasticity, update      !
-                           ! traits (SLA, Vm0).  This must be done before calculating LAI. !
-                           !---------------------------------------------------------------!
-                           select case (trait_plasticity_scheme)
-                           case (0)
-                              continue
-                           case default
-                              call update_cohort_plastic_trait(cpatch,ico                  &
-                                                        ,leaf_lifespan(cpatch%pft(ico))    &
-                                                        ,vm0(cpatch%pft(ico))              &
-                                                        ,sla(cpatch%pft(ico)) )
-                           end select
-                           !---------------------------------------------------------------!
 
 
                            !----- Assign LAI, WAI, and CAI --------------------------------!
@@ -2455,6 +2465,7 @@ subroutine read_ed21_polyclone
                                   , include_these_pft           & ! intent(in)
                                   , leaf_turnover_rate          & ! intent(in)
                                   , vm0                         & ! intent(in)
+                                  , rd0                         & ! intent(in)
                                   , sla                         ! ! intent(in)
    use ed_misc_coms        , only : sfilin                      & ! intent(in)
                                   , iallom                      & ! intent(in)
@@ -3444,7 +3455,7 @@ subroutine read_ed21_polyclone
                            !---------------------------------------------------------------!
                            !     Initialise size and structural pools.                     !
                            !---------------------------------------------------------------!
-                           if (iallom == 3) then
+                           if (iallom == 3 .or. iallom == 4) then
                               !----- New allometry, initialise with DBH. ------------------!
                               cpatch%hite(ico)   = dbh2h (ipft,cpatch%dbh  (ico))
                               bdeadx             = size2bd(cpatch%dbh(ico)                 &
@@ -3494,6 +3505,7 @@ subroutine read_ed21_polyclone
                            !---------------------------------------------------------------!
                            cpatch%bleaf(ico)     = size2bl( cpatch%dbh (ico)               &
                                                           , cpatch%hite(ico)               &
+                                                          , cpatch%sla (ico)               &
                                                           , ipft )
                            cpatch%broot(ico)     = cpatch%bleaf(ico) * q(ipft)
                            cpatch%bsapwooda(ico) = agf_bs(ipft) * cpatch%bleaf(ico)        &
@@ -3652,6 +3664,22 @@ subroutine read_ed21_polyclone
                            !---------------------------------------------------------------!
 
 
+                           !---------------------------------------------------------------!
+                           !     In case we are representing trait plasticity, update      !
+                           ! traits (SLA, Vm0).  This must be done before calculating LAI. !
+                           !---------------------------------------------------------------!
+                           select case (trait_plasticity_scheme)
+                           case (0)
+                              continue
+                           case default
+                              call update_cohort_plastic_trait(cpatch,ico,.true.           &
+                                                        ,leaf_lifespan(cpatch%pft(ico))    &
+                                                        ,vm0(cpatch%pft(ico))              &
+                                                        ,rd0(cpatch%pft(ico))              &
+                                                        ,sla(cpatch%pft(ico)) )
+                           end select
+
+                           !---------------------------------------------------------------!
                            !----- Compute the above-ground biomass. -----------------------!
                            cpatch%agb(ico)     = ed_biomass(cpatch, ico)
                            cpatch%basarea(ico) = pio4 * cpatch%dbh(ico) * cpatch%dbh(ico)
@@ -3665,22 +3693,9 @@ subroutine read_ed21_polyclone
                                                         , cpatch%hite     (ico)            &
                                                         , cpatch%bbarka   (ico)            &
                                                         , cpatch%bbarkb   (ico)            &
+                                                        , cpatch%sla      (ico)            &
                                                         , cpatch%pft      (ico) )
 
-                           !---------------------------------------------------------------!
-                           !     In case we are representing trait plasticity, update      !
-                           ! traits (SLA, Vm0).  This must be done before calculating LAI. !
-                           !---------------------------------------------------------------!
-                           select case (trait_plasticity_scheme)
-                           case (0)
-                              continue
-                           case default
-                              call update_cohort_plastic_trait(cpatch,ico                  &
-                                                        ,leaf_lifespan(cpatch%pft(ico))    &
-                                                        ,vm0(cpatch%pft(ico))              &
-                                                        ,sla(cpatch%pft(ico)) )
-                           end select
-                           !---------------------------------------------------------------!
 
 
                            !----- Assign LAI, WAI, and CAI --------------------------------!
