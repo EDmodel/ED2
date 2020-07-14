@@ -1536,7 +1536,7 @@ module plant_hydro
       plc_today  =  max(0., 1. - 1. /                                         &
                         (1. + (cpatch%dmin_leaf_psi(ico)                      &
                         / wood_psi50(ipft)) ** wood_Kexp(ipft)))
-      cpatch%plc_monthly   (13,ico) = cpatch%plc_monthly   (13,ico) + plc_today / ndaysi
+      cpatch%plc_monthly   (13,ico) = cpatch%plc_monthly   (13,ico) + plc_today * ndaysi
 
     return
 

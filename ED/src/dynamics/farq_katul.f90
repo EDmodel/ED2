@@ -363,6 +363,7 @@ module farq_katul
     use farq_leuning,    only : find_twilight_min        ! ! function
     use physiology_coms, only : gsw_2_gsc8               ! ! intent(in)
     use consts_coms,     only : tiny_num8                ! ! intent(in)
+    use ed_misc_coms   , only : current_time             ! ! intent(in)
     implicit none
         !------ Arguments. ------------------------------------------------------------------!
         integer     , intent(in)    :: ib           !! Multithread ID
@@ -403,6 +404,10 @@ module farq_katul
         real(kind=8)                :: test_fc_light
         real(kind=8)                :: test_fc_rubp
         real(kind=8)                :: test_fc_3rd
+
+        ! for debugging purposes
+        integer                     :: k
+        logical, parameter          :: debug_flag = .false.
         !------------------------------------------------------------------------------------!
         gsc_min = thispft(ib)%b * gsw_2_gsc8 
   
@@ -540,6 +545,27 @@ module farq_katul
                             (opt_gsc_closed + met(ib)%blyr_cond_co2)
         endif
   
+        
+        if (debug_flag) then
+            write (unit=*,fmt='(80a)')         ('=',k=1,80)
+            write (unit=*,fmt='(a)')           'Katul Stomatal Scheme Quality Check:'
+            write (unit=*,fmt='(a,1x,i9)')   ' + HOUR:                ',current_time%hour
+            write (unit=*,fmt='(a,1x,es12.4)')   ' + Vm:                  ',aparms(ib)%vm
+            write (unit=*,fmt='(a,1x,es12.4)')   ' + Jm:                  ',aparms(ib)%jm
+            write (unit=*,fmt='(a,1x,es12.4)')   ' + Tpm:                 ',aparms(ib)%tpm
+            write (unit=*,fmt='(a,1x,es12.4)')   ' + PAR:                 ',met(ib)%par
+            write (unit=*,fmt='(a,1x,es12.4)')   ' + Leaf_temp:           ',met(ib)%leaf_temp
+            write (unit=*,fmt='(a,1x,es12.4)')   ' + fc_rubp:             ',opt_fc_rubp
+            write (unit=*,fmt='(a,1x,es12.4)')   ' + fc_light:            ',opt_fc_light
+            write (unit=*,fmt='(a,1x,es12.4)')   ' + fc_3rd:              ',opt_fc_3rd
+            write (unit=*,fmt='(a,1x,es12.4)')   ' + gsc_open:            ',opt_gsc    
+            write (unit=*,fmt='(a,1x,es12.4)')   ' + ci:                  ',opt_ci     
+            write (unit=*,fmt='(a,1x,es12.4)')   ' + lambda:              ',lambda
+            write (unit=*,fmt='(a,1x,i9)')       ' + LIMIT_FLAG:          ',limit_flag
+            write (unit=*,fmt='(a,1x,es12.4)')   ' + rfy_lower:       ',rfy_lower
+            write (unit=*,fmt='(a,1x,es12.4)')   ' + rfy_upper:       ',rfy_upper
+        endif
+
         return
 
     end subroutine optimization_solver8
@@ -563,7 +589,8 @@ module farq_katul
                               , aparms                   & ! intent(in) 
                               , thispft                  ! ! intent(in)
     use physiology_coms, only : gsc_2_gsw8               & ! intent(in)
-                              , klowco28                 ! ! intent(in)
+                              , klowco28                 & ! intent(in)
+                              , iphysiol                 ! ! intent(in)
     use consts_coms,     only : tiny_num8                ! ! intent(in)
     implicit none
         !------ Arguments. ------------------------------------------------------------------!
@@ -672,13 +699,23 @@ module farq_katul
             !-------------!
             ! TPU limited
             !-------------!
-            ! This is a linear case
-            fc_3rd = 3.d0 * aparms(ib)%tpm - aparms(ib)%leaf_resp
-            ci_3rd = met(ib)%can_co2 - fc_3rd / gsbc 
+            ! only account for TPU limiation when iphysio is 1 or 3
+            ! otherwise set fc to be a huge value so that TPU is always unlimited
+            select case (iphysiol)
+            case (0,2)
+                fc_3rd = huge(1.)
+                ci_3rd = tiny(1.)
+                dcidg_3rd = tiny(1.)
+                dfcdg_3rd = 0.
+            case (1,3)
+                ! This is a linear case
+                fc_3rd = 3.d0 * aparms(ib)%tpm - aparms(ib)%leaf_resp
+                ci_3rd = met(ib)%can_co2 - fc_3rd / gsbc 
 
-            ! calculate derivatives
-            dcidg_3rd = fc_3rd / gsc ** 2 ! note gbc cancelledout
-            dfcdg_3rd = 0. ! constant fc
+                ! calculate derivatives
+                dcidg_3rd = fc_3rd / gsc ** 2 ! note gbc cancelledout
+                dfcdg_3rd = 0. ! constant fc
+            end select
 
 
         case (4)
