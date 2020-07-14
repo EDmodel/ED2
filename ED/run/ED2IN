@@ -113,8 +113,8 @@ $ED_NL
    !           must be an integer multiple of DTLSM, and we recommend it to be exactly     !
    !           the same as DTSLM.                                                          !
    !---------------------------------------------------------------------------------------!
-   NL%DTLSM  =  600
-   NL%RADFRQ  = 600
+   NL%DTLSM  =  300
+   NL%RADFRQ  = 300
    !---------------------------------------------------------------------------------------!
 
 
@@ -265,7 +265,7 @@ $ED_NL
    NL%IMOUTPUT  =  3
    NL%IQOUTPUT  =  0
    NL%IYOUTPUT  =  0
-   NL%ITOUTPUT  =  3
+   NL%ITOUTPUT  =  0
    NL%IOOUTPUT  =  0
    NL%ISOUTPUT  =  3
    !---------------------------------------------------------------------------------------!
@@ -513,7 +513,7 @@ $ED_NL
 
 
    !---------------------------------------------------------------------------------------!
-   ! ISOILCOL -- LEAF-3 and ED-2 soil colour classes that the model will use when ISOILFLG !
+   ! ISOILCOL -- LEAF-2 and ED-2 soil colour classes that the model will use when ISOILFLG !
    !             is set to 2.  Soil classes are from 1 to 20 (1 = lightest; 20 = darkest). !
    !             The values are the same as CLM-4.0.  The table is the albedo for visible  !
    !             and near infra-red.                                                       !
@@ -614,15 +614,15 @@ $ED_NL
    !  SOILDEPTH_DB     -- If ISOILDEPTHFLG=1, this variable specifies the full path of the !
    !                      file that contains soil moisture and temperature information.    !
    !---------------------------------------------------------------------------------------!
-   NL%VEG_DATABASE      = '/mypath/veget_data/oge2/OGE2_'
-   NL%SOIL_DATABASE     = '/mypath/soil_data/texture/Hengl/Hengl_'
-   NL%LU_DATABASE       = '/mypath/glu-3.3.1+sa1.bau/glu-3.3.1+sa1.bau-'
+   NL%VEG_DATABASE      = '/n/gstore/Labs/moorcroft_lab_protected/data/ed2_data/oge2OLD/OGE2_'
+   NL%SOIL_DATABASE     = '/n/gstore/Labs/moorcroft_lab_protected/data/ed2_data/soil_ed22/Quesada+RADAM+IGBP/Quesada+RADAM+IGBP_'
+   NL%LU_DATABASE       = '/n/home00/mlongo/protected/scenarios/glu-3.3.1+sa1.bau/one/glu-3.3.1+sa1.bau-'
    NL%PLANTATION_FILE   = ''
-   NL%THSUMS_DATABASE   = '/mypath/thermal_sums/'
-   NL%ED_MET_DRIVER_DB  = '/mypath/ED_MET_DRIVER_HEADER'
-   NL%OBSTIME_DB        = '' !Reference file: /ED/run/obstime_template.time
-   NL%SOILSTATE_DB      = '/mypath/soil_data/temp+moist/STW1996OCT.dat'
-   NL%SOILDEPTH_DB      = '/mypath/soil_data/depth/H250mBRD/H250mBRD_'
+   NL%THSUMS_DATABASE   = '/n/gstore/Labs/moorcroft_lab_protected/data/ed2_data/ed_inputs/'
+   NL%ED_MET_DRIVER_DB  = '/n/moorcroftfs5/xiangtao/ED_MET/MERRA2_CHIRPS_sites/M34/REAN_GRND_MET_HEADER'
+   NL%OBSTIME_DB        = ''
+   NL%SOILSTATE_DB      = '/n/gstore/Labs/moorcroft_lab_protected/data/ed2_data/ed_inputs/STW1996OCT.dat'
+   NL%SOILDEPTH_DB      = '/n/gstore/Labs/moorcroft_lab_protected/data/ed2_data/ed_inputs/soil_depths.dat'
    !---------------------------------------------------------------------------------------!
 
 
@@ -791,8 +791,6 @@ $ED_NL
    !      (aka light) limitation case, account for the triose phosphate utilisation        !
    !      limitation case (C3), and use the Michaelis-Mentel coefficients along with other !
    !      parameters from von Caemmerer (2000).                                            !
-   ! 4 -- (Beta) Use "Arrhenius" function as in Harley et al. (1991).  This must be run    !
-   !      with ISTOMATA_SCHEME = 1                                                         !
    !---------------------------------------------------------------------------------------!
    NL%IPHYSIOL = 2
    !---------------------------------------------------------------------------------------!
@@ -824,6 +822,8 @@ $ED_NL
    !               DBH and Height as dependent variables, and DBH-Height takes a simpler   !
    !               log-linear form fitted using SMA so it can be inverted (useful for      !
    !               airborne lidar initialisation).                                         !
+   !           4. (Beta) Same as 3 but assumes leaf area instead of leaf biomass conserves !
+   !               for a given size when plasticity is considered.                         !
    !---------------------------------------------------------------------------------------!
    NL%IALLOM          = 3
    !---------------------------------------------------------------------------------------!
@@ -857,7 +857,7 @@ $ED_NL
    !    biomass , and growth happens daily. With this option, grasses are evergreen        !
    !    regardless of IPHEN_SCHEME.                                                        !
    !---------------------------------------------------------------------------------------!
-   NL%IGRASS          = 1
+   NL%IGRASS          = 0
    !---------------------------------------------------------------------------------------!
 
 
@@ -1728,8 +1728,8 @@ $ED_NL
    !---------------------------------------------------------------------------------------!
    NL%IFUSION        =     0
    NL%MAXSITE        =     1
-   NL%MAXPATCH       =    30
-   NL%MAXCOHORT      =    80
+   NL%MAXPATCH       =    20
+   NL%MAXCOHORT      =    40
    NL%MIN_SITE_AREA  = 0.001
    NL%MIN_PATCH_AREA = 0.001
    !---------------------------------------------------------------------------------------!
@@ -1890,7 +1890,7 @@ $ED_NL
    NL%METCYC1     = 2004
    NL%METCYCF     = 2014
    NL%IMETAVG     = 1
-   NL%IMETRAD     = 5
+   NL%IMETRAD     = 0
    NL%INITIAL_CO2 = 410.
    !---------------------------------------------------------------------------------------!
 
