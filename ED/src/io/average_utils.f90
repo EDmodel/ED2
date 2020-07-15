@@ -4349,30 +4349,6 @@ module average_utils
          cgrid%mmean_wshed_wg          (ipy) = cgrid%mmean_wshed_wg          (ipy)         &
                                              + cgrid%dmean_wshed_wg          (ipy)         &
                                              * ndaysi
-         cgrid%mmean_nppleaf           (ipy) = cgrid%mmean_nppleaf           (ipy)         &
-                                             + cgrid%dmean_nppleaf           (ipy)         &
-                                             * ndaysi
-         cgrid%mmean_nppfroot          (ipy) = cgrid%mmean_nppfroot          (ipy)         &
-                                             + cgrid%dmean_nppfroot          (ipy)         &
-                                             * ndaysi
-         cgrid%mmean_nppsapwood        (ipy) = cgrid%mmean_nppsapwood        (ipy)         &
-                                             + cgrid%dmean_nppsapwood        (ipy)         &
-                                             * ndaysi
-         cgrid%mmean_nppbark           (ipy) = cgrid%mmean_nppbark           (ipy)         &
-                                             + cgrid%dmean_nppbark           (ipy)         &
-                                             * ndaysi
-         cgrid%mmean_nppcroot          (ipy) = cgrid%mmean_nppcroot          (ipy)         &
-                                             + cgrid%dmean_nppcroot          (ipy)         &
-                                             * ndaysi
-         cgrid%mmean_nppseeds          (ipy) = cgrid%mmean_nppseeds          (ipy)         &
-                                             + cgrid%dmean_nppseeds          (ipy)         &
-                                             * ndaysi
-         cgrid%mmean_nppwood           (ipy) = cgrid%mmean_nppwood           (ipy)         &
-                                             + cgrid%dmean_nppwood           (ipy)         &
-                                             * ndaysi
-         cgrid%mmean_nppdaily          (ipy) = cgrid%mmean_nppdaily          (ipy)         &
-                                             + cgrid%dmean_nppdaily          (ipy)         &
-                                             * ndaysi
          cgrid%mmean_rh                (ipy) = cgrid%mmean_rh                (ipy)         &
                                              + cgrid%dmean_rh                (ipy)         &
                                              * ndaysi
@@ -6080,14 +6056,6 @@ module average_utils
          cgrid%mmean_vapor_wc             (ipy) = 0.0
          cgrid%mmean_intercepted_aw       (ipy) = 0.0
          cgrid%mmean_wshed_wg             (ipy) = 0.0
-         cgrid%mmean_nppleaf              (ipy) = 0.0
-         cgrid%mmean_nppfroot             (ipy) = 0.0
-         cgrid%mmean_nppsapwood           (ipy) = 0.0
-         cgrid%mmean_nppbark              (ipy) = 0.0
-         cgrid%mmean_nppcroot             (ipy) = 0.0
-         cgrid%mmean_nppseeds             (ipy) = 0.0
-         cgrid%mmean_nppwood              (ipy) = 0.0
-         cgrid%mmean_nppdaily             (ipy) = 0.0
          cgrid%mmean_rh                   (ipy) = 0.0
          cgrid%mmean_fgc_rh               (ipy) = 0.0
          cgrid%mmean_fsc_rh               (ipy) = 0.0

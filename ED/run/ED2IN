@@ -791,8 +791,6 @@ $ED_NL
    !      (aka light) limitation case, account for the triose phosphate utilisation        !
    !      limitation case (C3), and use the Michaelis-Mentel coefficients along with other !
    !      parameters from von Caemmerer (2000).                                            !
-   ! 4 -- (Beta) Use "Arrhenius" function as in Harley et al. (1991).  This must be run    !
-   !      with ISTOMATA_SCHEME = 1                                                         !
    !---------------------------------------------------------------------------------------!
    NL%IPHYSIOL = 2
    !---------------------------------------------------------------------------------------!

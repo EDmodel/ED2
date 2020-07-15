@@ -231,7 +231,8 @@ module update_derived_utils
                                 , is_grass                ! ! intent(in)
       use consts_coms    , only : lnexp_min               & ! intent(in)
                                 , lnexp_max               ! ! intent(in)
-      use allometry      , only : size2bl                 ! ! function
+      use allometry      , only : size2bl                 & ! function
+                                , ed_balive               ! ! function
       use physiology_coms, only : trait_plasticity_scheme ! ! intent(in)
       use phenology_coms , only : llspan_inf              ! ! intent(in)
       use ed_misc_coms   , only : iallom                  ! ! intent(in)
@@ -394,6 +395,9 @@ module update_derived_utils
 
             ! Water content will be updated later in structural_growth
             cpatch%bleaf(ico) = bl_max
+
+            ! we also update balive since bleaf changed
+            cpatch%balive(ico) = ed_balive(cpatch,ico)
 
             cpatch%phenology_status(ico) = 0
         endif

@@ -920,23 +920,10 @@ subroutine read_ed10_ed20_history_file
                         cpatch%phenology_status(ic2) = 0
                         !------------------------------------------------------------------!
 
-
-
-                        !----- Assign biomass of living tissues. --------------------------!
-                        cpatch%balive(ic2) = ed_balive(cpatch, ic2)
-                        !------------------------------------------------------------------!
-
-
-                        !----- Initialise storage biomass (after setting balive). ---------#
-                        cpatch%bstorage(ic2)  = max( almost_zero                           &
-                                                   , f_bstorage_init(ipft(ic)))            &
-                                              * cpatch%balive(ic2)
-                        !------------------------------------------------------------------!
-
-
                         !------------------------------------------------------------------!
                         !     In case we are representing trait plasticity, update traits  !
-                        ! (SLA, Vm0).  This must be done before calculating LAI.           !
+                        ! (SLA, Vm0).  This must be done before calculating LAI and before !
+                        ! ed_balive.                                                       !
                         !------------------------------------------------------------------!
                         select case (trait_plasticity_scheme)
                         case (0)
@@ -948,6 +935,20 @@ subroutine read_ed10_ed20_history_file
                                                            ,rd0          (ipft(ic))        &
                                                            ,sla          (ipft(ic)) )
                         end select
+                        !------------------------------------------------------------------!
+
+
+
+
+                        !----- Assign biomass of living tissues. --------------------------!
+                        cpatch%balive(ic2) = ed_balive(cpatch, ic2)
+                        !------------------------------------------------------------------!
+
+
+                        !----- Initialise storage biomass (after setting balive). ---------#
+                        cpatch%bstorage(ic2)  = max( almost_zero                           &
+                                                   , f_bstorage_init(ipft(ic)))            &
+                                              * cpatch%balive(ic2)
                         !------------------------------------------------------------------!
 
 

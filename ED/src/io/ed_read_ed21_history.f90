@@ -2305,6 +2305,7 @@ subroutine read_ed21_history_unstruct
                                                         ,sla(cpatch%pft(ico)) )
                            end select
 
+
                            !---------------------------------------------------------------!
                            !----- Compute the above-ground biomass. -----------------------!
                            cpatch%agb    (ico) = ed_biomass(cpatch, ico)

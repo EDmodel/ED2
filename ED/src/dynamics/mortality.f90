@@ -69,7 +69,7 @@ module mortality
          !----- Camac et al (2017).  But use absolute growth rates ------------------------!
          growth_past_year = sum(cpatch%ddbh_monthly(1:12,ico)) / 12.0
          expmort = max( lnexp_min, min( lnexp_max, mort2(ipft) * growth_past_year))
-         cpatch%mort_rate(2,ico) = mort1(ipft) * exp(expmort)
+         cpatch%mort_rate(2,ico) = mort1(ipft) * exp(-expmort)
 
       case (1)
          !----- Camac et al (2017).  Mind the minus sign. ---------------------------------!
