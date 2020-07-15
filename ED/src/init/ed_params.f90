@@ -5166,9 +5166,13 @@ subroutine init_pft_mort_params()
        ! and die in 1. year when PLC is 0.6 (Estimated from Adams et al. 2017 and 
        ! Hammond et al. 2019)
        hydro_mort0(:) = merge(0.0,24.0,is_grass(:))
-       hydro_mort1(:) = merge(1.0                                                          &
-                             ,log(hydro_mort0(:)) / -log(0.6)                              &
-                             ,is_grass(:))
+       do ipft=1,n_pft
+           if (is_grass(ipft)) then
+               hydro_mort1(ipft) = 1.0
+           else
+               hydro_mort1(ipft) = log(hydro_mort0(ipft)) / -log(0.6)
+           endif
+       enddo
    case default
        ! ED 2.2 default, no hydraulic failure mortality
        hydro_mort0(:) = 0.0
@@ -5867,7 +5871,7 @@ subroutine init_pft_hydro_params()
    !----- Parameters related with stomatal conductance, estimated from L15 and M11. ---------------!
 
    ! stoma_lambda has a unit of mol CO2 / mol H2O
-   ! 3e-3 in the model is equivalent to a g1 of 3 in L11
+   ! 4.5e-2 in the model is equivalent to a g1 of 1 in L11
    ! lambda ~ 1/sqrt(g1)
    ! therefore, we convert PFT average g1 values in L11 to stoma_lambda
    stoma_lambda(:) = merge( merge( 1.62                     &  ! C4 grass
@@ -5879,7 +5883,8 @@ subroutine init_pft_hydro_params()
                                         ,is_conifer(:))     &
                                  ,is_tropical(:))           &
                            ,is_grass(:))
-   stoma_lambda = 3e-3 / (stoma_lambda / 3.) ** 2
+
+   stoma_lambda = 4.5e-2 / stoma_lambda ** 2
 
 
    ! stoma_beta is based on Table 2 in M11

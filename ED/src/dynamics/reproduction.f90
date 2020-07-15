@@ -55,6 +55,7 @@ module reproduction
                                      , size2bt                     & ! function
                                      , size2xb                     & ! function
                                      , ed_biomass                  & ! function
+                                     , ed_balive                   & ! function
                                      , area_indices                & ! subroutine
                                      , size2krdepth                ! ! function
       use grid_coms           , only : nzg                         ! ! intent(in)
@@ -515,7 +516,7 @@ module reproduction
                            !----- Trait plasticity is disabled, do nothing. ---------------!
                            continue
                            !---------------------------------------------------------------!
-                        case (-2,2,3) ! Update trait every month
+                        case (-2,-1,1,2,3) ! Update trait 
                            !----- Allow recruits to start adapted to their environment. ---!
                            ipft = cpatch%pft(ico)
                            call update_cohort_plastic_trait(cpatch,ico,.true.              &
@@ -532,6 +533,7 @@ module reproduction
                         ! be zero.                                                         !
                         !------------------------------------------------------------------!
                         cpatch%agb      (ico) = ed_biomass(cpatch, ico)
+                        cpatch%balive   (ico) = ed_balive(cpatch,ico)
                         cpatch%btimber  (ico) = size2bt   ( cpatch%dbh       (ico)         &
                                                           , cpatch%hite      (ico)         &
                                                           , cpatch%bdeada    (ico)         &
