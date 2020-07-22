@@ -74,6 +74,7 @@ $ED_NL
    NL%NZG = 7
    NL%NZS = 1
    NL%ISOILFLG = 2
+   NL%ISLCOLFLG = 2
    NL%NSLCON = 1
    NL%ISOILCOL = 10
    NL%SLXCLAY = 0.01
@@ -83,6 +84,7 @@ $ED_NL
    NL%STGOFF = 0,0,0,0,0,0,0,0,0
    NL%VEG_DATABASE = 'umbs/veg_oge/OGE2_'
    NL%SOIL_DATABASE = ''
+   NL%SLCOL_DATABASE    = '/mypath/soil_data/colour/LC2007JGRB/LC2007JGRB_'
    NL%LU_DATABASE = ''
    NL%PLANTATION_FILE = ''
    NL%THSUMS_DATABASE = 'common/ed_inputs/'
