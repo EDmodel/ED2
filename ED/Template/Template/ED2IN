@@ -499,6 +499,21 @@ $ED_NL
 
 
    !---------------------------------------------------------------------------------------!
+   ! ISLCOLFLG -- This controls how to initialise soil colour.  This must be a list with   !
+   !              N_ED_REGION+N_POI elements.  The first N_ED_REGION elements correspond   !
+   !              to each gridded domain (from first to last).  Elements between           !
+   !              N_ED_REGION+1 and N_ED_REGION+N_POI correspond to the polygons of        !
+   !              interest (from 1 to N_POI.  Options are:                                 !
+   !             1 -- Read in soil colour class from the files set in COLOR_DATABASE.      !
+   !             2 -- Assign either the value set by ISOILCOL (see below).                 !
+   !---------------------------------------------------------------------------------------!
+   NL%ISLCOLFLG = 1
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !---------------------------------------------------------------------------------------!
    ! NSLCON -- ED-2 Soil classes that the model will use when ISOILFLG is set to 2.        !
    !           Possible values are:                                                        !
    !---------------------------------------------------------------------------------------!
@@ -515,9 +530,10 @@ $ED_NL
 
 
    !---------------------------------------------------------------------------------------!
-   ! ISOILCOL -- LEAF-3 and ED-2 soil colour classes.  Soil classes are from 1 to 20       !
-   !             (1 = lightest; 20 = darkest).  The values are the same as CLM-4.0.  The   !
-   !             table is the albedo for visible and near infra-red.                       !
+   ! ISOILCOL -- LEAF-3 and ED-2 soil colour classes that the model will use when          !
+   !             ISLCOLFLG is set to 2.  Soil classes are from 1 to 20 (1 = lightest;      !
+   !             20 = darkest).  The values are the same as CLM-4.0.  The table is the     !
+   !             albedo for visible and near infra-red.                                    !
    !---------------------------------------------------------------------------------------!
    !                                                                                       !
    !       |-----------------------------------------------------------------------|       !
@@ -610,6 +626,8 @@ $ED_NL
    !                      Fill with the path and the prefix.                               !
    !  SOIL_DATABASE    -- soil database, used to determine the soil type.  Fill with the   !
    !                      path and the prefix.                                             !
+   !  SLCOL_DATABASE   -- If ISLCOLFLG=1, this variable specifies the path and prefix of   !
+   !                      soil colour data base.                                           !
    !  LU_DATABASE      -- land-use change disturbance rates database, used only when       !
    !                      IANTH_DISTURB is set to 1.  Fill with the path and the prefix.   !
    !  PLANTATION_FILE  -- Character string for the path to the forest plantation fraction  !
@@ -632,6 +650,7 @@ $ED_NL
    !---------------------------------------------------------------------------------------!
    NL%VEG_DATABASE      = 'myinpmain/veget_data/OGE2/OGE2_'
    NL%SOIL_DATABASE     = 'myinpmain/soil_data/texture/Hengl/Hengl_'
+   NL%SLCOL_DATABASE    = '/mypath/soil_data/colour/LC2007JGRB/LC2007JGRB_'
    NL%LU_DATABASE       = 'myludatabase'
    NL%PLANTATION_FILE   = ''
    NL%THSUMS_DATABASE   = 'myinpmain/thermal_sums/'

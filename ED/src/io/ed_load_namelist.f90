@@ -51,6 +51,7 @@ subroutine copy_nl(copy_type)
    use ename_coms           , only : nl                        ! ! intent(in)
    use soil_coms            , only : find_soil_class           & ! function
                                    , isoilflg                  & ! intent(out)
+                                   , islcolflg                 & ! intent(out)
                                    , nslcon                    & ! intent(out)
                                    , isoilcol                  & ! intent(out)
                                    , slxclay                   & ! intent(out)
@@ -364,6 +365,7 @@ subroutine copy_nl(copy_type)
       ied_init_mode             = nl%ied_init_mode
 
       isoilflg                  = nl%isoilflg
+      islcolflg                 = nl%islcolflg
       nslcon                    = nl%nslcon
       isoilcol                  = nl%isoilcol
       slxclay                   = nl%slxclay
