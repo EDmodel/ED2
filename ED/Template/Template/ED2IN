@@ -504,7 +504,7 @@ $ED_NL
    !              to each gridded domain (from first to last).  Elements between           !
    !              N_ED_REGION+1 and N_ED_REGION+N_POI correspond to the polygons of        !
    !              interest (from 1 to N_POI.  Options are:                                 !
-   !             1 -- Read in soil colour class from the files set in COLOR_DATABASE.      !
+   !             1 -- Read in soil colour class from the files set in SLCOL_DATABASE.      !
    !             2 -- Assign either the value set by ISOILCOL (see below).                 !
    !---------------------------------------------------------------------------------------!
    NL%ISLCOLFLG = 1
@@ -822,12 +822,10 @@ $ED_NL
    !      (Q10) equations, with Collatz et al. (1991) parameters for compensation point,   !
    !      and the Michaelis-Mentel coefficients.  The correction for high and low          !
    !      temperatures are the same as in Moorcroft et al. (2001).                         !
-   ! 3 -- (Beta) Similar to case 2, but we use Jmax to determine the RubP-regeneration     !
-   !      (aka light) limitation case, account for the triose phosphate utilisation        !
-   !      limitation case (C3), and use the Michaelis-Mentel coefficients along with other !
-   !      parameters from von Caemmerer (2000).                                            !
-   ! 4 -- (Beta) Use "Arrhenius" function as in Harley et al. (1991).  This must be run    !
-   !      with ISTOMATA_SCHEME = 1                                                         !
+   ! 3 -- (ED-2.2 alternative) Similar to case 2, but we use Jmax to determine the         !
+   !      RubP-regeneration (aka light) limitation case, account for the triose phosphate  !
+   !      utilisation limitation case (C3), and use the Michaelis-Mentel coefficients      !
+   !      along with other parameters from von Caemmerer (2000).                           !
    !---------------------------------------------------------------------------------------!
    NL%IPHYSIOL = myiphysiol
    !---------------------------------------------------------------------------------------!
@@ -1275,6 +1273,34 @@ $ED_NL
    NL%IDDMORT_SCHEME  = mymortscheme
    NL%CBR_SCHEME      = mycbrscheme
    NL%DDMORT_CONST    = myddmortconst
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !  CARBON_MORTALITY_SCHEME - Different methods to calculate negative carbon balance     !
+   !                            mortality.                                                 !
+   !                            0. (ED-2.2 default) ED-1 original formulation              !
+   !                               (Moorcroft et al. 2001)                                 !
+   !                            1. (Deprecated) Trait-dependent exponential model by Camac !
+   !                               et al. (2018), but uses carbon balance instead of       !
+   !                               growth.                                                 !
+   !                            2. (ED-2.2 Alternative) Trait-dependent exponential model  !
+   !                               by Camac et al. (2018) and use actual growth rates.     !
+   !---------------------------------------------------------------------------------------!
+   NL%CARBON_MORTALITY_SCHEME = mycarbonmort
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !  HYDRAULIC_MORTALITY_SCHEME - Different methods to calculate hydraulic failure        !
+   !                               mortality.                                              !
+   !                            0. (ED-2.2 default) No hydraulic failure mortality         !
+   !                            1. (Beta) hydraulic failure mortality based on monthly     !
+   !                               mean xylem percentage loss of conductance (PLC)         !
+   !---------------------------------------------------------------------------------------!
+   NL%HYDRAULIC_MORTALITY_SCHEME = myhydromort
    !---------------------------------------------------------------------------------------!
 
 

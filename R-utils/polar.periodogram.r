@@ -3,10 +3,10 @@
 #      Polar.periodogram.  This function applies the spatial Fourier analysis, then        #
 # computes the periodogram function for different radii and theta.  The result is a data   #
 # frame with three variables:                                                              #
-#
-# radius - The wave number magnitude (in pixels)
-# rsize  - Size to bin wave numbers (in pixels)
-# thsize - Size to bin wave directions (in degrees)
+#                                                                                          #
+# radius - The wave number magnitude (in pixels)                                           #
+# rsize  - Size to bin wave numbers (in pixels)                                            #
+# thsize - Size to bin wave directions (in degrees)                                        #
 #------------------------------------------------------------------------------------------#
 polar.periodogram <<- function( X
                               , which.bin  = c("radius","length","theta"
@@ -15,6 +15,8 @@ polar.periodogram <<- function( X
                               , thsize     = 10
                               , thmin      = ifelse(hemisphere,0,-180)
                               , thmax      = 180-thsize
+                              , rmin       = 3
+                              , rmax       = 0.5
                               ){
 
    #---------------------------------------------------------------------------------------#
@@ -84,11 +86,11 @@ polar.periodogram <<- function( X
    #---------------------------------------------------------------------------------------#
    #     We only keep the dimensions that matter.  It doesn't make sense to analyse theta  #
    # outside the 0-180 range, because the wave forms are symmetric.  Also, radii larger    #
-   # than the window width are not properly sample so they should be discarded.  In the    #
+   # than the window width are not properly sampled so they should be discarded.  In the   #
    # case of rectangular matrices, we take a conservative approach and pick the smallest   #
    # of them.                                                                              #
    #---------------------------------------------------------------------------------------#
-   rsize       = 1 / max(mm,nn)
+   rsize       = 3 / max(mm,nn)
    keep.theta  = THTH > (thmin - 0.5 * thsize) & THTH <= (thmax + 0.5 * thsize)
    keep.radius = RR   > rsize & RR <= 0.5
    keep        = keep.theta & keep.radius
@@ -115,13 +117,21 @@ polar.periodogram <<- function( X
    #      Decide how to aggregate data.                                                    #
    #---------------------------------------------------------------------------------------#
    if (which.bin %in% "radius"){
-      ans = tapply(X=II.keep,INDEX=R.cut,FUN=mean,na.rm=TRUE) / sig2
+      m.II = tapply(X=II.keep,INDEX=R.cut,FUN=mean,na.rm=TRUE)
+      s.II = tapply(X=II.keep,INDEX=R.cut,FUN=sd  ,na.rm=TRUE)
+      ans  = m.II / s.II
    }else if (which.bin %in% c("theta","angle")){
-      ans = tapply(X=II.keep,INDEX=TH.cut,FUN=mean,na.rm=TRUE) / sig2
+      m.II = tapply(X=II.keep,INDEX=TH.cut,FUN=mean,na.rm=TRUE)
+      s.II = tapply(X=II.keep,INDEX=TH.cut,FUN=sd  ,na.rm=TRUE)
+      ans  = m.II / s.II
    }else if (which.bin %in% "both"){
-      ans = tapply(X=II.keep,INDEX=list(R.cut,TH.cut),FUN=mean,na.rm=TRUE) / sig2
+      m.II = tapply(X=II.keep,INDEX=list(R.cut,TH.cut),FUN=mean,na.rm=TRUE)
+      s.II = tapply(X=II.keep,INDEX=list(R.cut,TH.cut),FUN=sd  ,na.rm=TRUE)
+      ans  = m.II / s.II
    }else if (which.bin %in% "length"){
-      ans        = tapply(X=II.keep,INDEX=R.cut,FUN=mean,na.rm=TRUE) / sig2
+      m.II       = tapply(X=II.keep,INDEX=list(R.cut,TH.cut),FUN=mean,na.rm=TRUE)
+      s.II       = tapply(X=II.keep,INDEX=list(R.cut,TH.cut),FUN=sd  ,na.rm=TRUE)
+      ans        = m.II / s.II
       len        = tapply(X=LL.keep,INDEX=R.cut,FUN=mean,na.rm=TRUE)
       names(ans) = len
    }else if (which.bin %in% "none"){
@@ -136,3 +146,5 @@ polar.periodogram <<- function( X
    return(ans)
    #---------------------------------------------------------------------------------------#
 }#end polar.periodogram
+#==========================================================================================#
+#==========================================================================================#
