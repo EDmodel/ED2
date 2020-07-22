@@ -2470,7 +2470,7 @@ subroutine update_met_drivers(cgrid)
             !------------------------------------------------------------------------------!
             fliq  = min(1.0, 0.4 + 1.2 * (cpoly%met(isi)%atm_tmp - t3ple - 2.0))
             fice  = 1.0 - fliq
-            snden = 339.0 !189.0
+            snden = 289.0 !189.0
             cpoly%met(isi)%dpcpg = max(0.0, cpoly%met(isi)%pcpg)                           &
                                  * ((1.0-fice) * wdnsi + fice / snden)
 
@@ -2482,7 +2482,7 @@ subroutine update_met_drivers(cgrid)
             !------------------------------------------------------------------------------!
             fliq  = max(0.0, 0.2 * (cpoly%met(isi)%atm_tmp - t3ple))
             fice  = 1.0 - fliq
-            snden = (200.0+1.7*(cpoly%met(isi)%atm_tmp-258.15)**1.5 )
+            snden = (150.0+1.7*(cpoly%met(isi)%atm_tmp-258.15)**1.5 )
             cpoly%met(isi)%dpcpg = max(0.0, cpoly%met(isi)%pcpg)                           &
                                  * ((1.0-fice) * wdnsi + fice / snden)
 
@@ -2491,14 +2491,14 @@ subroutine update_met_drivers(cgrid)
             !----- Below freezing point, snow only. ---------------------------------------!
             fliq  = 0.0
             fice  = 1.0
-            snden = (200.0+1.7*(cpoly%met(isi)%atm_tmp-258.15)**1.5 )
+            snden = (150.0+1.7*(cpoly%met(isi)%atm_tmp-258.15)**1.5 )
             cpoly%met(isi)%dpcpg = max(0.0, cpoly%met(isi)%pcpg) / snden
 
          else ! if (copy%met(isi)%atm_tmp < (t3ple - 15.0)) then
             !----- Below freezing point, snow only. ---------------------------------------!
             fliq  = 0.0
             fice  = 1.0
-            snden = 200.
+            snden = 150.
             cpoly%met(isi)%dpcpg = max(0.0, cpoly%met(isi)%pcpg) / snden
 
          end if
