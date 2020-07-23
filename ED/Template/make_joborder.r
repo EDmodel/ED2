@@ -227,8 +227,8 @@ default = list( run           = "unnamed"
               , istomata      = 0
               , istemresp     = 1
               , iplastic      = 2
-              , icarbmort     = 2
-              , ih2omort      = 0
+              , icarbonmort   = 2
+              , ihydromort    = 0
               , igndvap       = 0
               , iphen         = -1
               , iallom        = 3
