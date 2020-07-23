@@ -225,6 +225,7 @@ default = list( run           = "unnamed"
               , ivegtdyn      = 1
               , ihydro        = 0
               , istomata      = 0
+              , istemresp     = 1
               , iplastic      = 2
               , icarbmort     = 2
               , ih2omort      = 0
