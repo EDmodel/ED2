@@ -60,6 +60,7 @@ subroutine copy_nl(copy_type)
                                    , stgoff                    & ! intent(out)
                                    , zrough                    & ! intent(out)
                                    , soil_database             & ! intent(out)
+                                   , slcol_database            & ! intent(out)
                                    , isoilstateinit            & ! intent(out)
                                    , isoildepthflg             & ! intent(out)
                                    , isoilbc                   & ! intent(out)
@@ -374,6 +375,7 @@ subroutine copy_nl(copy_type)
       stgoff(1:nzgmax)          = nl%stgoff(1:nzgmax)
 
       soil_database             = nl%soil_database
+      slcol_database            = nl%slcol_database
       veg_database              = nl%veg_database
       lu_database               = nl%lu_database
       plantation_file           = nl%plantation_file
