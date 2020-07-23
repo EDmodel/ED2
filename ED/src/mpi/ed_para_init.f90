@@ -421,7 +421,7 @@ subroutine get_work(ifm,nxp,nyp,is_poi)
    !---------------------------------------------------------------------------------------!
    select case (islcolflg(ifm))
    case (1)
-      call leaf_database(trim(slcol_database(ifm)),maxsite,npoly,'soil_color'              &
+      call leaf_database(trim(slcol_database(ifm)),maxsite,npoly,'soil_col'                &
                         ,lat_list,lon_list,ntext_soil_list,ipcent_slcol)
    case default
       !------------------------------------------------------------------------------------!
