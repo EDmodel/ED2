@@ -650,7 +650,7 @@ $ED_NL
    !---------------------------------------------------------------------------------------!
    NL%VEG_DATABASE      = 'myinpmain/veget_data/OGE2/OGE2_'
    NL%SOIL_DATABASE     = 'myinpmain/soil_data/texture/Hengl/Hengl_'
-   NL%SLCOL_DATABASE    = '/mypath/soil_data/colour/LC2007JGRB/LC2007JGRB_'
+   NL%SLCOL_DATABASE    = 'myinpmain/soil_data/colour/LC2007JGRB/LC2007JGRB_'
    NL%LU_DATABASE       = 'myludatabase'
    NL%PLANTATION_FILE   = ''
    NL%THSUMS_DATABASE   = 'myinpmain/thermal_sums/'

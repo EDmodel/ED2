@@ -502,6 +502,19 @@ tspftdbh[[n]]     = list( vnam     = "ncbmort"
                         , scsout   = TRUE
                         )#end list
 n                 = n + 1
+tspftdbh[[n]]     = list( vnam     = "hydmort"
+                        , desc     = "Mortality rate - Hydr. failure"
+                        , e.unit   = untab$pcpopoyr
+                        , i.unit   = untab$pcpopoyr
+                        , plog     = FALSE
+                        , pft      = TRUE
+                        , pftdbh   = TRUE
+                        , sas      = FALSE
+                        , bar.plot = FALSE
+                        , stack    = FALSE
+                        , scsout   = TRUE
+                        )#end list
+n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "dimort"
                         , desc     = "Mortality rate - Density independent"
                         , e.unit   = untab$pcpopoyr
@@ -556,6 +569,19 @@ tspftdbh[[n]]     = list( vnam     = "agb.mort"
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "agb.ncbmort"
                         , desc     = "Mortality rate - Neg. C balance"
+                        , e.unit   = untab$pcagboyr
+                        , i.unit   = untab$pcagboyr
+                        , plog     = FALSE
+                        , pft      = TRUE
+                        , pftdbh   = TRUE
+                        , sas      = FALSE
+                        , bar.plot = FALSE
+                        , stack    = FALSE
+                        , scsout   = TRUE
+                        )#end list
+n                 = n + 1
+tspftdbh[[n]]     = list( vnam     = "agb.hydmort"
+                        , desc     = "Mortality rate - Hydr. failure"
                         , e.unit   = untab$pcagboyr
                         , i.unit   = untab$pcagboyr
                         , plog     = FALSE
@@ -647,6 +673,19 @@ tspftdbh[[n]]     = list( vnam     = "acc.mort"
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "acc.ncbmort"
                         , desc     = "Mortality rate - Neg. C balance"
+                        , e.unit   = untab$kgcom2oyr
+                        , i.unit   = untab$kgcoployr
+                        , plog     = FALSE
+                        , pft      = TRUE
+                        , pftdbh   = TRUE
+                        , sas      = FALSE
+                        , bar.plot = FALSE
+                        , stack    = FALSE
+                        , scsout   = TRUE
+                        )#end list
+n                 = n + 1
+tspftdbh[[n]]     = list( vnam     = "acc.hydmort"
+                        , desc     = "Mortality rate - Hydr. failure"
                         , e.unit   = untab$kgcom2oyr
                         , i.unit   = untab$kgcoployr
                         , plog     = FALSE
