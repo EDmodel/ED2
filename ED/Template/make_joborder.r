@@ -224,8 +224,8 @@ default = list( run           = "unnamed"
               , igoutput      = 0
               , ivegtdyn      = 1
               , ihydro        = 0
-              , istomata      = 0
               , istemresp     = 1
+              , istomata      = 0
               , iplastic      = 2
               , icarbonmort   = 2
               , ihydromort    = 0
