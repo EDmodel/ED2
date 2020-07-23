@@ -2334,7 +2334,7 @@ do
    sed -i~ s@myigoutput@${igoutput}@g            ${ED2IN}
    sed -i~ s@mygpref@${gpref}@g                  ${ED2IN}
    sed -i~ s@myvegtdyn@${ivegtdyn}@g             ${ED2IN}
-   sed -i~ s@myhydro@${ihydro}@g                 ${ED2IN}
+   sed -i~ s@myhydroscheme@${ihydro}@g           ${ED2IN}
    sed -i~ s@mystomata@${istomata}@g             ${ED2IN}
    sed -i~ s@myplastic@${iplastic}@g             ${ED2IN}
    sed -i~ s@mycarbonmort@${icarbonmort}@g       ${ED2IN}
