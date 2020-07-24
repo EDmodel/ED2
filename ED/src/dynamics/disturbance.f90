@@ -55,8 +55,7 @@ module disturbance_utils
                               , n_dbh                     ! ! intent(in)
       use mem_polygons , only : maxcohort                 ! ! intent(in)
       use grid_coms    , only : nzg                       & ! intent(in)
-                              , nzs                       & ! intent(in)
-                              , nzl                       ! ! intent(in)
+                              , nzs                       ! ! intent(in)
       use pft_coms     , only : include_pft               ! ! intent(in)
       use allometry    , only : area_indices              ! ! function
       use mortality    , only : disturbance_mortality     ! ! subroutine
@@ -1054,7 +1053,7 @@ module disturbance_utils
                            if ( old_lu == new_lu .and. disturb_mask(ipa) .and. same_pft)   &
                            then
                               !----- Fuse both patches. -----------------------------------!
-                              call fuse_2_patches(csite,npa,ipa,nzg,nzs,nzl                &
+                              call fuse_2_patches(csite,npa,ipa,nzg,nzs                    &
                                                  ,cpoly%lsl(isi)                           &
                                                  ,cpoly%ntext_soil(:,isi)                  &
                                                  ,cpoly%green_leaf_factor(:,isi)           &
@@ -1607,8 +1606,7 @@ module disturbance_utils
                               , patchtype ! ! structure
       use consts_coms  , only : t3ple     ! ! intent(in)
       use grid_coms    , only : nzs       & ! intent(in)
-                              , nzg       & ! intent(in)
-                              , nzl
+                              , nzg       ! ! intent(in)
 
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
@@ -1640,12 +1638,12 @@ module disturbance_utils
       ! properties from the donor patches.                                                 !
       !------------------------------------------------------------------------------------!
       csite%age                        (np) = 0.0
-      csite%fast_soil_C          (1:nzl,np) = 0.0
-      csite%slow_soil_C          (1:nzl,np) = 0.0
-      csite%structural_soil_C    (1:nzl,np) = 0.0
-      csite%structural_soil_L    (1:nzl,np) = 0.0
-      csite%mineralized_soil_N   (1:nzl,np) = 0.0
-      csite%fast_soil_N          (1:nzl,np) = 0.0
+      csite%fast_soil_C          (1:nzg,np) = 0.0
+      csite%slow_soil_C          (1:nzg,np) = 0.0
+      csite%structural_soil_C    (1:nzg,np) = 0.0
+      csite%structural_soil_L    (1:nzg,np) = 0.0
+      csite%mineralized_soil_N   (1:nzg,np) = 0.0
+      csite%fast_soil_N          (1:nzg,np) = 0.0
       csite%sum_dgd                    (np) = 0.0
       csite%sum_chd                    (np) = 0.0
       csite%can_depth                  (np) = 0.0
@@ -1691,8 +1689,7 @@ module disturbance_utils
       use ed_state_vars, only : sitetype     & ! structure
                               , patchtype    ! ! structure
       use ed_max_dims  , only : n_pft        ! ! intent(in)
-      use grid_coms    , only : nzg          & ! intent(in)
-                              , nzl          ! ! intent(in)
+      use grid_coms    , only : nzg          ! ! intent(in)
       use ed_misc_coms , only : writing_long & ! intent(in)
                               , writing_eorq & ! intent(in)
                               , writing_dcyc ! ! intent(in)
@@ -1706,7 +1703,7 @@ module disturbance_utils
       integer                     :: k
       !------------------------------------------------------------------------------------!
 
-      do k=1,nzl
+      do k=1,nzg
         csite%fast_soil_C                (k,np) = csite%fast_soil_C                (k,np)  &
                                             + csite%fast_soil_C                (k,cp)      &
                                             * area_fac
@@ -1775,7 +1772,7 @@ module disturbance_utils
       csite%rough                      (np) = csite%rough                      (np)        &
                                             + csite%rough                      (cp)        &
                                             * area_fac
-     do k=1,nzl
+     do k=1,nzg
       csite%today_A_decomp           (k,np) = csite%today_A_decomp           (k,np)        &
                                             + csite%today_A_decomp           (k,cp)        &
                                             * area_fac
@@ -1999,7 +1996,7 @@ module disturbance_utils
       !     Daily means...                                                                 !
       !------------------------------------------------------------------------------------!
       if (writing_long) then
-        do k=1,nzl
+        do k=1,nzg
          csite%dmean_A_decomp       (k,  np) = csite%dmean_A_decomp       (k,  np)         &
                                              + csite%dmean_A_decomp       (k,  cp)         &
                                              * area_fac
@@ -2850,7 +2847,7 @@ module disturbance_utils
                               , l2n_stem     ! ! intent(in)
       use pft_coms     , only : agf_bs       ! ! intent(in)
       use mortality    , only : survivorship ! ! function
-      use grid_coms    , only : nzl
+      use grid_coms    , only : nzg
 
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
@@ -2933,10 +2930,10 @@ module disturbance_utils
 
 
       !----- Load disturbance litter directly into carbon and N pools. --------------------!
-      csite%fast_soil_C(nzl,np)       = csite%fast_soil_C(nzl,np)       + fast_litter   * area_fac
-      csite%structural_soil_C(nzl,np) = csite%structural_soil_C(nzl,np) + struct_litter * area_fac
-      csite%structural_soil_L(nzl,np) = csite%structural_soil_L(nzl,np) + struct_lignin * area_fac
-      csite%fast_soil_N(nzl,np)       = csite%fast_soil_N(nzl,np)       + fast_litter_n * area_fac
+      csite%fast_soil_C(nzg,np)       = csite%fast_soil_C(nzg,np)       + fast_litter   * area_fac
+      csite%structural_soil_C(nzg,np) = csite%structural_soil_C(nzg,np) + struct_litter * area_fac
+      csite%structural_soil_L(nzg,np) = csite%structural_soil_L(nzg,np) + struct_lignin * area_fac
+      csite%fast_soil_N(nzg,np)       = csite%fast_soil_N(nzg,np)       + fast_litter_n * area_fac
       !------------------------------------------------------------------------------------!
 
       return
@@ -3150,7 +3147,7 @@ module disturbance_utils
       use budget_utils,    only : update_budget            ! ! sub-routine
       use fuse_fiss_utils, only : sort_cohorts             ! ! sub-routine
       use update_derived_props_module, only : update_patch_derived_props !
-      use grid_coms      , only : nzl
+      use grid_coms      , only : nzg
 
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
@@ -3281,10 +3278,10 @@ module disturbance_utils
       !-----------------------------------------------------------------------------!
 
       !----- Load disturbance litter directly into carbon and N pools. -------------!
-      csite%fast_soil_C(nzl,np)       = csite%fast_soil_C(nzl,np)       + fast_litter
-      csite%structural_soil_C(nzl,np) = csite%structural_soil_C(nzl,np) + struct_litter
-      csite%structural_soil_L(nzl,np) = csite%structural_soil_L(nzl,np) + struct_lignin
-      csite%fast_soil_N(nzl,np)       = csite%fast_soil_N(nzl,np)       + fast_litter_n
+      csite%fast_soil_C(nzg,np)       = csite%fast_soil_C(nzg,np)       + fast_litter
+      csite%structural_soil_C(nzg,np) = csite%structural_soil_C(nzg,np) + struct_litter
+      csite%structural_soil_L(nzg,np) = csite%structural_soil_L(nzg,np) + struct_lignin
+      csite%fast_soil_N(nzg,np)       = csite%fast_soil_N(nzg,np)       + fast_litter_n
       !-----------------------------------------------------------------------------!
 
       !------------------- Update patch LAI, WAI, height, roughness... -------------!

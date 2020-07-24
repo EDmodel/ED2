@@ -67,7 +67,8 @@ subroutine set_site_defprops()
                             , slz                  & ! intent(in)
                             , nslcon
    use mem_polygons  , only : maxsite              ! ! intent(in)
-   use ed_misc_coms  , only : min_site_area        ! ! intent(in)
+   use ed_misc_coms  , only : min_site_area        & ! intent(in)
+                            , isoiltext            ! ! intent(in)
    implicit none 
    !----- Local variables -----------------------------------------------------------------!
    type(edtype)     , pointer :: cgrid
@@ -149,9 +150,17 @@ subroutine set_site_defprops()
                !---------------------------------------------------------------------------!
                !     Use the soil type and populate the site-level soil texture.           !
                !---------------------------------------------------------------------------!
-               do k=1,nzg
-                  cpoly%ntext_soil(k,isi) = nslcon(k) !work_v(ifm)%ntext(itext,ipy)
-               end do
+               
+               select case(isoiltext)
+                 case (0)
+                   do k=1,nzg
+                      cpoly%ntext_soil(k,isi) = work_v(ifm)%ntext(itext,ipy)
+                   end do
+                 case (1)
+                   do k=1,nzg
+                      cpoly%ntext_soil(k,isi) = nslcon(k) !work_v(ifm)%ntext(itext,ipy)
+                   end do
+                 end select
                !---------------------------------------------------------------------------!
 
 
@@ -322,7 +331,7 @@ subroutine load_ecosystem_state()
 #else
    use ed_node_coms      , only : mynum           ! ! intent(in)
 #endif
-   use grid_coms         , only : ngrids,nzl          ! ! intent(in)
+   use grid_coms         , only : ngrids,nzg          ! ! intent(in)
    use ed_state_vars     , only : edgrid_g        ! ! structure
 
    implicit none
@@ -523,8 +532,7 @@ end subroutine load_ecosystem_state
 subroutine sfcdata_ed()
    use rk4_coms    , only : ipercol           ! ! intent(in)
    use grid_coms   , only : nzg               & ! intent(in)
-                          , nzs               & ! intent(in)
-                          , nzl               ! ! intent(in)
+                          , nzs               ! ! intent(in)
    use soil_coms   , only : ed_nstyp          & ! intent(in)
                           , slz               & ! intent(in)
                           , dslz              & ! intent(out)
@@ -550,29 +558,7 @@ subroutine sfcdata_ed()
                           , slden             & ! intent(out)
                           , soil              & ! intent(in)
                           , thicknet          & ! intent(out)
-                          , thick             & ! intent(out)
-                          , olz               & ! intent(in)
-                          , dolz              & ! intent(out)
-                          , dolzo2            & ! intent(out)
-                          , dolzi             & ! intent(out)
-                          , dolzidt           & ! intent(out)
-                          , olzt              & ! intent(out)
-                          , dolzt             & ! intent(out)
-                          , dolzti            & ! intent(out)
-                          , dolztidt          & ! intent(out)
-                          , olz8              & ! intent(in)
-                          , dolz8             & ! intent(out)
-                          , dolzo28           & ! intent(out)
-                          , dolzi8            & ! intent(out)
-                          , dolzidt8          & ! intent(out)
-                          , olzt8             & ! intent(out)
-                          , dolzt8            & ! intent(out)
-                          , dolzti8           & ! intent(out)
-                          , dolztidt8         & ! intent(out)
-                          , ohydraul          & ! intent(out)
-                          , olcons1           & ! intent(out)
-                          , olcons18          & ! intent(out)
-                          , olden             ! ! intent(out)
+                          , thick             ! ! intent(out)
    use consts_coms , only : wdns              & ! intent(in)
                           , wdnsi8            ! ! intent(in)
    use rk4_coms    , only : rk4min_sfcw_moist & ! intent(in)
@@ -590,8 +576,6 @@ subroutine sfcdata_ed()
    real                   :: stretch
    real                   :: slz0
    real                   :: ezg
-   real                   :: olz0
-   real                   :: oezg
    !---------------------------------------------------------------------------------------!
 
 
@@ -697,84 +681,6 @@ subroutine sfcdata_ed()
    !----- Assigning some soil grid-dependent RK4 variables --------------------------------!
    rk4min_sfcw_mass  = rk4min_sfcw_moist * wdns   * dslz(nzg)
    rk4min_virt_water = rk4min_virt_moist * wdns   * dslz(nzg)
-
-
-   !----- Organic Soil vertical grid spacing arrays (some with timestep info). ------------!
-   olz (nzl+1) = 0.
-   olz8(nzl+1) = 0.d0
-
-   do k = 1,nzl
-      dolz    (k) = olz(k+1) - olz(k)
-      dolzo2  (k) = .5 * dolz(k)
-      dolzi   (k) = 1. / dolz(k)
-      dolzidt (k) = dolzi(k) * dtlsm
-      olzt    (k) = .5 * (olz(k) + olz(k+1))
-      olz8    (k) = dble(olz    (k))
-      dolz8   (k) = dble(dolz   (k))
-      dolzo28 (k) = dble(dolzo2 (k))
-      dolzi8  (k) = dble(dolzi  (k))
-      dolzidt8(k) = dble(dolzidt(k))
-      olzt8   (k) = dble(olzt   (k))
-   end do
-
-   !----- Find the exponential increase factor to estimate the bottom boundary condition. -!
-   oezg  = log(olz(1)/olz(nzl)) / log(real(nzl))
-   olz0 = olz(1) * (real(nzl+1)/real(nzl))**oezg
-   !---------------------------------------------------------------------------------------!
-
-
-   !----- Find the thickness of the bottom boundary condition layer. ----------------------!
-   dolz    (0) = olz(1) - olz0
-   dolzo2  (0) = .5 * dolz(0)
-   dolzi   (0) = 1. / dolz(0)
-   dolzidt (0) = dolzi(0) * dtlsm
-   dolz8   (0) = dble(dolz   (0))
-   dolzo28 (0) = dble(dolzo2 (0))
-   dolzi8  (0) = dble(dolzi  (0))
-   dolzidt8(0) = dble(dolzidt(0))
-   !---------------------------------------------------------------------------------------!
-
-
-   !----- Find the height at the middle of the bottom boundary condition. -----------------!
-   olzt   (0) = .5 * (olz0 + olz(1))
-   olzt8  (0) = dble(olzt(0))
-   !---------------------------------------------------------------------------------------!
-
-   do k = 1,nzl
-      dolzt    (k) = olzt(k) - olzt(k-1)
-      dolzti   (k) = 1. / dolzt(k)
-      dolztidt (k) = dolzti(k) * dtlsm
-      dolzt8   (k) = dble(dolzt   (k))
-      dolzti8  (k) = dble(dolzti  (k))
-      dolztidt8(k) = dble(dolztidt(k))
-   end do
-
-
-   !----- Soil constants. -----------------------------------------------------------------!
-   refdepth = -0.5
-
-         ohydraul(:) = log (soil(12)%slcons / soil(12)%slcons0) / refdepth
-      do k = 0,nzg
-      
-         select case (ipercol)
-         case (0,1)
-            !----- Original form, constant with depth.  -----------------------------------!
-            olcons1(k,:) = soil(12)%slcons
-         case (2)
-            !------------------------------------------------------------------------------!
-            !    TOPMODEL form, similar to CLM.  Here we use the same definition of slcons !
-            ! from Cosby et al. (1984) because it has a stronger spread and it accounts    !
-            ! for sand and clay contents.                                                  !
-            !------------------------------------------------------------------------------!
-            olcons1(k,:) = soil(12)%slcons * exp ( - olzt(k) / refdepth)
-         end select
-
-         !------ Find the double precision. -----------------------------------------------!
-         olcons18(k,:) = dble(olcons1(k,:))
-      end do
-
-      olden    (:) =  soil(12)%slden    
-
 
    return
 end subroutine sfcdata_ed
@@ -1085,7 +991,7 @@ subroutine read_site_file(cgrid,igr)
 
                   if(fformat == 3) then
                      do i=1,nzg
-                        cpoly%ntext_soil(i,isi) = soilclass(i)
+                        cpoly%ntext_soil(i,isi) = soilclass(1)
                      end do
                   else
                      do i=1,nzg

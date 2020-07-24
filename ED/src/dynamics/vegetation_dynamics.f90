@@ -17,8 +17,7 @@ subroutine vegetation_dynamics(new_month,new_year)
    use grid_coms        , only : ngrids
    use ed_misc_coms     , only : current_time               & ! intent(in)
                                , dtlsm                      & ! intent(in)
-                               , ibigleaf                   & ! intent(in)
-                               , ivertresp
+                               , ibigleaf                   ! ! intent(in)
    use disturbance_utils, only : apply_disturbances         & ! subroutine
                                , site_disturbance_rates     ! ! subroutine
    use fuse_fiss_utils  , only : fuse_patches               & ! subroutine
@@ -121,11 +120,6 @@ subroutine vegetation_dynamics(new_month,new_year)
       call update_C_and_N_pools(cgrid)
       call organic_layer_depth(cgrid)
       call zero_ed_today_vars(cgrid)
-!      select case (ivertresp) 
-!        case (0)
-!        case (1)
-!        call organic_layer_depth(cgrid)
-!      end select
       !------------------------------------------------------------------------------------!
 
 

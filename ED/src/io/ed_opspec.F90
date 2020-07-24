@@ -24,7 +24,6 @@ subroutine ed_opspec_grid
                           , nzpmax              & ! intent(in)
                           , nzgmax              & ! intent(in)
                           , nzsmax              & ! intent(in)
-                          , nzlmax              & ! intent(in)
                           , max_poi             & ! intent(in)
                           , max_ed_regions      ! ! intent(in)
    use grid_coms   , only : nnxp                & ! intent(in)
@@ -40,7 +39,6 @@ subroutine ed_opspec_grid
                           , nstraty             & ! intent(in)
                           , nzg                 & ! intent(in)
                           , nzs                 & ! intent(in)
-                          , nzl                 ! ! intent(in)
    use mem_polygons, only : n_ed_region         & ! intent(in)
                           , n_poi               & ! intent(in)
                           , grid_type           & ! intent(in)
@@ -342,24 +340,6 @@ subroutine ed_opspec_grid
       ifaterr=ifaterr+1 
    end if
    !---------------------------------------------------------------------------------------!
-
-   !---------------------------------------------------------------------------------------!
-   !     Check whether ED snow layers are well set, i.e., the number of soil levels is     !
-   ! within the allowed range.  EJL                                                        !
-   !---------------------------------------------------------------------------------------!
-   if (nzl < 1) then
-      write (reason,'(a,2x,a,1x,i4,a)')                                                    &
-            'Too few maximum # of litter layers. Set it to at least 1.'                      &
-           ,'Your nzl is currently set to',nzl,'.'
-      call opspec_fatal(reason,'opspec_grid')  
-      ifaterr=ifaterr+1        
-   elseif (nzl > nzlmax) then 
-      write (reason,'(2(a,1x,i5,a))')                                                      &
-            'The number of litter layers cannot be greater than ',nzlmax,'.'                 &
-           ,' Your nzl is currently set to',nzl,'.'
-      call opspec_fatal(reason,'opspec_grid') 
-      ifaterr=ifaterr+1 
-   end if
 
    !----- Stop the run in case there is any fatal error. ----------------------------------!
    if (ifaterr > 0) then

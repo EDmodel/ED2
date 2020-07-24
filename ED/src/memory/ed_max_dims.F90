@@ -67,10 +67,6 @@ module ed_max_dims
    integer, parameter :: nzsmax=10
    !---------------------------------------------------------------------------------------!
 
-   !----- Maximum number of litter layers. EJL---------------------------------------------!
-   integer, parameter :: nzlmax=30
-   !---------------------------------------------------------------------------------------!
-
    !---------------------------------------------------------------------------------------!
    !     Suppose you want to run ED only at a few scattered test polygons.  These are      !
    ! called polygons of interest (POIs), formerly known as sites of interest (SOI) when    !

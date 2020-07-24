@@ -22,8 +22,7 @@ subroutine radiate_driver(cgrid)
                                     , rshort_twilight_min   ! ! intent(in)
    use consts_coms           , only : pio180                ! ! intent(in)
    use grid_coms             , only : nzg                   & ! intent(in)
-                                    , nzs                   & ! intent(in)
-                                    , nzl                   ! ! intent(in)
+                                    , nzs                   ! ! intent(in)
    implicit none
    !----- Argument. -----------------------------------------------------------------------!
    type(edtype)     , target   :: cgrid
@@ -157,7 +156,7 @@ subroutine radiate_driver(cgrid)
 
 
             !----- Get unnormalized radiative transfer information. -----------------------!
-            call sfcrad_ed(cpoly%cosaoi(isi),csite,nzg,nzs,nzl,cpoly%ntext_soil(:,isi)         &
+            call sfcrad_ed(cpoly%cosaoi(isi),csite,nzg,nzs,cpoly%ntext_soil(:,isi)         &
                            ,cpoly%ncol_soil(isi),tuco,cpoly%met(isi)%rlong,twilight)
             !------------------------------------------------------------------------------!
 
@@ -192,7 +191,7 @@ end subroutine radiate_driver
 !     This subroutine will drive the distribution of radiation among crowns, snow layers,  !
 ! and soil.                                                            !
 !------------------------------------------------------------------------------------------!
-subroutine sfcrad_ed(cosaoi,csite,mzg,mzs,mzl,ntext_soil,ncol_soil,tuco,rlong,twilight)
+subroutine sfcrad_ed(cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,tuco,rlong,twilight)
 
    use ed_state_vars        , only : sitetype             & ! structure
                                    , patchtype            ! ! structure
@@ -245,7 +244,6 @@ subroutine sfcrad_ed(cosaoi,csite,mzg,mzs,mzl,ntext_soil,ncol_soil,tuco,rlong,tw
    type(sitetype)                  , target      :: csite
    integer                         , intent(in)  :: mzg
    integer                         , intent(in)  :: mzs
-   integer                         , intent(in)  :: mzl
    integer         , dimension(mzg), intent(in)  :: ntext_soil
    integer                         , intent(in)  :: ncol_soil
    real                            , intent(in)  :: rlong

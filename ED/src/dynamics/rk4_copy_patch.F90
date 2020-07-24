@@ -15,8 +15,7 @@ subroutine copy_rk4_patch(sourcep, targetp, cpatch)
    use ed_state_vars , only : sitetype          & ! structure
                             , patchtype         ! ! structure
    use grid_coms     , only : nzg               & ! intent(in)
-                            , nzs               & ! intent(in)
-                            , nzl               ! ! intent(in)
+                            , nzs               ! ! intent(in)
    use ed_max_dims   , only : n_pft             ! ! intent(in)
    use ed_misc_coms  , only : fast_diagnostics  ! ! intent(in)
 
@@ -89,7 +88,7 @@ subroutine copy_rk4_patch(sourcep, targetp, cpatch)
    targetp%rasveg           = sourcep%rasveg
 
    targetp%cwd_rh           = sourcep%cwd_rh
-   do k=1,nzl
+   do k=1,nzg
      targetp%rh            (k)   = sourcep%rh   (k)
    end do
 

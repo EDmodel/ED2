@@ -518,7 +518,7 @@ end subroutine event_planting
 
 subroutine event_fertilize(rval8)
   use update_derived_props_module
-  use grid_coms, only : ngrids, nzl
+  use grid_coms, only : ngrids, nzg
   use ed_state_vars,only: edgrid_g, &
        edtype,polygontype,sitetype, &
        patchtype,allocate_patchtype,copy_patchtype,deallocate_patchtype
@@ -564,7 +564,7 @@ subroutine event_fertilize(rval8)
 
               cpatch => csite%patch(ipa)
 
-              csite%mineralized_soil_N(nzl,ipa) = max(0.0,csite%mineralized_soil_N(nzl,ipa) + nh4 + no3)
+              csite%mineralized_soil_N(nzg,ipa) = max(0.0,csite%mineralized_soil_N(nzg,ipa) + nh4 + no3)
 
               !! update patch properties
               call update_patch_derived_props(csite,ipa)
@@ -685,7 +685,7 @@ end subroutine event_fire
 
 subroutine event_till(rval8)
   use update_derived_props_module
-  use grid_coms, only : ngrids, nzl
+  use grid_coms, only : ngrids, nzg
   use ed_state_vars,only: edgrid_g, &
        edtype,polygontype,sitetype, &
        patchtype,allocate_patchtype,copy_patchtype,deallocate_patchtype
@@ -742,17 +742,17 @@ subroutine event_till(rval8)
 
                  pft = cpatch%pft(ico)
                  !! move biomass to debris/litter pools
-                 csite%fast_soil_C(nzl,ipa) = csite%fast_soil_C(nzl,ipa) + &
+                 csite%fast_soil_C(nzg,ipa) = csite%fast_soil_C(nzg,ipa) + &
                       f_labile(pft)*cpatch%balive(ico) + &
                       cpatch%bstorage(ico)
 
-                 csite%structural_soil_C(nzl,ipa) = csite%structural_soil_C(nzl,ipa) + &
+                 csite%structural_soil_C(nzg,ipa) = csite%structural_soil_C(nzg,ipa) + &
                       (1.0-f_labile(pft))*cpatch%balive(ico) + &
                       cpatch%bdead(ico)
-                 csite%structural_soil_L(nzl,ipa) = csite%structural_soil_L(nzl,ipa) + &
+                 csite%structural_soil_L(nzg,ipa) = csite%structural_soil_L(nzg,ipa) + &
                       (1.0-f_labile(pft))*cpatch%balive(ico)* l2n_stem / c2n_stem(pft) + &
                       cpatch%bdead(ico)* l2n_stem / c2n_stem(pft)
-                 csite%fast_soil_N(nzl,ipa) = csite%fast_soil_N(nzl,ipa) &
+                 csite%fast_soil_N(nzg,ipa) = csite%fast_soil_N(nzg,ipa) &
                       + f_labile(pft)*cpatch%balive(ico)/c2n_leaf(pft) &
                       + cpatch%bstorage(ico)/c2n_storage
                  !! where does bdead's N go??

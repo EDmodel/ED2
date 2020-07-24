@@ -854,13 +854,13 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxsc,wflxsc,qwflxsc,hf
                                     , tsupercool_vap8      & ! intent(in)
                                     , huge_num8            ! ! intent(in)
    use soil_coms             , only : dslzi8               ! ! intent(in)
+   use grid_coms             , only : nzg                  ! ! intent(in)
    use therm_lib8            , only : qslif8               & ! function
                                     , tq2enthalpy8         & ! function
                                     , tl2uint8             ! ! function
    use ed_misc_coms          , only : fast_diagnostics     ! ! intent(in)
    use canopy_struct_dynamics, only : vertical_vel_flux8   ! ! function
    use budget_utils          , only : compute_netrad       ! ! function
-   use grid_coms             , only : nzl
    !$ use omp_lib
 
    implicit none
@@ -1249,12 +1249,12 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxsc,wflxsc,qwflxsc,hf
    !    Heterotrophic respiration is a patch-level variable, so we initialise the total    !
    ! vegetation to canopy carbon flux with the total heterotrophic respiration due to the  !
    ! coarse woody debris, and remove that from the ground to canopy carbon flux to avoid   !
-   ! double counting. EJL 5/1/18 check rh                                                  !
+   ! double counting.                                                  !
    !---------------------------------------------------------------------------------------!
    cflxlc_tot       = 0.d0
    cflxwc_tot       = initp%cwd_rh
    srep = 0.
-   do k=1,nzl
+   do k=1,nzg
      srep = srep + initp%rh(k)
    end do 
    cflxgc           = srep - initp%cwd_rh

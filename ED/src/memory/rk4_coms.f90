@@ -862,8 +862,7 @@ module rk4_coms
    !---------------------------------------------------------------------------------------!
    subroutine allocate_rk4_patch(y)
       use grid_coms     , only : nzg          & ! intent(in)
-                               , nzs          & ! intent(in)
-                               , nzl
+                               , nzs          ! ! intent(in)
       implicit none
       !----- Argument ---------------------------------------------------------------------!
       type(rk4patchtype), target :: y
@@ -882,7 +881,7 @@ module rk4_coms
       allocate(y%sfcwater_depth           (nzs))
       allocate(y%sfcwater_fracliq         (nzs))
       allocate(y%sfcwater_tempk           (nzs))
-      allocate(y%rh                     (0:nzl))
+      allocate(y%rh                     (0:nzg))
 
       !------------------------------------------------------------------------------------!
       !     Diagnostics - for now we will always allocate the diagnostics, even if they    !

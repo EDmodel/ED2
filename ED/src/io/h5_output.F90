@@ -846,8 +846,7 @@ end subroutine h5_output
 subroutine geth5dims(idim_type,varlen,globid,var_len_global,dsetrank,varn,nrec,irec)
    
    use grid_coms          , only : nzg            & ! intent(in)
-                                 , nzs            & ! intent(in)
-                                 , nzl            ! ! intent(in)
+                                 , nzs            ! ! intent(in)
    use ed_max_dims        , only : n_pft          & ! intent(in)
                                  , n_dist_types   & ! intent(in)
                                  , n_dbh          & ! intent(in)
@@ -1306,12 +1305,12 @@ subroutine geth5dims(idim_type,varlen,globid,var_len_global,dsetrank,varn,nrec,i
       stride(1:2) = 1_8
 
 
-   case (55) !(nzl,npatches) EJL
+   case (55) !(nzg,npatches)
       
       ! Litter column type
       dsetrank = 2
-      globdims(1) = int(nzl,8)
-      chnkdims(1) = int(nzl,8)
+      globdims(1) = int(nzg,8)
+      chnkdims(1) = int(nzg,8)
       chnkoffs(1) = 0_8
       globdims(2) = int(var_len_global,8)
       chnkdims(2) = int(varlen,8)

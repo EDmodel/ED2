@@ -11,9 +11,7 @@ subroutine soil_respiration(csite,ipa,mzg,ntext_soil)
                            , patchtype                ! ! structure
    use soil_coms    , only : soil                     & ! intent(in)
                            , dslz                     & ! intent(in)
-                           , slz                      & ! intent(in)
-                           , dolz                     & ! intent(in)
-                           , olz                      ! ! intent(in)
+                           , slz                      ! ! intent(in)
    use decomp_coms  , only : k_rh_active              ! ! intent(in)
    use consts_coms  , only : wdns                     & ! intent(in)
                            , umols_2_kgCyr            ! ! intent(in)
@@ -21,7 +19,7 @@ subroutine soil_respiration(csite,ipa,mzg,ntext_soil)
    use ed_misc_coms , only : dtlsm                    & ! intent(in)
                            , frqsum                   & ! intent(in)
                            , ivertresp                ! ! intent(in)
-   use grid_coms    , only : nzl
+   use grid_coms    , only : nzg
 
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
@@ -148,7 +146,7 @@ subroutine soil_respiration(csite,ipa,mzg,ntext_soil)
 
    !EJL This is the section that calculates respiration. Need to do this for
    !each vertical layer
-   do k=1,nzl 
+   do k=1,nzg 
      nsoil = ntext_soil(k)
      
      !---Get values from above, soil energy, heat capacity, moisture, etc. for each layer   !
@@ -339,8 +337,8 @@ subroutine organic_layer_depth(cgrid)
    use ed_state_vars, only : edtype        & ! structure
                            , polygontype   &
                            , sitetype      !
-   use grid_coms,     only : nzg, nzl      !
-   use soil_coms,     only : olz, dolz     ! 
+   use grid_coms,     only : nzg           !
+   use soil_coms,     only : slz, dslz     ! 
    use ed_misc_coms,  only : icarbdyn      & ! intent(in) 
                            , isoiltext     ! intent(in) 
    use decomp_coms,   only : organic_soil_texture ! intent(in)
@@ -370,12 +368,12 @@ subroutine organic_layer_depth(cgrid)
    real                         :: n1d
    real                         :: n2d
    real                         :: n3d
-   real    , dimension(nzl)     :: oldc1
-   real    , dimension(nzl)     :: oldc2
-   real    , dimension(nzl)     :: oldc3
-   real    , dimension(nzl)     :: newc1
-   real    , dimension(nzl)     :: newc2
-   real    , dimension(nzl)     :: newc3
+   real    , dimension(nzg)     :: oldc1
+   real    , dimension(nzg)     :: oldc2
+   real    , dimension(nzg)     :: oldc3
+   real    , dimension(nzg)     :: newc1
+   real    , dimension(nzg)     :: newc2
+   real    , dimension(nzg)     :: newc3
    integer                      :: k
    integer                      :: ipy
    integer                      :: isi
@@ -404,7 +402,7 @@ subroutine organic_layer_depth(cgrid)
            total_peat = 0.0
            fillfrac = 0.0
            ! Find total depth of organic layer
-           do k=1,nzl
+           do k=1,nzg
              total_peat = total_peat + csite%slow_soil_C(k,ipa) / slow_c_den   &
              + csite%fast_soil_C(k,ipa) /fast_c_den                            &
              + csite%structural_soil_c(k,ipa) / struct_c_den
@@ -413,13 +411,13 @@ subroutine organic_layer_depth(cgrid)
 
            ! Find the fill fraction of the layers 
            csite%litter_depth(:,ipa) = 0.0
-           do k = 1, nzl
-!              print*, olz(k), olz(k+1), dolz(k),fillfrac
-             if (csite%peat_depth(ipa) .ge. (-1.0 * olz(k))) then 
+           do k = 1, nzg
+!              print*, slz(k), slz(k+1), dslz(k),fillfrac
+             if (csite%peat_depth(ipa) .ge. (-1.0 * slz(k))) then 
                csite%litter_depth(k,ipa) = 1.0
-             else if (csite%peat_depth(ipa) .lt. (-1.0*olz(k)) .and. &
-               csite%peat_depth(ipa) .gt. (-1.0*olz(k+1))) then 
-               csite%litter_depth(k,ipa) = (csite%peat_depth(ipa) + olz(k+1)) / dolz(k)
+             else if (csite%peat_depth(ipa) .lt. (-1.0*slz(k)) .and. &
+               csite%peat_depth(ipa) .gt. (-1.0*slz(k+1))) then 
+               csite%litter_depth(k,ipa) = (csite%peat_depth(ipa) + slz(k+1)) / dslz(k)
              endif
              fillfrac=fillfrac+csite%litter_depth(k,ipa)
 
@@ -464,7 +462,7 @@ subroutine organic_layer_depth(cgrid)
            end do
 
 
-           !Redistribute soil pools based on new depth starting from surface (k=nzl).
+           !Redistribute soil pools based on new depth starting from surface (k=nzg).
            !Option 1) We will maintain fraciton of each pool in each layer when pushing 
            ! up or down. i.e. if top layer is 70% met and 30% struct and has 10%
            ! extra carbon, then 10% of depth of met and depth of struct get
@@ -484,7 +482,7 @@ subroutine organic_layer_depth(cgrid)
             newc3(:)=0.0
           
            !debugging print statements
-!           print*, 'dolz', dolz
+!           print*, 'dslz', dslz
 !           print*, 'patch,carbon pools',ipa, oldc1, oldc2, oldc3 
    
             count=0 
@@ -500,18 +498,18 @@ subroutine organic_layer_depth(cgrid)
                      ,'organic_layer_depth','soil_respiration.f90')
                  end if
 !                 print*, 'while fillfrac ne fillcheck',fillfrac, fillcheck
-                 do k=nzl,2,-1 
+                 do k=nzg,2,-1 
                     ld = oldc1(k) / fast_c_den &
                        + oldc2(k) / struct_c_den &
                        + oldc3(k) / slow_c_den
                     nextld = oldc1(k-1) / fast_c_den &
                        + oldc2(k-1) / struct_c_den &
                        + oldc3(k-1) /slow_c_den
-                    if (ld .ge. dolz(k)) then ! If extra carbon, then new levels
+                    if (ld .ge. dslz(k)) then ! If extra carbon, then new levels
                     ! equal to layer thickness and extra is difference
-                       newc1(k)=oldc1(k)*dolz(k) / ld
-                       newc2(k)=oldc2(k)*dolz(k) / ld
-                       newc3(k)=oldc3(k)*dolz(k) / ld
+                       newc1(k)=oldc1(k)*dslz(k) / ld
+                       newc2(k)=oldc2(k)*dslz(k) / ld
+                       newc3(k)=oldc3(k)*dslz(k) / ld
 
                        extc1 = oldc1(k) - newc1(k)                       
                        extc2 = oldc2(k) - newc2(k)                       
@@ -522,7 +520,7 @@ subroutine organic_layer_depth(cgrid)
                        oldc3(k-1)=oldc3(k-1) + extc3
 
                     else ! missing carbon
-                       mdep = min(dolz(k)-ld, nextld)
+                       mdep = min(dslz(k)-ld, nextld)
                   
                        if (nextld .gt. 0.0) then
                          extc1 = max(oldc1(k-1)*mdep/nextld, 0.0)
@@ -547,7 +545,7 @@ subroutine organic_layer_depth(cgrid)
                     ld2 = newc1(k) / fast_c_den + newc2(k) / struct_c_den &
                         + newc3(k) / slow_c_den
 
-                    fillcheck = fillcheck+ld2/dolz(k)       
+                    fillcheck = fillcheck+ld2/dslz(k)       
                  end do ! vert loop
 
                  !!! ASSUME DEEPEST LAYER NEVER FILLS UP. IF THIS FAILS, CREATED
@@ -559,7 +557,7 @@ subroutine organic_layer_depth(cgrid)
                  ld2 = newc1(1) / fast_c_den + newc2(1) / struct_c_den &
                      + newc3(1) / slow_c_den
 
-                 fillcheck = fillcheck+ld2/dolz(1)       
+                 fillcheck = fillcheck+ld2/dslz(1)       
 
                  oldc1(:)=newc1(:)
                  oldc2(:)=newc2(:)
@@ -578,7 +576,7 @@ subroutine organic_layer_depth(cgrid)
                     call fatal_error('organic_layer_depth (opt2) did not converge' &
                     ,'organic_layer_depth','soil_respiration.f90')
                  end if
-                 do k=nzl,2,-1 
+                 do k=nzg,2,-1 
                     ld = oldc1(k) / fast_c_den &
                        + oldc2(k) / struct_c_den &
                        + oldc3(k) / slow_c_den
@@ -593,8 +591,8 @@ subroutine organic_layer_depth(cgrid)
                     n2d = oldc2(k-1) / struct_c_den
                     n3d = oldc3(k-1) / slow_c_den
 
-                    if (ld .ge. dolz(k)) then ! if extra carbon
-                      edep = ld - dolz(k) ! extra depth to be pushed down
+                    if (ld .ge. dslz(k)) then ! if extra carbon
+                      edep = ld - dslz(k) ! extra depth to be pushed down
                       if (edep .ge. c3d) then
                          extc3 = oldc3(k)
                          if (edep .ge. c3d+c2d) then
@@ -619,7 +617,7 @@ subroutine organic_layer_depth(cgrid)
                        oldc3(k-1)=oldc3(k-1) + extc3
 
                     else ! missing carbon
-                       mdep = min(dolz(k)-ld, nextld)
+                       mdep = min(dslz(k)-ld, nextld)
                        if (mdep .ge. n1d) then
                           extc1 = oldc1(k-1)
                           if (mdep .ge. n1d+n2d) then
@@ -648,7 +646,7 @@ subroutine organic_layer_depth(cgrid)
                     ld2 = newc1(k) / fast_c_den + newc2(k) / struct_c_den &
                         + newc3(k) / slow_c_den
 
-                    fillcheck = fillcheck+ld2/dolz(k)       
+                    fillcheck = fillcheck+ld2/dslz(k)       
                  end do ! vert loop
 
                  !!! ASSUME DEEPEST LAYER NEVER FILLS UP. IF THIS FAILS, CREATE
@@ -660,7 +658,7 @@ subroutine organic_layer_depth(cgrid)
                  ld2 = newc1(1) / fast_c_den + newc2(1) / struct_c_den &
                      + newc3(1) / slow_c_den
 
-                 fillcheck = fillcheck+ld2/dolz(1)       
+                 fillcheck = fillcheck+ld2/dslz(1)       
 
                  oldc1(:)=newc1(:)
                  oldc2(:)=newc2(:)
@@ -674,7 +672,7 @@ subroutine organic_layer_depth(cgrid)
 
 
 
-           do k=1,nzl 
+           do k=1,nzg 
              csite%fast_soil_C(k,ipa) = max(oldc1(k), 0.0)
              csite%structural_soil_C(k,ipa) = max(oldc2(k),0.0)
              csite%slow_soil_C(k,ipa) = max(oldc3(k),0.0)
@@ -708,7 +706,7 @@ subroutine update_C_and_N_pools(cgrid)
                            , r_stsc          ! ! intent(in)
    use pft_coms     , only : c2n_slow        & ! intent(in)
                            , c2n_structural  ! ! intent(in)
-   use grid_coms    , only : nzl             ! ! intent(in)
+   use grid_coms    , only : nzg             ! ! intent(in)
 
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
@@ -720,13 +718,13 @@ subroutine update_C_and_N_pools(cgrid)
    integer                     :: isi
    integer                     :: ipa
    integer                     :: k
-   real     , dimension(nzl)   :: Lc
-   real     , dimension(nzl)   :: fast_C_loss
-   real     , dimension(nzl)   :: fast_N_loss
-   real     , dimension(nzl)   :: structural_C_loss
-   real     , dimension(nzl)   :: structural_L_loss
-   real     , dimension(nzl)   :: slow_C_input
-   real     , dimension(nzl)   :: slow_C_loss
+   real     , dimension(nzg)   :: Lc
+   real     , dimension(nzg)   :: fast_C_loss
+   real     , dimension(nzg)   :: fast_N_loss
+   real     , dimension(nzg)   :: structural_C_loss
+   real     , dimension(nzg)   :: structural_L_loss
+   real     , dimension(nzg)   :: slow_C_input
+   real     , dimension(nzg)   :: slow_C_loss
    !---------------------------------------------------------------------------------------!
 
    polygonloop: do ipy = 1,cgrid%npolygons
@@ -739,7 +737,7 @@ subroutine update_C_and_N_pools(cgrid)
 
          patchloop: do ipa = 1,csite%npatches
 
-            do k=1,nzl
+            do k=1,nzg
 
               if (csite%structural_soil_C(k,ipa) > 0.0) then
                  if (csite%structural_soil_L(k,ipa) == csite%structural_soil_C(k,ipa)) then
@@ -780,9 +778,9 @@ subroutine update_C_and_N_pools(cgrid)
               !----------------------------------------------------------------------------!
               !      All carbon fluxes have units kgC/m2/day, and we are updating on the   !
               ! daily time step. Nitrogen has units kgN/m2/day. Updating with vertical res.!
-              ! Only adding inputs to top organic layer (k==nzl). EJL                      !
+              ! Only adding inputs to top organic layer (k==nzg). EJL                      !
               !----------------------------------------------------------------------------!
-              if (k == nzl) then 
+              if (k == nzg) then 
                 csite%fast_soil_C(k,ipa)   = csite%fast_soil_C(k,ipa) + csite%fsc_in(ipa)  &
                                          - fast_C_loss(k)
 

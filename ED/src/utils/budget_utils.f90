@@ -67,7 +67,7 @@ module budget_utils
                               , budget_pref        & ! intent(in)
                               , checkbudget        ! ! intent(in)
       use therm_lib    , only : tq2enthalpy        ! ! function
-      use grid_coms    , only : nzl                ! ! intent(in)
+      use grid_coms    , only : nzg                ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(sitetype)                          , target        :: csite
@@ -267,7 +267,7 @@ module budget_utils
       co2curr_sapastorageresp = sapa_storage_resp* dtlsm
       co2curr_sapbstorageresp = sapb_storage_resp* dtlsm
       co2curr_hetresp         = 0.
-      do k=1,nzl
+      do k=1,nzg
         co2curr_hetresp         = co2curr_hetresp + csite%rh(k,ipa)    * dtlsm
       end do
       co2curr_leafgrowthresp  = leaf_growth_resp * dtlsm
@@ -336,7 +336,7 @@ module budget_utils
                                          + sapb_growth_resp  + leaf_storage_resp           &
                                          + root_storage_resp + sapa_storage_resp           &
                                          + sapb_storage_resp ) * dtlsm
-      do k=1,nzl
+      do k=1,nzg
         csite%co2budget_rh(ipa)          = csite%co2budget_rh(ipa)                         &
                                          + csite%rh(k,ipa) * dtlsm
       end do

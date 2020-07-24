@@ -472,7 +472,7 @@ subroutine update_polygon_derived_props(cgrid)
                                     , sitetype           & ! structure
                                     , patchtype          ! ! structure
    use soil_coms             , only : dslz               ! ! intent(in)
-   use grid_coms             , only : nzg,nzl            ! ! intent(in)
+   use grid_coms             , only : nzg                ! ! intent(in)
    use ed_max_dims           , only : n_dbh              ! ! intent(in)
    use ed_misc_coms          , only : ddbhi              ! ! intent(in)
    use pft_coms              , only : c2n_leaf           & ! intent(in)
@@ -621,7 +621,7 @@ subroutine update_polygon_derived_props(cgrid)
 
             !----- Integrate soil properties. ---------------------------------------------!
             ! EJL - Adding loop over vertical layers
-            do k=1,nzl
+            do k=1,nzg
                cgrid%fast_soil_c   (ipy) = cgrid%fast_soil_c        (ipy)                  &
                                       + csite%fast_soil_c        (k,ipa)                   &
                                       * patch_wgt
@@ -834,7 +834,7 @@ subroutine update_polygon_derived_props(cgrid)
             !------------------------------------------------------------------------------!
             !    Update the patch-related N budget variables.                              !
             !------------------------------------------------------------------------------!
-            do k=1,nzl
+            do k=1,nzg
               cgrid%Ngross_min     (ipy) = cgrid%Ngross_min(ipy)                           &
                                        + csite%mineralized_N_input   (k,ipa)   * patch_wgt
               cgrid%Nnet_min     (ipy) = cgrid%Ngross_min(ipy)                             &

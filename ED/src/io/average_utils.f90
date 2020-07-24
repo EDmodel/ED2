@@ -2462,7 +2462,7 @@ module average_utils
                                , dtlsm         ! ! intent(in)
       use consts_coms   , only : umols_2_kgCyr & ! intent(in)
                                , day_sec       ! ! intent(in)
-      use grid_coms     , only : nzl
+      use grid_coms     , only : nzg
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       type(edtype)     , target     :: cgrid
@@ -2491,7 +2491,7 @@ module average_utils
             csite => cpoly%site(isi)
 
             patchloop: do ipa=1,csite%npatches
-               do k=1,nzl
+               do k=1,nzg
                  csite%today_A_decomp (k,ipa) = csite%today_A_decomp(k,ipa)  * dtlsm_o_daysec
                  csite%today_Af_decomp(k,ipa) = csite%today_Af_decomp(k,ipa) * dtlsm_o_daysec
                !----- Copy the decomposition terms to the daily mean if they are sought. --!
@@ -3587,7 +3587,7 @@ module average_utils
       use consts_coms  , only : yr_day        ! ! intent(in)
       use ed_misc_coms , only : current_time  & ! intent(in)
                               , simtime       ! ! structure
-      use grid_coms    , only : nzl
+      use grid_coms    , only : nzg
       implicit none
       !----- Argument. --------------------------------------------------------------------!
       type(edtype)      , target    :: cgrid
@@ -4243,22 +4243,22 @@ module average_utils
                ! time step is one day.                                                     !
                !---------------------------------------------------------------------------!
                csite%mmean_fast_soil_c      (ipa) = csite%mmean_fast_soil_c      (ipa)     &
-                                                  + csite%fast_soil_c        (nzl,ipa)     &
+                                                  + sum(csite%fast_soil_c        (:,ipa))  &
                                                   * ndaysi
                csite%mmean_slow_soil_c      (ipa) = csite%mmean_slow_soil_c      (ipa)     &
-                                                  + csite%slow_soil_c        (nzl,ipa)     &
+                                                  + sum(csite%slow_soil_c        (:,ipa))  &
                                                   * ndaysi
                csite%mmean_struct_soil_c    (ipa) = csite%mmean_struct_soil_c    (ipa)     &
-                                                  + csite%structural_soil_c  (nzl,ipa)     &
+                                                  + sum(csite%structural_soil_c  (:,ipa))  &
                                                   * ndaysi
                csite%mmean_struct_soil_l    (ipa) = csite%mmean_struct_soil_l    (ipa)     &
-                                                  + csite%structural_soil_l  (nzl,ipa)     &
+                                                  + sum(csite%structural_soil_l  (:,ipa))  &
                                                   * ndaysi
                csite%mmean_fast_soil_n      (ipa) = csite%mmean_fast_soil_n      (ipa)     &
-                                                  + csite%fast_soil_n        (nzl,ipa)     &
+                                                  + sum(csite%fast_soil_n        (:,ipa))  &
                                                   * ndaysi
                csite%mmean_mineral_soil_n   (ipa) = csite%mmean_mineral_soil_n   (ipa)     &
-                                                  + csite%mineralized_soil_n (nzl,ipa)     &
+                                                  + sum(csite%mineralized_soil_n (:,ipa))  &
                                                   * ndaysi
                !---------------------------------------------------------------------------!
 

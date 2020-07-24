@@ -27,7 +27,7 @@ subroutine ed_bigleaf_init(cgrid)
    use fuse_fiss_utils, only : sort_cohorts         & ! subroutine
                              , sort_patches         ! ! subroutine
    use consts_coms    , only : pio4                 ! ! intent(in)
-   use grid_coms      , only : nzl                  ! ! intent(in)
+   use grid_coms      , only : nzg                  ! ! intent(in)
    implicit none
 
    !----- Arguments. ----------------------------------------------------------------------!
@@ -125,14 +125,12 @@ subroutine ed_bigleaf_init(cgrid)
             !------------------------------------------------------------------------------!
             ilu = csite%dist_type(ipa)
             area   (ilu) = area   (ilu) + csite%area              (ipa)
-!            do k=1,nzl
-            fsc  (ilu) = fsc  (ilu) + csite%fast_soil_C       (nzl,ipa) * csite%area(ipa)
-            ssc  (ilu) = ssc  (ilu) + csite%slow_soil_C       (nzl,ipa) * csite%area(ipa)
-            stsc (ilu) = stsc (ilu) + csite%structural_soil_C (nzl,ipa) * csite%area(ipa)
-            stsl (ilu) = stsl (ilu) + csite%structural_soil_L (nzl,ipa) * csite%area(ipa)
-            msn  (ilu) = msn  (ilu) + csite%mineralized_soil_N(nzl,ipa) * csite%area(ipa)
-            fsn  (ilu) = fsn  (ilu) + csite%fast_soil_N       (nzl,ipa) * csite%area(ipa)
-!            end do
+            fsc  (ilu) = fsc  (ilu) + csite%fast_soil_C       (nzg,ipa) * csite%area(ipa)
+            ssc  (ilu) = ssc  (ilu) + csite%slow_soil_C       (nzg,ipa) * csite%area(ipa)
+            stsc (ilu) = stsc (ilu) + csite%structural_soil_C (nzg,ipa) * csite%area(ipa)
+            stsl (ilu) = stsl (ilu) + csite%structural_soil_L (nzg,ipa) * csite%area(ipa)
+            msn  (ilu) = msn  (ilu) + csite%mineralized_soil_N(nzg,ipa) * csite%area(ipa)
+            fsn  (ilu) = fsn  (ilu) + csite%fast_soil_N       (nzg,ipa) * csite%area(ipa)
             sum_dgd(ilu) = sum_dgd(ilu) + csite%sum_dgd           (ipa) * csite%area(ipa)
             sum_chd(ilu) = sum_chd(ilu) + csite%sum_chd           (ipa) * csite%area(ipa)
             !------------------------------------------------------------------------------!
@@ -421,11 +419,9 @@ subroutine ed_bigleaf_init(cgrid)
             site_lai  = site_lai  + patch_lai                    * csite%area(ipa)
             site_agb  = site_agb  + patch_agb                    * csite%area(ipa)
             site_bsa  = site_bsa  + patch_bsa                    * csite%area(ipa)
-!            do k=1,nzl
-            site_fsc  = site_fsc  + csite%fast_soil_C      (nzl,ipa) * csite%area(ipa)
-            site_ssc  = site_ssc  + csite%slow_soil_C      (nzl,ipa) * csite%area(ipa)
-            site_stsc = site_stsc + csite%structural_soil_C(nzl,ipa) * csite%area(ipa)
-!            end do 
+            site_fsc  = site_fsc  + csite%fast_soil_C      (nzg,ipa) * csite%area(ipa)
+            site_ssc  = site_ssc  + csite%slow_soil_C      (nzg,ipa) * csite%area(ipa)
+            site_stsc = site_stsc + csite%structural_soil_C(nzg,ipa) * csite%area(ipa)
             csite%cohort_count(ipa) = npatchco
             nsitepat                = nsitepat + 1
          end do

@@ -2842,8 +2842,7 @@ module fuse_fiss_utils
       use ed_node_coms        , only : mynum               ! ! intent(in)
       use ed_misc_coms        , only : current_time        ! ! intent(in)
       use grid_coms           , only : nzg                 & ! intent(in)
-                                     , nzs                 & ! intent(in)
-                                     , nzl                 ! ! intent(in)
+                                     , nzs                 ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(edtype)          , target      :: cgrid           ! Current grid
@@ -3108,7 +3107,7 @@ module fuse_fiss_utils
                   !     Take an average of the patch properties of donpatch and recpatch,  !
                   ! and assign the average recpatch.                                       !
                   !------------------------------------------------------------------------!
-                  call fuse_2_patches(csite,donp,recp,nzg,nzs,nzl                          &
+                  call fuse_2_patches(csite,donp,recp,nzg,nzs                              &
                                      ,cpoly%lsl(isi),cpoly%ntext_soil(:,isi)               &
                                      ,cpoly%green_leaf_factor(:,isi),fuse_initial          &
                                      ,elim_nplant,elim_lai)
@@ -3378,7 +3377,7 @@ module fuse_fiss_utils
                         !     Take an average of the patch properties of donpatch and      !
                         ! recpatch, and assign the average recpatch.                       !
                         !------------------------------------------------------------------!
-                        call fuse_2_patches(csite,donp,recp,nzg,nzs,nzl                    &
+                        call fuse_2_patches(csite,donp,recp,nzg,nzs                        &
                                            ,cpoly%lsl(isi),cpoly%ntext_soil(:,isi)         &
                                            ,cpoly%green_leaf_factor(:,isi),fuse_initial    &
                                            ,elim_nplant,elim_lai)
@@ -3724,7 +3723,7 @@ module fuse_fiss_utils
                   ! properties of donpatch and recpatch, and leave the averaged values at  !
                   ! recpatch.                                                              !
                   !------------------------------------------------------------------------!
-                  call fuse_2_patches(csite,donp,recp,nzg,nzs,nzl                          &
+                  call fuse_2_patches(csite,donp,recp,nzg,nzs                              &
                                      ,cpoly%lsl(isi),cpoly%ntext_soil(:,isi)               &
                                      ,cpoly%green_leaf_factor(:,isi),fuse_initial          &
                                      ,elim_nplant,elim_lai)
@@ -3942,7 +3941,7 @@ module fuse_fiss_utils
    !=======================================================================================!
    !   This subroutine will merge two patches into 1.                                      !
    !---------------------------------------------------------------------------------------!
-   subroutine fuse_2_patches(csite,donp,recp,mzg,mzs,mzl,lsl,ntext_soil,green_leaf_factor  &
+   subroutine fuse_2_patches(csite,donp,recp,mzg,mzs,lsl,ntext_soil,green_leaf_factor  &
                             ,fuse_initial,elim_nplant,elim_lai)
       use update_derived_props_module
       use patch_pft_size_profile_mod
@@ -3974,7 +3973,6 @@ module fuse_fiss_utils
       integer                , intent(in)  :: lsl               ! Lowest soil level
       integer                , intent(in)  :: mzg               ! # of soil layers
       integer                , intent(in)  :: mzs               ! # of sfc. water layers
-      integer                , intent(in)  :: mzl               ! # organic layers
       integer, dimension(mzg), intent(in)  :: ntext_soil        ! Soil type
       real, dimension(n_pft) , intent(in)  :: green_leaf_factor ! Green leaf factor...
       logical                , intent(in)  :: fuse_initial      ! Initialisation?
@@ -4029,7 +4027,7 @@ module fuse_fiss_utils
                                      ( csite%age(donp)                * csite%area(donp)   &
                                      + csite%age(recp)                * csite%area(recp) )
 
-      do k=1,mzl !EJL 
+      do k=1,mzg !EJL 
         csite%fast_soil_C(k,recp)        = newareai *                                      &
                                    ( csite%fast_soil_C(k,donp)        * csite%area(donp)   &
                                    + csite%fast_soil_C(k,recp)        * csite%area(recp) )
@@ -4228,7 +4226,7 @@ module fuse_fiss_utils
       !------------------------------------------------------------------------------------!
       call new_patch_sfc_props(csite,recp,mzg,mzs,ntext_soil)
       !------------------------------------------------------------------------------------!
-      do k=1,mzl
+      do k=1,mzg
         csite%today_A_decomp(k,recp)         = newareai *                                      &
                                          ( csite%today_A_decomp(k,donp) * csite%area(donp)   &
                                          + csite%today_A_decomp(k,recp) * csite%area(recp) )
@@ -4362,7 +4360,7 @@ module fuse_fiss_utils
       ! averages will be zero.                                                             !
       !------------------------------------------------------------------------------------!
       if (.not. fuse_initial) then
-         do k=1,mzl
+         do k=1,mzg
            csite%fmean_rh             (k,recp) = ( csite%fmean_rh                (k,recp)  &
                                                    * csite%area                    (recp)  &
                                                    + csite%fmean_rh              (k,donp)  &
@@ -4680,7 +4678,7 @@ module fuse_fiss_utils
       !------------------------------------------------------------------------------------! 
       if (writing_long .and.  (.not. fuse_initial) ) then
         if ( all(csite%dmean_can_prss > 10.0) ) then
-        do k=1,mzl
+        do k=1,mzg
          csite%dmean_A_decomp       (k,recp) = ( csite%dmean_A_decomp           (k,recp)   &
                                                  * csite%area                     (recp)   &
                                                + csite%dmean_A_decomp           (k,donp)   &

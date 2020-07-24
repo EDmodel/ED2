@@ -765,10 +765,6 @@ subroutine fill_history_grid_p11dmean(cgrid,ipy,py_index)
                         ,'DMEAN_NPPWOOD_PY          ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cgrid%dmean_nppdaily       (ipy:ipy)                              &
                         ,'DMEAN_NPPDAILY_PY         ',dsetrank,iparallel,.false.,foundvar)
-!      call hdf_getslab_r(cgrid%dmean_A_decomp       (ipy:ipy)                              &
-!                        ,'DMEAN_A_DECOMP_PY         ',dsetrank,iparallel,.false.,foundvar)
-!      call hdf_getslab_r(cgrid%dmean_Af_decomp      (ipy:ipy)                              &
-!                        ,'DMEAN_AF_DECOMP_PY        ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cgrid%dmean_co2_residual   (ipy:ipy)                              &
                         ,'DMEAN_CO2_RESIDUAL_PY     ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cgrid%dmean_energy_residual(ipy:ipy)                              &
@@ -885,8 +881,6 @@ subroutine fill_history_grid_p11dmean(cgrid,ipy,py_index)
                         ,'DMEAN_INTERCEPTED_AW_PY   ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cgrid%dmean_wshed_wg       (ipy:ipy)                              &
                         ,'DMEAN_WSHED_WG_PY         ',dsetrank,iparallel,.false.,foundvar)
-!      call hdf_getslab_r(cgrid%dmean_rh             (ipy:ipy)                              &
-!                        ,'DMEAN_RH_PY               ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cgrid%dmean_cwd_rh         (ipy:ipy)                              &
                         ,'DMEAN_CWD_RH_PY           ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cgrid%dmean_nep            (ipy:ipy)                              &
@@ -3120,8 +3114,7 @@ end subroutine fill_history_polygon
 subroutine fill_history_site(csite,sipa_index,npatches_global,is_burnt)
    use ed_state_vars      , only : sitetype      ! ! structure
    use grid_coms          , only : nzg           & ! intent(in)
-                                 , nzs           & ! intent(in)
-                                 , nzl           ! ! intent(in)
+                                 , nzs           ! ! intent(in)
    use ed_max_dims        , only : n_pft         & ! intent(in)
                                  , n_dbh         & ! intent(in)
                                  , max_site      & ! intent(in)
@@ -3268,18 +3261,6 @@ subroutine fill_history_site(csite,sipa_index,npatches_global,is_burnt)
                      ,'AREA                        ',dsetrank,iparallel,.true. ,foundvar)
    call hdf_getslab_r(csite%age                                                            &
                      ,'AGE                         ',dsetrank,iparallel,.true. ,foundvar)
-!   call hdf_getslab_r(csite%fast_soil_C                                                    &
-!                     ,'FAST_SOIL_C                 ',dsetrank,iparallel,.true. ,foundvar)
-!   call hdf_getslab_r(csite%slow_soil_C                                                    &
-!                     ,'SLOW_SOIL_C                 ',dsetrank,iparallel,.true. ,foundvar)
-!   call hdf_getslab_r(csite%structural_soil_C                                              &
-!                     ,'STRUCTURAL_SOIL_C           ',dsetrank,iparallel,.true. ,foundvar)
-!   call hdf_getslab_r(csite%structural_soil_L                                              &
-!                     ,'STRUCTURAL_SOIL_L           ',dsetrank,iparallel,.true. ,foundvar)
-!   call hdf_getslab_r(csite%mineralized_soil_N                                             &
-!                     ,'MINERALIZED_SOIL_N          ',dsetrank,iparallel,.true. ,foundvar)
-!   call hdf_getslab_r(csite%fast_soil_N                                                    &
-!                     ,'FAST_SOIL_N                 ',dsetrank,iparallel,.true. ,foundvar)
    call hdf_getslab_r(csite%sum_dgd                                                        &
                      ,'SUM_DGD                     ',dsetrank,iparallel,.true. ,foundvar)
    call hdf_getslab_r(csite%sum_chd                                                        &
@@ -3382,10 +3363,6 @@ subroutine fill_history_site(csite,sipa_index,npatches_global,is_burnt)
                      ,'CO2BUDGET_PLRESP            ',dsetrank,iparallel,.true. ,foundvar)
    call hdf_getslab_r(csite%co2budget_rh                                                   &
                      ,'CO2BUDGET_RH                ',dsetrank,iparallel,.true. ,foundvar)
-!   call hdf_getslab_r(csite%today_A_decomp                                                 &
-!                    ,'TODAY_A_DECOMP              ',dsetrank,iparallel,.true. ,foundvar)
-!   call hdf_getslab_r(csite%today_Af_decomp                                                &
-!                     ,'TODAY_AF_DECOMP             ',dsetrank,iparallel,.true. ,foundvar)
    call hdf_getslab_r(csite%veg_rough                                                      &
                      ,'VEG_ROUGH                   ',dsetrank,iparallel,.true. ,foundvar)
    call hdf_getslab_r(csite%veg_height                                                     &
@@ -3402,10 +3379,6 @@ subroutine fill_history_site(csite,sipa_index,npatches_global,is_burnt)
                      ,'FSN_IN                      ',dsetrank,iparallel,.true. ,foundvar)
    call hdf_getslab_r(csite%total_plant_nitrogen_uptake                                    &
                      ,'TOTAL_PLANT_NITROGEN_UPTAKE ',dsetrank,iparallel,.false.,foundvar)
-!   call hdf_getslab_r(csite%mineralized_N_loss                                             &
-!                     ,'MINERALIZED_N_LOSS          ',dsetrank,iparallel,.false.,foundvar)
-!   call hdf_getslab_r(csite%mineralized_N_input                                            &
-!                     ,'MINERALIZED_N_INPUT         ',dsetrank,iparallel,.false.,foundvar)
    call hdf_getslab_r(csite%rshort_g                                                       &
                      ,'RSHORT_G                    ',dsetrank,iparallel,.true. ,foundvar)
    call hdf_getslab_r(csite%rshort_g_beam                                                  &
@@ -3488,18 +3461,12 @@ subroutine fill_history_site(csite,sipa_index,npatches_global,is_burnt)
                      ,'HPREV                       ',dsetrank,iparallel,.true. ,foundvar)
    !----- Daily means. --------------------------------------------------------------------!
    if (writing_long) then
-!      call hdf_getslab_r(csite%dmean_A_decomp                                              &
-!                        ,'DMEAN_A_DECOMP_PA         ',dsetrank,iparallel,.false.,foundvar)
-!      call hdf_getslab_r(csite%dmean_Af_decomp                                             &
-!                        ,'DMEAN_AF_DECOMP_PA        ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(csite%dmean_co2_residual                                          &
                         ,'DMEAN_CO2_RESIDUAL_PA     ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(csite%dmean_energy_residual                                       &
                         ,'DMEAN_ENERGY_RESIDUAL_PA  ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(csite%dmean_water_residual                                        &
                         ,'DMEAN_WATER_RESIDUAL_PA   ',dsetrank,iparallel,.false.,foundvar)
-!      call hdf_getslab_r(csite%dmean_rh                                                    &
-!                        ,'DMEAN_RH_PA               ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(csite%dmean_cwd_rh                                                &
                         ,'DMEAN_CWD_RH_PA           ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(csite%dmean_nep                                                   &
@@ -3617,16 +3584,10 @@ subroutine fill_history_site(csite,sipa_index,npatches_global,is_burnt)
                         ,'MMEAN_ENERGY_RESIDUAL_PA  ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(csite%mmean_water_residual                                        &
                         ,'MMEAN_WATER_RESIDUAL_PA   ',dsetrank,iparallel,.false.,foundvar)
-!      call hdf_getslab_r(csite%mmean_rh                                                    &
-!                        ,'MMEAN_RH_PA               ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(csite%mmean_cwd_rh                                                &
                         ,'MMEAN_CWD_RH_PA           ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(csite%mmean_nep                                                   &
                         ,'MMEAN_NEP_PA              ',dsetrank,iparallel,.false.,foundvar)
-!      call hdf_getslab_r(csite%mmean_A_decomp                                              &
-!                        ,'MMEAN_A_DECOMP_PA         ',dsetrank,iparallel,.false.,foundvar)
-!      call hdf_getslab_r(csite%mmean_Af_decomp                                             &
-!                        ,'MMEAN_AF_DECOMP_PA        ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(csite%mmean_rk4step                                               &
                         ,'MMEAN_RK4STEP_PA          ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(csite%mmean_available_water                                       &
@@ -3719,10 +3680,6 @@ subroutine fill_history_site(csite,sipa_index,npatches_global,is_burnt)
                         ,'MMEAN_QRUNOFF_PA          ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(csite%mmean_qdrainage                                             &
                         ,'MMEAN_QDRAINAGE_PA        ',dsetrank,iparallel,.false.,foundvar)
-!      call hdf_getslab_r(csite%mmean_A_decomp                                              &
-!                        ,'MMEAN_A_DECOMP_PA         ',dsetrank,iparallel,.false.,foundvar)
-!      call hdf_getslab_r(csite%mmean_Af_decomp                                             &
-!                        ,'MMEAN_AF_DECOMP_PA        ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(csite%mmean_co2_residual                                          &
                         ,'MMEAN_CO2_RESIDUAL_PA     ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(csite%mmean_energy_residual                                       &
@@ -3981,13 +3938,13 @@ subroutine fill_history_site(csite,sipa_index,npatches_global,is_burnt)
    !---------------------------------------------------------------------------------------!
    !---------------------------------------------------------------------------------------!
    !---------------------------------------------------------------------------------------!
-   !      2-D variables, dimensions: (nzl,npatches). EJL                                   !
+   !      2-D variables, dimensions: (nzg,npatches). EJL                                   !
    !---------------------------------------------------------------------------------------!
    dsetrank    = 2
-   globdims(1) = int(nzl,8)
-   chnkdims(1) = int(nzl,8)
-   memdims (1) = int(nzl,8)
-   memsize (1) = int(nzl,8)
+   globdims(1) = int(nzg,8)
+   chnkdims(1) = int(nzg,8)
+   memdims (1) = int(nzg,8)
+   memsize (1) = int(nzg,8)
    chnkoffs(1) = 0_8
    memoffs (1) = 0_8
    globdims(2) = int(npatches_global,8)
@@ -3996,29 +3953,8 @@ subroutine fill_history_site(csite,sipa_index,npatches_global,is_burnt)
    memdims (2) = int(csite%npatches ,8)
    memsize (2) = int(csite%npatches ,8)
    memoffs (2) = 0_8
-   call hdf_getslab_r(csite%litter_mass                                                    &
-                     ,'LITTER_MASS        ',dsetrank,iparallel,.true. ,foundvar)
-   call hdf_getslab_r(csite%litter_energy                                                  &
-                     ,'LITTER_ENERGY      ',dsetrank,iparallel,.true. ,foundvar)
    call hdf_getslab_r(csite%litter_depth                                                   &
                      ,'LITTER_DEPTH       ',dsetrank,iparallel,.true. ,foundvar)
-   call hdf_getslab_r(csite%litter_tempk                                                   &
-                     ,'LITTER_TEMPK       ',dsetrank,iparallel,.true. ,foundvar)
-   call hdf_getslab_r(csite%litter_fracliq                                                 &
-                     ,'LITTER_FRACLIQ     ',dsetrank,iparallel,.true. ,foundvar)
-   call hdf_getslab_r(csite%rshort_lit                                                     &
-                     ,'RSHORT_LIT             ',dsetrank,iparallel,.true. ,foundvar)
-   call hdf_getslab_r(csite%rshort_lit_beam                                                &
-                     ,'RSHORT_LIT_BEAM        ',dsetrank,iparallel,.true. ,foundvar)
-   call hdf_getslab_r(csite%rshort_lit_diffuse                                             &
-                     ,'RSHORT_LIT_DIFFUSE     ',dsetrank,iparallel,.true. ,foundvar)
-   call hdf_getslab_r(csite%par_lit                                                        &
-                     ,'PAR_LIT                ',dsetrank,iparallel,.true. ,foundvar)
-   call hdf_getslab_r(csite%par_lit_beam                                                   &
-                     ,'PAR_LIT_BEAM           ',dsetrank,iparallel,.true. ,foundvar)
-   call hdf_getslab_r(csite%par_lit_diffuse                                                &
-                     ,'PAR_LIT_DIFFUSE        ',dsetrank,iparallel,.true. ,foundvar)
-
    call hdf_getslab_r(csite%fast_soil_C                                                    &
                      ,'FAST_SOIL_C                 ',dsetrank,iparallel,.true. ,foundvar)
    call hdf_getslab_r(csite%slow_soil_C                                                    &

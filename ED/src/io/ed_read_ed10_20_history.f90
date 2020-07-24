@@ -38,7 +38,7 @@ subroutine read_ed10_ed20_history_file
                              , edgrid_g            & ! variable type
                              , allocate_sitetype   & ! subroutine
                              , allocate_patchtype  ! ! subroutine
-   use grid_coms      , only : ngrids,nzl          ! ! intent(in)
+   use grid_coms      , only : ngrids,nzg          ! ! intent(in)
    use allometry      , only : bd2dbh              & ! function
                              , dbh2h               & ! function
                              , dbh2bd              & ! function
@@ -478,12 +478,12 @@ subroutine read_ed10_ed20_history_file
                      csite%structural_soil_L (:,ip2) = 0.0
                      csite%mineralized_soil_N(:,ip2) = 0.0
                      csite%fast_soil_N       (:,ip2) = 0.0
-                     csite%fast_soil_C       (nzl,ip2) = fsc (ip)
-                     csite%slow_soil_C       (nzl,ip2) = ssc (ip)
-                     csite%structural_soil_C (nzl,ip2) = stsc(ip)
-                     csite%structural_soil_L (nzl,ip2) = stsl(ip)
-                     csite%mineralized_soil_N(nzl,ip2) = msn (ip)
-                     csite%fast_soil_N       (nzl,ip2) = fsn (ip)
+                     csite%fast_soil_C       (nzg,ip2) = fsc (ip)
+                     csite%slow_soil_C       (nzg,ip2) = ssc (ip)
+                     csite%structural_soil_C (nzg,ip2) = stsc(ip)
+                     csite%structural_soil_L (nzg,ip2) = stsl(ip)
+                     csite%mineralized_soil_N(nzg,ip2) = msn (ip)
+                     csite%fast_soil_N       (nzg,ip2) = fsn (ip)
                      csite%pname             (ip2) = trim(pname(ip))
                      csite%sum_dgd           (ip2) = 0.0
                      csite%sum_chd           (ip2) = 0.0
@@ -561,12 +561,12 @@ subroutine read_ed10_ed20_history_file
                   csite%structural_soil_L (:,ip) = 0.0
                   csite%mineralized_soil_N(:,ip) = 0.0
                   csite%fast_soil_N       (:,ip) = 0.0
-                  csite%fast_soil_C       (nzl,ip) = fsc (ip)
-                  csite%slow_soil_C       (nzl,ip) = ssc (ip)
-                  csite%structural_soil_C (nzl,ip) = stsc(ip)
-                  csite%structural_soil_L (nzl,ip) = stsl(ip)
-                  csite%mineralized_soil_N(nzl,ip) = msn (ip)
-                  csite%fast_soil_N       (nzl,ip) = fsn (ip)
+                  csite%fast_soil_C       (nzg,ip) = fsc (ip)
+                  csite%slow_soil_C       (nzg,ip) = ssc (ip)
+                  csite%structural_soil_C (nzg,ip) = stsc(ip)
+                  csite%structural_soil_L (nzg,ip) = stsl(ip)
+                  csite%mineralized_soil_N(nzg,ip) = msn (ip)
+                  csite%fast_soil_N       (nzg,ip) = fsn (ip)
                   csite%pname             (ip) = trim(pname(ip))
                   csite%sum_dgd           (ip) = 0.0
                   csite%sum_chd           (ip) = 0.0

@@ -44,7 +44,6 @@ subroutine copy_nl(copy_type)
 
    use ed_max_dims          , only : n_pft                     & ! intent(in)
                                    , nzgmax                    & ! intent(in)
-                                   , nzlmax                    & ! intent(in)
                                    , undef_integer             & ! intent(in)
                                    , maxgrds                   ! ! intent(in)
    use ename_coms           , only : nl                        ! ! intent(in)
@@ -67,9 +66,6 @@ subroutine copy_nl(copy_type)
                                    , runoff_time               & ! intent(out)
                                    , slz                       & ! intent(out)
                                    , veg_database              & ! intent(out)
-                                   , olz                       &
-                                   , olmstr                    &
-                                   , otgoff                    &
                                    , initcarb  
    use met_driver_coms      , only : ed_met_driver_db          & ! intent(out)
                                    , ishuffle                  & ! intent(out)
@@ -237,8 +233,7 @@ subroutine copy_nl(copy_type)
                                    , timmax                    & ! intent(out)
                                    , time                      & ! intent(out)
                                    , nzg                       & ! intent(out)
-                                   , nzs                       & ! intent(out)
-                                   , nzl                       ! ! intent(out)
+                                   , nzs                       ! ! intent(out)
    use ed_misc_coms         , only : attach_metadata           ! ! intent(out)
    use canopy_air_coms      , only : icanturb                  & ! intent(out)
                                    , isfclyrm                  & ! intent(out)
@@ -344,8 +339,6 @@ subroutine copy_nl(copy_type)
       slxsand                   = nl%slxsand
       slmstr(1:nzgmax)          = nl%slmstr(1:nzgmax)
       stgoff(1:nzgmax)          = nl%stgoff(1:nzgmax)
-      olmstr(1:nzlmax)          = nl%olmstr(1:nzlmax)
-      otgoff(1:nzlmax)          = nl%otgoff(1:nzlmax)
       initcarb                  = nl%initcarb
 
       soil_database             = nl%soil_database
@@ -565,10 +558,8 @@ subroutine copy_nl(copy_type)
 
       nzg           = nl%nzg
       nzs           = nl%nzs
-      nzl           = nl%nzl
 
       slz(1:nzgmax) = nl%slz(1:nzgmax)
-      olz(1:nzlmax) = nl%olz(1:nzlmax)
  
       !------------------------------------------------------------------------------------!
       !      Set current time to initial time here.  If this is a history run, then reset  !
@@ -595,10 +586,8 @@ subroutine copy_nl(copy_type)
 
       nzg           = nl%nzg
       nzs           = nl%nzs
-      nzl           = nl%nzl
 
       slz(1:nzgmax) = nl%slz(1:nzgmax)
-      olz(1:nzlmax) = nl%olz(1:nzlmax)
       
       
       !------------------------------------------------------------------------------------!

@@ -50,8 +50,7 @@ subroutine reproduction(cgrid,month)
                                  , ed_biomass               & ! function
                                  , area_indices             & ! subroutine
                                  , dbh2krdepth              ! ! function
-   use grid_coms          , only : nzg                      & ! intent(in)
-                                 , nzl                      ! ! intent(in)
+   use grid_coms          , only : nzg                      ! ! intent(in)
    use ed_misc_coms       , only : ibigleaf                 ! ! intent(in)
    use phenology_aux      , only : pheninit_balive_bstorage ! ! intent(in)
    use budget_utils       , only : update_budget            ! ! sub-routine
@@ -308,9 +307,9 @@ subroutine reproduction(cgrid,month)
                      !          Perhaps when we convert bseeds to repro, we should ask     !
                      !          how much of the seed pool should be lost to harvest.       !
                      !---------------------------------------------------------------------!
-                     csite%fast_soil_N(nzl,ipa) = csite%fast_soil_N(nzl,ipa)                       &
+                     csite%fast_soil_N(nzg,ipa) = csite%fast_soil_N(nzg,ipa)                       &
                                             + csite%repro(ipft,ipa) / c2n_recruit(ipft)
-                     csite%fast_soil_C(nzl,ipa) = csite%fast_soil_C(nzl,ipa)                       &
+                     csite%fast_soil_C(nzg,ipa) = csite%fast_soil_C(nzg,ipa)                       &
                                             + csite%repro(ipft,ipa)
                      csite%repro(ipft,ipa)  = 0.0
                      !---------------------------------------------------------------------!
@@ -684,9 +683,9 @@ subroutine reproduction(cgrid,month)
                      !          Perhaps when we convert bseeds to repro, we should ask     !
                      !          how much of the seed pool should be lost to harvest.       !
                      !---------------------------------------------------------------------!
-                     csite%fast_soil_N(nzl,ipa) = csite%fast_soil_N(nzl,ipa)                       &
+                     csite%fast_soil_N(nzg,ipa) = csite%fast_soil_N(nzg,ipa)                       &
                                             + csite%repro(ipft,ipa) / c2n_recruit(ipft)
-                     csite%fast_soil_C(nzl,ipa) = csite%fast_soil_C(nzl,ipa)                       &
+                     csite%fast_soil_C(nzg,ipa) = csite%fast_soil_C(nzg,ipa)                       &
                                             + csite%repro(ipft,ipa)
                      csite%repro(ipft,ipa)  = 0.0
                      !---------------------------------------------------------------------!
