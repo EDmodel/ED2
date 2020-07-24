@@ -661,7 +661,7 @@ subroutine init_ed_patch_vars(csite,ipaa,ipaz,lsl)
    !---------------------------------------------------------------------------------------!
 
 
-   !------ Initialize litter state variables. EJL------------------------------------------!
+   !------ Initialize peat depth state variables. EJL------------------------------------------!
    csite%litter_depth             (1:nzg,ipaa:ipaz) = 0.0
 
    !------ Decomposition rates... ---------------------------------------------------------!

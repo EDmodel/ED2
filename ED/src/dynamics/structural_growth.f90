@@ -1427,7 +1427,7 @@ subroutine compute_C_and_N_storage(cgrid,ipy, soil_C, soil_N, veg_C, veg_N)
                             , c2n_storage    & ! intent(in)
                             , c2n_slow       & ! intent(in)
                             , c2n_structural ! ! intent(in)
-   use grid_coms    , only  :nzl             ! ! intent(in) EJL
+   use grid_coms    , only  :nzg             ! ! intent(in) EJL
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(edtype)      , target      :: cgrid
@@ -1478,7 +1478,7 @@ subroutine compute_C_and_N_storage(cgrid,ipy, soil_C, soil_N, veg_C, veg_N)
          ! Adding loop over organic layers - EJL ------------------------------
          this_carbon = 0.
          this_nitrogen = 0.
-         do k=1,nzl
+         do k=1,nzg
             this_carbon  = this_carbon + dble(csite%fast_soil_C(k,ipa))                    &
                        + dble(csite%slow_soil_C(k,ipa))                                    &
                        + dble(csite%structural_soil_C(k,ipa))

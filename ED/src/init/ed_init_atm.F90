@@ -331,8 +331,7 @@ subroutine ed_init_atm()
                      !---------------------------------------------------------------------!
                   end do groundloop2
 
-                  !----- Initial conditions for litter layer EJL --------------------------!
-                  csite%nlev_litter(ipa)    = 0
+                  !----- Initial conditions for peat layer --------------------------!
                   do k=1,nzg
                      csite%litter_depth  (k,ipa) = 0.
                   end do

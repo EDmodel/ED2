@@ -1036,7 +1036,7 @@ module ed_state_vars
       real, pointer, dimension(:,:) :: par_s_diffuse
 
       real, pointer,dimension(:,:) :: litter_depth
-      !<Depth of litter (m)
+      !<Depth of peat (m)
 
       real,    pointer,dimension(:,:) :: soil_energy
       !<Soil internal energy (J/m3)
@@ -8099,7 +8099,7 @@ module ed_state_vars
             osite%par_s_diffuse   (m,opa) = isite%par_s_diffuse   (m,ipa)
          end do
          
-         !-----Litter Variables. EJL----------------------------------------------------------!
+         !----- Peat depth  EJL----------------------------------------------------------!
          do m=1,nzg
             osite%litter_depth      (m,opa) = isite%litter_depth    (m,ipa)
          end do
@@ -8716,7 +8716,7 @@ module ed_state_vars
       end do
       !------------------------------------------------------------------------------------!
 
-      !-----Litter Depth (Soil carbon)-----------------------------------------------------!
+      !-----Peat Depth (Soil carbon)-----------------------------------------------------!
       do m=1,nzg
          osite%litter_depth      (m,1:z) = pack(isite%litter_depth    (m,:),lmask)
       end do
