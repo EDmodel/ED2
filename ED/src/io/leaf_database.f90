@@ -45,7 +45,7 @@ subroutine leaf_database(ofn,nsite,nlandsea,iaction,lat,lon,classout,pctout)
    logical                                                 :: l1
    logical                                                 :: l2
    integer                                                 :: ndims
-   integer        , dimension(2)                           :: idims
+   integer        , dimension(3)                           :: idims
    integer                                                 :: ierr
    !----- Variables for file indexing. ----------------------------------------------------!
    integer        , dimension(:,:)           , allocatable :: nump

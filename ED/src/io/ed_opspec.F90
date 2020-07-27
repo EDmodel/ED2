@@ -38,7 +38,7 @@ subroutine ed_opspec_grid
                           , nstratx             & ! intent(in)
                           , nstraty             & ! intent(in)
                           , nzg                 & ! intent(in)
-                          , nzs                 & ! intent(in)
+                          , nzs                 ! ! intent(in)
    use mem_polygons, only : n_ed_region         & ! intent(in)
                           , n_poi               & ! intent(in)
                           , grid_type           & ! intent(in)
