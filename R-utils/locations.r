@@ -1294,6 +1294,11 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
                                      , fmt   = "%.3f"
                                      , off   = 0.0
                                      , mult  = 0.001)
+   numvar[["theta.crit"]]      = list( descr = "Leaf drop"
+                                     , unit  = "MPa"
+                                     , fmt   = "%.2f"
+                                     , off   =    0.0
+                                     , mult  =    0.01)
    numvar[["simul"   ]]        = list( descr = "Simulation"
                                      , unit  = ""
                                      , fmt   = "%4.4i"
@@ -1365,6 +1370,11 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
          param  = c("treefall")
          na     = c(          11)
          nz     = c(          13)
+      }else if (lenici == 14 && grepl(pattern="cotwo",x=ici)){
+         nparms = 1
+         param  = c("atm.co2")
+         na     = c(       11)
+         nz     = c(       14)
       }else if (lenici == 14 && grepl(pattern="ibranch",x=ici)){
          nparms = 1
          param  = c("ibranch.thermo")
@@ -1505,6 +1515,11 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
          param  = c("iphen.scheme","icanturb")
          na     = c(            11,        23)
          nz     = c(            13,        24)
+      }else if (lenici == 24 && grepl(pattern="thcrit",x=ici)){
+         nparms = 2
+         param  = c("iphen.scheme","theta.crit")
+         na     = c(            11,          21)
+         nz     = c(            13,          24)
       }else if (lenici == 24 && grepl(pattern="ihrzrad",x=ici)){
          nparms = 2
          param  = c("ihrzrad","imetrad")

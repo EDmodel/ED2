@@ -93,6 +93,21 @@ module soil_coms
 
 
    !---------------------------------------------------------------------------------------!
+   ! ISLCOLFLG -- This controls how to initialise soil colour.  This must be a list with   !
+   !              N_ED_REGION+N_POI elements.  The first N_ED_REGION elements correspond   !
+   !              to each gridded domain (from first to last).  Elements between           !
+   !              N_ED_REGION+1 and N_ED_REGION+N_POI correspond to the polygons of        !
+   !              interest (from 1 to N_POI.  Options are:                                 !
+   !             1 -- Read in soil colour class from the files set in COLOR_DATABASE.      !
+   !             2 -- Assign either the value set by ISOILCOL (see below).                 !
+   !---------------------------------------------------------------------------------------!
+   integer, dimension(maxgrds)                :: islcolflg
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !---------------------------------------------------------------------------------------!
    ! NSLCON -- ED-2 Soil classes that the model will use when ISOILFLG is set to 2.        !
    !           Possible values are:                                                        !
    !---------------------------------------------------------------------------------------!
@@ -109,10 +124,10 @@ module soil_coms
 
 
    !---------------------------------------------------------------------------------------!
-   ! ISOILCOL -- LEAF-3 and ED-2 soil colour classes that the model will use when ISOILFLG !
-   !             is set to 2.  Soil classes are from 1 to 20 (1 = lightest; 20 = darkest). !
-   !             The values are the same as CLM-4.0.  The table is the albedo for visible  !
-   !             and near infra-red.                                                       !
+   ! ISOILCOL -- LEAF-3 and ED-2 soil colour classes that the model will use when          !
+   !             ISLCOLFLG is set to 2.  Soil classes are from 1 to 20 (1 = lightest;      !
+   !             20 = darkest).  The values are the same as CLM-4.0.  The table is the     !
+   !             albedo for visible and near infra-red.                                    !
    !---------------------------------------------------------------------------------------!
    !                                                                                       !
    !       |-----------------------------------------------------------------------|       !
@@ -195,12 +210,15 @@ module soil_coms
    !                      Fill with the path and the prefix.                               !
    !  SOIL_DATABASE    -- soil database, used to determine the soil type.  Fill with the   !
    !                      path and the prefix.                                             !
+   !  SLCOL_DATABASE   -- If ISLCOLFLG=1, this variable specifies the path and prefix of   !
+   !                      soil colour data base.                                           !
    !  SOILSTATE_DB     -- Dataset in case you want to provide the initial conditions of    !
    !                      soil temperature and moisture.                                   !
    !  SOILDEPTH_DB     -- Dataset in case you want to read in soil depth information.      !
    !---------------------------------------------------------------------------------------!
    character(len=str_len), dimension(maxgrds) :: veg_database
    character(len=str_len), dimension(maxgrds) :: soil_database
+   character(len=str_len), dimension(maxgrds) :: slcol_database
    character(len=str_len)                     :: soilstate_db
    character(len=str_len)                     :: soildepth_db
    !---------------------------------------------------------------------------------------!

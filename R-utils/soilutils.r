@@ -336,17 +336,17 @@ sclass <<- function(sandfrac,clayfrac){
    if (silt > 100. | silt < 0. | sand > 100. | sand < 0. | clay > 100. | clay < 0. ) {
       print("---------------------------------------------------")
       print(" At least one of your percentages is screwy...")
-      print(paste("SAND = ",sprintf("%.2f",sand),"%",sep=""))
-      print(paste("CLAY = ",sprintf("%.2f",clay),"%",sep=""))
-      print(paste("SILT = ",sprintf("%.2f",silt),"%",sep=""))
+      print(paste0("SAND = ",sprintf("%.2f",sand),"%"))
+      print(paste0("CLAY = ",sprintf("%.2f",clay),"%"))
+      print(paste0("SILT = ",sprintf("%.2f",silt),"%"))
       print("---------------------------------------------------")
       stop ("This soil doesn''t fit into any category...")
       
-   }else if(sand > 85.0 + 0.5 * clay) {
+   }else if(sand > (85.0 + 0.5 * clay)) {
       mysoil =  1 #----- Sand. ------------------------------------------------------------#
-   }else if(sand > 70.0 + clay) {
+   }else if(sand > (70.0 + clay)) {
       mysoil =  2 #----- Loamy sand. ------------------------------------------------------#
-   }else if((clay <= 20.0 & sand > 52.5) | (clay <= 7.5 & silt <= 50.0)) {
+   }else if((clay <= 20.0 & sand >= 52.5) | (clay <= 7.5 & silt <= 50.0)) {
       mysoil =  3 #----- Sandy loam. ------------------------------------------------------#
    }else if((clay <= 27.5 & silt > 50.0 & silt <= 80.0) | (silt >  80.0 & clay > 12.5)) {
       mysoil =  4 #----- Silt loam. -------------------------------------------------------#
@@ -374,9 +374,9 @@ sclass <<- function(sandfrac,clayfrac){
       mysoil = 17 #----- Clayey silt. -----------------------------------------------------#
   }else{
       print("---------------------------------------------------")
-      print(paste("SAND = ",sprintf("%.2f",sand),"%",sep=""))
-      print(paste("CLAY = ",sprintf("%.2f",clay),"%",sep=""))
-      print(paste("SILT = ",sprintf("%.2f",silt),"%",sep=""))
+      print(paste0("SAND = ",sprintf("%.2f",sand),"%"))
+      print(paste0("CLAY = ",sprintf("%.2f",clay),"%"))
+      print(paste0("SILT = ",sprintf("%.2f",silt),"%"))
       print("---------------------------------------------------")
       stop ("This soil doesn''t fit into any category...")
   }#end if

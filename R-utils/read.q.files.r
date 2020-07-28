@@ -1351,19 +1351,35 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
 
          #------ Find the demographic rates. ----------------------------------------------#
          if (one.cohort){
-            mortconow    = sum(mymont$MMEAN.MORT.RATE.CO)
-            mortconow    = max(0,mortconow)
+            mortconow       = sum(mymont$MMEAN.MORT.RATE.CO)
+            mortconow       = max(0,mortconow)
+            ncbmortconow    = pmax(0,c(mymont$MMEAN.MORT.RATE.CO)[2])
+            #------ Check that hydraulic failure mortality is included. -------------------#
+            if (length(mymont$MMEAN.MORT.RATE.CO) == 6){
+               hydmortconow = pmax(0,c(mymont$MMEAN.MORT.RATE.CO)[5])
+            }else{
+               hydmortconow = 0. * ncbmortconow
+            }#end if
+            #------------------------------------------------------------------------------#
          }else{
-            mortconow    = try(rowSums(mymont$MMEAN.MORT.RATE.CO))
+            mortconow       = try(rowSums(mymont$MMEAN.MORT.RATE.CO))
             if ("try-error" %in% is(mortconow)) browser()
-            mortconow    = pmax(0,mortconow)
+            mortconow       = pmax(0,mortconow)
+            hydrorun        = ncol(mymont$MMEAN.MORT.RATE.CO) == 6
+            ncbmortconow    = pmax(0,mymont$MMEAN.MORT.RATE.CO[,2])
+            #------ Check that hydraulic failure mortality is included. -------------------#
+            if (ncol(mymont$MMEAN.MORT.RATE.CO) == 6){
+               hydmortconow = pmax(0,mymont$MMEAN.MORT.RATE.CO[,5])
+            }else{
+               hydmortconow = 0. * ncbmortconow
+            }#end if
+            #------------------------------------------------------------------------------#
          }#end if
-         ncbmortconow    = pmax(0,mymont$MMEAN.MORT.RATE.CO[,2])
-         dimortconow     = pmax(0,mortconow - ncbmortconow)
-         recruitconow    = mymont$RECRUIT.DBH
-         growthconow     = pmax(0,mymont$DLNDBH.DT)
-         agb.growthconow = pmax(0,mymont$DLNAGB.DT)
-         bsa.growthconow = pmax(0,mymont$DLNBA.DT )
+         dimortconow        = pmax(0,mortconow - ncbmortconow - hydmortconow)
+         recruitconow       = mymont$RECRUIT.DBH
+         growthconow        = pmax(0,mymont$DLNDBH.DT)
+         agb.growthconow    = pmax(0,mymont$DLNAGB.DT)
+         bsa.growthconow    = pmax(0,mymont$DLNBA.DT )
          #---------------------------------------------------------------------------------#
 
 
@@ -1588,6 +1604,7 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
          supplyconow         = NA
          mortconow           = NA
          ncbmortconow        = NA
+         hydmortconow        = NA
          dimortconow         = NA
          recruitconow        = NA
          growthconow         = NA
@@ -3106,9 +3123,11 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
                survivor             = sum( w.nplant[sel]                          )
                previous             = sum( w.nplant[sel] * exp(mortconow   [sel]) )
                ncb.previous         = sum( w.nplant[sel] * exp(ncbmortconow[sel]) )
+               hyd.previous         = sum( w.nplant[sel] * exp(hydmortconow[sel]) )
                di.previous          = sum( w.nplant[sel] * exp(dimortconow [sel]) )
                szpft$mort   [m,d,p] = log( previous     / survivor )
                szpft$ncbmort[m,d,p] = log( ncb.previous / survivor )
+               szpft$hydmort[m,d,p] = log( hyd.previous / survivor )
                szpft$dimort [m,d,p] = log( di.previous  / survivor )
                #---------------------------------------------------------------------------#
 
@@ -3123,11 +3142,15 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
                                              * exp(mortconow            [sel] ) )
                ncb.previous             = sum( w.nplant[sel] * agbcolmon[sel]
                                              * exp(ncbmortconow         [sel] ) )
+               hyd.previous             = sum( w.nplant[sel] * agbcolmon[sel]
+                                             * exp(hydmortconow         [sel] ) )
                di.previous              = sum( w.nplant[sel] * agbcolmon[sel]
                                              * exp(dimortconow          [sel] ) )
                szpft$agb.mort   [m,d,p] = log( previous     / survivor )
                szpft$agb.ncbmort[m,d,p] = log( ncb.previous / survivor )
+               szpft$agb.hydmort[m,d,p] = log( hyd.previous / survivor )
                szpft$agb.dimort [m,d,p] = log( di.previous  / survivor )
+               #---------------------------------------------------------------------------#
 
 
 
@@ -3140,10 +3163,13 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
                                              * exp(mortconow            [sel] / 12.) )
                ncb.previous             = sum( w.nplant[sel] * agbcolmon[sel]
                                              * exp(ncbmortconow         [sel] / 12. ) )
+               hyd.previous             = sum( w.nplant[sel] * agbcolmon[sel]
+                                             * exp(hydmortconow         [sel] / 12. ) )
                di.previous              = sum( w.nplant[sel] * agbcolmon[sel]
                                              * exp(dimortconow          [sel] / 12. ) )
                szpft$acc.mort   [m,d,p] = 12. * (previous     - survivor)
                szpft$acc.ncbmort[m,d,p] = 12. * (ncb.previous - survivor)
+               szpft$acc.hydmort[m,d,p] = 12. * (hyd.previous - survivor)
                szpft$acc.dimort [m,d,p] = 12. * (di.previous  - survivor)
                #---------------------------------------------------------------------------#
 
@@ -3158,10 +3184,13 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
                                              * exp(mortconow           [sel] ) )
                ncb.previous             = sum( w.nplant[sel] * bacolmon[sel]
                                              * exp(ncbmortconow        [sel] ) )
+               hyd.previous             = sum( w.nplant[sel] * bacolmon[sel]
+                                             * exp(hydmortconow        [sel] ) )
                di.previous              = sum( w.nplant[sel] * bacolmon[sel]
                                              * exp(dimortconow         [sel] ) )
                szpft$bsa.mort   [m,d,p] = log( previous     / survivor )
                szpft$bsa.ncbmort[m,d,p] = log( ncb.previous / survivor )
+               szpft$bsa.hydmort[m,d,p] = log( hyd.previous / survivor )
                szpft$bsa.dimort [m,d,p] = log( di.previous  / survivor )
                #---------------------------------------------------------------------------#
             }#end if
@@ -3345,11 +3374,13 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
       emean$agb.mort        [m] = szpft$agb.mort       [m,ndbh+1,npft+1]
       emean$agb.dimort      [m] = szpft$agb.dimort     [m,ndbh+1,npft+1]
       emean$agb.ncbmort     [m] = szpft$agb.ncbmort    [m,ndbh+1,npft+1]
+      emean$agb.hydmort     [m] = szpft$agb.hydmort    [m,ndbh+1,npft+1]
       emean$agb.change      [m] = szpft$agb.change     [m,ndbh+1,npft+1]
       emean$acc.change      [m] = szpft$acc.change     [m,ndbh+1,npft+1]
       emean$acc.growth      [m] = szpft$acc.growth     [m,ndbh+1,npft+1]
       emean$acc.mort        [m] = szpft$acc.mort       [m,ndbh+1,npft+1]
       emean$acc.ncbmort     [m] = szpft$acc.ncbmort    [m,ndbh+1,npft+1]
+      emean$acc.hydmort     [m] = szpft$acc.hydmort    [m,ndbh+1,npft+1]
       emean$acc.dimort      [m] = szpft$acc.dimort     [m,ndbh+1,npft+1]
       emean$acc.recr        [m] = szpft$acc.recr       [m,ndbh+1,npft+1]
       emean$wood.dens       [m] = szpft$wood.dens      [m,ndbh+1,npft+1]
@@ -3447,6 +3478,10 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
       emean$last.1yr.ncbmort [m] = mean(emean$agb.ncbmort   [last.12],na.rm=TRUE)
       emean$last.2yr.ncbmort [m] = mean(emean$agb.ncbmort   [last.24],na.rm=TRUE)
       emean$last.3yr.ncbmort [m] = mean(emean$agb.ncbmort   [last.36],na.rm=TRUE)
+      #----- Hydraulic failure mortality rate. --------------------------------------------#
+      emean$last.1yr.hydmort [m] = mean(emean$agb.hydmort   [last.12],na.rm=TRUE)
+      emean$last.2yr.hydmort [m] = mean(emean$agb.hydmort   [last.24],na.rm=TRUE)
+      emean$last.3yr.hydmort [m] = mean(emean$agb.hydmort   [last.36],na.rm=TRUE)
       #----- AGB change. ------------------------------------------------------------------#
       emean$last.1yr.change  [m] = mean(emean$agb.change    [last.12],na.rm=TRUE)
       emean$last.2yr.change  [m] = mean(emean$agb.change    [last.24],na.rm=TRUE)
@@ -3707,6 +3742,7 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
          cohort$supply       [[clab]] = supplyconow
          cohort$mort         [[clab]] = 100. * (1.0 - exp(-mortconow      ))
          cohort$ncbmort      [[clab]] = 100. * (1.0 - exp(-ncbmortconow   ))
+         cohort$hydmort      [[clab]] = 100. * (1.0 - exp(-hydmortconow   ))
          cohort$dimort       [[clab]] = 100. * (1.0 - exp(-dimortconow    ))
          cohort$recruit      [[clab]] = recruitconow
          cohort$growth       [[clab]] = 100. * growthconow

@@ -204,6 +204,8 @@ par.user <<- list( bg       = "transparent"
                  , cex.lab  = cex.lab
                  , family   = "Helvetica"
                  , mar      = c(5.1,4.4,4.1,2.1)
+                 , mgp      = c(2.25,0.25,0)
+                 , tcl      = +0.25
                  )#end list
 #------------------------------------------------------------------------------------------#
 
@@ -230,6 +232,7 @@ loaded.package[["caTools"     ]] = discreet.require(caTools     )
 loaded.package[["chron"       ]] = discreet.require(chron       )
 loaded.package[["cluster"     ]] = discreet.require(cluster     )
 loaded.package[["compiler"    ]] = discreet.require(compiler    )
+loaded.package[["data.table"  ]] = discreet.require(data.table  )
 loaded.package[["devtools"    ]] = discreet.require(devtools    )
 loaded.package[["FAdist"      ]] = discreet.require(FAdist      )
 loaded.package[["fields"      ]] = discreet.require(fields      )

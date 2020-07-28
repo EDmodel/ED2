@@ -2090,12 +2090,29 @@ $ED2_INFO
 
 
 
+
+   !---------------------------------------------------------------------------------------!
+   ! ISLCOLFLG -- This controls how to initialise soil colour.  This must be a list with   !
+   !              N_ED_REGION+N_POI elements.  The first N_ED_REGION elements correspond   !
+   !              to each gridded domain (from first to last).  Elements between           !
+   !              N_ED_REGION+1 and N_ED_REGION+N_POI correspond to the polygons of        !
+   !              interest (from 1 to N_POI.  Options are:                                 !
+   !             1 -- Read in soil colour class from the files set in COLOR_DATABASE.      !
+   !             2 -- Assign either the value set by ISOILCOL (see below).                 !
+   !---------------------------------------------------------------------------------------!
+   ISLCOLFLG = 2,
+   !---------------------------------------------------------------------------------------!
+
+
+
    !---------------------------------------------------------------------------------------!
    !  Input databases                                                                      !
    !  VEG_DATABASE     -- vegetation database, used only to determine the land/water mask. !
    !                      Fill with the path and the prefix.                               !
    !  SOIL_DATABASE    -- soil database, used to determine the soil type.  Fill with the   !
    !                      path and the prefix.                                             !
+   !  SLCOL_DATABASE   -- If ISLCOLFLG=1, this variable specifies the path and prefix of   !
+   !                      soil colour data base.                                           !
    !  LU_DATABASE      -- land-use change disturbance rates database, used only when       !
    !                      IANTH_DISTURB is set to 1.  Fill with the path and the prefix.   !
    !  PLANTATION_FILE  -- Character string for the path to the forest plantation fraction  !
@@ -2116,6 +2133,7 @@ $ED2_INFO
    !---------------------------------------------------------------------------------------!
    VEG_DATABASE    = '/n/gstore/Labs/moorcroft_lab_protected/data/ed2_data/oge2OLD/OGE2_',
    SOIL_DATABASE   = '/n/gstore/Labs/moorcroft_lab_protected/data/ed2_data/soil_ed22/Quesada+RADAM+IGBP/Quesada+RADAM+IGBP_',
+   SLCOL_DATABASE    = '/mypath/soil_data/colour/LC2007JGRB/LC2007JGRB_',
    LU_DATABASE     = '/n/gstore/Labs/moorcroft_lab_protected/mlongo/scenarios/glu-3.3.1+sa1.bau/one/glu-3.3.1+sa1.bau-',
    PLANTATION_FILE = '',
    LU_RESCALE_FILE = '/n/gstore/Labs/moorcroft_lab_protected/data/ed2_data/restarts_sci_006/rescale/SA1relative.lu.area-22km-2008.txt',
@@ -2617,6 +2635,22 @@ $ED2_INFO
 
 
 
+
+   !---------------------------------------------------------------------------------------!
+   ! ISTEM_RESPIRATION_SCHEME -- Different methods to calculate respiration from stem      !
+   ! metabolism.                                                                           !
+   ! 0. No explicit stem respiration (default by ED2.2 and before)                         !
+   ! 1. Calculate stem respiration with stem surface area and                              !
+   ! per area respiration rate, which is a function of temperature and tree size based on  !
+   ! measurements on tropical trees by Chambers et al. (2004). Note that the calculation of!
+   ! surface area uses WAI. So if IBRANCH_THERMO is set to 0. All branch surface areas will!
+   ! be ignored.                                                                           !
+   !---------------------------------------------------------------------------------------!
+   ISTEM_RESPIRATION_SCHEME = 0,
+   !---------------------------------------------------------------------------------------!
+
+
+
    !---------------------------------------------------------------------------------------!
    ! ISTOMATA_SCHEME -- Which stomatal conductance model to use.                           !
    ! 0. (ED-2.2 default) Leuning (L95) model.                                              !
@@ -2698,6 +2732,36 @@ $ED2_INFO
    IDDMORT_SCHEME  = 0,
    CBR_SCHEME      = 0,
    DDMORT_CONST    = 1.,
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !  CARBON_MORTALITY_SCHEME - Different methods to calculate negative carbon balance     !
+   !                            mortality.                                                 !
+   !                            0. (ED-2.2 default) ED-1 original formulation              !
+   !                               (Moorcroft et al. 2001)                                 !
+   !                            1. (ED-2.2 Alternative)                                    !
+   !                               trait-dependent exponential model by Camac et al. 2018  !
+   !                               but uses CB instead of growth                           !
+   !                            2. (ED-2.2 Alternative)                                    !
+   !                               trait-dependent exponential model by Camac et al. 2018  !
+   !                               and use actual growth rates                             !
+   !---------------------------------------------------------------------------------------!
+   CARBON_MORTALITY_SCHEME = 0,
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !  HYDRAULIC_MORTALITY_SCHEME - Different methods to calculate hydraulic failure        !
+   !                               mortality.                                              !
+   !                            0. (ED-2.2 default) No hydraulic failure mortality         !
+   !                            1. (Beta) hydraulic failure mortality based on monthly     !
+   !                               mean xylem percentage loss of conductance (PLC)         !
+   !---------------------------------------------------------------------------------------!
+   HYDRAULIC_MORTALITY_SCHEME = 0,
    !---------------------------------------------------------------------------------------!
 
 
