@@ -7508,7 +7508,8 @@ subroutine overwrite_with_xml_config(thisnode)
 
 
          !----- Write out a copy of the settings. -----------------------------------------!
-         call write_ed_xml_config()
+         !call write_ed_xml_config() always call write_ed_xml_config in ed_driver after
+         !init_derived_params_after_xml()
          !---------------------------------------------------------------------------------!
       else if (thisnode == 1) then
          !----- XML file not found, warn the user. ----------------------------------------!
