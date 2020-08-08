@@ -1192,6 +1192,7 @@ subroutine ed_opspec_misc
    use soil_coms             , only : ed_nstyp                     & ! intent(in)
                                     , ed_nscol                     & ! intent(in)
                                     , isoilflg                     & ! intent(in)
+                                    , islcolflg                    & ! intent(in)
                                     , nslcon                       & ! intent(in)
                                     , isoilcol                     & ! intent(in)
                                     , slxclay                      & ! intent(in)
@@ -1498,7 +1499,7 @@ subroutine ed_opspec_misc
    do ifm=1,ngrids
       if (isoilflg(ifm) < 1 .or. isoilflg(ifm) > 2) then
          write (reason,fmt='(a,1x,i4,1x,a,1x,i4,a)')                                       &
-                       'Invalid ISOILFLG, it must be between 1 and 3. Yours is set to'     &
+                       'Invalid ISOILFLG, it must be between 1 and 2. Yours is set to'     &
                       ,isoilflg(ifm),'for grid',ifm,'...'
          call opspec_fatal(reason,'opspec_misc')
          ifaterr = ifaterr +1
@@ -1587,7 +1588,17 @@ do ifm=1,ngrids
       write (unit=*,fmt='(a)') '==========================================================='
    end if
 end do
-   
+
+do ifm=1,ngrids
+   if (islcolflg(ifm) < 1 .or. islcolflg(ifm) > 2) then
+      write (reason,fmt='(a,1x,i4,1x,a,1x,i4,a)')                                          &
+                    'Invalid ISLCOLFLG, it must be between 1 and 2. Yours is set to'       &
+                   ,islcolflg(ifm),'for grid',ifm,'...'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+   end if
+end do
+
 #if defined(COUPLED)
    if (isoilstateinit < 0 .or. isoilstateinit > 2) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &

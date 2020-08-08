@@ -174,8 +174,10 @@ subroutine get_work(ifm,nxp,nyp,is_poi)
    use ed_work_vars, only : work_e         ! ! structure
    use soil_coms   , only : veg_database   & ! intent(in)
                           , soil_database  & ! intent(in)
+                          , slcol_database & ! intent(in)
                           , soildepth_db   & ! intent(in)
                           , isoilflg       & ! intent(in)
+                          , islcolflg      & ! intent(in)
                           , isoildepthflg  & ! intent(in)
                           , layer_index    & ! intent(in)
                           , nslcon         & ! intent(in)
@@ -203,6 +205,7 @@ subroutine get_work(ifm,nxp,nyp,is_poi)
    real   , dimension(:,:), allocatable :: ipcent_land
    real   , dimension(:,:), allocatable :: ipcent_soil
    real   , dimension(:,:), allocatable :: ipcent_depth
+   real   , dimension(:,:), allocatable :: ipcent_slcol
    integer                              :: ipy
    integer                              :: i
    integer                              :: j
@@ -228,6 +231,7 @@ subroutine get_work(ifm,nxp,nyp,is_poi)
    allocate(ipcent_land    (maxsite,npoly))
    allocate(ipcent_soil    (maxsite,npoly))
    allocate(ipcent_depth   (maxsite,npoly))
+   allocate(ipcent_slcol   (maxsite,npoly))
    !---------------------------------------------------------------------------------------!
 
 
@@ -364,10 +368,11 @@ subroutine get_work(ifm,nxp,nyp,is_poi)
    !---------------------------------------------------------------------------------------!
    !     Either read or assign the soil texture from ED2IN.                                !
    !---------------------------------------------------------------------------------------!
-   if (isoilflg(ifm) == 1) then
+   select case (isoilflg(ifm))
+   case (1)
       call leaf_database(trim(soil_database(ifm)),maxsite,npoly,'soil_text'                &
                         ,lat_list,lon_list,ntext_soil_list,ipcent_soil)
-   else
+   case default
       !------------------------------------------------------------------------------------!
       !   Allow for only one site by making the first site with the default soil type and  !
       ! area 1., and the others with area 0.                                               !
@@ -376,7 +381,7 @@ subroutine get_work(ifm,nxp,nyp,is_poi)
       ipcent_soil            (:,:) = 0.
       ipcent_soil            (1,:) = 1.
       !------------------------------------------------------------------------------------!
-   end if
+   end select
    !---------------------------------------------------------------------------------------!
 
 
@@ -412,10 +417,22 @@ subroutine get_work(ifm,nxp,nyp,is_poi)
 
 
    !---------------------------------------------------------------------------------------!
-   !      For the time being, soil colour is constant.  Only if results look promising we  !
-   ! will attempt to read a map.                                                           !
+   !      Either read or assign soil colour from ED2IN.                                    !
    !---------------------------------------------------------------------------------------!
-   ncol_soil_list (:,:) = isoilcol
+   select case (islcolflg(ifm))
+   case (1)
+      call leaf_database(trim(slcol_database(ifm)),maxsite,npoly,'soil_col'                &
+                        ,lat_list,lon_list,ntext_soil_list,ipcent_slcol)
+   case default
+      !------------------------------------------------------------------------------------!
+      !   Allow for only one site by making the first site with the default soil type and  !
+      ! area 1., and the others with area 0.                                               !
+      !------------------------------------------------------------------------------------!
+      ncol_soil_list         (:,:) = isoilcol
+      ipcent_slcol           (:,:) = 0.
+      ipcent_slcol           (1,:) = 1.
+      !------------------------------------------------------------------------------------!
+   end select
    !---------------------------------------------------------------------------------------!
 
 
@@ -478,6 +495,7 @@ subroutine get_work(ifm,nxp,nyp,is_poi)
    deallocate(ipcent_land    )
    deallocate(ipcent_soil    )
    deallocate(ipcent_depth   )
+   deallocate(ipcent_slcol   )
    !---------------------------------------------------------------------------------------!
 
    return

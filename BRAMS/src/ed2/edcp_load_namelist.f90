@@ -11,10 +11,13 @@ subroutine read_ednl(iunit,filename)
                                    , maxgrds                               ! ! intent(in)
    use soil_coms            , only : ed_zrough => zrough                   & ! intent(out)
                                    , soil_database                         & ! intent(out)
+                                   , slcol_database                        & ! intent(out)
                                    , isoilstateinit                        & ! intent(out)
+                                   , islcolflg                             & ! intent(out)
                                    , isoildepthflg                         & ! intent(out)
                                    , isoilbc                               & ! intent(out)
                                    , sldrain                               & ! intent(out)
+                                   , slcol_database                        & ! intent(out)
                                    , soilstate_db                          & ! intent(out)
                                    , soildepth_db                          & ! intent(out)
                                    , runoff_time                           & ! intent(out)
@@ -49,10 +52,13 @@ subroutine read_ednl(iunit,filename)
                                    , plant_hydro_scheme                    & ! intent(out)
                                    , istomata_scheme                       & ! intent(out)
                                    , istruct_growth_scheme                 & ! intent(out)
+                                   , istem_respiration_scheme              & ! intent(out)
                                    , trait_plasticity_scheme               & ! intent(out)
                                    , iddmort_scheme                        & ! intent(out)
                                    , cbr_scheme                            & ! intent(out)
                                    , ddmort_const                          & ! intent(out)
+                                   , carbon_mortality_scheme               & ! intent(out)
+                                   , hydraulic_mortality_scheme            & ! intent(out)
                                    , n_plant_lim                           & ! intent(out)
                                    , vmfact_c3                             & ! intent(out)
                                    , vmfact_c4                             & ! intent(out)
@@ -274,24 +280,25 @@ subroutine read_ednl(iunit,filename)
    namelist /ED2_INFO/  dtlsm,month_yrstep,co2_offset,ifoutput,idoutput,imoutput,iqoutput  &
                        ,iyoutput,itoutput,iooutput,isoutput,iadd_site_means                &
                        ,iadd_patch_means,iadd_cohort_means,attach_metadata,outfast         &
-                       ,outstate,ffilout,sfilout,ied_init_mode,edres,sfilin,veg_database   &
-                       ,soil_database,lu_database,plantation_file,lu_rescale_file          &
-                       ,thsums_database,obstime_db,soilstate_db,soildepth_db               &
-                       ,isoilstateinit,isoildepthflg,ivegt_dynamics,ibigleaf               &
-                       ,integration_scheme,nsub_euler,rk4_tolerance,ibranch_thermo         &
-                       ,iphysiol,iallom,economics_scheme,igrass,iphen_scheme,radint,radslp &
-                       ,repro_scheme,lapse_scheme,crown_mod,icanrad,ihrzrad,ltrans_vis     &
-                       ,ltrans_nir,lreflect_vis,lreflect_nir,orient_tree,orient_grass      &
-                       ,clump_tree,clump_grass,decomp_scheme,h2o_plant_lim                 &
-                       ,plant_hydro_scheme,istomata_scheme,istruct_growth_scheme           &
+                       ,outstate,ffilout,sfilout,ied_init_mode,edres,sfilin,islcolflg      &
+                       ,veg_database,soil_database,slcol_database,lu_database              &
+                       ,plantation_file,lu_rescale_file,thsums_database,obstime_db         &
+                       ,soilstate_db,soildepth_db,isoilstateinit,isoildepthflg             &
+                       ,ivegt_dynamics,ibigleaf,integration_scheme,nsub_euler              &
+                       ,rk4_tolerance,ibranch_thermo,iphysiol,iallom,economics_scheme      &
+                       ,igrass,iphen_scheme,radint,radslp,repro_scheme,lapse_scheme        &
+                       ,crown_mod,icanrad,ihrzrad,ltrans_vis,ltrans_nir,lreflect_vis       &
+                       ,lreflect_nir,orient_tree,orient_grass,clump_tree,clump_grass       &
+                       ,decomp_scheme,h2o_plant_lim,plant_hydro_scheme,istomata_scheme     &
+                       ,istruct_growth_scheme,istem_respiration_scheme                     &
                        ,trait_plasticity_scheme,iddmort_scheme,cbr_scheme,ddmort_const     &
-                       ,vmfact_c3,vmfact_c4,mphoto_trc3,mphoto_tec3,mphoto_c4,bphoto_blc3  &
+                       ,carbon_mortality_scheme,hydraulic_mortality_scheme,vmfact_c3       &
+                       ,vmfact_c4,mphoto_trc3,mphoto_tec3,mphoto_c4,bphoto_blc3            &
                        ,bphoto_nlc3,bphoto_c4,kw_grass,kw_tree,gamma_c3,gamma_c4,d0_grass  &
                        ,d0_tree,alpha_c3,alpha_c4,klowco2in,rrffact,growthresp             &
                        ,lwidth_grass,lwidth_bltree,lwidth_nltree,q10_c3,q10_c4,thetacrit   &
-                       ,quantum_efficiency_t,n_plant_lim,n_decomp_lim,include_fire         &
-                       ,fire_parameter,sm_fire,ianth_disturb,sl_scale,sl_yr_first,sl_nyrs  &
-                       ,sl_pft,sl_prob_harvest,sl_mindbh_harvest,sl_biomass_harvest        &
+                       ,quantum_efficiency_t,n_plant_lim,n_decomp_lim,include_fire,sl_pft  &
+                       ,sl_prob_harvest,sl_mindbh_harvest,sl_biomass_harvest               &
                        ,sl_skid_rel_area,sl_skid_s_gtharv,sl_skid_s_ltharv                 &
                        ,sl_felling_s_ltharv,cl_fseeds_harvest,cl_fstorage_harvest          &
                        ,cl_fleaf_harvest,icanturb,include_these_pft,pasture_stock          &
@@ -301,7 +308,9 @@ subroutine read_ednl(iunit,filename)
                        ,iphenysf,iphenyf1,iphenyff,iedcnfgf,event_file,phenpath
 
    !----- Initialise some database variables with a non-sense path. -----------------------!
+   islcolflg       (:) = undef_integer
    soil_database   (:) = undef_path
+   slcol_database  (:) = undef_path
    veg_database    (:) = undef_path
    lu_database     (:) = undef_path
    plantation_file (:) = undef_path
@@ -346,10 +355,14 @@ subroutine read_ednl(iunit,filename)
       write (unit=*,fmt=*) ' edres                     =',edres
       write (unit=*,fmt=*) ' sfilin                    =',(trim(sfilin(i))//';'            &
                                                           ,i=1,size(sfilin))
+      write (unit=*,fmt=*) ' islcolflg                 =',(islcolflg(i)//';'               &
+                                                          ,i=1,size(islcolflg))
       write (unit=*,fmt=*) ' veg_database              =',(trim(veg_database(i))//';'      &
                                                           ,i=1,size(veg_database))
       write (unit=*,fmt=*) ' soil_database             =',(trim(soil_database(i))//';'     &
                                                           ,i=1,size(soil_database))
+      write (unit=*,fmt=*) ' slcon_database            =',(trim(slcon_database(i))//';'    &
+                                                          ,i=1,size(slcon_database))
       write (unit=*,fmt=*) ' lu_database               =',(trim(lu_database(i))//';'       &
                                                           ,i=1,size(lu_database))
       write (unit=*,fmt=*) ' plantation_file           =',(trim(plantation_file(i))//';'   &

@@ -51,6 +51,7 @@ subroutine copy_nl(copy_type)
    use ename_coms           , only : nl                        ! ! intent(in)
    use soil_coms            , only : find_soil_class           & ! function
                                    , isoilflg                  & ! intent(out)
+                                   , islcolflg                 & ! intent(out)
                                    , nslcon                    & ! intent(out)
                                    , isoilcol                  & ! intent(out)
                                    , slxclay                   & ! intent(out)
@@ -59,6 +60,7 @@ subroutine copy_nl(copy_type)
                                    , stgoff                    & ! intent(out)
                                    , zrough                    & ! intent(out)
                                    , soil_database             & ! intent(out)
+                                   , slcol_database            & ! intent(out)
                                    , isoilstateinit            & ! intent(out)
                                    , isoildepthflg             & ! intent(out)
                                    , isoilbc                   & ! intent(out)
@@ -364,6 +366,7 @@ subroutine copy_nl(copy_type)
       ied_init_mode             = nl%ied_init_mode
 
       isoilflg                  = nl%isoilflg
+      islcolflg                 = nl%islcolflg
       nslcon                    = nl%nslcon
       isoilcol                  = nl%isoilcol
       slxclay                   = nl%slxclay
@@ -372,6 +375,7 @@ subroutine copy_nl(copy_type)
       stgoff(1:nzgmax)          = nl%stgoff(1:nzgmax)
 
       soil_database             = nl%soil_database
+      slcol_database            = nl%slcol_database
       veg_database              = nl%veg_database
       lu_database               = nl%lu_database
       plantation_file           = nl%plantation_file

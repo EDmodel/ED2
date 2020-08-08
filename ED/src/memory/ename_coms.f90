@@ -97,6 +97,7 @@ module ename_coms
       integer                                           :: nzg
       integer                                           :: nzs
       integer               , dimension(maxgrds)        :: isoilflg
+      integer               , dimension(maxgrds)        :: islcolflg
       integer                                           :: nslcon
       integer                                           :: isoilcol
       real                                              :: slxclay
@@ -112,6 +113,7 @@ module ename_coms
 
       !----- Input databases. -------------------------------------------------------------!
       character(len=str_len), dimension(maxgrds)        :: soil_database
+      character(len=str_len), dimension(maxgrds)        :: slcol_database
       character(len=str_len), dimension(maxgrds)        :: veg_database
       character(len=str_len), dimension(maxgrds)        :: lu_database
       character(len=str_len), dimension(maxgrds)        :: plantation_file
@@ -395,6 +397,7 @@ module ename_coms
       enl%nzg                       = undef_integer
       enl%nzs                       = undef_integer
       enl%isoilflg                  = (/ (undef_integer,i=1,maxgrds) /)
+      enl%islcolflg                 = (/ (undef_integer,i=1,maxgrds) /)
       enl%nslcon                    = undef_integer
       enl%isoilcol                  = undef_integer
       enl%slxclay                   = undef_real
@@ -410,6 +413,7 @@ module ename_coms
 
 
       enl%soil_database             = (/ (undef_path, i=1,maxgrds) /)
+      enl%slcol_database            = (/ (undef_path, i=1,maxgrds) /)
       enl%veg_database              = (/ (undef_path, i=1,maxgrds) /)
       enl%lu_database               = (/ (undef_path, i=1,maxgrds) /)
       enl%plantation_file           = (/ (undef_path, i=1,maxgrds) /)
@@ -471,8 +475,8 @@ module ename_coms
       enl%iddmort_scheme            = undef_integer
       enl%cbr_scheme                = undef_integer
       enl%ddmort_const              = undef_real
-      enl%carbon_mortality_scheme   = undef_real
-      enl%hydraulic_mortality_scheme= undef_real
+      enl%carbon_mortality_scheme   = undef_integer
+      enl%hydraulic_mortality_scheme= undef_integer
       enl%vmfact_c3                 = undef_real
       enl%vmfact_c4                 = undef_real
       enl%mphoto_trc3               = undef_real

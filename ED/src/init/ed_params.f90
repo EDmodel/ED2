@@ -5170,7 +5170,7 @@ subroutine init_pft_mort_params()
            if (is_grass(ipft)) then
                hydro_mort1(ipft) = 1.0
            else
-               hydro_mort1(ipft) = log(hydro_mort0(ipft)) / -log(0.6)
+               hydro_mort1(ipft) = - log(hydro_mort0(ipft)) / log(0.6)
            endif
        enddo
    case default

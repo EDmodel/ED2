@@ -498,6 +498,21 @@ $ED_NL
 
 
    !---------------------------------------------------------------------------------------!
+   ! ISLCOLFLG -- This controls how to initialise soil colour.  This must be a list with   !
+   !              N_ED_REGION+N_POI elements.  The first N_ED_REGION elements correspond   !
+   !              to each gridded domain (from first to last).  Elements between           !
+   !              N_ED_REGION+1 and N_ED_REGION+N_POI correspond to the polygons of        !
+   !              interest (from 1 to N_POI.  Options are:                                 !
+   !             1 -- Read in soil colour class from the files set in COLOR_DATABASE.      !
+   !             2 -- Assign either the value set by ISOILCOL (see below).                 !
+   !---------------------------------------------------------------------------------------!
+   NL%ISLCOLFLG = 2
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !---------------------------------------------------------------------------------------!
    ! NSLCON -- ED-2 Soil classes that the model will use when ISOILFLG is set to 2.        !
    !           Possible values are:                                                        !
    !---------------------------------------------------------------------------------------!
@@ -614,6 +629,7 @@ $ED_NL
    !---------------------------------------------------------------------------------------!
    NL%VEG_DATABASE      = 'edts_datasets/veg_oge/OGE2_'
    NL%SOIL_DATABASE     = 'edts_datasets/soils/Quesada+RADAM+IGBP/Quesada+RADAM+IGBP_'
+   NL%SLCOL_DATABASE    = '/mypath/soil_data/colour/LC2007JGRB/LC2007JGRB_'
    NL%LU_DATABASE       = 'edts_datasets/land_use/glu+sa2/blend-'
    NL%PLANTATION_FILE   = ''
    NL%THSUMS_DATABASE   = 'edts_datasets/ed_inputs/'

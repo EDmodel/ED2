@@ -5,7 +5,7 @@
 #   This function fits a xy plane to the values of the matrix.  Despite the name, it also  #
 # works for arrays.                                                                        #
 #------------------------------------------------------------------------------------------#
-arr.idxfit <<- function(A){
+arr.idxfit <<- function(A,interact=TRUE){
    #----- Make sure the matrix is an array. -----------------------------------------------#
    if (is.data.frame(A)){
       A = as.matrix(A)
@@ -25,10 +25,25 @@ arr.idxfit <<- function(A){
    dfarr$y      = c(A)
    #---------------------------------------------------------------------------------------#
 
+
+
+   #---------------------------------------------------------------------------------------#
+   #     Build formula based on whether or not to add interactions.                        #
+   #---------------------------------------------------------------------------------------#
+   rhs = names(dfarr)[! (names(dfarr) %in% "y")]
+   if (interact){
+      form.now = paste0("y ~ ",paste(rhs,collapse="*"))
+   }else{
+      form.now = paste0("y ~ ",paste(rhs,collapse="+"))
+   }#end if (interact)
+   #---------------------------------------------------------------------------------------#
+
+
+
    #----- Fit the plane equation. ---------------------------------------------------------#
-   afit  = try(lm(formula = y ~ .,data=dfarr),silent=TRUE)
+   afit  = try(lm(formula = as.formula(form.now),data=dfarr),silent=TRUE)
    if ("try-error" %in% is(afit)){
-      apred = A * NA
+      apred = A * NA_real_
    }else{
       apred = predict(object=afit,newdata=dfarr) + 0 * A
    }#end if ("try-error" %in% is(afit))

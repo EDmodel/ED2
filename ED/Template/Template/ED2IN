@@ -499,6 +499,21 @@ $ED_NL
 
 
    !---------------------------------------------------------------------------------------!
+   ! ISLCOLFLG -- This controls how to initialise soil colour.  This must be a list with   !
+   !              N_ED_REGION+N_POI elements.  The first N_ED_REGION elements correspond   !
+   !              to each gridded domain (from first to last).  Elements between           !
+   !              N_ED_REGION+1 and N_ED_REGION+N_POI correspond to the polygons of        !
+   !              interest (from 1 to N_POI.  Options are:                                 !
+   !             1 -- Read in soil colour class from the files set in SLCOL_DATABASE.      !
+   !             2 -- Assign either the value set by ISOILCOL (see below).                 !
+   !---------------------------------------------------------------------------------------!
+   NL%ISLCOLFLG = 1
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !---------------------------------------------------------------------------------------!
    ! NSLCON -- ED-2 Soil classes that the model will use when ISOILFLG is set to 2.        !
    !           Possible values are:                                                        !
    !---------------------------------------------------------------------------------------!
@@ -515,9 +530,10 @@ $ED_NL
 
 
    !---------------------------------------------------------------------------------------!
-   ! ISOILCOL -- LEAF-3 and ED-2 soil colour classes.  Soil classes are from 1 to 20       !
-   !             (1 = lightest; 20 = darkest).  The values are the same as CLM-4.0.  The   !
-   !             table is the albedo for visible and near infra-red.                       !
+   ! ISOILCOL -- LEAF-3 and ED-2 soil colour classes that the model will use when          !
+   !             ISLCOLFLG is set to 2.  Soil classes are from 1 to 20 (1 = lightest;      !
+   !             20 = darkest).  The values are the same as CLM-4.0.  The table is the     !
+   !             albedo for visible and near infra-red.                                    !
    !---------------------------------------------------------------------------------------!
    !                                                                                       !
    !       |-----------------------------------------------------------------------|       !
@@ -610,6 +626,8 @@ $ED_NL
    !                      Fill with the path and the prefix.                               !
    !  SOIL_DATABASE    -- soil database, used to determine the soil type.  Fill with the   !
    !                      path and the prefix.                                             !
+   !  SLCOL_DATABASE   -- If ISLCOLFLG=1, this variable specifies the path and prefix of   !
+   !                      soil colour data base.                                           !
    !  LU_DATABASE      -- land-use change disturbance rates database, used only when       !
    !                      IANTH_DISTURB is set to 1.  Fill with the path and the prefix.   !
    !  PLANTATION_FILE  -- Character string for the path to the forest plantation fraction  !
@@ -632,6 +650,7 @@ $ED_NL
    !---------------------------------------------------------------------------------------!
    NL%VEG_DATABASE      = 'myinpmain/veget_data/OGE2/OGE2_'
    NL%SOIL_DATABASE     = 'myinpmain/soil_data/texture/Hengl/Hengl_'
+   NL%SLCOL_DATABASE    = 'myinpmain/soil_data/colour/LC2007JGRB/LC2007JGRB_'
    NL%LU_DATABASE       = 'myludatabase'
    NL%PLANTATION_FILE   = ''
    NL%THSUMS_DATABASE   = 'myinpmain/thermal_sums/'
@@ -803,12 +822,10 @@ $ED_NL
    !      (Q10) equations, with Collatz et al. (1991) parameters for compensation point,   !
    !      and the Michaelis-Mentel coefficients.  The correction for high and low          !
    !      temperatures are the same as in Moorcroft et al. (2001).                         !
-   ! 3 -- (Beta) Similar to case 2, but we use Jmax to determine the RubP-regeneration     !
-   !      (aka light) limitation case, account for the triose phosphate utilisation        !
-   !      limitation case (C3), and use the Michaelis-Mentel coefficients along with other !
-   !      parameters from von Caemmerer (2000).                                            !
-   ! 4 -- (Beta) Use "Arrhenius" function as in Harley et al. (1991).  This must be run    !
-   !      with ISTOMATA_SCHEME = 1                                                         !
+   ! 3 -- (ED-2.2 alternative) Similar to case 2, but we use Jmax to determine the         !
+   !      RubP-regeneration (aka light) limitation case, account for the triose phosphate  !
+   !      utilisation limitation case (C3), and use the Michaelis-Mentel coefficients      !
+   !      along with other parameters from von Caemmerer (2000).                           !
    !---------------------------------------------------------------------------------------!
    NL%IPHYSIOL = myiphysiol
    !---------------------------------------------------------------------------------------!
@@ -1154,7 +1171,7 @@ $ED_NL
    !    seasonally dry tropical forests. New Phytol., 212: 80-95. doi:10.1111/nph.14009    !
    !    (X16).                                                                             !
    !---------------------------------------------------------------------------------------!
-   NL%PLANT_HYDRO_SCHEME   = myhydro
+   NL%PLANT_HYDRO_SCHEME   = myhydroscheme
    !---------------------------------------------------------------------------------------!
 
 
@@ -1170,6 +1187,22 @@ $ED_NL
    !    option will eventually become the default.                                         !
    !---------------------------------------------------------------------------------------!
    NL%ISTRUCT_GROWTH_SCHEME = 1
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   ! ISTEM_RESPIRATION_SCHEME -- Different methods to calculate respiration from stem      !
+   ! metabolism.                                                                           !
+   ! 0. No explicit stem respiration (default by ED2.2 and before)                         !
+   ! 1. Calculate stem respiration with stem surface area and                              !
+   ! per area respiration rate, which is a function of temperature and tree size based on  !
+   ! measurements on tropical trees by Chambers et al. (2004). Note that the calculation of!
+   ! surface area uses WAI. So if IBRANCH_THERMO is set to 0. All branch surface areas will!
+   ! be ignored.                                                                           !
+   !---------------------------------------------------------------------------------------!
+   NL%ISTEM_RESPIRATION_SCHEME = mystemresp
    !---------------------------------------------------------------------------------------!
 
 
@@ -1256,6 +1289,34 @@ $ED_NL
    NL%IDDMORT_SCHEME  = mymortscheme
    NL%CBR_SCHEME      = mycbrscheme
    NL%DDMORT_CONST    = myddmortconst
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !  CARBON_MORTALITY_SCHEME - Different methods to calculate negative carbon balance     !
+   !                            mortality.                                                 !
+   !                            0. (ED-2.2 default) ED-1 original formulation              !
+   !                               (Moorcroft et al. 2001)                                 !
+   !                            1. (Deprecated) Trait-dependent exponential model by Camac !
+   !                               et al. (2018), but uses carbon balance instead of       !
+   !                               growth.                                                 !
+   !                            2. (ED-2.2 Alternative) Trait-dependent exponential model  !
+   !                               by Camac et al. (2018) and use actual growth rates.     !
+   !---------------------------------------------------------------------------------------!
+   NL%CARBON_MORTALITY_SCHEME = mycarbonmort
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !  HYDRAULIC_MORTALITY_SCHEME - Different methods to calculate hydraulic failure        !
+   !                               mortality.                                              !
+   !                            0. (ED-2.2 default) No hydraulic failure mortality         !
+   !                            1. (Beta) hydraulic failure mortality based on monthly     !
+   !                               mean xylem percentage loss of conductance (PLC)         !
+   !---------------------------------------------------------------------------------------!
+   NL%HYDRAULIC_MORTALITY_SCHEME = myhydromort
    !---------------------------------------------------------------------------------------!
 
 

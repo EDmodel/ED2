@@ -738,28 +738,31 @@ do
    igoutput=$(echo ${oi}     | awk '{print $90 }')
    ivegtdyn=$(echo ${oi}     | awk '{print $91 }')
    ihydro=$(echo ${oi}       | awk '{print $92 }')
-   istomata=$(echo ${oi}     | awk '{print $93 }')
-   iplastic=$(echo ${oi}     | awk '{print $94 }')
-   igndvap=$(echo ${oi}      | awk '{print $95 }')
-   iphen=$(echo ${oi}        | awk '{print $96 }')
-   iallom=$(echo ${oi}       | awk '{print $97 }')
-   ieconomics=$(echo ${oi}   | awk '{print $98 }')
-   igrass=$(echo ${oi}       | awk '{print $99 }')
-   ibigleaf=$(echo ${oi}     | awk '{print $100}')
-   integscheme=$(echo ${oi}  | awk '{print $101}')
-   nsubeuler=$(echo ${oi}    | awk '{print $102}')
-   irepro=$(echo ${oi}       | awk '{print $103}')
-   treefall=$(echo ${oi}     | awk '{print $104}')
-   ianthdisturb=$(echo ${oi} | awk '{print $105}')
-   ianthdataset=$(echo ${oi} | awk '{print $106}')
-   slscale=$(echo ${oi}      | awk '{print $107}')
-   slyrfirst=$(echo ${oi}    | awk '{print $108}')
-   slnyrs=$(echo ${oi}       | awk '{print $109}')
-   bioharv=$(echo ${oi}      | awk '{print $110}')
-   skidarea=$(echo ${oi}     | awk '{print $111}')
-   skidsmall=$(echo ${oi}    | awk '{print $112}')
-   skidlarge=$(echo ${oi}    | awk '{print $113}')
-   fellingsmall=$(echo ${oi} | awk '{print $114}')
+   istemresp=$(echo ${oi}    | awk '{print $93 }')
+   istomata=$(echo ${oi}     | awk '{print $94 }')
+   iplastic=$(echo ${oi}     | awk '{print $95 }')
+   icarbonmort=$(echo ${oi}  | awk '{print $96 }')
+   ihydromort=$(echo ${oi}   | awk '{print $97 }')
+   igndvap=$(echo ${oi}      | awk '{print $98 }')
+   iphen=$(echo ${oi}        | awk '{print $99 }')
+   iallom=$(echo ${oi}       | awk '{print $100}')
+   ieconomics=$(echo ${oi}   | awk '{print $101}')
+   igrass=$(echo ${oi}       | awk '{print $102}')
+   ibigleaf=$(echo ${oi}     | awk '{print $103}')
+   integscheme=$(echo ${oi}  | awk '{print $104}')
+   nsubeuler=$(echo ${oi}    | awk '{print $105}')
+   irepro=$(echo ${oi}       | awk '{print $106}')
+   treefall=$(echo ${oi}     | awk '{print $107}')
+   ianthdisturb=$(echo ${oi} | awk '{print $108}')
+   ianthdataset=$(echo ${oi} | awk '{print $109}')
+   slscale=$(echo ${oi}      | awk '{print $110}')
+   slyrfirst=$(echo ${oi}    | awk '{print $111}')
+   slnyrs=$(echo ${oi}       | awk '{print $112}')
+   bioharv=$(echo ${oi}      | awk '{print $113}')
+   skidarea=$(echo ${oi}     | awk '{print $114}')
+   skidsmall=$(echo ${oi}    | awk '{print $115}')
+   skidlarge=$(echo ${oi}    | awk '{print $116}')
+   fellingsmall=$(echo ${oi} | awk '{print $117}')
    #---------------------------------------------------------------------------------------#
 
 
@@ -2332,9 +2335,12 @@ do
    sed -i~ s@myigoutput@${igoutput}@g            ${ED2IN}
    sed -i~ s@mygpref@${gpref}@g                  ${ED2IN}
    sed -i~ s@myvegtdyn@${ivegtdyn}@g             ${ED2IN}
-   sed -i~ s@myhydro@${ihydro}@g                 ${ED2IN}
+   sed -i~ s@myhydroscheme@${ihydro}@g           ${ED2IN}
+   sed -i~ s@mystemresp@${istemresp}@g           ${ED2IN}
    sed -i~ s@mystomata@${istomata}@g             ${ED2IN}
    sed -i~ s@myplastic@${iplastic}@g             ${ED2IN}
+   sed -i~ s@mycarbonmort@${icarbonmort}@g       ${ED2IN}
+   sed -i~ s@myhydromort@${ihydromort}@g         ${ED2IN}
    sed -i~ s@mybigleaf@${ibigleaf}@g             ${ED2IN}
    sed -i~ s@myintegscheme@${integscheme}@g      ${ED2IN}
    sed -i~ s@mynsubeuler@${nsubeuler}@g          ${ED2IN}

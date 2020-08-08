@@ -444,6 +444,21 @@ $ED_NL
 
 
    !---------------------------------------------------------------------------------------!
+   ! ISLCOLFLG -- This controls how to initialise soil colour.  This must be a list with   !
+   !              N_ED_REGION+N_POI elements.  The first N_ED_REGION elements correspond   !
+   !              to each gridded domain (from first to last).  Elements between           !
+   !              N_ED_REGION+1 and N_ED_REGION+N_POI correspond to the polygons of        !
+   !              interest (from 1 to N_POI.  Options are:                                 !
+   !             1 -- Read in soil colour class from the files set in COLOR_DATABASE.      !
+   !             2 -- Assign either the value set by ISOILCOL (see below).                 !
+   !---------------------------------------------------------------------------------------!
+   NL%ISLCOLFLG = 2
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !---------------------------------------------------------------------------------------!
    ! NSLCON -- ED-2 Soil classes that the model will use when ISOILFLG is set to 2.        !
    !           Possible values are:                                                        !
    !---------------------------------------------------------------------------------------!
@@ -540,6 +555,8 @@ $ED_NL
    !                      Fill with the path and the prefix.                               !
    !  SOIL_DATABASE    -- soil database, used to determine the soil type.  Fill with the   !
    !                      path and the prefix.                                             !
+   !  SLCOL_DATABASE   -- If ISLCOLFLG=1, this variable specifies the path and prefix of   !
+   !                      soil colour data base.                                           !
    !  LU_DATABASE      -- land-use change disturbance rates database, used only when       !
    !                      IANTH_DISTURB is set to 1.  Fill with the path and the prefix.   !
    !  PLANTATION_FILE  -- plantation fraction file.  In case you don't have such a file or !
@@ -557,6 +574,7 @@ $ED_NL
    !---------------------------------------------------------------------------------------!
    NL%VEG_DATABASE      = 'tonzi/veg_oge/OGE2_'
    NL%SOIL_DATABASE     = ''
+   NL%SLCOL_DATABASE    = '/mypath/soil_data/colour/LC2007JGRB/LC2007JGRB_'
    NL%LU_DATABASE	    = ''
    NL%PLANTATION_FILE   = ''
    NL%THSUMS_DATABASE   = 'common/ed_inputs/'

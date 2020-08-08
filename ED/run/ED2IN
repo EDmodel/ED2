@@ -497,6 +497,21 @@ $ED_NL
 
 
    !---------------------------------------------------------------------------------------!
+   ! ISLCOLFLG -- This controls how to initialise soil colour.  This must be a list with   !
+   !              N_ED_REGION+N_POI elements.  The first N_ED_REGION elements correspond   !
+   !              to each gridded domain (from first to last).  Elements between           !
+   !              N_ED_REGION+1 and N_ED_REGION+N_POI correspond to the polygons of        !
+   !              interest (from 1 to N_POI.  Options are:                                 !
+   !             1 -- Read in soil colour class from the files set in SLCOL_DATABASE.      !
+   !             2 -- Assign either the value set by ISOILCOL (see below).                 !
+   !---------------------------------------------------------------------------------------!
+   NL%ISLCOLFLG = 2
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !---------------------------------------------------------------------------------------!
    ! NSLCON -- ED-2 Soil classes that the model will use when ISOILFLG is set to 2.        !
    !           Possible values are:                                                        !
    !---------------------------------------------------------------------------------------!
@@ -513,10 +528,10 @@ $ED_NL
 
 
    !---------------------------------------------------------------------------------------!
-   ! ISOILCOL -- LEAF-3 and ED-2 soil colour classes that the model will use when ISOILFLG !
-   !             is set to 2.  Soil classes are from 1 to 20 (1 = lightest; 20 = darkest). !
-   !             The values are the same as CLM-4.0.  The table is the albedo for visible  !
-   !             and near infra-red.                                                       !
+   ! ISOILCOL -- LEAF-3 and ED-2 soil colour classes that the model will use when          !
+   !             ISLCOLFLG is set to 2.  Soil classes are from 1 to 20 (1 = lightest;      !
+   !             20 = darkest).  The values are the same as CLM-4.0.  The table is the     !
+   !             albedo for visible and near infra-red.                                    !
    !---------------------------------------------------------------------------------------!
    !                                                                                       !
    !       |-----------------------------------------------------------------------|       !
@@ -594,6 +609,8 @@ $ED_NL
    !                      Fill with the path and the prefix.                               !
    !  SOIL_DATABASE    -- soil database, used to determine the soil type.  Fill with the   !
    !                      path and the prefix.                                             !
+   !  SLCOL_DATABASE   -- If ISLCOLFLG=1, this variable specifies the path and prefix of   !
+   !                      soil colour data base.                                           !
    !  LU_DATABASE      -- land-use change disturbance rates database, used only when       !
    !                      IANTH_DISTURB is set to 1.  Fill with the path and the prefix.   !
    !  PLANTATION_FILE  -- Character string for the path to the forest plantation fraction  !
@@ -616,6 +633,7 @@ $ED_NL
    !---------------------------------------------------------------------------------------!
    NL%VEG_DATABASE      = '/mypath/veget_data/oge2/OGE2_'
    NL%SOIL_DATABASE     = '/mypath/soil_data/texture/Hengl/Hengl_'
+   NL%SLCOL_DATABASE    = '/mypath/soil_data/colour/LC2007JGRB/LC2007JGRB_'
    NL%LU_DATABASE       = '/mypath/glu-3.3.1+sa1.bau/glu-3.3.1+sa1.bau-'
    NL%PLANTATION_FILE   = ''
    NL%THSUMS_DATABASE   = '/mypath/thermal_sums/'
@@ -787,10 +805,10 @@ $ED_NL
    !      (Q10) equations, with Collatz et al. (1991) parameters for compensation point,   !
    !      and the Michaelis-Mentel coefficients.  The correction for high and low          !
    !      temperatures are the same as in Moorcroft et al. (2001).                         !
-   ! 3 -- (Beta) Similar to case 2, but we use Jmax to determine the RubP-regeneration     !
-   !      (aka light) limitation case, account for the triose phosphate utilisation        !
-   !      limitation case (C3), and use the Michaelis-Mentel coefficients along with other !
-   !      parameters from von Caemmerer (2000).                                            !
+   ! 3 -- (ED-2.2 alternative) Similar to case 2, but we use Jmax to determine the         !
+   !      RubP-regeneration (aka light) limitation case, account for the triose phosphate  !
+   !      utilisation limitation case (C3), and use the Michaelis-Mentel coefficients      !
+   !      along with other parameters from von Caemmerer (2000).                           !
    !---------------------------------------------------------------------------------------!
    NL%IPHYSIOL = 2
    !---------------------------------------------------------------------------------------!
@@ -1253,19 +1271,23 @@ $ED_NL
    NL%DDMORT_CONST    = 0.8
    !---------------------------------------------------------------------------------------!
 
+
+
    !---------------------------------------------------------------------------------------!
    !  CARBON_MORTALITY_SCHEME - Different methods to calculate negative carbon balance     !
    !                            mortality.                                                 !
    !                            0. (ED-2.2 default) ED-1 original formulation              !
    !                               (Moorcroft et al. 2001)                                 !
-   !                            1. (ED-2.2 Alternative)                                    !
-   !                               trait-dependent exponential model by Camac et al. 2018  !
-   !                               but uses CB instead of growth                           !
-   !                            2. (ED-2.2 Alternative)                                    !
-   !                               trait-dependent exponential model by Camac et al. 2018  !
-   !                               and use actual growth rates                             !
+   !                            1. (Deprecated) Trait-dependent exponential model by Camac !
+   !                               et al. (2018), but using carbon balance instead of      !
+   !                               growth.                                                 !
+   !                            2. (ED-2.2 Alternative) Trait-dependent exponential model  !
+   !                               by Camac et al. (2018) and using actual growth rates.   !
    !---------------------------------------------------------------------------------------!
    NL%CARBON_MORTALITY_SCHEME = 0
+   !---------------------------------------------------------------------------------------!
+
+
 
    !---------------------------------------------------------------------------------------!
    !  HYDRAULIC_MORTALITY_SCHEME - Different methods to calculate hydraulic failure        !
@@ -1275,6 +1297,9 @@ $ED_NL
    !                               mean xylem percentage loss of conductance (PLC)         !
    !---------------------------------------------------------------------------------------!
    NL%HYDRAULIC_MORTALITY_SCHEME = 0
+   !---------------------------------------------------------------------------------------!
+
+
 
    !---------------------------------------------------------------------------------------!
    !  These variables will be eventually removed from ED2IN, use the XML initialisation    !
@@ -1520,8 +1545,8 @@ $ED_NL
    ! 3.  (ED-2.2 alternative) This is based on Massman and Weil (1999, Boundary-Layer      !
    !     Meteorol.). Similar to 2, but with the option of varying the drag and sheltering  !
    !     within the canopy.                                                                !
-   ! 4.  Similar to 0, but if finds the ground conductance following CLM-4.5 technical     !
-   !     note (Oleson et al. 2013, NCAR/TN-503+STR) (equations 5.98-5.100).                !
+   ! 4.  (Beta) Similar to 0, but if finds the ground conductance following CLM-4.5        !
+   !     technical note (Oleson et al. 2013, NCAR/TN-503+STR) (equations 5.98-5.100).      !
    !---------------------------------------------------------------------------------------!
    NL%ICANTURB        = 2
    !---------------------------------------------------------------------------------------!

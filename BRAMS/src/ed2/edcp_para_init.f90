@@ -21,8 +21,10 @@
 subroutine edcp_get_work(ifm,nxp,nyp,inode,mxp,myp,ia,iz,i0,ja,jz,j0)
 
    use ed_work_vars, only : work_e                 ! ! intent(inout)
-   use soil_coms   , only : veg_database           & ! intent(in)
+   use soil_coms   , only : islcolflg              & ! intent(in)
+                          , veg_database           & ! intent(in)
                           , soil_database          & ! intent(in)
+                          , slcol_database         & ! intent(in)
                           , nslcon                 & ! intent(in)
                           , isoilcol               ! ! intent(in)
    use io_params   , only : b_isoilflg => isoilflg & ! intent(in)
@@ -53,6 +55,7 @@ subroutine edcp_get_work(ifm,nxp,nyp,inode,mxp,myp,ia,iz,i0,ja,jz,j0)
    integer, dimension(:,:), allocatable :: ncol_soil_list
    real   , dimension(:,:), allocatable :: ipcent_land
    real   , dimension(:,:), allocatable :: ipcent_soil
+   real   , dimension(:,:), allocatable :: ipcent_slcol
    integer                              :: npoly
    integer                              :: datsoil
    integer                              :: ipy
@@ -79,6 +82,7 @@ subroutine edcp_get_work(ifm,nxp,nyp,inode,mxp,myp,ia,iz,i0,ja,jz,j0)
    allocate(ncol_soil_list (maxsite,npoly))
    allocate(ipcent_land    (maxsite,npoly))
    allocate(ipcent_soil    (maxsite,npoly))
+   allocate(ipcent_slcol   (maxsite,npoly))
    !---------------------------------------------------------------------------------------!
 
 
@@ -237,7 +241,20 @@ subroutine edcp_get_work(ifm,nxp,nyp,inode,mxp,myp,ia,iz,i0,ja,jz,j0)
    !      For the time being, soil colour is constant.  Only if results look promising we  !
    ! will attempt to read a map.                                                           !
    !---------------------------------------------------------------------------------------!
-   ncol_soil_list (:,:) = isoilcol
+   select case (islcolflg(ifm))
+   case (1)
+      call leaf_database(trim(slcol_database(ifm)),maxsite,npoly,'soil_color'              &
+                        ,lat_list,lon_list,ntext_soil_list,ipcent_slcol)
+   case default
+      !------------------------------------------------------------------------------------!
+      !   Allow for only one site by making the first site with the default soil type and  !
+      ! area 1., and the others with area 0.                                               !
+      !------------------------------------------------------------------------------------!
+      ncol_soil_list         (:,:) = isoilcol
+      ipcent_slcol           (:,:) = 0.
+      ipcent_slcol           (1,:) = 1.
+      !------------------------------------------------------------------------------------!
+   end select
    !---------------------------------------------------------------------------------------!
 
    write(unit=*,fmt='(a)')       '   + Successfully obtain land/sea mask and soil type.'
@@ -300,6 +317,7 @@ subroutine edcp_get_work(ifm,nxp,nyp,inode,mxp,myp,ia,iz,i0,ja,jz,j0)
    deallocate(ncol_soil_list  )
    deallocate(ipcent_land     )
    deallocate(ipcent_soil     )
+   deallocate(ipcent_slcon    )
    !---------------------------------------------------------------------------------------!
 
    return
