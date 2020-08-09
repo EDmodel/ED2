@@ -3754,7 +3754,7 @@ subroutine read_ed21_polyclone
          Te = 0.0
          do isi = 1,cpoly%nsites
             sc = cpoly%ntext_soil(nzg-1,isi)
-            K0 = soil(sc)%slcons0
+            K0 = soil(sc)%slcons
             T0 = K0 / cpoly%moist_f(isi)
             Te = Te + T0*cpoly%area(isi)
          end do
@@ -3763,7 +3763,7 @@ subroutine read_ed21_polyclone
          cgrid%wbar(ipy) = 0.0
          do isi = 1,cpoly%nsites
             sc = cpoly%ntext_soil(nzg-1,isi)
-            K0 = soil(sc)%slcons0
+            K0 = soil(sc)%slcons
             T0 = K0 / cpoly%moist_f(isi)
             cpoly%moist_W(isi) = cpoly%TCI(isi) + log(Te) - log(T0)
             cgrid%wbar(ipy)    = cgrid%wbar(ipy) + cpoly%moist_W(isi) * cpoly%area(isi)

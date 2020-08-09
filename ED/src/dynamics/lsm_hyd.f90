@@ -965,7 +965,7 @@ end subroutine updateWatertableSubtract
 !==========================================================================================!
 subroutine updateWatertableBaseflow(cpoly,isi,ipa,baseflow)
    use ed_state_vars, only: polygontype, sitetype
-   use soil_coms, only: soil,dslz,dslzi,slcons1
+   use soil_coms, only: soil,dslz,dslzi,matric_potential,hydr_conduct
    use ed_misc_coms, only: dtlsm
    use consts_coms, only: wdns
    use therm_lib, only : uextcm2tl,tl2uint
@@ -980,28 +980,23 @@ subroutine updateWatertableBaseflow(cpoly,isi,ipa,baseflow)
    real                              :: bf   !baseflow in water content (meters/timestep)
    real                              :: potn_fd,wflux_fd ! potential & flux for free-drainage
    integer                           :: nsoil,slsl
-   real                              :: tempk, fracliq, freezeCor
+   real                              :: tempk, fracliq
 
    
    csite => cpoly%site(isi)
    slsl  = cpoly%lsl(isi)
    nsoil = cpoly%ntext_soil(slsl,isi)
    !! determine freeze
-   call uextcm2tl(csite%soil_energy(slsl,ipa),csite%soil_water(slsl,ipa)*1.e3,soil(nsoil)%slcpd,tempk,fracliq)
-   freezeCor = fracliq
-   if(freezeCor .lt. 1.0) freezeCor = 10.0**(-freezeCoef*(1.0-freezeCor))
+   call uextcm2tl(csite%soil_energy(slsl,ipa),csite%soil_water(slsl,ipa)*wdns,soil(nsoil)%slcpd,tempk,fracliq)
    
    !! calc max free-drainage as cap to baseflow
    !! assumes layer below is permenantly at minimal water capacity
    slsl  = cpoly%lsl(isi)
 !   nsoil = cpoly%ntext_soil(slsl,isi)
-   potn_fd = -dslzi(slsl)+soil(nsoil)%slpots* &
-        ((soil(nsoil)%slmsts/soil(nsoil)%soilcp)**soil(nsoil)%slbs - &
-        (soil(nsoil)%slmsts/csite%soil_water(slsl,ipa))**soil(nsoil)%slbs)
-   wflux_fd = slcons1(slsl,nsoil)  &
-                 * (csite%soil_water(1,ipa)/ soil(nsoil)%slmsts)**(2. * soil(nsoil)%slbs + 3.)  &
-                 * potn_fd * freezeCor
-   bf = min(-wflux_fd,baseflow)*dtlsm*0.001
+   potn_fd  = -dslzi(slsl)+soil(nsoil)%slpots* &
+              (soil(nsoil)%slpotcp - matric_potential(nsoil,csite%soil_water(slsl,ipa)))
+   wflux_fd = hydr_conduct(slsl,nsoil,csite%soil_water(1,ipa),fracliq) * potn_fd
+   bf       = min(-wflux_fd,baseflow)*dtlsm*0.001
 
    if(bf < 0.0) then
       write (unit=*,fmt=*) "bf in wrong direction",bf
@@ -1023,7 +1018,7 @@ subroutine updateWatertableBaseflow(cpoly,isi,ipa,baseflow)
                                     ,'updateWatertableBaseflow','lsm_hyd.f90')
                  end if
 
-   baseflow = bf*1000.0/dtlsm !! reassign for return (m/step->mm/sec)
+   baseflow = bf*wdns/dtlsm !! reassign for return (m/step->mm/sec)
    return
 end subroutine updateWatertableBaseflow
 !==========================================================================================!

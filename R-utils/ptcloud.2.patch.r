@@ -435,7 +435,9 @@ ptcloud.2.patch <<- function( pt.cloud
          ipft.pft   = rep(mypfts         , each = ncoh ) + 0L * fpft
          wdns.pft   = rep(pft$rho[mypfts], each = ncoh ) + 0. * fpft
          sla.pft    = rep(pft$SLA[mypfts], each = ncoh ) + 0. * fpft
-         bleaf.pft  = size2bl(dbh=dbh.pft,hgt=hgt.pft,ipft=ipft.pft)  + 0. * fpft
+         bleaf.pft  = ( size2bl(dbh=dbh.pft,hgt=hgt.pft,sla=sla.pft,ipft=ipft.pft)
+                      + 0. * fpft
+                      )#end bleaf.pft
          bdead.pft  = size2bd(dbh=dbh.pft,hgt=hgt.pft,ipft=ipft.pft)  + 0. * fpft
          broot.pft  = rep(pft$qroot[mypfts],each = ncoh) * bleaf.pft
          bsw.pft    = rep(pft$qsw  [mypfts],each = ncoh) * hgt.pft   * bleaf.pft
@@ -470,7 +472,9 @@ ptcloud.2.patch <<- function( pt.cloud
          ipft.bft   = rep(mypfts         , each = bcoh ) + 0L * bpft
          wdns.bft   = rep(pft$rho[mypfts], each = bcoh ) + 0. * bpft
          sla.bft    = rep(pft$SLA[mypfts], each = bcoh ) + 0. * bpft
-         bleaf.bft  = size2bl(dbh=dbh.bft,hgt=hgt.bft,ipft=ipft.bft)  + 0. * bpft
+         bleaf.bft  = ( size2bl(dbh=dbh.bft,hgt=hgt.bft,sla=sla.pft,ipft=ipft.bft)
+                      + 0. * bpft
+                      )#end bleaf.bft
          bdead.bft  = size2bd(dbh=dbh.bft,hgt=hgt.bft,ipft=ipft.bft)  + 0. * bpft
          broot.bft  = rep(pft$qroot[mypfts],each = bcoh) * bleaf.bft
          bsw.bft    = rep(pft$qsw  [mypfts],each = bcoh) * hgt.bft   * bleaf.bft
@@ -725,7 +729,8 @@ ptcloud.2.patch <<- function( pt.cloud
                if (nidx > 0){
                   #----- Aggregate information of the suspicious patch. -------------------#
                   css.agf    = pft$agf.bs[cssnow$pft]
-                  css.bleaf  = with(cssnow,size2bl(dbh=dbh,hgt=hite,ipft=pft))
+                  css.sla    = pft$SLA[cssnow$pft]
+                  css.bleaf  = with(cssnow,size2bl(dbh=dbh,hgt=hite,sla=css.sla,ipft=pft))
                   css.bsap   = pft$qsw   [cssnow$pft] * cssnow$hite * css.bleaf
                   css.bbark  = pft$qbark [cssnow$pft] * cssnow$hite * css.bleaf
                   css.agb    = ( css.bleaf

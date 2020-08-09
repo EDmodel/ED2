@@ -853,7 +853,11 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
          baconow           = mymont$BA.CO
          agbconow          = mymont$AGB.CO
          caiconow          = pmin(1., nplantconow
-                                    * size2ca(dbh=dbhconow,hgt=heightconow,ipft=pftconow)
+                                    * size2ca( dbh  = dbhconow
+                                             , hgt  = heightconow
+                                             , sla  = slaconow
+                                             , ipft = pftconow
+                                             )#end size2ca
                                  )#end pmin
          taiconow          = laiconow + waiconow
          #------ Auxiliary variables for mean diurnal cycle. ------------------------------#
@@ -899,8 +903,12 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
          bsapwoodconow     = mymont$BSAPWOODA+mymont$BSAPWOODB
          bbarkconow        = mymont$MMEAN.BBARKA.CO + mymont$MMEAN.BBARKB.CO
          if (all(mymont$MMEAN.BROOT.CO == 0)){
-            bfrootconow    = ( size2bl(dbh=dbhconow.lmon,hgt=hgtconow.lmon,ipft=pftconow)
-                             * pft$qroot[pftconow] )
+            blmaxconow     = size2bl( dbh  = dbhconow.lmon
+                                    , hgt  = hgtconow.lmon
+                                    , sla  = pft$SLA[pftconow]
+                                    , ipft = pftconow
+                                    )#end size2bl
+            bfrootconow    = blmaxconow * pft$qroot[pftconow]
          }else{
             bfrootconow    = mymont$MMEAN.BROOT.CO
          }#end if

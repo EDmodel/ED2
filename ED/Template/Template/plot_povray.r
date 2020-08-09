@@ -57,6 +57,7 @@ idbh.type      = myidbhtype   # Type of DBH class
                               # 3 -- 0-10; 10-35; 35-70; > 70 (cm)
 klight         = myklight     # Weighting factor for maximum carbon balance
 iallom         = myallom      # Allometry
+isoil.hydro    = myslhydro    # Soil hydrology method
 #------------------------------------------------------------------------------------------#
 
 

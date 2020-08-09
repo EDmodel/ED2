@@ -13094,6 +13094,10 @@ module ed_state_vars
       use soil_coms    , only : slz                 & ! intent(in)
                               , slxclay             & ! intent(in)
                               , slxsand             & ! intent(in)
+                              , slsoc               & ! intent(in)
+                              , slph                & ! intent(in)
+                              , slcec               & ! intent(in)
+                              , sldbd               & ! intent(in)
                               , isoilflg            & ! intent(in)
                               , islcolflg           ! ! intent(in)
 
@@ -13215,6 +13219,38 @@ module ed_state_vars
       call vtable_edio_r_sca(slxclay,nvar,igr,1,0                                          &
                             ,var_len,var_len_global,max_ptrs                               &
                             ,'SLXCLAY :90:hist:anal:dail:mont:dcyc:year')
+
+      nvar=nvar+1
+      call vtable_edio_r_sca(slsoc,nvar,igr,0,0                                            &
+                            ,var_len,var_len_global,max_ptrs                               &
+                            ,'SLSOC   :90:hist:anal:dail:mont:dcyc:year')
+      call vtable_edio_r_sca(slsoc,nvar,igr,1,0                                            &
+                            ,var_len,var_len_global,max_ptrs                               &
+                            ,'SLSOC   :90:hist:anal:dail:mont:dcyc:year')
+
+      nvar=nvar+1
+      call vtable_edio_r_sca(slph,nvar,igr,0,0                                             &
+                            ,var_len,var_len_global,max_ptrs                               &
+                            ,'SLPH    :90:hist:anal:dail:mont:dcyc:year')
+      call vtable_edio_r_sca(slph,nvar,igr,1,0                                             &
+                            ,var_len,var_len_global,max_ptrs                               &
+                            ,'SLPH    :90:hist:anal:dail:mont:dcyc:year')
+
+      nvar=nvar+1
+      call vtable_edio_r_sca(slcec,nvar,igr,0,0                                            &
+                            ,var_len,var_len_global,max_ptrs                               &
+                            ,'SLCEC   :90:hist:anal:dail:mont:dcyc:year')
+      call vtable_edio_r_sca(slcec,nvar,igr,1,0                                            &
+                            ,var_len,var_len_global,max_ptrs                               &
+                            ,'SLCEC   :90:hist:anal:dail:mont:dcyc:year')
+
+      nvar=nvar+1
+      call vtable_edio_r_sca(sldbd,nvar,igr,0,0                                            &
+                            ,var_len,var_len_global,max_ptrs                               &
+                            ,'SLDBD   :90:hist:anal:dail:mont:dcyc:year')
+      call vtable_edio_r_sca(sldbd,nvar,igr,1,0                                            &
+                            ,var_len,var_len_global,max_ptrs                               &
+                            ,'SLDBD   :90:hist:anal:dail:mont:dcyc:year')
 
 
       !------------------------------------------------------------------------------------!

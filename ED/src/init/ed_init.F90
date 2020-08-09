@@ -160,7 +160,7 @@ module ed_init
                   ! organic/peat.                                                          !
                   !------------------------------------------------------------------------!
                   sc = cpoly%ntext_soil(nzg-1,isi)
-                  cpoly%moist_f(isi) = -log(soil(sc)%slcons / soil(sc)%slcons0) / 2.0
+                  cpoly%moist_f(isi) = soil(sc)%fhydraul
                   !------------------------------------------------------------------------!
 
 
@@ -198,7 +198,7 @@ module ed_init
             Te = 0.0 
             do isi = 1,cpoly%nsites
                sc = cpoly%ntext_soil(nzg-1,isi)
-               K0 = soil(sc)%slcons0
+               K0 = soil(sc)%slcons
                T0 = K0 / cpoly%moist_f(isi)
                Te = Te + T0*cpoly%area(isi)
             end do
@@ -207,7 +207,7 @@ module ed_init
             cgrid%wbar(ipy) = 0.0
             do isi = 1,cpoly%nsites
                sc = cpoly%ntext_soil(nzg-1,isi)
-               K0 = soil(sc)%slcons0
+               K0 = soil(sc)%slcons
                T0 = K0 / cpoly%moist_f(isi)
                cpoly%moist_W(isi) = cpoly%TCI(isi) + log(Te) - log(T0)
                cgrid%wbar(ipy)    = cgrid%wbar(ipy) + cpoly%moist_W(isi) * cpoly%area(isi)
@@ -548,10 +548,8 @@ module ed_init
                              , dslzt8            & ! intent(out)
                              , dslzti8           & ! intent(out)
                              , dslztidt8         & ! intent(out)
-                             , fhydraul          & ! intent(out)
                              , slcons1           & ! intent(out)
                              , slcons18          & ! intent(out)
-                             , slden             & ! intent(out)
                              , soil              & ! intent(in)
                              , thicknet          & ! intent(out)
                              , thick             ! ! intent(out)
@@ -567,7 +565,6 @@ module ed_init
       integer                :: k
       integer                :: nnn
       integer                :: kzs
-      real                   :: refdepth
       real                   :: thik
       real                   :: stretch
       real                   :: slz0
@@ -628,36 +625,36 @@ module ed_init
       end do
 
 
-      !----- Soil constants. --------------------------------------------------------------!
-      refdepth = -0.5
-
+      !----- Find layer-dependent hydraulic conductivity. ---------------------------------!
       do nnn = 1,ed_nstyp
-         if (nnn /= 13) then
-            fhydraul(nnn) = log (soil(nnn)%slcons / soil(nnn)%slcons0) / refdepth
-         else
-            fhydraul(nnn) = 0.
-         end if
          do k = 0,nzg
-         
             select case (ipercol)
             case (0,1)
                !----- Original form, constant with depth.  --------------------------------!
                slcons1(k,nnn) = soil(nnn)%slcons
+               !---------------------------------------------------------------------------!
             case (2)
                !---------------------------------------------------------------------------!
-               !    TOPMODEL form, similar to CLM.  Here we use the same definition of     !
-               ! slcons from Cosby et al. (1984) because it has a stronger spread and it   !
-               ! accounts for sand and clay contents.                                      !
+               !    Define conductivity using the SIMTOP approach (N05).                   !
+               !                                                                           !
+               ! Niu GY, Yang ZL, Dickinson RE , Gulden LE. 2005. A simple TOPMODEL-based  !
+               !    runoff pa- rameterization (SIMTOP) for use in global climate models.   !
+               !    J. Geophys. Res.-Atmos., 110: D21106. doi:10.1029/2005JD006111 (N05).  !
+               !                                                                           !
+               ! Note that this is an exponential decay, because slzt <= 0.                !
                !---------------------------------------------------------------------------!
-               slcons1(k,nnn) = soil(nnn)%slcons * exp ( - slzt(k) / refdepth)
+               slcons1(k,nnn) = soil(nnn)%slcons * exp ( soil(nnn)%fhydraul * slzt(k))
+               !---------------------------------------------------------------------------!
             end select
 
             !------ Find the double precision. --------------------------------------------!
             slcons18(k,nnn) = dble(slcons1(k,nnn))
+            !------------------------------------------------------------------------------!
          end do
-
-         slden    (nnn) =  soil(nnn)%slden    
+         !---------------------------------------------------------------------------------!
       end do
+      !------------------------------------------------------------------------------------!
+
 
       !----- Defining some snow thickness variables ---------------------------------------!
       stretch = 2.0
@@ -719,8 +716,13 @@ module ed_init
       integer                            :: isi
       integer                            :: slash
       integer                            :: endstr
+      !----- Formats. ---------------------------------------------------------------------!
+      character(len= 8), parameter :: afmt = '(a,1x,a)'
+      character(len=12), parameter :: ffmt = '(a,1x,f11.3)'
+      character(len=10), parameter :: lfmt = '(a,11x,l1)'
+      character(len=10), parameter :: ifmt = '(a,1x,i11)'
+      character(len=13), parameter :: efmt = '(a,1x,es12.5)'
       !------------------------------------------------------------------------------------!
-      
       if (ifm /=1 .or. n_poi /= 1 .or. cgrid%npolygons /= 1) return
       ipy = 1
       cpoly => cgrid%polygon(ipy)
@@ -734,32 +736,39 @@ module ed_init
       prescribed = isoilflg(ifm)==2 .and. slxclay > 0. .and. slxsand > 0. .and.            &
                    (slxclay + slxsand) <= 1.
 
-      write (unit=*,fmt='(a)')           ' '
+      write (unit=*,fmt='(a)') ' '
       write (unit=*,fmt='(a)') '   -------------------------------------------------------'
-      write (unit=*,fmt='(a)')           '    Soil information:'
+      write (unit=*,fmt='(a)') ' Soil information:'
       write (unit=*,fmt='(a)')           ' '
-      write (unit=*,fmt='(a,1x,a)')      '    Polygon name               :',trim(polyname)
-      write (unit=*,fmt='(a,1x,f11.3)')  '    Longitude                  :',cgrid%lon(ipy)
-      write (unit=*,fmt='(a,1x,f11.3)')  '    Latitude                   :',cgrid%lat(ipy)
-      write (unit=*,fmt='(a,11x,l1)')    '    Prescribed sand and clay   :',prescribed
-      write (unit=*,fmt='(a,1x,i11)')    '    # of sites                 :',cpoly%nsites
+      write (unit=*,fmt=afmt ) ' Polygon name               :',trim(polyname)
+      write (unit=*,fmt=ffmt ) ' Longitude                  :',cgrid%lon(ipy)
+      write (unit=*,fmt=ffmt ) ' Latitude                   :',cgrid%lat(ipy)
+      write (unit=*,fmt=lfmt ) ' Prescribed sand and clay   :',prescribed
+      write (unit=*,fmt=ifmt ) ' # of sites                 :',cpoly%nsites
 
       do isi = 1,cpoly%nsites
          nsoil = cpoly%ntext_soil(nzg,isi)
-         write (unit=*,fmt='(a)')          ' '
-         write (unit=*,fmt='(a,1x,i11)')   '    Site :',isi
-         write (unit=*,fmt='(a,1x,i10)')   '      - Type :',nsoil
-         write(unit=*,fmt='(a,1x,es12.5)') '      - Clay fraction  =', soil(nsoil)%xclay
-         write(unit=*,fmt='(a,1x,es12.5)') '      - Sand fraction  =', soil(nsoil)%xsand
-         write(unit=*,fmt='(a,1x,es12.5)') '      - Silt fraction  =', soil(nsoil)%xsilt
-         write(unit=*,fmt='(a,1x,es12.5)') '      - SLBS           =', soil(nsoil)%slbs
-         write(unit=*,fmt='(a,1x,es12.5)') '      - SLPOTS         =', soil(nsoil)%slpots
-         write(unit=*,fmt='(a,1x,es12.5)') '      - SLCONS         =', soil(nsoil)%slcons
-         write(unit=*,fmt='(a,1x,es12.5)') '      - Dry air soil   =', soil(nsoil)%soilcp
-         write(unit=*,fmt='(a,1x,es12.5)') '      - Wilting point  =', soil(nsoil)%soilwp
-         write(unit=*,fmt='(a,1x,es12.5)') '      - Field capacity =', soil(nsoil)%sfldcap
-         write(unit=*,fmt='(a,1x,es12.5)') '      - Saturation     =', soil(nsoil)%slmsts
-         write(unit=*,fmt='(a,1x,es12.5)') '      - Heat capacity  =', soil(nsoil)%slcpd
+         write (unit=*,fmt='(a)') ' '
+         write (unit=*,fmt=ifmt ) ' Site :',isi
+         write (unit=*,fmt=ifmt ) '   - Type :',nsoil
+         write (unit=*,fmt=efmt ) '   - Clay fraction            =', soil(nsoil)%xclay
+         write (unit=*,fmt=efmt ) '   - Sand fraction            =', soil(nsoil)%xsand
+         write (unit=*,fmt=efmt ) '   - Silt fraction            =', soil(nsoil)%xsilt
+         write (unit=*,fmt=efmt ) '   - SOC content              =', soil(nsoil)%slsoc
+         write (unit=*,fmt=efmt ) '   - Soil pH                  =', soil(nsoil)%slph
+         write (unit=*,fmt=efmt ) '   - Cation exchange capacity =', soil(nsoil)%slcec
+         write (unit=*,fmt=efmt ) '   - Dry bulk density         =', soil(nsoil)%sldbd
+         write (unit=*,fmt=efmt ) '   - SLBS                     =', soil(nsoil)%slbs
+         write (unit=*,fmt=efmt ) '   - SLNM                     =', soil(nsoil)%slnm
+         write (unit=*,fmt=efmt ) '   - SLPOTBP                  =', soil(nsoil)%slpotbp
+         write (unit=*,fmt=efmt ) '   - SLPOTS                   =', soil(nsoil)%slpots
+         write (unit=*,fmt=efmt ) '   - SLCONS                   =', soil(nsoil)%slcons
+         write (unit=*,fmt=efmt ) '   - Residual                 =', soil(nsoil)%soilcp
+         write (unit=*,fmt=efmt ) '   - Dry air soil             =', soil(nsoil)%soilcp
+         write (unit=*,fmt=efmt ) '   - Wilting point            =', soil(nsoil)%soilwp
+         write (unit=*,fmt=efmt ) '   - Field capacity           =', soil(nsoil)%sfldcap
+         write (unit=*,fmt=efmt ) '   - Saturation               =', soil(nsoil)%slmsts
+         write (unit=*,fmt=efmt ) '   - Heat capacity            =', soil(nsoil)%slcpd
       end do
       write (unit=*,fmt='(a)') '   -------------------------------------------------------'
       write (unit=*,fmt='(a)') ' '
@@ -846,7 +855,7 @@ module ed_init
             ! Set soil moisture decay function, based on second layer's K value
             ! use the second layer instead of the top in case top is organic/peat
             sc = cpoly%ntext_soil(nzg-1,1)
-            cpoly%moist_f(1) = -log(soil(sc)%slcons / soil(sc)%slcons0) / 2.0
+            cpoly%moist_f(1) = soil(sc)%fhydraul
 
             !! derive adjustments to f
             zmin = slz(cpoly%lsl(1))
@@ -991,7 +1000,7 @@ module ed_init
                      !//Currently do nothing with setting site-level soils
 
                      sc = cpoly%ntext_soil(nzg-1,1)
-                     cpoly%moist_f(isi) = -log(soil(sc)%slcons / soil(sc)%slcons0) / 2.0
+                     cpoly%moist_f(isi) = soil(sc)%fhydraul
                      !! derive adjustments to f
                      zmin = slz(cpoly%lsl(isi))
                      fa = -1.0/zmin !! should be 1/(depth to bedrock)
@@ -1039,7 +1048,7 @@ module ed_init
          area_sum = 0.0d+0
          do isi = 1,cpoly%nsites
             sc = cpoly%ntext_soil(nzg-1,isi)
-            K0 = soil(sc)%slcons0
+            K0 = soil(sc)%slcons
             T0 = K0/cpoly%moist_f(isi)
             Te = Te + T0*cpoly%area(isi)
             area_sum = area_sum + dble(cpoly%area(isi))
@@ -1054,7 +1063,7 @@ module ed_init
 
          do isi = 1,cpoly%nsites
             sc = cpoly%ntext_soil(nzg-1,isi)
-            K0 = soil(sc)%slcons0
+            K0 = soil(sc)%slcons
             T0 = K0/cpoly%moist_f(isi)
             cpoly%moist_W(isi) = cpoly%TCI(isi) + log(Te) - log(T0)
             cgrid%wbar(ipy) = cgrid%wbar(ipy) + real(dble(cpoly%moist_W(isi))*dble(cpoly%area(isi))/area_sum)
