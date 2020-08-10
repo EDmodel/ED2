@@ -4608,7 +4608,7 @@ subroutine init_pft_photo_params()
       Vm_low_temp (:) = merge( 4.7137                                                      &
                              , merge(15.0,10.0,photosyn_pathway(:) == 4)                   &
                              , is_conifer(:) .or. (.not. is_tropical(:)) )
-      Vm_high_temp(:) = merge(42.5,40.0,photosyn_pathway(:) == 4)
+      Vm_high_temp(:) = merge(42.5,45.0,photosyn_pathway(:) == 4)
    end select
    !---------------------------------------------------------------------------------------!
 
@@ -6238,7 +6238,7 @@ subroutine init_pft_hydro_params()
    !----- Parameters related with stomatal conductance, estimated from L15 and M11. ---------------!
 
    ! stoma_lambda has a unit of mol CO2 / mol H2O
-   ! 4.5e-2 in the model is equivalent to a g1 of 1 in L11
+   ! 3.5e-2 in the model is equivalent to a g1 of 1 in L11
    ! lambda ~ 1/sqrt(g1)
    ! therefore, we convert PFT average g1 values in L11 to stoma_lambda
    stoma_lambda(:) = merge( merge( 1.62                     &  ! C4 grass
@@ -6251,7 +6251,7 @@ subroutine init_pft_hydro_params()
                                  ,is_tropical(:))           &
                            ,is_grass(:))
 
-   stoma_lambda = 4.5e-2 / stoma_lambda ** 2
+   stoma_lambda = 3.5e-2 / stoma_lambda ** 2
 
 
    ! stoma_beta is based on Table 2 in M11
@@ -7875,7 +7875,8 @@ subroutine overwrite_with_xml_config(thisnode)
 
 
          !----- Write out a copy of the settings. -----------------------------------------!
-         call write_ed_xml_config()
+         !call write_ed_xml_config() always call write_ed_xml_config in ed_driver after
+         !init_derived_params_after_xml()
          !---------------------------------------------------------------------------------!
       else if (thisnode == 1) then
          !----- XML file not found, warn the user. ----------------------------------------!
@@ -9306,7 +9307,7 @@ subroutine init_derived_params_after_xml()
          select case (trait_plasticity_scheme)
          case (3)
             if (is_tropical(ipft) .and. (.not. is_grass(ipft))) then
-                kplastic_rd0(ipft) = - 1.0 * (0.559 * log(Rdark25) - 0.82)                 &
+                kplastic_rd0(ipft) = - 1.0 * (0.559 * log(Rdark25) + 0.82)                 &
                                    / kplastic_ref_lai
             endif
          end select
