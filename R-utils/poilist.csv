@@ -1,4 +1,4 @@
-short,iata,longname,lon,lat,alt,wmo,isoilflg,istext,sand,clay,soc,ph,cec,dbd,depth,isoilbc,sldrain,scolour,met.driver,yeara,yearz,iphen
+short,iata,longname,lon,lat,alt,wmo,isoilflg,istext,sand,clay,slsoc,slph,slcec,sldbd,depth,isoilbc,sldrain,scolour,met.driver,yeara,yearz,iphen
 allpahuayo,alp,Allpahuayo PER,-73.437,-3.953,143,NA,2,1,0.937,0.026,0.0491,4.5,0.102,1180,D,1,90,14,MERRA2_MSWEP2,1974,2017,-1
 alta_floresta,afl,Alta Floresta MT,-56.1,-9.867,269,82965,1,1,-1,-1,0.0266,4.7,0.124,1192,F,1,90,14,MERRA2_MSWEP2,1974,2017,2
 andiroba,and,Fazenda Andiroba PA,-47.517,-3.315,122,NA,1,1,-1,-1,0.0266,4.7,0.124,1192,H,1,90,14,MERRA2_MSWEP2,1974,2017,2
