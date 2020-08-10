@@ -134,6 +134,13 @@ subroutine ed_driver()
    call init_derived_params_after_xml()
    !---------------------------------------------------------------------------------------!
 
+   !-----Always write out a copy of model parameters in xml--------------------------!
+   if (mynum == nnodetot) then 
+       write (unit=*,fmt='(a)') ' [+] Write parameters to xml...'      
+       call write_ed_xml_config()
+   endif
+   !---------------------------------------------------------------------------------!
+
 
 
    !---------------------------------------------------------------------------------------!

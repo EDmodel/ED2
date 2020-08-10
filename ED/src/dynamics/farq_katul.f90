@@ -289,7 +289,7 @@ module farq_katul
       !------------------------------------------------------------------------------------!
       ! Perform Optimization
       !------------------------------------------------------------------------------------!
-      call optimization_solver8(ib,lambda8,                                                &
+      call optimization_solver8(ib,ipft,lambda8,                                           &
                                 opt_ci,opt_fc,opt_gsc,                                     &
                                 opt_ci_closed,opt_fc_closed,opt_gsc_closed,                &
                                 opt_fc_rubp,opt_fc_light,opt_fc_3rd,                       &
@@ -352,7 +352,7 @@ module farq_katul
    !> \details Use Regular Falsi to search for the optimum
    !> \author Xiangtao Xu, 19 MAY 2018
    !---------------------------------------------------------------------------------------!
-    subroutine optimization_solver8(ib,lambda,                                             &
+    subroutine optimization_solver8(ib,ipft,lambda,                                        &
                                     opt_ci,opt_fc,opt_gsc,                                 &
                                     opt_ci_closed,opt_fc_closed, opt_gsc_closed,           &
                                     opt_fc_rubp,opt_fc_light,opt_fc_3rd,                   &
@@ -367,6 +367,7 @@ module farq_katul
     implicit none
         !------ Arguments. ------------------------------------------------------------------!
         integer     , intent(in)    :: ib           !! Multithread ID
+        integer     , intent(in)    :: ipft         !! PFT for debugging purpose only
         real(kind=8), intent(in)    :: lambda       !! Marginal water use efficiency i.e. the langrangian multiplier in the optimization problem
         real(kind=8), intent(out)   :: opt_ci       !! Intercellular CO2 under optimized gsc [molCO2/molAir]
         real(kind=8), intent(out)   :: opt_fc       !! CO2 assimilation rate under opt gsc   [molCO2/m2/s]
@@ -550,6 +551,7 @@ module farq_katul
             write (unit=*,fmt='(80a)')         ('=',k=1,80)
             write (unit=*,fmt='(a)')           'Katul Stomatal Scheme Quality Check:'
             write (unit=*,fmt='(a,1x,i9)')   ' + HOUR:                ',current_time%hour
+            write (unit=*,fmt='(a,1x,i9)')   ' + PFT:                ',ipft
             write (unit=*,fmt='(a,1x,es12.4)')   ' + Vm:                  ',aparms(ib)%vm
             write (unit=*,fmt='(a,1x,es12.4)')   ' + Jm:                  ',aparms(ib)%jm
             write (unit=*,fmt='(a,1x,es12.4)')   ' + Tpm:                 ',aparms(ib)%tpm
