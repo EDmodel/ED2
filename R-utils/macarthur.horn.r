@@ -29,6 +29,7 @@ macarthur.horn <<- function( pt.cloud
                            , zo            = 0.
                            , nz            = 512
                            , rvorg         = NA_real_
+                           , out.lai       = 1.0
                            , sigma.z       = 5. * zh / (nz-1)
                            , Gmu           = 0.5
                            , tall.at.zh    = FALSE
@@ -37,9 +38,26 @@ macarthur.horn <<- function( pt.cloud
                            , trunc0        = sqrt(.Machine$double.eps)
                            , zpad          = 2*ceiling(sigma.z*sqrt(log(1./trunc0)))
                            , show.profiles = FALSE
+                           , return.dtable = FALSE
                            , ...
                            ){
 
+
+
+   #----- Stop if return.dtable is true but package data table can't be loaded. -----------#
+   if (return.dtable){
+      #------ Look for package data.table. ------------------------------------------------#
+      if (! "package:data.table" %in% search()){
+         #----- Try to require it, and if it doesn't work, issue an error. ----------------#
+         isok = require(data.table)
+         if (! isok){
+            stop("Function read.las requires package data.table if return.dtable = TRUE!")
+         }#end if (! isok)
+         #---------------------------------------------------------------------------------#
+      }#end if (! "package:data.table" %in% search())
+      #------------------------------------------------------------------------------------#
+   }#end if
+   #---------------------------------------------------------------------------------------#
 
 
    #---------------------------------------------------------------------------------------#
@@ -51,6 +69,7 @@ macarthur.horn <<- function( pt.cloud
            zh  %>%  zo                                                             &&
            zo  %>=% 0                                                              &&
            ( is.na(rvorg) || rvorg %>% 0 )                                         &&
+           ( out.lai %>% 0 )                                                       &&
            ( is.logical(tall.at.zh)      )                                         &&
            ( (sigma.z %>% 0) || (! wfsim) )                                        &&
            Gmu %>%0
@@ -62,6 +81,7 @@ macarthur.horn <<- function( pt.cloud
       cat0(" ZH         = ",zh                                                 )
       cat0(" NZ         = ",nz                                                 )
       cat0(" RVORG      = ",rvorg                                              )
+      cat0(" OUT.LAI    = ",out.lai                                            )
       cat0(" TALL.AT.ZH = ",tall.at.zh                                         )
       cat0(" SIGMA.Z    = ",sigma.z                                            )
       cat0(" Gmu        = ",Gmu                                                )
@@ -70,6 +90,7 @@ macarthur.horn <<- function( pt.cloud
       cat0(" ZO must be greater than or equal to 0 and less than ZH."          )
       cat0(" NZ must be positive."                                             )
       cat0(" RVORG must be positive or NA."                                    )
+      cat0(" OUT.LAI must be positive."                                        )
       cat0(" TALL.AT.ZH must be logical."                                      )
       cat0(" SIGMA.Z must be positive when simulating waveform."               )
       cat0(" Gmu must be positive."                                            )
@@ -272,6 +293,7 @@ macarthur.horn <<- function( pt.cloud
       #------------------------------------------------------------------------------------#
       if (show.profiles){
          graphics.off()
+         par(par.user)
          plot.new()
          plot.window(xlim=c(0,1),ylim=pretty.xylim(zmid,fracexp=c(-0.1,0.1)))
          axis(side=1,las=1)
@@ -349,6 +371,7 @@ macarthur.horn <<- function( pt.cloud
       #------------------------------------------------------------------------------------#
       if (show.profiles){
          graphics.off()
+         par(par.user)
          plot.new()
          plot.window(xlim=c(0,1),ylim=range(zmid))
          axis(side=1,las=1)
@@ -414,7 +437,7 @@ macarthur.horn <<- function( pt.cloud
    #---------------------------------------------------------------------------------------#
    if (! is.na(rvorg)){
       LAI    = sum(lad * deltaz)
-      lad    = lad / LAI
+      lad    = lad / LAI * out.lai
    }#end if
    if (! all(is.finite(lad))) browser()
    #---------------------------------------------------------------------------------------#
@@ -428,7 +451,7 @@ macarthur.horn <<- function( pt.cloud
       #----- Use the simulated waveform to prescribe the pdf. -----------------------------#
       Rv.underground = max(0.,Rv0-sum(Rvlyr))
       x.Rvlyr        = Rvlyr
-      x.Rvlyr[1]     = Rvlyr + Rv.underground
+      x.Rvlyr[1]     = Rvlyr[1] + Rv.underground
       pdfsum         = sum(x.Rvlyr*deltaz)
       lpdf           = data.frame(x=zmid,y=Rvlyr/pdfsum)
       pdfsum         = sum(lpdf$y * deltaz)
@@ -506,6 +529,7 @@ macarthur.horn <<- function( pt.cloud
                , silent = TRUE
                )#end try
    if ("try-error" %in% is(ans)) browser()
+   if (return.dtable) ans = data.table(ans)
    #---------------------------------------------------------------------------------------#
 
 
@@ -515,6 +539,7 @@ macarthur.horn <<- function( pt.cloud
    if (show.profiles){
       lai = rev(cumsum(rev(lad*deltaz)))
       graphics.off()
+      par(par.user)
       plot.new()
       plot.window(xlim=c(0,1),ylim=range(zmid))
       axis(side=1,las=1)

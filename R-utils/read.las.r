@@ -12,6 +12,7 @@ read.las <<- function( lasfile
                      , skip          = 0
                      , nrows         = NULL
                      , return.sp     = FALSE
+                     , return.dtable = FALSE
                      , return.header = FALSE
                      , int.nbits     = 12L   # number of bits for intensity 
                      , select        = c("xyzitrndecskwupo")
@@ -20,10 +21,22 @@ read.las <<- function( lasfile
 
    #----- Stop if return.sp is true but package sp can't be loaded. -----------------------#
    if (return.sp && ! return.header){
+      #------ Look for package sp. --------------------------------------------------------#
       if (! "package:sp" %in% search()){
          isok = require(sp)
          if (! isok) stop("Function read.las requires package sp if return.sp = TRUE!")
-      }#end if
+      }#end if (! "package:sp" %in% search())
+      #------------------------------------------------------------------------------------#
+   }else if (return.dtable && (! return.header)){
+      #------ Look for package data.table. ------------------------------------------------#
+      if (! "package:data.table" %in% search()){
+         #----- Try to require it, and if it doesn't work, issue an error. ----------------#
+         isok = require(data.table)
+         if (! isok){
+            stop("Function read.las requires package data.table if return.dtable = TRUE!")
+         }#end if (! isok)
+         #---------------------------------------------------------------------------------#
+      }#end if (! "package:data.table" %in% search())
       #------------------------------------------------------------------------------------#
    }#end if
    #---------------------------------------------------------------------------------------#
@@ -123,9 +136,14 @@ read.las <<- function( lasfile
 
       #------------------------------------------------------------------------------------#
       #     Decide the output format.  Default is a data frame, but it can be also Spatial #
-      # Points (package sp).                                                               #
+      # Points (package sp), or data.table.  If both return.sp and return.dtable are true  #
+      # then return.dtable is ignored.                                                     #
       #------------------------------------------------------------------------------------#
-      if (return.sp) ans = SpatialPoints(ans)
+      if (return.sp){
+         ans = SpatialPoints(ans)
+      }else if (return.dtable){
+         ans = data.table(ans)
+      }#end if (return.sp)
       #------------------------------------------------------------------------------------#
    }#end if (return.header)
    #---------------------------------------------------------------------------------------#
@@ -170,6 +188,7 @@ old.read.las <<- function( lasfile
                          , skip          = 0
                          , nrows         = NULL
                          , return.sp     = FALSE
+                         , return.
                          , return.header = FALSE
                          , int.nbits     = 12L   # number of bits for intensity 
                          ){ 
@@ -177,13 +196,26 @@ old.read.las <<- function( lasfile
 
    #----- Stop if return.sp is true but package sp can't be loaded. -----------------------#
    if (return.sp && ! return.header){
+      #------ Look for package sp. --------------------------------------------------------#
       if (! "package:sp" %in% search()){
          isok = require(sp)
          if (! isok) stop("Function read.las requires package sp if return.sp = TRUE!")
-      }#end if
+      }#end if (! "package:sp" %in% search())
+      #------------------------------------------------------------------------------------#
+   }else if (return.dtable && (! return.header)){
+      #------ Look for package data.table. ------------------------------------------------#
+      if (! "package:data.table" %in% search()){
+         #----- Try to require it, and if it doesn't work, issue an error. ----------------#
+         isok = require(data.table)
+         if (! isok){
+            stop("Function read.las requires package data.table if return.dtable = TRUE!")
+         }#end if (! isok)
+         #---------------------------------------------------------------------------------#
+      }#end if (! "package:data.table" %in% search())
       #------------------------------------------------------------------------------------#
    }#end if
    #---------------------------------------------------------------------------------------#
+
 
 
    #---------------------------------------------------------------------------------------#
@@ -565,9 +597,14 @@ old.read.las <<- function( lasfile
 
       #------------------------------------------------------------------------------------#
       #     Decide the output format.  Default is a data frame, but it can be also Spatial #
-      # Points (package sp).                                                               #
+      # Points (package sp), or data.table.  If both return.sp and return.dtable are true  #
+      # then return.dtable is ignored.                                                     #
       #------------------------------------------------------------------------------------#
-      if (return.sp) ans = SpatialPoints(ans)
+      if (return.sp){
+         ans = SpatialPoints(ans)
+      }else if (return.dtable){
+         ans = data.table(ans)
+      }#end if (return.sp)
       #------------------------------------------------------------------------------------#
    }#end if (return.header)
    #---------------------------------------------------------------------------------------#

@@ -56,6 +56,10 @@ subroutine copy_nl(copy_type)
                                    , isoilcol                  & ! intent(out)
                                    , slxclay                   & ! intent(out)
                                    , slxsand                   & ! intent(out)
+                                   , slsoc                     & ! intent(out)
+                                   , slph                      & ! intent(out)
+                                   , slcec                     & ! intent(out)
+                                   , sldbd                     & ! intent(out)
                                    , slmstr                    & ! intent(out)
                                    , stgoff                    & ! intent(out)
                                    , zrough                    & ! intent(out)
@@ -63,6 +67,7 @@ subroutine copy_nl(copy_type)
                                    , slcol_database            & ! intent(out)
                                    , isoilstateinit            & ! intent(out)
                                    , isoildepthflg             & ! intent(out)
+                                   , soil_hydro_scheme         & ! intent(out)
                                    , isoilbc                   & ! intent(out)
                                    , sldrain                   & ! intent(out)
                                    , soilstate_db              & ! intent(out)
@@ -371,6 +376,10 @@ subroutine copy_nl(copy_type)
       isoilcol                  = nl%isoilcol
       slxclay                   = nl%slxclay
       slxsand                   = nl%slxsand
+      slsoc                     = nl%slsoc
+      slph                      = nl%slph
+      slcec                     = nl%slcec
+      sldbd                     = nl%sldbd
       slmstr(1:nzgmax)          = nl%slmstr(1:nzgmax)
       stgoff(1:nzgmax)          = nl%stgoff(1:nzgmax)
 
@@ -388,6 +397,7 @@ subroutine copy_nl(copy_type)
       soildepth_db              = nl%soildepth_db
       isoilstateinit            = nl%isoilstateinit
       isoildepthflg             = nl%isoildepthflg
+      soil_hydro_scheme         = nl%soil_hydro_scheme
       isoilbc                   = nl%isoilbc
       sldrain                   = nl%sldrain
 

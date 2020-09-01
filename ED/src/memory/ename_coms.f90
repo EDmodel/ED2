@@ -102,8 +102,13 @@ module ename_coms
       integer                                           :: isoilcol
       real                                              :: slxclay
       real                                              :: slxsand
+      real                                              :: slsoc
+      real                                              :: slph
+      real                                              :: slcec
+      real                                              :: sldbd
       integer                                           :: isoilstateinit
       integer                                           :: isoildepthflg
+      integer                                           :: soil_hydro_scheme
       integer                                           :: isoilbc
       real                                              :: sldrain
 
@@ -402,8 +407,13 @@ module ename_coms
       enl%isoilcol                  = undef_integer
       enl%slxclay                   = undef_real
       enl%slxsand                   = undef_real
+      enl%slsoc                     = undef_real
+      enl%slph                      = undef_real
+      enl%slcec                     = undef_real
+      enl%sldbd                     = undef_real
       enl%isoilstateinit            = undef_integer
       enl%isoildepthflg             = undef_integer
+      enl%soil_hydro_scheme         = undef_integer
       enl%isoilbc                   = undef_integer
       enl%sldrain                   = undef_real
 

@@ -232,6 +232,7 @@ C2B    <<- 2.0
 #     finding a fit similar to Baker et al. (2004) that doesn't depend on height, using    #
 #     Saldarriaga et al. (1988) as a starting point.                                       #
 # 3 - New set of traits and parameters (mostly) based on literature and available data.    #
+# 4 - Similar to 3, but with a few changes by Xiangtao Xu.                                 #
 #------------------------------------------------------------------------------------------#
 if ("iallom" %in% ls()){
    iallom <<- iallom
@@ -259,7 +260,7 @@ if ("iecon" %in% ls()){
 
 #------------------------------------------------------------------------------------------#
 #     Factors for leaf:sapwood biomass ratio.  The original ED-1 number is incorrect, and  #
-# we keep it incorrect unless the PFT is tropical and allometry is set to 4, in which case #
+# we keep it incorrect unless the PFT is tropical and allometry is set to 3, in which case #
 # we combine the pipe model with the data from Calvo-Alvarado et al. (2008) (and shape     #
 # parameter from Falster et al. 2016) to derive the ratio.                                 #
 #                                                                                          #
@@ -328,54 +329,13 @@ wdr.fs     <<- 0.30
 #------------------------------------------------------------------------------------------#
 
 
-#----- Define reference height and coefficients for tropical allometry. -------------------#
-if (iallom %in% c(0,1)){
-   hgt.ref.trop = NA
-   b1Ht.trop    = 0.37 * log(10)
-   b2Ht.trop    = 0.64
-   hgt.max.trop = 35.0
-}else if (iallom %in% c(2)){
-   #---------------------------------------------------------------------------------------#
-   #     Use the allometry proposed by:                                                    #
-   #                                                                                       #
-   # Poorter, L., L. Bongers, F. Bongers, 2006: Architecture of 54 moist-forest tree       #
-   #    species: traits, trade-offs, and functional groups.  Ecology, 87, 1289-1301.       #
-   #                                                                                       #
-   #---------------------------------------------------------------------------------------#
-   hgt.ref.trop = 61.7
-   b1Ht.trop    = 0.0352
-   b2Ht.trop    = 0.694
-   hgt.max.trop = 35.0
-   #---------------------------------------------------------------------------------------#
-}else if (iallom %in% c(3)){
-   #---------------------------------------------------------------------------------------#
-   #     Allometric equation based on the fitted curve using the Sustainable Landscapes    #
-   # data set (L16) and the size- and site-dependent stratified sampling and aggregation   #
-   # (J17).  This relationship is fitted using Standardised Major Axis (SMA) so the same   #
-   # parameters can be used for y=f(x) and x=f(y).  This is particularly useful when       #
-   # initialising the model with airborne lidar data.  Because it would be extremely       #
-   # cumbersome to derive a SMA-based regression based on Weibull function, we use a log-  #
-   # linear relationship.  The maximum height is based on the 99% quantile of all trees    #
-   # measured by the SL team.                                                              #
-   #                                                                                       #
-   # References:                                                                           #
-   #                                                                                       #
-   # Jucker T, Caspersen J, Chave J, Antin C, Barbier N, Bongers F, Dalponte M,            #
-   #    van Ewijk KY, Forrester DI, Haeni M et al. 2017. Allometric equations for          #
-   #    integrating remote sensing imagery into forest monitoring programmes.              #
-   #    Glob. Change Biol., 23(1):177-190. doi:10.1111/gcb.13388 (J17).                    #
-   #                                                                                       #
-   # Longo M, Keller M, dos-Santos MN, Leitold V, Pinage ER, Baccini A, Saatchi S,         #
-   #    Nogueira EM, Batistella M , Morton DC. 2016. Aboveground biomass variability       #
-   #    across intact and degraded forests in the Brazilian Amazon.  Global Biogeochem.    #
-   #    Cycles, 30(11):1639-1660. doi:10.1002/2016GB005465 (L16).                          #
-   #---------------------------------------------------------------------------------------#
-   hgt.ref.trop = NA_real_ #   49.574   # 42.574
-   b1Ht.trop    = 1.139963 #   0.0400   # 0.0482
-   b2Ht.trop    = 0.564899 #   0.8136   # 0.8307
-   hgt.max.trop = 46.0     #     43.0   # 40.0
-   #---------------------------------------------------------------------------------------#
-}#end if
+
+#------------------------------------------------------------------------------------------#
+#      Define reference heights for tropical allometry.                                    #
+#------------------------------------------------------------------------------------------#
+# IALLOM ........       0,       1,       2,       3,       4..............................#
+hgt.ref.trop = c(NA_real_,NA_real_,    61.7,NA_real_,NA_real_)[iallom+1]
+hgt.max.trop = c(     35.,     35.,     35.,     46.,     46.)[iallom+1]
 #------------------------------------------------------------------------------------------#
 
 
@@ -397,8 +357,8 @@ if (iallom %in% c(0,1)){
 #      doi:10.1111/gcb.12629 (C14).                                                        #
 #                                                                                          #
 #   Falster DS, Duursma RA, Ishihara MI, Barneche DR, FitzJohn RG, Vahammar A, Aiba M,     #
-#      Ando M, Anten N, Aspinwall MJ. 2015. BAAD: a biomass and allometry database for     #
-#      woody plants. Ecology, 96 (5):1445-1445. doi:10.1890/14-1889.1 (F16).               #
+#      Ando M, Anten N, Aspinwall MJ et al. 2015. BAAD: a biomass and allometry database   #
+#      for woody plants. Ecology, 96 (5):1445-1445. doi:10.1890/14-1889.1 (F15).           #
 #                                                                                          #
 #   Jucker T, Caspersen J, Chave J, Antin C, Barbier N, Bongers F, Dalponte M,             #
 #      van Ewijk KY, Forrester DI, Haeni M et al. 2017. Allometric equations for           #
@@ -410,6 +370,8 @@ c14f15.bl.xx  = c(0.46769540,0.6410495) # c(0.09747026,0.7587000)
 c14f15.bs.tf  = c(0.06080334,1.0044785) # c(0.08204475,0.9814422)
 c14f15.bs.sv  = c(0.05602791,1.0093501) # c(0.08013971,0.9818603)
 c14f15.bs.gr  = c(1.e-5,1.0) * c14f15.bl.xx
+c14f15.ht.xx  = c( 0.5709,-0.1007, 0.6734)
+c14f15.la.wd  = c(-0.5874, 0.5679, 0.5476)
 SLA.ref       = 17.419
 rho.ref       = 0.610
 #------------------------------------------------------------------------------------------#
@@ -437,8 +399,8 @@ pft01 = list( name               = "C4 grass"
             , leaf.turnover.rate = 2.0
             , root.turnover.rate = NA_real_
             , hgt.ref            = hgt.ref.trop
-            , b1Ht               = b1Ht.trop
-            , b2Ht               = b2Ht.trop
+            , b1Ht               = NA_real_
+            , b2Ht               = NA_real_
             , b1Bl               = NA_real_
             , b2Bl               = NA_real_
             , b1Bs.small         = NA_real_
@@ -477,8 +439,8 @@ pft02 = list( name               = "Early tropical"
             , leaf.turnover.rate = if(iecon == 1){NA_real_}else{1.0}
             , root.turnover.rate = NA_real_
             , hgt.ref            = hgt.ref.trop
-            , b1Ht               = b1Ht.trop
-            , b2Ht               = b2Ht.trop
+            , b1Ht               = NA_real_
+            , b2Ht               = NA_real_
             , b1Bl               = NA_real_
             , b2Bl               = NA_real_
             , b1Bs.small         = NA_real_
@@ -517,8 +479,8 @@ pft03 = list( name               = "Mid tropical"
             , leaf.turnover.rate = if(iecon == 1){NA_real_}else{0.5}
             , root.turnover.rate = NA_real_
             , hgt.ref            = hgt.ref.trop
-            , b1Ht               = b1Ht.trop
-            , b2Ht               = b2Ht.trop
+            , b1Ht               = NA_real_
+            , b2Ht               = NA_real_
             , b1Bl               = NA_real_
             , b2Bl               = NA_real_
             , b1Bs.small         = NA_real_
@@ -557,8 +519,8 @@ pft04 = list( name               = "Late tropical"
             , leaf.turnover.rate = if(iecon == 1){NA_real_}else{1./3.}
             , root.turnover.rate = NA_real_
             , hgt.ref            = hgt.ref.trop
-            , b1Ht               = b1Ht.trop
-            , b2Ht               = b2Ht.trop
+            , b1Ht               = NA_real_
+            , b2Ht               = NA_real_
             , b1Bl               = NA_real_
             , b2Bl               = NA_real_
             , b1Bs.small         = NA_real_
@@ -877,8 +839,8 @@ pft12 = list( name               = "Early savannah"
             , leaf.turnover.rate = if(iecon == 1){NA_real_}else{1.0}
             , root.turnover.rate = NA_real_
             , hgt.ref            = hgt.ref.trop
-            , b1Ht               = b1Ht.trop
-            , b2Ht               = b2Ht.trop
+            , b1Ht               = NA_real_
+            , b2Ht               = NA_real_
             , b1Bl               = NA_real_
             , b2Bl               = NA_real_
             , b1Bs.small         = NA_real_
@@ -917,8 +879,8 @@ pft13 = list( name               = "Mid savannah"
             , leaf.turnover.rate = if(iecon == 1){NA_real_}else{0.5}
             , root.turnover.rate = NA_real_
             , hgt.ref            = hgt.ref.trop
-            , b1Ht               = b1Ht.trop
-            , b2Ht               = b2Ht.trop
+            , b1Ht               = NA_real_
+            , b2Ht               = NA_real_
             , b1Bl               = NA_real_
             , b2Bl               = NA_real_
             , b1Bs.small         = NA_real_
@@ -957,8 +919,8 @@ pft14 = list( name               = "Late Savannah"
             , leaf.turnover.rate = if(iecon == 1){NA_real_}else{1./3.}
             , root.turnover.rate = NA_real_
             , hgt.ref            = hgt.ref.trop
-            , b1Ht               = b1Ht.trop
-            , b2Ht               = b2Ht.trop
+            , b1Ht               = NA_real_
+            , b2Ht               = NA_real_
             , b1Bl               = NA_real_
             , b2Bl               = NA_real_
             , b1Bs.small         = NA_real_
@@ -997,8 +959,8 @@ pft15 = list( name               = "Araucaria"
             , vm0                = 15.625
             , mort3              = 0.001111
             , hgt.ref            = hgt.ref.trop
-            , b1Ht               = b1Ht.trop
-            , b2Ht               = b2Ht.trop
+            , b1Ht               = NA_real_
+            , b2Ht               = NA_real_
             , b1Bl               = NA_real_
             , b2Bl               = NA_real_
             , b1Bs.small         = NA_real_
@@ -1037,8 +999,8 @@ pft16 = list( name               = "C3 grass"
             , vm0                = if(iecon == 1){NA_real_}else{18.75}
             , mort3              = if(iecon == 1){0.124}else{0.066}
             , hgt.ref            = hgt.ref.trop
-            , b1Ht               = b1Ht.trop
-            , b2Ht               = b2Ht.trop
+            , b1Ht               = NA_real_
+            , b2Ht               = NA_real_
             , b1Bl               = NA_real_
             , b2Bl               = NA_real_
             , b1Bs.small         = NA_real_
@@ -1077,8 +1039,8 @@ pft17 = list( name               = "Liana"
             , vm0                = 9.09
             , mort3              = 0.06311576
             , hgt.ref            = hgt.ref.trop
-            , b1Ht               = b1Ht.trop
-            , b2Ht               = b2Ht.trop
+            , b1Ht               = NA_real_
+            , b2Ht               = NA_real_
             , b1Bl               = NA_real_
             , b2Bl               = NA_real_
             , b1Bs.small         = NA_real_
@@ -1543,6 +1505,72 @@ pft$tpm0           = ifelse( test = pft$pathway == 4
 #------------------------------------------------------------------------------------------#
 
 
+#----- Define reference height and coefficients for tropical allometry. -------------------#
+tropical = is.na(pft$b1Ht)
+if (iallom %in% c(0,1)){
+   pft$b1Ht[tropical] = 0.37 * log(10)
+   pft$b2Ht[tropical] = 0.64
+}else if (iallom %in% c(2)){
+   #---------------------------------------------------------------------------------------#
+   #     Use the allometry proposed by:                                                    #
+   #                                                                                       #
+   # Poorter, L., L. Bongers, F. Bongers, 2006: Architecture of 54 moist-forest tree       #
+   #    species: traits, trade-offs, and functional groups.  Ecology, 87, 1289-1301.       #
+   #                                                                                       #
+   #---------------------------------------------------------------------------------------#
+   pft$b1Ht[tropical] = 0.0352
+   pft$b2Ht[tropical] = 0.694
+   #---------------------------------------------------------------------------------------#
+}else if (iallom %in% c(3)){
+   #---------------------------------------------------------------------------------------#
+   #     Allometric equation based on the fitted curve using the Sustainable Landscapes    #
+   # data set (L16) and the size- and site-dependent stratified sampling and aggregation   #
+   # (J17).  This relationship is fitted using Standardised Major Axis (SMA) so the same   #
+   # parameters can be used for y=f(x) and x=f(y).  This is particularly useful when       #
+   # initialising the model with airborne lidar data.  Because it would be extremely       #
+   # cumbersome to derive a SMA-based regression based on Weibull function, we use a log-  #
+   # linear relationship.  The maximum height is based on the 99% quantile of all trees    #
+   # measured by the SL team.                                                              #
+   #                                                                                       #
+   # References:                                                                           #
+   #                                                                                       #
+   # Jucker T, Caspersen J, Chave J, Antin C, Barbier N, Bongers F, Dalponte M,            #
+   #    van Ewijk KY, Forrester DI, Haeni M et al. 2017. Allometric equations for          #
+   #    integrating remote sensing imagery into forest monitoring programmes.              #
+   #    Glob. Change Biol., 23(1):177-190. doi:10.1111/gcb.13388 (J17).                    #
+   #                                                                                       #
+   # Longo M, Keller M, dos-Santos MN, Leitold V, Pinage ER, Baccini A, Saatchi S,         #
+   #    Nogueira EM, Batistella M , Morton DC. 2016. Aboveground biomass variability       #
+   #    across intact and degraded forests in the Brazilian Amazon.  Global Biogeochem.    #
+   #    Cycles, 30(11):1639-1660. doi:10.1002/2016GB005465 (L16).                          #
+   #---------------------------------------------------------------------------------------#
+   pft$b1Ht[tropical] = 1.139963 #   0.0400   # 0.0482
+   pft$b2Ht[tropical] = 0.564899 #   0.8136   # 0.8307
+   #---------------------------------------------------------------------------------------#
+}else if (iallom %in% c(4)){
+   #---------------------------------------------------------------------------------------#
+   #     Allometric equation based on C14 and F15.                                         #
+   #                                                                                       #
+   # References:                                                                           #
+   #                                                                                       #
+   #   Chave, J, Rejou-Mechain M, Burquez A, Chidumayo E, Colgan MS, Delitti WB, Duque A,  #
+   #      Eid T, Fearnside PM, Goodman RC et al. 2014. Improved allometric models to       #
+   #      estimate the aboveground biomass of tropical trees. Glob. Change Biol., 20(10),  #
+   #      3177-3190. doi:10.1111/gcb.12629 (C14).                                          #
+   #                                                                                       #
+   #   Falster DS, Duursma RA, Ishihara MI, Barneche DR, FitzJohn RG, Vahammar A, Aiba M,  #
+   #      Ando M, Anten N, Aspinwall MJ et al. 2015. BAAD: a biomass and allometry         #
+   #      database for woody plants. Ecology, 96 (5):1445-1445. doi:10.1890/14-1889.1      #
+   #      (F15).                                                                           #
+   #                                                                                       #
+   #---------------------------------------------------------------------------------------#
+   pft$b1Ht[tropical] = c14f15.ht.xx[1] + c14f15.ht.xx[2] * log(pft$rho[tropical])
+   pft$b2Ht[tropical] = c14f15.ht.xx[3]
+   #---------------------------------------------------------------------------------------#
+}#end if
+#------------------------------------------------------------------------------------------#
+
+
 
 #------------------------------------------------------------------------------------------#
 #     Define minimum and maximum height based on life form and allometry.                  #
@@ -1567,15 +1595,15 @@ pft$hgt.show = pft$hgt.min + 0.015 * (pft$hgt.max - pft$hgt.min)
 pft$qsw = pft$SLA / sapwood.ratio.orig
 for (ipft in sequence(npft+1)){
    #---- Check PFT and allometry. ---------------------------------------------------------#
-   if (pft$tropical[ipft] && pft$conifer[ipft] && iallom %in% 3){
+   if (pft$tropical[ipft] && pft$conifer[ipft] && iallom %in% c(3)){
       pft$qsw[ipft] = pft$SLA[ipft] * pft$rho[ipft] / sapwood.factor["aa"]
-   }else if (pft$tropical[ipft] && pft$grass[ipft] && iallom %in% 3){
+   }else if (pft$tropical[ipft] && pft$grass[ipft] && iallom %in% c(3)){
       pft$qsw[ipft] = 1.0e-5
-   }else if (pft$tropical[ipft] && iallom %in% 3){
+   }else if (pft$tropical[ipft] && iallom %in% c(3)){
       pft$qsw[ipft] = pft$SLA[ipft] * pft$rho[ipft] / sapwood.factor["bl"]
    }else{
       pft$qsw[ipft] = pft$SLA[ipft] / sapwood.ratio.orig
-   }#end if (pft$tropical[ipft] && is.finite(pft$rho[ipft]) && iallom %in% 3)
+   }#end if (pft$tropical[ipft] && is.finite(pft$rho[ipft]) && iallom %in% c(3,4))
    #---------------------------------------------------------------------------------------#
 }#end for (ipft in sequence(npft))
 #------------------------------------------------------------------------------------------#
@@ -1689,7 +1717,7 @@ pft$b1Xs  = 0.315769481
 pft$b1Xb  = 0.
 pft$qbark = 0.
 for (ipft in sequence(npft+1)){
-   skip = pft$grass[ipft] || pft$liana[ipft] || (! pft$tropical[ipft]) || (iallom != 3)
+   skip = pft$grass[ipft] || pft$liana[ipft] || (! pft$tropical[ipft]) || ( iallom != 3 )
    if (! skip){
       #------------------------------------------------------------------------------------#
       #     Variable b1Xs is the ratio between sapwood thickness and DBH.  It is currently #
@@ -1735,7 +1763,7 @@ pft$dbh.min   = rep(NA,times=npft+1)
 pft$dbh.crit  = rep(NA,times=npft+1)
 for (ipft in sequence(npft+1)){
    if (pft$tropical[ipft]){
-      if (iallom %in% c(0,1,3)){
+      if (iallom %in% c(0,1,3,4)){
          pft$dbh.min  [ipft] = exp((log(pft$hgt.min[ipft])-pft$b1Ht[ipft])/pft$b2Ht[ipft])
          pft$dbh.crit [ipft] = exp((log(pft$hgt.max[ipft])-pft$b1Ht[ipft])/pft$b2Ht[ipft])
       }else if (iallom %in% c(2)){
@@ -1814,7 +1842,7 @@ for (ipft in sequence(npft+1)){
          pft$b2Bs.small[ipft] = ndead.small[2]
          pft$b1Bs.large[ipft] = C2B * exp(ndead.large[1]) * pft$rho[ipft] / ndead.large[3]
          pft$b2Bs.large[ipft] = ndead.large[2]
-      }else if (iallom %in% c(3)){
+      }else if (iallom %in% c(3,4)){
          if (pft$grass[ipft]){
             c14f15.bs.xx = c14f15.bs.gr
          }else if (pft$savannah[ipft]){
@@ -1843,7 +1871,7 @@ for (ipft in sequence(npft+1)){
       }else if (iallom %in% c(2)){
          pft$b1Ca[ipft] = exp(ncrown.area[1])
          pft$b2Ca[ipft] = ncrown.area[2]
-      }else if (iallom %in% c(3)){
+      }else if (iallom %in% c(3,4)){
          #---------------------------------------------------------------------------------#
          #     Allometry using the Sustainable Landscapes data.                            #
          #---------------------------------------------------------------------------------#
@@ -1890,7 +1918,7 @@ for (ipft in sequence(npft+1)){
       # R2      = 0.673                                                                    #
       # RMSE    = 2.29                                                                     #
       #------------------------------------------------------------------------------------#
-      if (iallom %in% c(3) && (! pft$grass[ipft])){
+      if (iallom %in% c(3,4) && (! pft$grass[ipft])){
          pft$b1Cl[ipft] = 0.29754
          pft$b2Cl[ipft] = 1.0324
       }#end if
@@ -1931,11 +1959,79 @@ for (ipft in sequence(npft+1)){
          pft$b1Bl[ipft] = c14f15.bl.xx[1] / pft$SLA[ipft] 
          pft$b2Bl[ipft] = c14f15.bl.xx[2]
          #---------------------------------------------------------------------------------#
+      }else{
+         #---------------------------------------------------------------------------------#
+         #    Allometry based on the BAAD data based (F15).  We only used leaves from      #
+         # wild tropical, note that b1Bl has the unit of m2 leaf under this scenario       #
+         # and will be converted to leaf carbon using SLA in size2bl.                      #
+         #---------------------------------------------------------------------------------#
+         pft$b1Bl[ipft] = exp( c14f15.la.wd[1] + c14f15.la.wd[2] * log(pft$rho[ipft]))
+         pft$b2Bl[ipft] = c14f15.la.wd[3]
+         #---------------------------------------------------------------------------------#
       }#end if
       #------------------------------------------------------------------------------------#
    }#end if (pft$tropical[ipft]
    #---------------------------------------------------------------------------------------#
 }#end for (ipft in sequence(npft))
+#------------------------------------------------------------------------------------------#
+
+
+#------------------------------------------------------------------------------------------#
+#    Sapwood area allometry for plants                                                     #
+#    - Grasses: 100% of sapwood area over basal area but sapwood area (not used)           #
+#    - Temperate angiosperms: 30% of sapwood (oaks)                                        #
+#    - Tropical angiosperms: allometry-dependent, see below.                               #
+#    - Conifers: 30% of sapwood. (loblolly pine)                                           #
+#    Users are welcome to update those numbuers based on literatures or measurements       #
+#------------------------------------------------------------------------------------------#
+if (iallom %in% c(4)){
+   #---------------------------------------------------------------------------------------#
+   #     Tropical angiosperms derived from:                                                #
+   #                                                                                       #
+   # Falster DS, Duursma RA, Ishihara MI, Barneche DR, FitzJohn RG, Vahammar A,            #
+   #    Aiba M,  Ando M, Anten N, Aspinwall MJ et al. 2015. BAAD: a biomass and            #
+   #    allometry database for woody plants. Ecology, 96 (5):1445-1445.                    #
+   #    doi:10.1890/14-1889.1 (F15).                                                       #
+   #                                                                                       #
+   # Christoffersen BO, Gloor M, Fauset S, Fyllas NM, Galbraith DR, Baker TR, Kruijt B,    #
+   #    Rowland L, Fisher RA, Binks OJ et al. 2016. Linking hydraulic traits to            #
+   #    tropical forest function in a size- structured and trait-driven model (TFS         #
+   #    v.1-Hydro). Geosci. Model Dev., 9: 4227-4255. doi:10.5194/gmd-9- 4227-2016         #
+   #    (C16).                                                                             #
+   #---------------------------------------------------------------------------------------#
+   pft$b1SA = ifelse( test = pft$grass
+                    , yes  = 1.0
+                    , no   = ifelse( test = pft$conifer
+                                   , yes  = 0.30
+                                   , no   = ifelse(test=pft$tropical,yes=0.6572,no=0.3000)
+                                   )#end ifelse
+                    )#end ifelse
+   pft$b2SA = ifelse( test = pft$tropical & (! pft$grass)
+                    , yes  = 1.8530
+                    , no   = 2.0000
+                    )#end ifelse
+   #---------------------------------------------------------------------------------------#
+}else{
+   #---------------------------------------------------------------------------------------#
+   #     Tropical angiosperms derived from:                                                #
+   #                                                                                       #
+   # Meinzer, F. C., G. Goldstein, and J. L. Andrade (2001), Regulation of water flux      #
+   #    through tropical forest canopy trees: Do universal rules apply?, Tree Physiol.,    #
+   #    21(1), 19-26, doi:10.1093/treephys/21.1.19 (M01).                                  #
+   #---------------------------------------------------------------------------------------#
+   pft$b1SA = ifelse( test = pft$grass
+                    , yes  = 1.0
+                    , no   = ifelse( test = pft$conifer
+                                   , yes  = 0.30
+                                   , no   = ifelse(test=pft$tropical,yes=1.5820,no=0.3000)
+                                   )#end ifelse
+                    )#end ifelse
+   pft$b2SA = ifelse( test = pft$tropical & (! pft$grass)
+                    , yes  = 1.7640
+                    , no   = 2.0000
+                    )#end ifelse
+   #---------------------------------------------------------------------------------------#
+}#end if (iallom %in% c(4))
 #------------------------------------------------------------------------------------------#
 
 
@@ -2012,6 +2108,11 @@ if (iallom %in% c(0)){
                     , no   = 0.4223014
                     )#end ifelse
    #---------------------------------------------------------------------------------------#
+}else if (iallom %in% c(3)){
+   #----- Test allometry based on excavation data in Panama, using height as predictor. ---#
+   pft$b1Rd  [sequence(npft+1)] = -0.609
+   pft$b2Rd  [sequence(npft+1)] =  0.580
+   #---------------------------------------------------------------------------------------#
 }#end if
 #------------------------------------------------------------------------------------------#
 
@@ -2024,34 +2125,34 @@ if (iallom %in% c(0)){
 #     BDead -> DBH parameters.  These are calculated a posteriori because they are just    #
 # the inverse of size->BDead allometry.                                                    #
 #------------------------------------------------------------------------------------------#
-pft$d2DBH.small = ifelse( test = pft$tropical & (! pft$liana) & (iallom == 3)
+pft$d2DBH.small = ifelse( test = pft$tropical & (! pft$liana) & (iallom %in% c(3,4))
                         , yes  = 1.  / ( ( 2. + pft$b2Ht ) * pft$b2Bs.small )
                         , no   = 1.  / pft$b2Bs.small
                         )#end ifelse
-pft$d1DBH.small = ifelse( test = pft$tropical & (! pft$liana) & (iallom == 3)
+pft$d1DBH.small = ifelse( test = pft$tropical & (! pft$liana) & (iallom %in% c(3,4))
                         , yes  = ( C2B / ( pft$b1Bs.small * exp(pft$b1Ht*pft$b2Bs.small) ) )
                                ^ pft$d2DBH.small
                         , no   = ( C2B / pft$b1Bs.small ) ^ pft$d2DBH.small
                         )#end ifelse
-pft$d2DBH.large = ifelse( test = pft$tropical & (! pft$liana) & (iallom == 3)
+pft$d2DBH.large = ifelse( test = pft$tropical & (! pft$liana) & (iallom %in% c(3,4))
                         , yes  = 1.  / ( ( 2. + pft$b2Ht ) * pft$b2Bs.large )
                         , no   = 1.  / pft$b2Bs.large
                         )#end ifelse
-pft$d1DBH.large = ifelse( test = pft$tropical & (! pft$liana) & (iallom == 3)
+pft$d1DBH.large = ifelse( test = pft$tropical & (! pft$liana) & (iallom %in% c(3,4))
                         , yes  = ( C2B / ( pft$b1Bs.large * exp(pft$b1Ht*pft$b2Bs.large) ) )
                                ^ pft$d2DBH.large
                         , no   = ( C2B / pft$b1Bs.large ) ^ pft$d2DBH.large
                         )#end ifelse
-pft$l2DBH       = ifelse( test = pft$tropical & (! pft$liana) & (iallom == 3)
+pft$l2DBH       = ifelse( test = pft$tropical & (! pft$liana) & (iallom %in% c(3,4))
                         , yes  = 1.  / ( ( 2. + pft$b2Ht ) * pft$b2Bl )
                         , no   = 1.  / pft$b2Bl
                         )#end ifelse
-pft$l1DBH       = ifelse( test = pft$tropical & (! pft$liana) & (iallom == 3)
+pft$l1DBH       = ifelse( test = pft$tropical & (! pft$liana) & (iallom %in% c(3,4))
                         , yes  = ( C2B / ( pft$b1Bl * exp(pft$b1Ht*pft$b2Bl) ) )
                                ^ pft$l2DBH
                         , no   = ( C2B / pft$b1Bl ) ^ pft$l2DBH
                         )#end ifelse
-pft$bdead.crit  = ifelse( test = pft$tropical & (! pft$liana) & (iallom == 3)
+pft$bdead.crit  = ifelse( test = pft$tropical & (! pft$liana) & (iallom %in% c(3,4))
                         , yes  = pft$b1Bs.small / C2B
                                * ( pft$dbh.crit * pft$dbh.crit * pft$hgt.max)
                                ^ pft$b2Bs.small
@@ -2113,7 +2214,8 @@ pft$b2Efrd   = rep(x=0.1822,times=npft+1)
 #------------------------------------------------------------------------------------------#
 pft$b1WAI = ifelse( test = pft$grass
                   , yes  = 0.0
-                  , no   = ifelse( test = pft$tropical & (! pft$liana) & (iallom == 3)
+                  , no   = ifelse( test = pft$tropical & (! pft$liana)
+                                                       & (iallom %in% c(3,4))
                                  , yes  = ifelse( test = pft$conifer
                                                 , yes  = 0.01148449
                                                 , no   = 0.00378399
@@ -2126,7 +2228,8 @@ pft$b1WAI = ifelse( test = pft$grass
                   )#end ifelse
 pft$b2WAI = ifelse( test = pft$grass
                   , yes  = 0.0
-                  , no   = ifelse( test = pft$tropical & (! pft$liana) & (iallom == 3)
+                  , no   = ifelse( test = pft$tropical & (! pft$liana)
+                                                       & (iallom %in% c(3,4))
                                  , yes  = ifelse( test = pft$conifer
                                                 , yes  = 0.77075160
                                                 , no   = 0.81667933
@@ -2147,6 +2250,7 @@ pft$b2WAI = ifelse( test = pft$grass
 #------------------------------------------------------------------------------------------#
 pft$bleaf.min = size2bl( dbh  = pft$dbh.min[sequence(npft+1)]
                        , hgt  = pft$hgt.min[sequence(npft+1)]
+                       , sla  = pft$SLA    [sequence(npft+1)]
                        , ipft = sequence(npft+1)
                        )#end size2bl
 pft$lai.min   = onesixth * pft$init.dens * pft$bleaf.min * pft$SLA
@@ -2161,11 +2265,11 @@ pft$lai.min   = onesixth * pft$init.dens * pft$bleaf.min * pft$SLA
 pft$rdp.min = size2rd( dbh  = pft$dbh.min[sequence(npft+1)]
                      , hgt  = pft$hgt.min[sequence(npft+1)]
                      , ipft = sequence(npft+1)
-                     )#end size2bl
+                     )#end size2rd
 pft$rdp.max = size2rd( dbh  = pft$dbh.crit[sequence(npft+1)]
                      , hgt  = pft$hgt.max [sequence(npft+1)]
                      , ipft = sequence(npft+1)
-                     )#end size2bl
+                     )#end size2rd
 #------------------------------------------------------------------------------------------#
 
 

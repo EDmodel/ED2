@@ -153,7 +153,12 @@ default = list( run           = "unnamed"
               , istext        = 1
               , sand          = -1.0
               , clay          = -1.0
+              , slsoc         = 0.0266
+              , slph          = 4.7
+              , slcec         = 0.124
+              , sldbd         = 1192.
               , depth         = "F"
+              , isoil.hydro   = 2
               , isoilbc       = 1
               , sldrain       = 90.
               , scolour       = 16

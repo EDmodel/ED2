@@ -1197,8 +1197,13 @@ subroutine ed_opspec_misc
                                     , isoilcol                     & ! intent(in)
                                     , slxclay                      & ! intent(in)
                                     , slxsand                      & ! intent(in)
+                                    , slsoc                        & ! intent(in)
+                                    , slph                         & ! intent(in)
+                                    , slcec                        & ! intent(in)
+                                    , sldbd                        & ! intent(in)
                                     , isoilstateinit               & ! intent(in)
                                     , isoildepthflg                & ! intent(in)
+                                    , soil_hydro_scheme            & ! intent(in)
                                     , isoilbc                      & ! intent(in)
                                     , sldrain                      & ! intent(in)
                                     , zrough                       & ! intent(in)
@@ -1637,6 +1642,51 @@ end do
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if
+
+   !---------------------------------------------------------------------------------------!
+   !     Check soil hydraulics scheme.                                                     !
+   !---------------------------------------------------------------------------------------!
+   if (soil_hydro_scheme < 0 .or. soil_hydro_scheme > 2) then
+      write (reason,fmt='(a,1x,i4,a)')                                                     &
+         'Invalid SOIL_HYDRO_SCHEME, it must be between 0 and 2.  Yours is set to'         &
+        ,soil_hydro_scheme,'...'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+   elseif (soil_hydro_scheme == 2) then
+      !------------------------------------------------------------------------------------!
+      !   In case SOIL_HYDRO_SCHEME = 2, check additional soil properties.                 !
+      !------------------------------------------------------------------------------------!
+      !----- Soil Organic Carbon content must be between 0. and 1.0. ----------------------!
+      if (slsoc < 0. .or. slsoc > 1.0) then
+         write (reason,fmt='(a,1x,es12.5,a)')                                              &
+            'Invalid SLSOC, it must be between 0. and 1.  Yours is set to',slsoc,'...'
+         call opspec_fatal(reason,'opspec_misc')
+         ifaterr = ifaterr +1
+      end if
+      !----- Soil pH content must be between 0. and 14. -----------------------------------!
+      if (slph < 0. .or. slph > 14.) then
+         write (reason,fmt='(a,1x,es12.5,a)')                                              &
+            'Invalid SLPH, it must be between 0. and 14.  Yours is set to',slph,'...'
+         call opspec_fatal(reason,'opspec_misc')
+         ifaterr = ifaterr +1
+      end if
+      !----- Soil cation exchange capacity must be between 0. and 1. ----------------------!
+      if (slcec < 0. .or. slcec > 1.) then
+         write (reason,fmt='(a,1x,es12.5,a)')                                              &
+            'Invalid SLCEC, it must be between 0. and 1.  Yours is set to',slcec,'...'
+         call opspec_fatal(reason,'opspec_misc')
+         ifaterr = ifaterr +1
+      end if
+      !----- Soil dry bulk density must be between 100. and 2000. -------------------------!
+      if (sldbd < 100. .or. sldbd > 2000.) then
+         write (reason,fmt='(a,1x,es12.5,a)')                                              &
+            'Invalid SLDBD, it must be between 100. and 2000.  Yours is set to',sldbd,'...'
+         call opspec_fatal(reason,'opspec_misc')
+         ifaterr = ifaterr +1
+      end if
+      !------------------------------------------------------------------------------------!
+   end if
+   !---------------------------------------------------------------------------------------!
 
    if (ivegt_dynamics < 0 .or. ivegt_dynamics > 1) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
