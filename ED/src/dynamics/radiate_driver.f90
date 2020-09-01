@@ -639,7 +639,7 @@ module radiate_driver
          albedo_damp_nir = albedo_damp_nir
       case (12)
          !----- Peat, follow McCumber and Pielke (1981). ----------------------------------!
-         fcpct = csite%soil_water(mzg,ipa) / soil(nsoil)%slmsts
+         fcpct = csite%soil_water(mzg,ipa) / soil(nsoil)%soilbp
          albedo_soil_par = max (0.07, 0.14 * (1.0 - fcpct))
          albedo_soil_nir = albedo_soil_par
          !----- Damp soil, for temporary surface water albedo. ----------------------------!
@@ -652,7 +652,7 @@ module radiate_driver
             !     ED-2.1 soil colour.  Also, we use the ED-2.1 default method to determine !
             ! the albedo.                                                                  !
             !------------------------------------------------------------------------------!
-            fcpct           = csite%soil_water(mzg,ipa) / soil(nsoil)%slmsts
+            fcpct           = csite%soil_water(mzg,ipa) / soil(nsoil)%soilbp
             albedo_soil_par = max(0.14,0.31-0.34*fcpct)
             albedo_soil_nir = albedo_soil_par
             !----- Damp soil, for temporary surface water albedo. -------------------------!
@@ -670,7 +670,7 @@ module radiate_driver
             albedo_soil_nir = min(soilcol(colour)%alb_nir_dry                              &
                                  ,soilcol(colour)%alb_nir_wet  + fcpct)
             !----- Damp soil, for temporary surface water albedo. -------------------------!
-            fcpct           = max(0., 0.11 - 0.40 * soil(nsoil)%slmsts)
+            fcpct           = max(0., 0.11 - 0.40 * soil(nsoil)%soilbp)
             albedo_damp_par = min(soilcol(colour)%alb_vis_dry                              &
                                  ,soilcol(colour)%alb_vis_wet  + fcpct)
             albedo_damp_nir = min(soilcol(colour)%alb_nir_dry                              &

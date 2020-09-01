@@ -1823,7 +1823,8 @@ subroutine init_soil_coms
 
 
          !----- Soil moisture at saturation (porosity) [m3/m3]. ---------------------------!
-         soil(s)%slmsts  =  0.863 ! ED-2.2 0.469200
+         soil(s)%slmsts  =  0.863          ! ED-2.2 0.469200
+         soil(s)%soilbp  =  soil(s)%slmsts ! Assume the same as porosity
          !---------------------------------------------------------------------------------!
 
 
@@ -1905,17 +1906,19 @@ subroutine init_soil_coms
             !------------------------------------------------------------------------------!
 
 
-
             !----- Soil moisture at saturation (porosity) [m3/m3]. ------------------------!
             soil(s)%slmsts  = 0.01 * (50.5 - 14.2*soil(s)%xsand - 3.7*soil(s)%xclay)
             !------------------------------------------------------------------------------!
 
 
+            !----- Soil moisture at bubbling point (assumed porosity) [m3/m3]. ------------!
+            soil(s)%soilbp  = soil(s)%slmsts
+            !------------------------------------------------------------------------------!
+
 
             !----- Residual moisture [m3/m3].  Ignored in C74 and the default ED2 method. -!
             soil(s)%soilre = 0.0
             !------------------------------------------------------------------------------!
-
 
 
             !------------------------------------------------------------------------------!
@@ -1976,11 +1979,15 @@ subroutine init_soil_coms
             !------------------------------------------------------------------------------!
 
 
-
             !----- Soil moisture at saturation (porosity) [m3/m3]. ------------------------!
             soil(s)%slmsts  = 0.4061  + 0.165 * soil(s)%xsilt + 0.162 * soil(s)%xclay      &
                             + 1.37e-3 * soil(s)%xsilt * soil(s)%xsilt                      &
                             + 1.80e-5 * soil(s)%xsilt * soil(s)%xsilt * soil(s)%xclay
+            !------------------------------------------------------------------------------!
+
+
+            !----- Soil moisture at bubbling point (assumed porosity) [m3/m3]. ------------!
+            soil(s)%soilbp  = soil(s)%slmsts
             !------------------------------------------------------------------------------!
 
 
@@ -1991,7 +1998,6 @@ subroutine init_soil_coms
                                             + 0.431 * soil(s)%xclay                        &
                                             - 0.00827 * soil(s)%xsilt * soil(s)%xclay )
             !------------------------------------------------------------------------------!
-
 
 
             !------------------------------------------------------------------------------!
@@ -2066,6 +2072,15 @@ subroutine init_soil_coms
                                 - 0.00831 * soil(s)%slph                                   &
                                 + 0.18 * soil(s)%xclay * soil(s)%xclay                     &
                                 + 0.26 * soil(s)%xsand * soil(s)%xclay                    )
+            !------------------------------------------------------------------------------!
+
+
+
+            !------------------------------------------------------------------------------!
+            !     Soil moisture at bubbling point.  Unlike other schemes, we account for   !
+            ! the differences between bubbling point and porosity.                         !
+            !------------------------------------------------------------------------------!
+            soil(s)%soilbp = soil_moisture(s,soil(s)%slpotbp)
             !------------------------------------------------------------------------------!
 
 
@@ -2277,6 +2292,7 @@ subroutine init_soil_coms
       soil8(s)%soilre   = dble(soil(s)%soilre  )
       soil8(s)%soilcp   = dble(soil(s)%soilcp  )
       soil8(s)%soilwp   = dble(soil(s)%soilwp  )
+      soil8(s)%soilbp   = dble(soil(s)%soilbp  )
       soil8(s)%slcons   = dble(soil(s)%slcons  )
       soil8(s)%fhydraul = dble(soil(s)%fhydraul)
       soil8(s)%thcond0  = dble(soil(s)%thcond0 )
@@ -2335,19 +2351,19 @@ subroutine init_soil_coms
    if (print_soil_table) then
       !----- Open and write header. -------------------------------------------------------!
       open (unit=26,file=trim(soil_table_fn),status='replace',action='write')
-      write(unit=26,fmt='(37(a,1x))')        'ISOIL',        ' KEY',        'TYPE'         &
+      write(unit=26,fmt='(38(a,1x))')        'ISOIL',        ' KEY',        'TYPE'         &
                                      ,'       XSAND','       XSILT','       XCLAY'         &
                                      ,'       SLSOC','        SLPH','       SLCEC'         &
                                      ,'       SLDBD','      SOILRE','      SOILCP'         &
                                      ,'      SOILWP','      SOILFR','      SOILLD'         &
-                                     ,'      SOILFC','      SOILPO','     SLPOTCP'         &
-                                     ,'     SLPOTWP','     SLPOTFR','     SLPOTLD'         &
-                                     ,'     SLPOTFC','     SLPOTPO','     SLPOTBP'         &
-                                     ,'        SLTT','        SLNM','        SLBS'         &
-                                     ,'        SLMM','        SLMU','      MALPHA'         &
-                                     ,' SLCONS_MMHR','    FHYDRAUL',' SLCPD_MJm3K'         &
-                                     ,'     THCOND0','     THCOND1','     THCOND2'         &
-                                     ,'     THCOND3'
+                                     ,'      SOILFC','      SOILBP','      SOILPO'         &
+                                     ,'     SLPOTCP','     SLPOTWP','     SLPOTFR'         &
+                                     ,'     SLPOTLD','     SLPOTFC','     SLPOTBP'         &
+                                     ,'     SLPOTPO','        SLTT','        SLNM'         &
+                                     ,'        SLBS','        SLMM','        SLMU'         &
+                                     ,'      MALPHA',' SLCONS_MMHR','    FHYDRAUL'         &
+                                     ,' SLCPD_MJm3K','     THCOND0','     THCOND1'         &
+                                     ,'     THCOND2','     THCOND3'
       !------------------------------------------------------------------------------------!
 
 
@@ -2361,20 +2377,20 @@ subroutine init_soil_coms
          !---------------------------------------------------------------------------------!
 
          !----- Add soil characteristics. -------------------------------------------------!
-         write(unit=26,fmt='(i5,1x,2(a4,1x),34(f12.5,1x))')                                &
+         write(unit=26,fmt='(i5,1x,2(a4,1x),35(f12.5,1x))')                                &
                                       s,adjustr(soil(s)%key),adjustr(soil(s)%method)       &
                                      ,soil(s)%xsand   ,soil(s)%xsilt   ,soil(s)%xclay      &
                                      ,soil(s)%slsoc   ,soil(s)%slph    ,soil(s)%slcec      &
                                      ,soil(s)%sldbd   ,soil(s)%soilre  ,soil(s)%soilcp     &
                                      ,soil(s)%soilwp  ,soil(s)%soilfr  ,soil(s)%soilld     &
-                                     ,soil(s)%sfldcap ,soil(s)%slmsts  ,soil(s)%slpotcp    &
-                                     ,soil(s)%slpotwp ,soil(s)%slpotfr ,soil(s)%slpotld    &
-                                     ,soil(s)%slpotfc ,soil(s)%slpots  ,soil(s)%slpotbp    &
-                                     ,soil(s)%sltt    ,soil(s)%slnm    ,soil(s)%slbs       &
-                                     ,soil(s)%slmm    ,soil(s)%slmu    ,soil(s)%malpha     &
-                                     ,slcons_mmhr     ,soil(s)%fhydraul,slcpd_mjm3k        &
-                                     ,soil(s)%thcond0 ,soil(s)%thcond1 ,soil(s)%thcond2    &
-                                     ,soil(s)%thcond3 
+                                     ,soil(s)%sfldcap ,soil(s)%soilbp  ,soil(s)%slmsts     &
+                                     ,soil(s)%slpotcp ,soil(s)%slpotwp ,soil(s)%slpotfr    &
+                                     ,soil(s)%slpotld ,soil(s)%slpotfc ,soil(s)%slpotbp    &
+                                     ,soil(s)%slpots  ,soil(s)%sltt    ,soil(s)%slnm       &
+                                     ,soil(s)%slbs    ,soil(s)%slmm    ,soil(s)%slmu       &
+                                     ,soil(s)%malpha  ,slcons_mmhr     ,soil(s)%fhydraul   &
+                                     ,slcpd_mjm3k     ,soil(s)%thcond0 ,soil(s)%thcond1    &
+                                     ,soil(s)%thcond2 ,soil(s)%thcond3 
          !---------------------------------------------------------------------------------!
       end do
       !------------------------------------------------------------------------------------!

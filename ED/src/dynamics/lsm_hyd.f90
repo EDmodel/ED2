@@ -14,9 +14,9 @@ module lsm_hyd
 !!  cp%watertable = soil water table depth (m)
 !!  cp%soil_water = soil volumetric water content (m3/m3)
 !!  cp%soil_energy  = soil energy (J/m3)
-!!  soil(k)%slmsts = maximum volumetric soil moisture for soil type k (m2 water/m2 soil)
-!!  soil(k)%soilcp = minimum volumetric soil moisture (m2/m2)
-!!  soil(nsoil)%slcpd = dry soil heat capacity (units??)
+!!  soil(k)%soilbp = bubbling point (maximum volumetric) for soil type k (m3 water/m3 soil)
+!!  soil(k)%soilcp = minimum volumetric soil moisture (m3/m3)
+!!  soil(nsoil)%slcpd = dry soil heat capacity (J/m3)
 !!  cs%moist_tau = characteristic redistribution timescale (seconds)
 !!  cs%moist_zi = TOPMODEL equilibrium site water table depth
 !!  cs%moist_W = site moisture index
@@ -160,7 +160,7 @@ subroutine initHydroSubsurface()
 
            cpoly%moist_zi(isi) = cgrid%zbar(ipy) + (cpoly%moist_W(isi) - cgrid%wbar(ipy))/cpoly%moist_f(isi)/MoistRateTuning !TOPMODEL equilibrium water depth
 
-           zmin = slz(slsl) + soil(nsoil)%soilcp/soil(nsoil)%slmsts*dslz(slsl) 
+           zmin = slz(slsl) + soil(nsoil)%soilcp/soil(nsoil)%soilbp*dslz(slsl) 
            !zmin = minimum height of water table assuming lowest soil layer is at minimal moisture level
 
            cpoly%moist_zi(isi) = max(cpoly%moist_zi(isi),zmin)
@@ -172,11 +172,11 @@ subroutine initHydroSubsurface()
                  nsoil = cpoly%ntext_soil(k,isi) !! mcd [9/30/08]
                  if(cpoly%moist_zi(isi) < slz(k+1)) then
                     csite%soil_water(k,ipa) = max(soil(nsoil)%soilcp, &
-                         soil(nsoil)%slmsts*(cpoly%moist_zi(isi)-slz(k))*dslzi(k))
+                         soil(nsoil)%soilbp*(cpoly%moist_zi(isi)-slz(k))*dslzi(k))
                     exit 
                  else
                     !! set soil to saturated
-                    csite%soil_water(k,ipa) = soil(nsoil)%slmsts
+                    csite%soil_water(k,ipa) = soil(nsoil)%soilbp
                  endif
               end do
               !! reset energy
@@ -379,13 +379,13 @@ subroutine calcHydroSubsurface()
               !!*******************************************************************!!
               cpoly%moist_zi(isi) = cgrid%zbar(ipy) + (cpoly%moist_W(isi) - &
                    cgrid%wbar(ipy))/cpoly%moist_f(isi)/MoistRateTuning !TOPMODEL water depth
-              zmin = slz(slsl) + soil(nsoil)%soilcp/soil(nsoil)%slmsts*dslz(slsl)
+              zmin = slz(slsl) + soil(nsoil)%soilcp/soil(nsoil)%soilbp*dslz(slsl)
               cpoly%moist_zi(isi)  = max(cpoly%moist_zi(isi),zmin)
 
               !!*******************************************************************!!
               !! Calculate rate constant for lateral redistribution time scale     !!
               !!*******************************************************************!!
-              cpoly%moist_tau(isi) = soil(cpoly%ntext_soil(nzg-1,isi))%slmsts / & 
+              cpoly%moist_tau(isi) = soil(cpoly%ntext_soil(nzg-1,isi))%soilbp / & 
                    (MoistRateTuning*cpoly%moist_f(isi)*cgrid%Te(ipy)* &
                    exp(MoistRateTuning*cpoly%moist_f(isi)*min(0.0,cgrid%zbar(ipy))) & !characteristic redistribution timescale
                    *exp(-cgrid%wbar(ipy))*fracliqtotal) !!added a linear liquid fraction adjustment
@@ -394,7 +394,7 @@ subroutine calcHydroSubsurface()
               !!*******************************************************************!!
               !! Calculate rate constant for baseflow out of the bottom of the soil!!
               !!*******************************************************************!!
-              cpoly%baseflow(isi) = soil(cpoly%ntext_soil(nzg-1,isi))%slmsts/ &
+              cpoly%baseflow(isi) = soil(cpoly%ntext_soil(nzg-1,isi))%soilbp/ &
                    (MoistRateTuning*cpoly%moist_f(isi)*cpoly%moist_tau(isi))*1000.0 !kg/m2/s
               bf_site = 0.0
               
@@ -628,7 +628,7 @@ subroutine calcWatertable(cpoly,isi,ipa)
 
   layerloop: do k = cpoly%lsl(isi),nzg
      nsoil = cpoly%ntext_soil(k,isi)  !look up soil type (switched to using SITE level soils [mcd 9/30/08]
-     fracw = csite%soil_water(k,ipa) / soil(nsoil)%slmsts !calculate fraction of moisture capacity
+     fracw = csite%soil_water(k,ipa) / soil(nsoil)%soilbp !calculate fraction of moisture capacity
      csite%watertable(ipa)      = csite%watertable(ipa)      + fracw *dslz(k)
      csite%soil_sat_energy(ipa) = csite%soil_sat_energy(ipa) + csite%soil_energy(k,ipa)*dslz(k)
      csite%soil_sat_water(ipa)  = csite%soil_sat_water(ipa)  + csite%soil_water(k,ipa)*dslz(k)
@@ -720,17 +720,17 @@ subroutine updateWatertableAdd(cpoly,isi,ipa,dw,sheat)
   !!******************************************************************************!!
    layerloop: do k = cpoly%lsl(isi),nzg
       nsoil = cpoly%ntext_soil(k,isi)  !look up soil type
-      fracw = csite%soil_water(k,ipa) / soil(nsoil)%slmsts  !calculate fraction of moisture capacity
+      fracw = csite%soil_water(k,ipa) / soil(nsoil)%soilbp  !calculate fraction of moisture capacity
       if(fracw < 1.0) then
 
-         wcap = soil(nsoil)%slmsts-csite%soil_water(k,ipa)*dslz(k) !!m3/m2
+         wcap = soil(nsoil)%soilbp-csite%soil_water(k,ipa)*dslz(k) !!m3/m2
          if(dw > wcap) then
 
             !!********************************************************************!!
             !! layer can be saturated, add as much as we can and subtract from dw !!                   
             !!********************************************************************!!
             dw_layer = wcap
-            csite%soil_water(k,ipa) = soil(nsoil)%slmsts
+            csite%soil_water(k,ipa) = soil(nsoil)%soilbp
             dw = dw - wcap
 
          else
@@ -879,7 +879,7 @@ subroutine updateWatertableSubtract(cpoly,isi,ipa,dz,sheat,swater)
    k = int(csite%ksat(ipa))
 
    nsoil = cpoly%ntext_soil(k,isi)  !look up soil type
-   fracw = csite%soil_water(k,ipa) / soil(nsoil)%slmsts  !calculate fraction of moisture capacity
+   fracw = csite%soil_water(k,ipa) / soil(nsoil)%soilbp  !calculate fraction of moisture capacity
    if(fracw > MoistSatThresh) then  !if layer above threshold, move up one
       k = k+1
       nsoil = cpoly%ntext_soil(k,isi)
@@ -890,14 +890,14 @@ subroutine updateWatertableSubtract(cpoly,isi,ipa,dz,sheat,swater)
       !! soil completely saturated, reset to top layer
       k = nzg
       nsoil = cpoly%ntext_soil(k,isi)  !look up soil type
-      fracw = csite%soil_water(k,ipa) / soil(nsoil)%slmsts  !calculate fraction of moisture capacity
+      fracw = csite%soil_water(k,ipa) / soil(nsoil)%soilbp  !calculate fraction of moisture capacity
    end if
 
    !!work down from saturation layer, removing water & heat
    do while (k >= cpoly%lsl(isi))
       call uextcm2tl(csite%soil_energy(k,ipa),csite%soil_water(k,ipa)*1.e3,soil(nsoil)%slcpd,tempk,fracliq)
       !capacity for layer to loose moisture (unit = meters)
-      wcap = (fracw - soil(nsoil)%soilcp/soil(nsoil)%slmsts) * dslz(k)*fracliq 
+      wcap = (fracw - soil(nsoil)%soilcp/soil(nsoil)%soilbp) * dslz(k)*fracliq 
 
       if (wcap > tiny(1.0)) then 
          wtmp = real(csite%soil_water(k,ipa))
@@ -908,7 +908,7 @@ subroutine updateWatertableSubtract(cpoly,isi,ipa,dz,sheat,swater)
             dzl = dzl + wcap
          else
             !!reduce water by dz
-            dw = dzl*soil(nsoil)%slmsts*dslzi(k)
+            dw = dzl*soil(nsoil)%soilbp*dslzi(k)
             dzl = 0.0
             done = .true.
          end if
@@ -920,7 +920,7 @@ subroutine updateWatertableSubtract(cpoly,isi,ipa,dz,sheat,swater)
             print*," "
             print*,"dw = ",dw," in updateWatertableSubtract"
             print*,dzl,wcap,k,csite%watertable(ipa),done,fracw,nsoil
-            print*,wtmp,csite%soil_water(k,ipa),soil(nsoil)%soilcp,soil(nsoil)%slmsts
+            print*,wtmp,csite%soil_water(k,ipa),soil(nsoil)%soilcp,soil(nsoil)%soilbp
             call fatal_error ('Bad dw!','updateWatertableSubtract','lsm_hyd.f90')
          endif
          
@@ -948,7 +948,7 @@ subroutine updateWatertableSubtract(cpoly,isi,ipa,dz,sheat,swater)
       else
          k = k-1
          nsoil = cpoly%ntext_soil(k,isi)  !look up soil type
-         fracw = csite%soil_water(k,ipa) / soil(nsoil)%slmsts
+         fracw = csite%soil_water(k,ipa) / soil(nsoil)%soilbp
       endif
    enddo
    return
@@ -993,7 +993,7 @@ subroutine updateWatertableBaseflow(cpoly,isi,ipa,baseflow)
    !! assumes layer below is permenantly at minimal water capacity
    slsl  = cpoly%lsl(isi)
 !   nsoil = cpoly%ntext_soil(slsl,isi)
-   potn_fd  = -dslzi(slsl)+soil(nsoil)%slpots* &
+   potn_fd  = -dslzi(slsl)+soil(nsoil)%slpotbp* &
               (soil(nsoil)%slpotcp - matric_potential(nsoil,csite%soil_water(slsl,ipa)))
    wflux_fd = hydr_conduct(slsl,nsoil,csite%soil_water(1,ipa),fracliq) * potn_fd
    bf       = min(-wflux_fd,baseflow)*dtlsm*0.001

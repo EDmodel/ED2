@@ -767,6 +767,7 @@ module ed_init
          write (unit=*,fmt=efmt ) '   - Dry air soil             =', soil(nsoil)%soilcp
          write (unit=*,fmt=efmt ) '   - Wilting point            =', soil(nsoil)%soilwp
          write (unit=*,fmt=efmt ) '   - Field capacity           =', soil(nsoil)%sfldcap
+         write (unit=*,fmt=efmt ) '   - Bubbling point           =', soil(nsoil)%soilbp
          write (unit=*,fmt=efmt ) '   - Saturation               =', soil(nsoil)%slmsts
          write (unit=*,fmt=efmt ) '   - Heat capacity            =', soil(nsoil)%slcpd
       end do

@@ -441,6 +441,7 @@ module soil_coms
       real(kind=4)     :: soilre   ! Residual soil moisture (-Infinite potential) [   m3/m3]
       real(kind=4)     :: soilcp   ! Dry soil capacity (at -3.1MPa)               [   m3/m3]
       real(kind=4)     :: soilwp   ! Wilting point capacity (at -1.5MPa)          [   m3/m3]
+      real(kind=4)     :: soilbp   ! Soil moisture at bubble point                [   m3/m3]
       real(kind=4)     :: slcons   ! hydraulic conductivity at saturation         [     m/s]
       real(kind=4)     :: fhydraul ! Surface value for slcons                     [     m/s]
       real(kind=4)     :: thcond0  ! First coefficient for thermal conductivity   [   W/m/K]
@@ -480,6 +481,7 @@ module soil_coms
       real(kind=8)     :: soilre   ! Residual soil moisture (-Infinite potential) [   m3/m3]
       real(kind=8)     :: soilcp   ! Dry soil capacity (at -3.1MPa)               [   m3/m3]
       real(kind=8)     :: soilwp   ! Wilting point capacity (at -1.5MPa)          [   m3/m3]
+      real(kind=8)     :: soilbp   ! Soil moisture at bubble point                [   m3/m3]
       real(kind=8)     :: slcons   ! hydraulic conductivity at saturation         [     m/s]
       real(kind=8)     :: fhydraul ! Surface value for slcons                     [     m/s]
       real(kind=8)     :: thcond0  ! First coefficient for thermal conductivity   [   W/m/K]
@@ -646,6 +648,7 @@ module soil_coms
          soil(s)%soilre   = undef_real
          soil(s)%soilcp   = undef_real
          soil(s)%soilwp   = undef_real
+         soil(s)%soilbp   = undef_real
          soil(s)%slcons   = undef_real
          soil(s)%fhydraul = undef_real
          soil(s)%thcond0  = undef_real
@@ -685,6 +688,7 @@ module soil_coms
          soil8(s)%soilre   = undef_dble
          soil8(s)%soilcp   = undef_dble
          soil8(s)%soilwp   = undef_dble
+         soil8(s)%soilbp   = undef_dble
          soil8(s)%slcons   = undef_dble
          soil8(s)%fhydraul = undef_dble
          soil8(s)%thcond0  = undef_dble
@@ -824,7 +828,7 @@ module soil_coms
    !  -1. = dry air soil moisture (soilcp)                                                 !
    !   0. = wilting point         (soilwp)                                                 !
    !   1. = field capacity        (sfldcap)                                                !
-   !   2. = porosity/saturation   (slmsts)                                                 !
+   !   2. = bubble point          (soilbp)                                                 !
    !---------------------------------------------------------------------------------------!
    real(kind=4) function ed_soil_idx2water(soil_index,ntext)
       implicit none
@@ -844,7 +848,7 @@ module soil_coms
                     +  soil_index        * (soil(ntext)%sfldcap - soil(ntext)%soilwp )
       else
          soil_water = soil(ntext)%sfldcap                                                  &
-                    + (soil_index - 1.0) * (soil(ntext)%slmsts  - soil(ntext)%sfldcap)
+                    + (soil_index - 1.0) * (soil(ntext)%soilbp  - soil(ntext)%sfldcap)
       end if
 
       ed_soil_idx2water = soil_water
@@ -1182,7 +1186,7 @@ module soil_coms
 
 
          !------ Find relative soil moisture. ---------------------------------------------!
-         relmoist = ( soil_water         - soil8(s)%soilre )                               &
+         relmoist = ( soil_water     - soil8(s)%soilre )                                   &
                   / ( soil(s)%slmsts - soil8(s)%soilre )
          relmoist = max(0.d0,min(relmoist,1.d0))
          !---------------------------------------------------------------------------------!

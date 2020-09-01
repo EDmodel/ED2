@@ -970,7 +970,7 @@ module hybrid_driver
 
    !!   do k=rk4site%lsl,nzg
 
-   !!      hmin_tmp = max_dwater_soil/(abs(dydx%soil_water(k))/soil8(rk4site%ntext_soil(k))%slmsts)
+   !!      hmin_tmp = max_dwater_soil/(abs(dydx%soil_water(k))/soil8(rk4site%ntext_soil(k))%soilbp)
    !!      hmin = min(hmin,hmin_tmp)
 
    !!      if ( h > hmin_tmp .and. record_err) &

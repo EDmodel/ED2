@@ -1398,7 +1398,7 @@ module rk4_misc
             !     Compute the available "room" for water at the top soil layer.  We must   !
             ! multiply by density and depth to make sure that the units match.             !
             !------------------------------------------------------------------------------!
-            wmass_room = max(0.d0, soil8(nsoil)%slmsts - initp%soil_water(nzg))            &
+            wmass_room = max(0.d0, soil8(nsoil)%soilbp - initp%soil_water(nzg))            &
                        * wdns8 * dslz8(nzg) 
             wmass_perc = min(wmass_perc,wmass_room)
             !------------------------------------------------------------------------------!
@@ -1502,7 +1502,7 @@ module rk4_misc
 
 
          !----- Find the amount of water (and energy) the top soil layer can receive. -----!
-         wmass_room  = max(0.d0, soil8(nsoil)%slmsts - initp%soil_water(nzg))              &
+         wmass_room  = max(0.d0, soil8(nsoil)%soilbp - initp%soil_water(nzg))              &
                      * wdns8 * dslz8(nzg)
          energy_room = energy_free * wmass_room / wmass_free
          !---------------------------------------------------------------------------------!
@@ -2047,12 +2047,12 @@ module rk4_misc
    ! range.  We currently test this only for the top soil layer because this is the most   !
    ! likely to cause problems, but if it does happen in other layers, we could easily      !
    ! extend this for all layers.  Depending on its derivative, soil moisture can go under  !
-   ! the minimum soil moisture possible (soilcp) or above the saturation (slmsts).  Both   !
-   ! are bad things, and if the value is way off-bounds, then we leave it like that so the !
-   ! step can be rejected.   However, if the value is just slightly off(*) these limits,   !
-   ! we make a small exchange of moisture with the neighbouring layer.  This will prevent  !
-   ! the soil to go outside the range in those double precision => single precision =>     !
-   ! double precision conversion.                                                          !
+   ! the minimum soil moisture possible (soilcp) or above the bubbling point (soilbp).     !
+   ! Both are bad things, and if the value is way off-bounds, then we leave it like that   !
+   ! so the step can be rejected.   However, if the value is just slightly off(*) these    !
+   ! limits, we make a small exchange of moisture with the neighbouring layer.  This will  !
+   ! prevent the soil to go outside the range in those double precision => single          !
+   ! precision => double precision conversion.                                             !
    !                                                                                       !
    ! (*) slightly off is defined as outside the range but within the desired accuracy      !
    !     (rk4eps).                                                                         !
@@ -2116,7 +2116,7 @@ module rk4_misc
       nstop         = rk4site%ntext_soil(kt)
 
       !----- Check whether we are just slightly off. --------------------------------------!
-      slightlymoist = initp%soil_water(kt) > soil8(nstop)%slmsts 
+      slightlymoist = initp%soil_water(kt) > soil8(nstop)%soilbp 
       slightlydry   = initp%soil_water(kt) < soil8(nstop)%soilcp
 
       !------------------------------------------------------------------------------------!
@@ -2411,7 +2411,7 @@ module rk4_misc
          ! will need to exchange with other environments, find it in kg/m2, the standard   !
          ! units.  Also, find the total energy that must go away with the water.           !
          !---------------------------------------------------------------------------------!
-         water_excess  = (initp%soil_water(kt) - soil8(nstop)%slmsts) * dslz8(kt) * wdns8
+         water_excess  = (initp%soil_water(kt) - soil8(nstop)%soilbp) * dslz8(kt) * wdns8
          energy_excess = water_excess                                                      &
                        * tl2uint8(initp%soil_tempk(kt),initp%soil_fracliq(kt))
          depth_excess  = water_excess * ( initp%soil_fracliq(kt) * wdnsi8                  &
@@ -2516,7 +2516,7 @@ module rk4_misc
          shcbeneath = soil8(nsbeneath)%slcpd
          call uextcm2tl8(initp%soil_energy(kb),initp%soil_water(kb)*wdns8,shcbeneath       &
                         ,initp%soil_tempk(kb),initp%soil_fracliq(kb))
-         water_room = (soil8(nsbeneath)%slmsts-initp%soil_water(kb)) * wdns8 * dslz8(kb)
+         water_room = (soil8(nsbeneath)%soilbp-initp%soil_water(kb)) * wdns8 * dslz8(kb)
 
          if (water_room > water_excess) then
             !------------------------------------------------------------------------------!
@@ -3106,7 +3106,7 @@ module rk4_misc
                !----- First guess. --------------------------------------------------------!
                wood_excess = rk4max_wood_water_im2 - initp%wood_water_im2(ico)
                leaf_demand = rk4max_leaf_water_im2 - initp%leaf_water_im2(ico)
-               soil_demand = (soil8(nstop)%slmsts-initp%soil_water(kt)) * dslz8(kt) * wdns8
+               soil_demand = (soil8(nstop)%soilbp-initp%soil_water(kt)) * dslz8(kt) * wdns8
                !----- Bounded guess. ------------------------------------------------------!
                leaf_demand = max(0.d0,min(wood_excess            ,leaf_demand))
                soil_demand = max(0.d0,min(wood_excess-leaf_demand,soil_demand))
@@ -4435,7 +4435,7 @@ module rk4_misc
                                   , '    WOOD.TEMP', '   WOOD.WATER' , '       GGBARE'     &
                                   , '        GGVEG', '        GGNET' , '      OPENCAN'     &
                                   , '    SOIL.TEMP', '   SOIL.WATER' , '       SOILCP'     &
-                                  , '       SOILWP', '       SOILFC' , '       SLMSTS'     &
+                                  , '       SOILWP', '       SOILFC' , '       SOILBP'     &
                                   , '        USTAR', '        TSTAR' , '        QSTAR'     &
                                   , '        CSTAR', '         ZETA' , '      RI.BULK'     &
                                   , '   GND.RSHORT', '      GND.PAR' , '    GND.RLONG'     &
@@ -4478,7 +4478,7 @@ module rk4_misc
                    , avg_wood_temp         , sum_wood_water        , initp%ggbare          &
                    , initp%ggveg           , initp%ggnet           , initp%opencan_frac    &
                    , initp%soil_tempk(nzg) , initp%soil_water(nzg) , soil8(nsoil)%soilcp   &
-                   , soil8(nsoil)%soilwp   , soil8(nsoil)%sfldcap  , soil8(nsoil)%slmsts   &
+                   , soil8(nsoil)%soilwp   , soil8(nsoil)%sfldcap  , soil8(nsoil)%soilbp   &
                    , initp%ustar           , initp%tstar           , initp%qstar           &
                    , initp%cstar           , initp%zeta            , initp%ribulk          &
                    , fluxp%flx_rshort_gnd  , fluxp%flx_par_gnd     , fluxp%flx_rlong_gnd   &
@@ -5036,7 +5036,7 @@ module rk4_misc
       do k = rk4site%lsl, nzg
          nsoil = rk4site%ntext_soil(k)
          rk4aux(ibuff)%rk4min_soil_water(k) = soil8(nsoil)%soilcp * (1.d0 - rk4eps)
-         rk4aux(ibuff)%rk4max_soil_water(k) = soil8(nsoil)%slmsts * (1.d0 + rk4eps)
+         rk4aux(ibuff)%rk4max_soil_water(k) = soil8(nsoil)%soilbp * (1.d0 + rk4eps)
       end do
       !------------------------------------------------------------------------------------!
 

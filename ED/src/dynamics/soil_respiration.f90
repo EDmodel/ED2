@@ -49,7 +49,7 @@ module soil_respiration
       real                                       :: sum_soil_energy
       real                                       :: sum_soil_water
       real                                       :: sum_soil_hcap
-      real                                       :: sum_soil_slmsts
+      real                                       :: sum_soil_soilbp
       real                                       :: sum_soil_soilcp
       real                                       :: avg_soil_water
       real                                       :: avg_soil_mstpot
@@ -292,7 +292,7 @@ module soil_respiration
             !------ Use soil moisture. ----------------------------------------------------!
             arl_soil_moist = min(1.0, max( 0.0                                             &
                                          , (csite%soil_water(k,ipa)-soil(nsoil)%soilcp)    &
-                                         / (soil(nsoil)%slmsts     -soil(nsoil)%soilcp) ) )
+                                         / (soil(nsoil)%soilbp     -soil(nsoil)%soilcp) ) )
             !------------------------------------------------------------------------------!
          end select
          !---------------------------------------------------------------------------------!
@@ -350,7 +350,7 @@ module soil_respiration
       sum_soil_energy = 0.0
       sum_soil_hcap   = 0.0
       sum_soil_water  = 0.0
-      sum_soil_slmsts = 0.0
+      sum_soil_soilbp = 0.0
       sum_soil_soilcp = 0.0
       brl_soil_moist  = 0.0
       brl_soil_oxygen = 0.0
@@ -364,7 +364,7 @@ module soil_respiration
          sum_soil_energy = sum_soil_energy + csite%soil_energy(k,ipa)        * dslz(k)
          sum_soil_hcap   = sum_soil_hcap   + soil(nsoil)%slcpd               * dslz(k)
          sum_soil_water  = sum_soil_water  + csite%soil_water (k,ipa) * wdns * dslz(k)
-         sum_soil_slmsts = sum_soil_slmsts + soil(nsoil)%slmsts       * wdns * dslz(k)
+         sum_soil_soilbp = sum_soil_soilbp + soil(nsoil)%soilbp       * wdns * dslz(k)
          sum_soil_soilcp = sum_soil_soilcp + soil(nsoil)%soilcp       * wdns * dslz(k)
          !---------------------------------------------------------------------------------!
 
@@ -402,7 +402,7 @@ module soil_respiration
       case default
          !------ Relative soil moisture based on total water content. ---------------------!
          brl_soil_moist  = min( 1.0, max(0.0, ( sum_soil_water  - sum_soil_soilcp )        &
-                                            / ( sum_soil_slmsts - sum_soil_soilcp ) ) )
+                                            / ( sum_soil_soilbp - sum_soil_soilcp ) ) )
          brl_soil_oxygen = 1.0 - brl_soil_moist
          !---------------------------------------------------------------------------------!
       end select

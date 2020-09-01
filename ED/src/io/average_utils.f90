@@ -607,7 +607,7 @@ module average_utils
                   cgrid%fmean_soil_wetness  (ipy) = cgrid%fmean_soil_wetness    (ipy)      &
                                                   + ( ( csite%fmean_soil_water(k,ipa)      &
                                                       - soil(nsoil)%soilwp) )              &
-                                                  / ( soil(nsoil)%slmsts                   &
+                                                  / ( soil(nsoil)%soilbp                   &
                                                     - soil(nsoil)%soilwp)                  &
                                                   * dslz(k) * dslzsum_i * patch_wgt
                   !------------------------------------------------------------------------!
