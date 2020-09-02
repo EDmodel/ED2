@@ -6863,8 +6863,10 @@ module fuse_fiss_utils
       real                                 :: rawgt             ! Weight for receptor patch
       real                                 :: dawgt             ! Weight for donor patch
       !----- The following variables are for conserving canopy air space. -----------------!
-      real  :: can_depth0_donp         !< Old can. depth, mass  (donor   ) [          J/kg]
-      real  :: can_depth0_recp         !< Old can. depth, mass  (receptor) [          J/kg]
+      real  :: can_r_depth0_donp       !< Old can. depth, mass  (donor   ) [          J/kg]
+      real  :: can_r_depth0_recp       !< Old can. depth, mass  (receptor) [          J/kg]
+      real  :: can_d_depth0_donp       !< Old can. depth, mass  (donor   ) [          J/kg]
+      real  :: can_d_depth0_recp       !< Old can. depth, mass  (receptor) [          J/kg]
       real  :: can_enthalpy_donp       !< Specific enthalpy     (donor   ) [          J/kg]
       real  :: can_enthalpy_recp       !< Specific enthalpy     (receptor) [          J/kg]
       real  :: can_rvap_recp           !< Water mixing ratio    (receptor) [         kg/kg]
@@ -7048,28 +7050,37 @@ module fuse_fiss_utils
       ! same approach, we use the simpler fusion for the time being.                       !
       !------------------------------------------------------------------------------------!
       if (checkbudget) then
-         !------ Previous canopy depth. Use water budget to define it. --------------------!
-         can_depth0_donp         = csite%can_depth(donp)                                   &
+         !------ Previous canopy depth (mass). Use water budget to define it. -------------!
+         can_r_depth0_donp       = csite%can_depth(donp)                                   &
                                  - frqsum * csite%wbudget_zcaneffect(donp)                 &
                                  / ( csite%can_rhos(donp) * csite%can_shv(donp) )
-         can_depth0_recp         = csite%can_depth(recp)                                   &
+         can_r_depth0_recp       = csite%can_depth(recp)                                   &
                                  - frqsum * csite%wbudget_zcaneffect(recp)                 &
                                  / ( csite%can_rhos(recp) * csite%can_shv(recp) )
+         !------ Previous canopy depth (molar). Use CO2 budget to define it. --------------!
+         can_d_depth0_donp       = csite%can_depth(donp)                                   &
+                                 - frqsum * csite%co2budget_zcaneffect(donp)               &
+                                 / ( csite%can_dmol(donp) * csite%can_co2(donp) )
+         can_d_depth0_recp       = csite%can_depth(recp)                                   &
+                                 - frqsum * csite%co2budget_zcaneffect(recp)               &
+                                 / ( csite%can_dmol(recp) * csite%can_co2(recp) )
          !------ Canopy change effect on total mass. --------------------------------------!
          rbudget_zcaneffect_donp = csite%can_rhos(donp)                                    &
-                                 * (csite%can_depth(donp) - can_depth0_donp) * frqsumi
+                                 * (csite%can_depth(donp) - can_r_depth0_donp) * frqsumi
          rbudget_zcaneffect_recp = csite%can_rhos(recp)                                    &
-                                 * (csite%can_depth(recp) - can_depth0_recp) * frqsumi
+                                 * (csite%can_depth(recp) - can_r_depth0_recp) * frqsumi
          !------ Canopy change effect on dry-air molar count. -----------------------------!
          dbudget_zcaneffect_donp = csite%can_dmol(donp)                                    &
-                                 * (csite%can_depth(donp) - can_depth0_donp) * frqsumi
+                                 * (csite%can_depth(donp) - can_d_depth0_donp) * frqsumi
          dbudget_zcaneffect_recp = csite%can_dmol(recp)                                    &
-                                 * (csite%can_depth(recp) - can_depth0_recp) * frqsumi
+                                 * (csite%can_depth(recp) - can_d_depth0_recp) * frqsumi
          !---------------------------------------------------------------------------------!
       else
          !------ Previous depth can't be determined. --------------------------------------!
-         can_depth0_donp         = csite%can_depth(donp)
-         can_depth0_recp         = csite%can_depth(recp)
+         can_r_depth0_donp       = csite%can_depth(donp)
+         can_r_depth0_recp       = csite%can_depth(recp)
+         can_d_depth0_donp       = csite%can_depth(donp)
+         can_d_depth0_recp       = csite%can_depth(recp)
          rbudget_zcaneffect_donp = 0.0
          rbudget_zcaneffect_recp = 0.0
          dbudget_zcaneffect_donp = 0.0
@@ -7080,11 +7091,11 @@ module fuse_fiss_utils
       can_enthalpy_donp = tq2enthalpy(csite%can_temp(donp),csite%can_shv (donp),.true.)
       can_enthalpy_recp = tq2enthalpy(csite%can_temp(recp),csite%can_shv (recp),.true.)
       !------ Find the total canopy air space mass [kg_air/m2]. ---------------------------!
-      cb_mass_donp      = csite%can_rhos(donp) * can_depth0_donp
-      cb_mass_recp      = csite%can_rhos(recp) * can_depth0_recp
+      cb_mass_donp      = csite%can_rhos(donp) * can_r_depth0_donp
+      cb_mass_recp      = csite%can_rhos(recp) * can_r_depth0_recp
       !------ Find the molar count of dry air in the canopy air space [mol_dry_air/m2]. ---!
-      cb_molar_donp     = csite%can_dmol(donp) * can_depth0_donp
-      cb_molar_recp     = csite%can_dmol(recp) * can_depth0_recp
+      cb_molar_donp     = csite%can_dmol(donp) * can_d_depth0_donp
+      cb_molar_recp     = csite%can_dmol(recp) * can_d_depth0_recp
       !------ Find the bulk enthalpy of receptor and donor patch [J/m2]. ------------------!
       cb_enthalpy_donp  = cb_mass_donp * can_enthalpy_donp
       cb_enthalpy_recp  = cb_mass_recp * can_enthalpy_recp

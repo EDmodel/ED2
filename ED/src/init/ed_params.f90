@@ -1857,6 +1857,7 @@ subroutine init_soil_coms
          soil(s)%soilre  = 0.0
          soil(s)%sfldcap = 0.0
          soil(s)%slpotfc = 0.0
+         soil(s)%soilbp  = 0.0
          soil(s)%slcpd   = 2130000.
          !---------------------------------------------------------------------------------!
       case default
@@ -5902,7 +5903,7 @@ subroutine init_pft_hydro_params()
    !    Technical Report FPL-GTR-190, U.S. Department of Agriculture, Madison, WI, 2010.   !
    !    doi:10.2737/FPL-GTR-190 (FPL10)                                                    !
    !                                                                                       !
-   ! Gu, L., T. Meyers, S. G. Pallardy, P. J. Hanson, B. Yang, M. Heuer, K. P. Hosman,     !
+   ! Gu, L, T. Meyers, S. G. Pallardy, P. J. Hanson, B. Yang, M. Heuer, K. P. Hosman,     !
    !    Q. Liu, J. S. Riggs, D. Sluss, and S. D. Wullschleger. Influences of biomass heat  !
    !    and biochemical energy storages on the land surface fluxes and radiative temper-   !
    !    ature. J. Geophys. Res., 112(D2):D02107, Jan 2007. doi:10.1029/2006JD007425 (G07)  !
@@ -5921,7 +5922,7 @@ subroutine init_pft_hydro_params()
    ! J. Zaragoza-Castells, M. S. J. Broadmeadow, J. E. Drake, M. Freeman, O. Ghannoum,     !
    ! L. B. Hutley, J. W. Kelly, K. Kikuzawa, P. Kolari, K. Koyama, J.-M. Limousin, P. Meir,!
    ! A. C. Lola da Costa, T. N. Mikkelsen, N. Salinas, W. Sun, and L. Wingate. 2015.       ! 
-   ! Optimal stomatal behaviour around the world. Nature Clim. Change 5:459–464. (L15)     !
+   ! Optimal stomatal behaviour around the world. Nature Clim. Change 5:459-464. (L15)     !
    !                                                                                       !
    ! Manzoni S, Vico G, Katul G, Fay PA, Polley W, Palmroth S , Porporato A. 2011.         !
    !    Optimizing stomatal conductance for maximum carbon gain under water stress: a      !

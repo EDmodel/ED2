@@ -138,11 +138,12 @@ module plant_hydro
             !  MLO.  The lower bound used to be air-dry soil moisture.  This causes issues !
             !  in the RK4 integrator if the soil moisture is just slightly above air-dry   !
             !  and dtlsm is long.  For the time being, I am assuming that soil             !
-            !  conductivity is halted at a safe margin.  Similarly, I am assuming that     !
-            !  matric potential cannot exceed a value nearly equal to bubbling pressure.   !
+            !  conductivity is halted just below the permanent wilting point.  Similarly,  !
+            !  I am assuming that matric potential cannot exceed a value slightly less     !
+            !  than the bubbling point.                                                    !
             !------------------------------------------------------------------------------!
-            swater_min = om_safe * soil(nsoil)%soilcp + mg_safe * soil(nsoil)%soilwp
-            swater_max = om_safe * soil(nsoil)%soilbp + mg_safe * soil(nsoil)%sfldcap
+            swater_min = mg_safe * soil(nsoil)%soilcp  + om_safe * soil(nsoil)%soilwp
+            swater_max = mg_safe * soil(nsoil)%sfldcap + om_safe * soil(nsoil)%soilbp
             swater_use = max( swater_min                                                   &
                             , min(swater_max                                               &
                                  ,csite%soil_water(k,ipa) * csite%soil_fracliq(k,ipa) ) )

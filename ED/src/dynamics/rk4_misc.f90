@@ -3813,7 +3813,7 @@ module rk4_misc
                                         ,'     STGC_RH','     STSC_RH','      MSC_RH'      &
                                         ,'      SSC_RH','      PSC_RH','AVGDAILY_TMP'      &
                                         ,'     SUM_CHD','     SUM_DGD'
-      write (unit=*,fmt='(i12,1x,12(es12.4,1x))')  csite%dist_type(ipa),csite%age(ipa)     &
+      write (unit=*,fmt='(i12,1x,13(es12.4,1x))')  csite%dist_type(ipa),csite%age(ipa)     &
             ,csite%area(ipa),csite%rh(ipa),csite%fgc_rh(ipa),csite%fsc_rh(ipa)             &
             ,csite%stgc_rh(ipa),csite%stsc_rh(ipa),csite%msc_rh(ipa),csite%ssc_rh(ipa)     &
             ,csite%psc_rh(ipa),csite%avg_daily_temp(ipa),csite%sum_chd(ipa)                &
