@@ -49,7 +49,7 @@ module soil_respiration
       real                                       :: sum_soil_energy
       real                                       :: sum_soil_water
       real                                       :: sum_soil_hcap
-      real                                       :: sum_soil_soilbp
+      real                                       :: sum_soil_slmsts
       real                                       :: sum_soil_soilcp
       real                                       :: avg_soil_water
       real                                       :: avg_soil_mstpot
@@ -283,7 +283,7 @@ module soil_respiration
             !      biogeochemistry and alternate soil C and N models on C dynamics of      !
             !      CLM4. Biogeosciences, 10:7109-7131. doi:10.5194/bg-10-7109-2013.        !
             !------------------------------------------------------------------------------!
-            lyr_slpot      = min(soil(nsoil)%slpotbp,csite%soil_mstpot(k,ipa))
+            lyr_slpot      = min(soil(nsoil)%slpots,csite%soil_mstpot(k,ipa))
             arl_soil_moist = min(1.0, max( 0.0                                             &
                                          , log(lyr_slpot          /soil(nsoil)%slpotcp)    &
                                          / log(soil(nsoil)%slpotfc/soil(nsoil)%slpotcp) ) )
@@ -292,7 +292,7 @@ module soil_respiration
             !------ Use soil moisture. ----------------------------------------------------!
             arl_soil_moist = min(1.0, max( 0.0                                             &
                                          , (csite%soil_water(k,ipa)-soil(nsoil)%soilcp)    &
-                                         / (soil(nsoil)%soilbp     -soil(nsoil)%soilcp) ) )
+                                         / (soil(nsoil)%slmsts     -soil(nsoil)%soilcp) ) )
             !------------------------------------------------------------------------------!
          end select
          !---------------------------------------------------------------------------------!
@@ -316,10 +316,10 @@ module soil_respiration
             !      biogeochemistry and alternate soil C and N models on C dynamics of      !
             !      CLM4. Biogeosciences, 10:7109-7131. doi:10.5194/bg-10-7109-2013.        !
             !------------------------------------------------------------------------------!
-            lyr_slpot       = min(soil(nsoil)%slpotbp,csite%soil_mstpot(k,ipa))
+            lyr_slpot       = min(soil(nsoil)%slpots,csite%soil_mstpot(k,ipa))
             arl_soil_oxygen = min(1.0, max( 0.0                                            &
-                                          , log(lyr_slpot          /soil(nsoil)%slpotbp)   &
-                                          / log(soil(nsoil)%slpotfc/soil(nsoil)%slpotbp)) )
+                                          , log(lyr_slpot          /soil(nsoil)%slpots)    &
+                                          / log(soil(nsoil)%slpotfc/soil(nsoil)%slpots)) )
             !---------------------------------------------------------------------------------!
          case default
             !------ Set as the complement of rel_soil_moist. ---------------------------------!
@@ -350,7 +350,7 @@ module soil_respiration
       sum_soil_energy = 0.0
       sum_soil_hcap   = 0.0
       sum_soil_water  = 0.0
-      sum_soil_soilbp = 0.0
+      sum_soil_slmsts = 0.0
       sum_soil_soilcp = 0.0
       brl_soil_moist  = 0.0
       brl_soil_oxygen = 0.0
@@ -364,7 +364,7 @@ module soil_respiration
          sum_soil_energy = sum_soil_energy + csite%soil_energy(k,ipa)        * dslz(k)
          sum_soil_hcap   = sum_soil_hcap   + soil(nsoil)%slcpd               * dslz(k)
          sum_soil_water  = sum_soil_water  + csite%soil_water (k,ipa) * wdns * dslz(k)
-         sum_soil_soilbp = sum_soil_soilbp + soil(nsoil)%soilbp       * wdns * dslz(k)
+         sum_soil_slmsts = sum_soil_slmsts + soil(nsoil)%slmsts       * wdns * dslz(k)
          sum_soil_soilcp = sum_soil_soilcp + soil(nsoil)%soilcp       * wdns * dslz(k)
          !---------------------------------------------------------------------------------!
 
@@ -376,8 +376,8 @@ module soil_respiration
             !------ Compute relative value for layer. -------------------------------------!
             lyr_soil_moist  = log(csite%soil_mstpot(k,ipa)/soil(nsoil)%slpotcp)            &
                             / log(soil(nsoil)%slpotfc     /soil(nsoil)%slpotcp)
-            lyr_soil_oxygen = log(csite%soil_mstpot(k,ipa)/soil(nsoil)%slpotbp)            &
-                            / log(soil(nsoil)%slpotfc     /soil(nsoil)%slpotbp)
+            lyr_soil_oxygen = log(csite%soil_mstpot(k,ipa)/soil(nsoil)%slpots )            &
+                            / log(soil(nsoil)%slpotfc     /soil(nsoil)%slpots )
             lyr_soil_moist  = max(0.,min(1.,lyr_soil_moist ))
             lyr_soil_oxygen = max(0.,min(1.,lyr_soil_oxygen))
             brl_soil_moist  = brl_soil_moist  + lyr_soil_moist  * dslz(k)
@@ -402,7 +402,7 @@ module soil_respiration
       case default
          !------ Relative soil moisture based on total water content. ---------------------!
          brl_soil_moist  = min( 1.0, max(0.0, ( sum_soil_water  - sum_soil_soilcp )        &
-                                            / ( sum_soil_soilbp - sum_soil_soilcp ) ) )
+                                            / ( sum_soil_slmsts - sum_soil_soilcp ) ) )
          brl_soil_oxygen = 1.0 - brl_soil_moist
          !---------------------------------------------------------------------------------!
       end select

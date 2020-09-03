@@ -1593,9 +1593,10 @@ subroutine init_soil_coms
    !----- Local constants. ----------------------------------------------------------------!
    real(kind=4), parameter :: fieldcp_K   =  0.1     ! hydr. cond. at field cap.   [mm/day]
    real(kind=4), parameter :: residual_K  =  1.e-5   ! minimum hydr. cond. (RS02)  [mm/day]
-   real(kind=4), parameter :: soilfc_MPa  = -0.010   ! Field capacity (TH98)       [   MPa]
-   real(kind=4), parameter :: soilcp_MPa  = -3.1     ! Matric pot. - air dry soil  [   MPa]
-   real(kind=4), parameter :: soilwp_MPa  = -1.5     ! Matric pot. - wilting point [   MPa]
+   real(kind=4), parameter :: slpots_MPa  = -0.0005  ! Saturation for vG80         [   MPa]
+   real(kind=4), parameter :: slpotfc_MPa = -0.010   ! Field capacity (TH98)       [   MPa]
+   real(kind=4), parameter :: slpotcp_MPa = -3.1     ! Matric pot. - air dry soil  [   MPa]
+   real(kind=4), parameter :: slpotwp_MPa = -1.5     ! Matric pot. - wilting point [   MPa]
    real(kind=4), parameter :: sand_hcapv  =  2.128e6 ! Sand vol. heat capacity     [J/m3/K]
    real(kind=4), parameter :: clay_hcapv  =  2.385e6 ! Clay vol. heat capacity     [J/m3/K]
    real(kind=4), parameter :: silt_hcapv  =  2.256e6 ! Silt vol. heat capacity (*) [J/m3/K]
@@ -1668,7 +1669,7 @@ subroutine init_soil_coms
    xclay_def = (/ 0.030, 0.060, 0.110, 0.160, 0.170, 0.270, 0.340, 0.340                   &
                 , 0.420, 0.470, 0.600, 0.200, 0.333, 0.050, 0.800, 0.525, 0.525 /)
    xkey_def  = (/'  Sa',' LSa',' SaL',' SiL','   L','SaCL','SiCL','  CL'                   &
-                ,' SaC',' SiC','   C','   P','  BR','  Si','  CC',' CSa',' CSi' /)
+                ,' SaC',' SiC','   C','Peat','BdRk','  Si','  CC',' CSa',' CSi' /)
    !---------------------------------------------------------------------------------------!
 
 
@@ -1814,17 +1815,19 @@ subroutine init_soil_coms
          !---------------------------------------------------------------------------------!
 
 
-         !----- Bubbling point potential [m].  Assume equivalent to saturation. -----------!
-         soil(s)%slpotbp = -0.356 ! ED-2.2 -0.534564359
-         soil(s)%malpha  = 1. / soil(s)%slpotbp
-         soil(s)%slpots  = soil(s)%slpotbp
+         !----- Saturation potential [m]. -------------------------------------------------!
+         soil(s)%slpots  = -0.356                ! ED-2.2 -0.534564359
+         soil(s)%slpotbp = soil(s)%slpots        ! Bubbling point, assume saturation
+         soil(s)%slpotpo = soil(s)%slpots        ! Porosity, assume saturation
+         soil(s)%malpha  = 1. / soil(s)%slpotbp  ! Inverse of bubbling point (not used)
          !---------------------------------------------------------------------------------!
 
 
 
-         !----- Soil moisture at saturation (porosity) [m3/m3]. ---------------------------!
+         !----- Soil moisture at saturation [m3/m3]. --------------------------------------!
          soil(s)%slmsts  =  0.863          ! ED-2.2 0.469200
-         soil(s)%soilbp  =  soil(s)%slmsts ! Assume the same as porosity
+         soil(s)%soilbp  =  soil(s)%slmsts ! Assume the same as saturation
+         soil(s)%soilpo  =  soil(s)%slmsts ! Assume the same as saturation
          !---------------------------------------------------------------------------------!
 
 
@@ -1850,14 +1853,16 @@ subroutine init_soil_coms
          soil(s)%slbs    = 1.0
          soil(s)%slmm    = 1.0
          soil(s)%slmu    = 1.0
-         soil(s)%slpotbp = 0.0
          soil(s)%malpha  = 0.0
          soil(s)%slpots  = 0.0
          soil(s)%slmsts  = 0.0
+         soil(s)%slpotbp = 0.0
+         soil(s)%soilbp  = 0.0
+         soil(s)%slpotpo = 0.0
+         soil(s)%soilpo  = 0.0
          soil(s)%soilre  = 0.0
          soil(s)%sfldcap = 0.0
          soil(s)%slpotfc = 0.0
-         soil(s)%soilbp  = 0.0
          soil(s)%slcpd   = 2130000.
          !---------------------------------------------------------------------------------!
       case default
@@ -1899,11 +1904,12 @@ subroutine init_soil_coms
             !------------------------------------------------------------------------------!
 
 
-            !----- Bubbling point potential [m].  Assume equivalent to saturation. --------!
-            soil(s)%slpotbp = -1.                                                          &
+            !----- Saturation potential [m]. ----------------------------------------------!
+            soil(s)%slpots  = -1.                                                          &
                             * (10.**(2.17 - 0.63*soil(s)%xclay - 1.58*soil(s)%xsand)) * 0.01
+            soil(s)%slpotbp = soil(s)%slpots       ! Bubbling point, assume saturation
+            soil(s)%slpotpo = soil(s)%slpots       ! Porosity, assume saturation
             soil(s)%malpha  = 1. / soil(s)%slpotbp
-            soil(s)%slpots  = soil(s)%slpotbp
             !------------------------------------------------------------------------------!
 
 
@@ -1912,8 +1918,9 @@ subroutine init_soil_coms
             !------------------------------------------------------------------------------!
 
 
-            !----- Soil moisture at bubbling point (assumed porosity) [m3/m3]. ------------!
-            soil(s)%soilbp  = soil(s)%slmsts
+            !----- Bubbling point soil moisture and porosity, assume saturation [m3/m3]. --!
+            soil(s)%soilbp  = soil(s)%slmsts ! Bubbling point
+            soil(s)%soilpo  = soil(s)%slmsts ! Porosity
             !------------------------------------------------------------------------------!
 
 
@@ -1970,13 +1977,14 @@ subroutine init_soil_coms
             !------------------------------------------------------------------------------!
 
 
-            !----- Bubbling point potential [m].  Assume equivalent to saturation. --------!
-            soil(s)%slpotbp = -1. / grav                                                   &
+            !----- Saturation potential [m]. ----------------------------------------------!
+            soil(s)%slpots  = -1. / grav                                                   &
                             * ( 0.285 + 7.33 * soil(s)%xsilt * soil(s)%xsilt               &
                               - 1.30 * soil(s)%xsilt * soil(s)%xclay                       &
                               + 3.60 * soil(s)%xsilt * soil(s)%xsilt * soil(s)%xclay )
+            soil(s)%slpotbp = soil(s)%slpots       ! Bubbling point, assume saturation
+            soil(s)%slpotpo = soil(s)%slpots       ! Porosity, assume saturation
             soil(s)%malpha  = 1. / soil(s)%slpotbp
-            soil(s)%slpots  = soil(s)%slpotbp
             !------------------------------------------------------------------------------!
 
 
@@ -1987,8 +1995,9 @@ subroutine init_soil_coms
             !------------------------------------------------------------------------------!
 
 
-            !----- Soil moisture at bubbling point (assumed porosity) [m3/m3]. ------------!
-            soil(s)%soilbp  = soil(s)%slmsts
+            !----- Bubbling point soil moisture and porosity, assume saturation [m3/m3]. --!
+            soil(s)%soilbp  = soil(s)%slmsts ! Bubbling point
+            soil(s)%soilpo  = soil(s)%slmsts ! Porosity
             !------------------------------------------------------------------------------!
 
 
@@ -2005,7 +2014,7 @@ subroutine init_soil_coms
             !      Field capacity is defined based on hydraulic conductivity of 0.1        !
             ! mm/day, following RS02.                                                      !
             !------------------------------------------------------------------------------!
-            soil(s)%slpotfc = soilfc_MPa * 1.e6 / (grav * wdns)
+            soil(s)%slpotfc = slpotfc_MPa * 1.e6 / (grav * wdns)
             soil(s)%sfldcap = soil_moisture(s,soil(s)%slpotfc)
             !------------------------------------------------------------------------------!
 
@@ -2058,11 +2067,11 @@ subroutine init_soil_coms
 
 
 
-            !----- Soil moisture and potential at saturation (porosity) [m3/m3]. ----------!
-            soil(s)%slmsts = 0.81799 + 0.099 * soil(s)%xclay - 3.142e-4 * soil(s)%sldbd    &
-                           + 0.01800 * soil(s)%slcec + 0.00451 * soil(s)%slph              &
-                           - 0.050 * soil(s)%xsand * soil(s)%xclay
-            soil(s)%slpots = matric_potential(s,soil(s)%slmsts)
+            !----- Soil moisture and potential at porosity [m3/m3]. -----------------------!
+            soil(s)%soilpo  = 0.81799 + 0.099 * soil(s)%xclay - 3.142e-4 * soil(s)%sldbd   &
+                            + 0.01800 * soil(s)%slcec + 0.00451 * soil(s)%slph             &
+                            - 0.050 * soil(s)%xsand * soil(s)%xclay
+            soil(s)%slpotpo = matric_potential(s,soil(s)%soilpo)
             !------------------------------------------------------------------------------!
 
 
@@ -2073,6 +2082,21 @@ subroutine init_soil_coms
                                 - 0.00831 * soil(s)%slph                                   &
                                 + 0.18 * soil(s)%xclay * soil(s)%xclay                     &
                                 + 0.26 * soil(s)%xsand * soil(s)%xclay                    )
+            !------------------------------------------------------------------------------!
+
+
+
+            !------------------------------------------------------------------------------!
+            !     Soil moisture at "saturation".  The vG80 approach assumes that actual    !
+            ! saturation occurs when soil matric potential is zero, which causes           !
+            ! singularities in many applications.  To prevent FPE errors, we assume that   !
+            ! water potential zero corresponds to porosity (admittedly this is not         !
+            ! entirely accurate), and impose "saturation" for ED-2.2 purposes to be when   !
+            ! matric potential is -0.5 kPa, similar to the highest saturation potential    !
+            ! values obtained through Cosby et al. (1984) parametrisation.                 !
+            !------------------------------------------------------------------------------!
+            soil(s)%slpots = slpots_MPa * 1.e6 / (grav * wdns)
+            soil(s)%slmsts = soil_moisture(s,soil(s)%slpots)
             !------------------------------------------------------------------------------!
 
 
@@ -2090,7 +2114,7 @@ subroutine init_soil_coms
             !      Field capacity is defined based on hydraulic conductivity of 0.1        !
             ! mm/day, following RS02.                                                      !
             !------------------------------------------------------------------------------!
-            soil(s)%slpotfc = soilfc_MPa * 1.e6 / (grav * wdns)
+            soil(s)%slpotfc = slpotfc_MPa * 1.e6 / (grav * wdns)
             soil(s)%sfldcap = soil_moisture(s,soil(s)%slpotfc)
             !------------------------------------------------------------------------------!
          end select
@@ -2107,20 +2131,28 @@ subroutine init_soil_coms
       select case (s)
       case (13)
          !----- Bedrock, do nothing. ------------------------------------------------------!
-         soil(s)%slpotwp  = 0.0
          soil(s)%slpotcp  = 0.0
-         soil(s)%slpotld  = 0.0
+         soil(s)%slpotwp  = 0.0
          soil(s)%slpotfr  = 0.0
-         soil(s)%soilwp   = 0.0
+         soil(s)%slpotld  = 0.0
+         soil(s)%slpotfc  = 0.0
+         soil(s)%slpotbp  = 0.0
+         soil(s)%slpots   = 0.0
+         soil(s)%slpotpo  = 0.0
          soil(s)%soilcp   = 0.0
-         soil(s)%soilld   = 0.0
+         soil(s)%soilwp   = 0.0
          soil(s)%soilfr   = 0.0
+         soil(s)%soilld   = 0.0
+         soil(s)%sfldcap  = 0.0
+         soil(s)%soilbp   = 0.0
+         soil(s)%slmsts   = 0.0
+         soil(s)%soilpo   = 0.0
          soil(s)%fhydraul = 0.0
          !---------------------------------------------------------------------------------!
       case default
          !----- First guess, use water potential. -----------------------------------------!
-         soil(s)%slpotwp = soilwp_MPa * 1.e6 / ( grav * wdns )
-         soil(s)%slpotcp = soilcp_MPa * wdns / grav
+         soil(s)%slpotwp = slpotwp_MPa * 1.e6 / ( grav * wdns )
+         soil(s)%slpotcp = slpotcp_MPa * wdns / grav
          soil(s)%soilwp  = soil_moisture(s,soil(s)%slpotwp)
          soil(s)%soilcp  = soil_moisture(s,soil(s)%slpotcp)
          !----- In case soilcp is less than the residual (very unlikely), recalculate it. -!
@@ -2280,42 +2312,45 @@ subroutine init_soil_coms
    do s=1,ed_nstyp
       soil8(s)%key      = soil(s)%key
       soil8(s)%method   = soil(s)%method
-      soil8(s)%slpots   = dble(soil(s)%slpots  )
-      soil8(s)%slmsts   = dble(soil(s)%slmsts  )
-      soil8(s)%slnm     = dble(soil(s)%slnm    )
-      soil8(s)%slbs     = dble(soil(s)%slbs    )
-      soil8(s)%sltt     = dble(soil(s)%sltt    )
-      soil8(s)%slmm     = dble(soil(s)%slmm    )
-      soil8(s)%slmu     = dble(soil(s)%slmu    )
-      soil8(s)%slpotbp  = dble(soil(s)%slpotbp )
-      soil8(s)%malpha   = dble(soil(s)%malpha  )
-      soil8(s)%slcpd    = dble(soil(s)%slcpd   )
-      soil8(s)%soilre   = dble(soil(s)%soilre  )
-      soil8(s)%soilcp   = dble(soil(s)%soilcp  )
-      soil8(s)%soilwp   = dble(soil(s)%soilwp  )
-      soil8(s)%soilbp   = dble(soil(s)%soilbp  )
-      soil8(s)%slcons   = dble(soil(s)%slcons  )
-      soil8(s)%fhydraul = dble(soil(s)%fhydraul)
-      soil8(s)%thcond0  = dble(soil(s)%thcond0 )
-      soil8(s)%thcond1  = dble(soil(s)%thcond1 )
-      soil8(s)%thcond2  = dble(soil(s)%thcond2 )
-      soil8(s)%thcond3  = dble(soil(s)%thcond3 )
-      soil8(s)%sfldcap  = dble(soil(s)%sfldcap )
       soil8(s)%xsand    = dble(soil(s)%xsand   )
-      soil8(s)%xclay    = dble(soil(s)%xclay   )
       soil8(s)%xsilt    = dble(soil(s)%xsilt   )
+      soil8(s)%xclay    = dble(soil(s)%xclay   )
       soil8(s)%slsoc    = dble(soil(s)%slsoc   )
       soil8(s)%slph     = dble(soil(s)%slph    )
       soil8(s)%slcec    = dble(soil(s)%slcec   )
       soil8(s)%sldbd    = dble(soil(s)%sldbd   )
-      soil8(s)%soilld   = dble(soil(s)%soilld  )
+      soil8(s)%soilre   = dble(soil(s)%soilre  )
+      soil8(s)%soilcp   = dble(soil(s)%soilcp  )
+      soil8(s)%soilwp   = dble(soil(s)%soilwp  )
       soil8(s)%soilfr   = dble(soil(s)%soilfr  )
+      soil8(s)%soilld   = dble(soil(s)%soilld  )
+      soil8(s)%sfldcap  = dble(soil(s)%sfldcap )
+      soil8(s)%soilbp   = dble(soil(s)%soilbp  )
+      soil8(s)%slmsts   = dble(soil(s)%slmsts  )
+      soil8(s)%soilpo   = dble(soil(s)%soilpo  )
       soil8(s)%slpotcp  = dble(soil(s)%slpotcp )
       soil8(s)%slpotwp  = dble(soil(s)%slpotwp )
-      soil8(s)%slpotfc  = dble(soil(s)%slpotfc )
-      soil8(s)%slpotld  = dble(soil(s)%slpotld )
       soil8(s)%slpotfr  = dble(soil(s)%slpotfr )
+      soil8(s)%slpotld  = dble(soil(s)%slpotld )
+      soil8(s)%slpotfc  = dble(soil(s)%slpotfc )
+      soil8(s)%slpotbp  = dble(soil(s)%slpotbp )
+      soil8(s)%slpots   = dble(soil(s)%slpots  )
+      soil8(s)%slpotpo  = dble(soil(s)%slpotpo )
+      soil8(s)%sltt     = dble(soil(s)%sltt    )
+      soil8(s)%slnm     = dble(soil(s)%slnm    )
+      soil8(s)%slbs     = dble(soil(s)%slbs    )
+      soil8(s)%slmm     = dble(soil(s)%slmm    )
+      soil8(s)%slmu     = dble(soil(s)%slmu    )
+      soil8(s)%malpha   = dble(soil(s)%malpha  )
+      soil8(s)%slcons   = dble(soil(s)%slcons  )
+      soil8(s)%fhydraul = dble(soil(s)%fhydraul)
+      soil8(s)%slcpd    = dble(soil(s)%slcpd   )
+      soil8(s)%thcond0  = dble(soil(s)%thcond0 )
+      soil8(s)%thcond1  = dble(soil(s)%thcond1 )
+      soil8(s)%thcond2  = dble(soil(s)%thcond2 )
+      soil8(s)%thcond3  = dble(soil(s)%thcond3 )
    end do
+   !---------------------------------------------------------------------------------------!
 
 
 

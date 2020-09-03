@@ -1653,11 +1653,11 @@ module update_derived_utils
                               if(abs(slz(k)) < 0.1)then
                                  csite%soil_tempk(k,ipa) = tmp1
                                  csite%soil_water(k,ipa) = max(soil(ntext)%soilcp          &
-                                                              ,soilw1 * soil(ntext)%soilbp)
+                                                              ,soilw1 * soil(ntext)%slmsts)
                               else
                                  csite%soil_tempk(k,ipa) = tmp2
                                  csite%soil_water(k,ipa) = max(soil(ntext)%soilcp          &
-                                                              ,soilw2 * soil(ntext)%soilbp)
+                                                              ,soilw2 * soil(ntext)%slmsts)
                               endif
                               if (csite%soil_tempk(k,ipa) > t3ple) then
                                  csite%soil_fracliq(k,ipa) = 1.0

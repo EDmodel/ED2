@@ -428,81 +428,85 @@ module soil_coms
    type soil_class
       character(len=4) :: key      ! Soil texture acronym                         [     ---]
       character(len=4) :: method   ! Method for pedotransfer function             [     ---]
-      real(kind=4)     :: slpots   ! Soil matric potential at saturation          [       m]
-      real(kind=4)     :: slmsts   ! Soil moisture at saturation                  [   m3/m3]
-      real(kind=4)     :: slnm     ! Pore-size distr. idx: n(vG80); lambda(BC64)  [     n/d]
-      real(kind=4)     :: slbs     ! 1/lambda or 1/n (aka C74's b factor)         [     n/d]
-      real(kind=4)     :: sltt     ! Pore tortuosity parameter                    [     n/d]
-      real(kind=4)     :: slmm     ! vG80: m=1-1/n.   BC64: m=tort+2+2/lambda     [     n/d]
-      real(kind=4)     :: slmu     ! mu = -1/m.                                   [     n/d]
-      real(kind=4)     :: slpotbp  ! Soil matric potential at bubble point        [       m]
-      real(kind=4)     :: malpha   ! van Genuchten's -alpha (1/slpotbp)           [     1/m]
-      real(kind=4)     :: slcpd    ! Specific heat of dry soil                    [  J/m3/K]
-      real(kind=4)     :: soilre   ! Residual soil moisture (-Infinite potential) [   m3/m3]
-      real(kind=4)     :: soilcp   ! Dry soil capacity (at -3.1MPa)               [   m3/m3]
-      real(kind=4)     :: soilwp   ! Wilting point capacity (at -1.5MPa)          [   m3/m3]
-      real(kind=4)     :: soilbp   ! Soil moisture at bubble point                [   m3/m3]
-      real(kind=4)     :: slcons   ! hydraulic conductivity at saturation         [     m/s]
-      real(kind=4)     :: fhydraul ! Surface value for slcons                     [     m/s]
-      real(kind=4)     :: thcond0  ! First coefficient for thermal conductivity   [   W/m/K]
-      real(kind=4)     :: thcond1  ! Second coefficient for thermal conductivity  [   W/m/K]
-      real(kind=4)     :: thcond2  ! Third coefficient for thermal conductivity   [     ---]
-      real(kind=4)     :: thcond3  ! Fourth coefficient for thermal conductivity  [     ---]
-      real(kind=4)     :: sfldcap  ! Soil field capacity                          [   m3/m3]
       real(kind=4)     :: xsand    ! Volumetric fraction of sand                  [     ---]
-      real(kind=4)     :: xclay    ! Volumetric fraction of clay                  [     ---]
       real(kind=4)     :: xsilt    ! Volumetric fraction of silt                  [     ---]
+      real(kind=4)     :: xclay    ! Volumetric fraction of clay                  [     ---]
       real(kind=4)     :: slsoc    ! Soil organic carbon content.                 [   kg/kg]
       real(kind=4)     :: slph     ! Soil pH                                      [    0-14]
       real(kind=4)     :: slcec    ! Soil cation exchange capacity                [  mol/kg]
       real(kind=4)     :: sldbd    ! "Dry" bulk density                           [   kg/m3]
-      real(kind=4)     :: soilld   ! Leaf drop threshold                          [   m3/m3]
+      real(kind=4)     :: soilre   ! Residual soil moisture (-Infinite potential) [   m3/m3]
+      real(kind=4)     :: soilcp   ! Dry soil capacity (at -3.1MPa)               [   m3/m3]
+      real(kind=4)     :: soilwp   ! Wilting point capacity (at -1.5MPa)          [   m3/m3]
       real(kind=4)     :: soilfr   ! Fire threshold                               [   m3/m3]
+      real(kind=4)     :: soilld   ! Leaf drop threshold                          [   m3/m3]
+      real(kind=4)     :: sfldcap  ! Soil field capacity                          [   m3/m3]
+      real(kind=4)     :: soilbp   ! Soil moisture at bubble point (vG80 only)    [   m3/m3]
+      real(kind=4)     :: slmsts   ! Soil moisture at saturation                  [   m3/m3]
+      real(kind=4)     :: soilpo   ! Soil porosity (used only for vG80)           [   m3/m3]
       real(kind=4)     :: slpotcp  ! Water potential for dry soil                 [       m]
       real(kind=4)     :: slpotwp  ! Water potential for wilting point            [       m]
-      real(kind=4)     :: slpotfc  ! Water potential for field capacity           [       m]
-      real(kind=4)     :: slpotld  ! Leaf drop threshold                          [       m]
       real(kind=4)     :: slpotfr  ! Fire threshold                               [       m]
+      real(kind=4)     :: slpotld  ! Leaf drop threshold                          [       m]
+      real(kind=4)     :: slpotfc  ! Water potential for field capacity           [       m]
+      real(kind=4)     :: slpotbp  ! Soil matric potential at bubble point        [       m]
+      real(kind=4)     :: slpots   ! Soil matric potential at saturation          [       m]
+      real(kind=4)     :: slpotpo  ! Soil matric potential at porosity            [       m]
+      real(kind=4)     :: sltt     ! Pore tortuosity parameter                    [     n/d]
+      real(kind=4)     :: slnm     ! Pore-size distr. idx: n(vG80); lambda(BC64)  [     n/d]
+      real(kind=4)     :: slbs     ! 1/lambda or 1/n (aka C74's b factor)         [     n/d]
+      real(kind=4)     :: slmm     ! vG80: m=1-1/n.   BC64: m=tort+2+2/lambda     [     n/d]
+      real(kind=4)     :: slmu     ! mu = -1/m.                                   [     n/d]
+      real(kind=4)     :: malpha   ! van Genuchten's -alpha (1/slpotbp)           [     1/m]
+      real(kind=4)     :: slcons   ! hydraulic conductivity at saturation         [     m/s]
+      real(kind=4)     :: fhydraul ! Surface value for slcons                     [     m/s]
+      real(kind=4)     :: slcpd    ! Specific heat of dry soil                    [  J/m3/K]
+      real(kind=4)     :: thcond0  ! First coefficient for thermal conductivity   [   W/m/K]
+      real(kind=4)     :: thcond1  ! Second coefficient for thermal conductivity  [   W/m/K]
+      real(kind=4)     :: thcond2  ! Third coefficient for thermal conductivity   [     ---]
+      real(kind=4)     :: thcond3  ! Fourth coefficient for thermal conductivity  [     ---]
    end type soil_class
    !----- Double precision version --------------------------------------------------------!
    type soil_class8
       character(len=4) :: key      ! Soil texture acronym                         [     ---]
       character(len=4) :: method   ! Method for pedotransfer function             [     ---]
-      real(kind=8)     :: slpots   ! Soil matric potential at saturation          [       m]
-      real(kind=8)     :: slmsts   ! Soil moisture at saturation                  [   m3/m3]
-      real(kind=8)     :: slnm     ! Pore-size distr. idx: n(vG80); lambda(BC64)  [     n/d]
-      real(kind=8)     :: slbs     ! 1/lambda or 1/n (aka C74's b factor)         [     n/d]
-      real(kind=8)     :: sltt     ! Pore tortuosity parameter                    [     n/d]
-      real(kind=8)     :: slmm     ! vG80: m=1-1/n.   BC64: m=tort+2+2/lambda     [     n/d]
-      real(kind=8)     :: slmu     ! mu = -1/m.                                   [     n/d]
-      real(kind=8)     :: slpotbp  ! Soil matric potential at bubble point        [       m]
-      real(kind=8)     :: malpha   ! van Genuchten's -alpha (1/slpotbp)           [     1/m]
-      real(kind=8)     :: slcpd    ! Specific heat of dry soil                    [  J/m3/K]
-      real(kind=8)     :: soilre   ! Residual soil moisture (-Infinite potential) [   m3/m3]
-      real(kind=8)     :: soilcp   ! Dry soil capacity (at -3.1MPa)               [   m3/m3]
-      real(kind=8)     :: soilwp   ! Wilting point capacity (at -1.5MPa)          [   m3/m3]
-      real(kind=8)     :: soilbp   ! Soil moisture at bubble point                [   m3/m3]
-      real(kind=8)     :: slcons   ! hydraulic conductivity at saturation         [     m/s]
-      real(kind=8)     :: fhydraul ! Surface value for slcons                     [     m/s]
-      real(kind=8)     :: thcond0  ! First coefficient for thermal conductivity   [   W/m/K]
-      real(kind=8)     :: thcond1  ! Second coefficient for thermal conductivity  [   W/m/K]
-      real(kind=8)     :: thcond2  ! Third coefficient for thermal conductivity   [     ---]
-      real(kind=8)     :: thcond3  ! Fourth coefficient for thermal conductivity  [     ---]
-      real(kind=8)     :: sfldcap  ! Soil field capacity                          [   m3/m3]
       real(kind=8)     :: xsand    ! Volumetric fraction of sand                  [     ---]
-      real(kind=8)     :: xclay    ! Volumetric fraction of clay                  [     ---]
       real(kind=8)     :: xsilt    ! Volumetric fraction of silt                  [     ---]
+      real(kind=8)     :: xclay    ! Volumetric fraction of clay                  [     ---]
       real(kind=8)     :: slsoc    ! Soil organic carbon content.                 [   kg/kg]
       real(kind=8)     :: slph     ! Soil pH                                      [    0-14]
       real(kind=8)     :: slcec    ! Soil cation exchange capacity                [  mol/kg]
       real(kind=8)     :: sldbd    ! "Dry" bulk density                           [   kg/m3]
-      real(kind=8)     :: soilld   ! Leaf drop threshold                          [   m3/m3]
+      real(kind=8)     :: soilre   ! Residual soil moisture (-Infinite potential) [   m3/m3]
+      real(kind=8)     :: soilcp   ! Dry soil capacity (at -3.1MPa)               [   m3/m3]
+      real(kind=8)     :: soilwp   ! Wilting point capacity (at -1.5MPa)          [   m3/m3]
       real(kind=8)     :: soilfr   ! Fire threshold                               [   m3/m3]
+      real(kind=8)     :: soilld   ! Leaf drop threshold                          [   m3/m3]
+      real(kind=8)     :: sfldcap  ! Soil field capacity                          [   m3/m3]
+      real(kind=8)     :: soilbp   ! Soil moisture at bubble point (vG80 only)    [   m3/m3]
+      real(kind=8)     :: slmsts   ! Soil moisture at saturation                  [   m3/m3]
+      real(kind=8)     :: soilpo   ! Soil porosity (used only for vG80)           [   m3/m3]
       real(kind=8)     :: slpotcp  ! Water potential for dry soil                 [       m]
       real(kind=8)     :: slpotwp  ! Water potential for wilting point            [       m]
-      real(kind=8)     :: slpotfc  ! Water potential for field capacity           [       m]
-      real(kind=8)     :: slpotld  ! Leaf drop threshold                          [       m]
       real(kind=8)     :: slpotfr  ! Fire threshold                               [       m]
+      real(kind=8)     :: slpotld  ! Leaf drop threshold                          [       m]
+      real(kind=8)     :: slpotfc  ! Water potential for field capacity           [       m]
+      real(kind=8)     :: slpotbp  ! Soil matric potential at bubble point        [       m]
+      real(kind=8)     :: slpots   ! Soil matric potential at saturation          [       m]
+      real(kind=8)     :: slpotpo  ! Soil matric potential at porosity            [       m]
+      real(kind=8)     :: sltt     ! Pore tortuosity parameter                    [     n/d]
+      real(kind=8)     :: slnm     ! Pore-size distr. idx: n(vG80); lambda(BC64)  [     n/d]
+      real(kind=8)     :: slbs     ! 1/lambda or 1/n (aka C74's b factor)         [     n/d]
+      real(kind=8)     :: slmm     ! vG80: m=1-1/n.   BC64: m=tort+2+2/lambda     [     n/d]
+      real(kind=8)     :: slmu     ! mu = -1/m.                                   [     n/d]
+      real(kind=8)     :: malpha   ! van Genuchten's -alpha (1/slpotbp)           [     1/m]
+      real(kind=8)     :: slcons   ! hydraulic conductivity at saturation         [     m/s]
+      real(kind=8)     :: fhydraul ! Surface value for slcons                     [     m/s]
+      real(kind=8)     :: slcpd    ! Specific heat of dry soil                    [  J/m3/K]
+      real(kind=8)     :: thcond0  ! First coefficient for thermal conductivity   [   W/m/K]
+      real(kind=8)     :: thcond1  ! Second coefficient for thermal conductivity  [   W/m/K]
+      real(kind=8)     :: thcond2  ! Third coefficient for thermal conductivity   [     ---]
+      real(kind=8)     :: thcond3  ! Fourth coefficient for thermal conductivity  [     ---]
    end type soil_class8
    !---------------------------------------------------------------------------------------!
    !----- To be filled in ed_params.f90. --------------------------------------------------!
@@ -635,81 +639,88 @@ module soil_coms
          !----- Single precision. ---------------------------------------------------------!
          soil(s)%key      = 'Rien'
          soil(s)%method   = 'RIEN'
-         soil(s)%slpots   = undef_real
-         soil(s)%slmsts   = undef_real
-         soil(s)%slnm     = undef_real
-         soil(s)%slbs     = undef_real
-         soil(s)%sltt     = undef_real
-         soil(s)%slmm     = undef_real
-         soil(s)%slmu     = undef_real
-         soil(s)%slpotbp  = undef_real
-         soil(s)%malpha   = undef_real
-         soil(s)%slcpd    = undef_real
-         soil(s)%soilre   = undef_real
-         soil(s)%soilcp   = undef_real
-         soil(s)%soilwp   = undef_real
-         soil(s)%soilbp   = undef_real
-         soil(s)%slcons   = undef_real
-         soil(s)%fhydraul = undef_real
-         soil(s)%thcond0  = undef_real
-         soil(s)%thcond1  = undef_real
-         soil(s)%thcond2  = undef_real
-         soil(s)%thcond3  = undef_real
-         soil(s)%sfldcap  = undef_real
          soil(s)%xsand    = undef_real
-         soil(s)%xclay    = undef_real
          soil(s)%xsilt    = undef_real
+         soil(s)%xclay    = undef_real
          soil(s)%slsoc    = undef_real
          soil(s)%slph     = undef_real
          soil(s)%slcec    = undef_real
          soil(s)%sldbd    = undef_real
-         soil(s)%soilld   = undef_real
+         soil(s)%soilre   = undef_real
+         soil(s)%soilcp   = undef_real
+         soil(s)%soilwp   = undef_real
          soil(s)%soilfr   = undef_real
+         soil(s)%soilld   = undef_real
+         soil(s)%sfldcap  = undef_real
+         soil(s)%soilbp   = undef_real
+         soil(s)%slmsts   = undef_real
+         soil(s)%soilpo   = undef_real
          soil(s)%slpotcp  = undef_real
          soil(s)%slpotwp  = undef_real
-         soil(s)%slpotfc  = undef_real
-         soil(s)%slpotld  = undef_real
          soil(s)%slpotfr  = undef_real
+         soil(s)%slpotld  = undef_real
+         soil(s)%slpotfc  = undef_real
+         soil(s)%slpotbp  = undef_real
+         soil(s)%slpots   = undef_real
+         soil(s)%slpotpo  = undef_real
+         soil(s)%sltt     = undef_real
+         soil(s)%slnm     = undef_real
+         soil(s)%slbs     = undef_real
+         soil(s)%slmm     = undef_real
+         soil(s)%slmu     = undef_real
+         soil(s)%malpha   = undef_real
+         soil(s)%slcons   = undef_real
+         soil(s)%fhydraul = undef_real
+         soil(s)%slcpd    = undef_real
+         soil(s)%thcond0  = undef_real
+         soil(s)%thcond1  = undef_real
+         soil(s)%thcond2  = undef_real
+         soil(s)%thcond3  = undef_real
          !---------------------------------------------------------------------------------!
+
+
+
 
          !----- Double precision. ---------------------------------------------------------!
          soil8(s)%key      = 'Rien'
          soil8(s)%method   = 'RIEN'
-         soil8(s)%slpots   = undef_dble
-         soil8(s)%slmsts   = undef_dble
-         soil8(s)%slnm     = undef_dble
-         soil8(s)%slbs     = undef_dble
-         soil8(s)%sltt     = undef_dble
-         soil8(s)%slmm     = undef_dble
-         soil8(s)%slmu     = undef_dble
-         soil8(s)%slpotbp  = undef_dble
-         soil8(s)%malpha   = undef_dble
-         soil8(s)%slcpd    = undef_dble
-         soil8(s)%soilre   = undef_dble
-         soil8(s)%soilcp   = undef_dble
-         soil8(s)%soilwp   = undef_dble
-         soil8(s)%soilbp   = undef_dble
-         soil8(s)%slcons   = undef_dble
-         soil8(s)%fhydraul = undef_dble
-         soil8(s)%thcond0  = undef_dble
-         soil8(s)%thcond1  = undef_dble
-         soil8(s)%thcond2  = undef_dble
-         soil8(s)%thcond3  = undef_dble
-         soil8(s)%sfldcap  = undef_dble
          soil8(s)%xsand    = undef_dble
-         soil8(s)%xclay    = undef_dble
          soil8(s)%xsilt    = undef_dble
+         soil8(s)%xclay    = undef_dble
          soil8(s)%slsoc    = undef_dble
          soil8(s)%slph     = undef_dble
          soil8(s)%slcec    = undef_dble
          soil8(s)%sldbd    = undef_dble
-         soil8(s)%soilld   = undef_dble
+         soil8(s)%soilre   = undef_dble
+         soil8(s)%soilcp   = undef_dble
+         soil8(s)%soilwp   = undef_dble
          soil8(s)%soilfr   = undef_dble
+         soil8(s)%soilld   = undef_dble
+         soil8(s)%sfldcap  = undef_dble
+         soil8(s)%soilbp   = undef_dble
+         soil8(s)%slmsts   = undef_dble
+         soil8(s)%soilpo   = undef_dble
          soil8(s)%slpotcp  = undef_dble
          soil8(s)%slpotwp  = undef_dble
-         soil8(s)%slpotfc  = undef_dble
-         soil8(s)%slpotld  = undef_dble
          soil8(s)%slpotfr  = undef_dble
+         soil8(s)%slpotld  = undef_dble
+         soil8(s)%slpotfc  = undef_dble
+         soil8(s)%slpotbp  = undef_dble
+         soil8(s)%slpots   = undef_dble
+         soil8(s)%slpotpo  = undef_dble
+         soil8(s)%sltt     = undef_dble
+         soil8(s)%slnm     = undef_dble
+         soil8(s)%slbs     = undef_dble
+         soil8(s)%slmm     = undef_dble
+         soil8(s)%slmu     = undef_dble
+         soil8(s)%malpha   = undef_dble
+         soil8(s)%slcons   = undef_dble
+         soil8(s)%fhydraul = undef_dble
+         soil8(s)%slcpd    = undef_dble
+         soil8(s)%thcond0  = undef_dble
+         soil8(s)%thcond1  = undef_dble
+         soil8(s)%thcond2  = undef_dble
+         soil8(s)%thcond3  = undef_dble
          !---------------------------------------------------------------------------------!
       end do
       !------------------------------------------------------------------------------------!
@@ -828,7 +839,7 @@ module soil_coms
    !  -1. = dry air soil moisture (soilcp)                                                 !
    !   0. = wilting point         (soilwp)                                                 !
    !   1. = field capacity        (sfldcap)                                                !
-   !   2. = bubble point          (soilbp)                                                 !
+   !   2. = saturation            (slmsts)                                                 !
    !---------------------------------------------------------------------------------------!
    real(kind=4) function ed_soil_idx2water(soil_index,ntext)
       implicit none
@@ -848,7 +859,7 @@ module soil_coms
                     +  soil_index        * (soil(ntext)%sfldcap - soil(ntext)%soilwp )
       else
          soil_water = soil(ntext)%sfldcap                                                  &
-                    + (soil_index - 1.0) * (soil(ntext)%soilbp  - soil(ntext)%sfldcap)
+                    + (soil_index - 1.0) * (soil(ntext)%slmsts  - soil(ntext)%sfldcap)
       end if
 
       ed_soil_idx2water = soil_water
@@ -910,7 +921,7 @@ module soil_coms
 
          !------ Find relative soil moisture. ---------------------------------------------!
          relmoist = ( soil_water     - soil(s)%soilre )                                    &
-                  / ( soil(s)%slmsts - soil(s)%soilre )
+                  / ( soil(s)%soilpo - soil(s)%soilre )
          relmoist = max(0.0,min(relmoist,1.0))
          !---------------------------------------------------------------------------------!
 
@@ -983,7 +994,7 @@ module soil_coms
 
          !------ Find relative soil moisture. ---------------------------------------------!
          relmoist = ( soil_water      - soil8(s)%soilre )                                  &
-                  / ( soil8(s)%slmsts - soil8(s)%soilre )
+                  / ( soil8(s)%soilpo - soil8(s)%soilre )
          relmoist = max(0.d0,min(relmoist,1.d0))
          !---------------------------------------------------------------------------------!
 
@@ -1035,22 +1046,32 @@ module soil_coms
          !----- Brooks and Corey (1964). --------------------------------------------------!
          relmoist = (soil(s)%slpots / soil_mstpot) ** soil(s)%slnm
          !---------------------------------------------------------------------------------!
+
+
+         !----- Make sure moisture is bounded. --------------------------------------------!
+         relmoist = max(0.0,min(relmoist,1.0))
+         !---------------------------------------------------------------------------------!
+
+
+         !------ Convert relative soil moisture into absolute moisture. -------------------!
+         soil_moisture = (1.0 - relmoist) * soil(s)%soilre + relmoist * soil(s)%slmsts
+         !---------------------------------------------------------------------------------!
       case ('vG80')
          !----- van Genuchten (1980). -----------------------------------------------------!
          relmstpot = soil(s)%malpha * soil_mstpot
          relmoist  = ( 1. / (1. + relmstpot ** soil(s)%slnm) ) ** soil(s)%slmm
          !---------------------------------------------------------------------------------!
+
+
+         !----- Make sure moisture is bounded. --------------------------------------------!
+         relmoist = max(0.0,min(relmoist,1.0))
+         !---------------------------------------------------------------------------------!
+
+
+         !------ Convert relative soil moisture into absolute moisture. -------------------!
+         soil_moisture = (1.0 - relmoist) * soil(s)%soilre + relmoist * soil(s)%soilpo
+         !---------------------------------------------------------------------------------!
       end select
-      !------------------------------------------------------------------------------------!
-
-
-      !----- Make sure moisture is bounded. -----------------------------------------------!
-      relmoist = max(0.0,min(relmoist,1.0))
-      !------------------------------------------------------------------------------------!
-
-
-      !------ Convert relative soil moisture into absolute moisture. ----------------------!
-      soil_moisture = (1.0 - relmoist) * soil(s)%soilre + relmoist * soil(s)%slmsts
       !------------------------------------------------------------------------------------!
 
       return
@@ -1120,7 +1141,7 @@ module soil_coms
 
          !------ Find relative soil moisture. ---------------------------------------------!
          relmoist = ( soil_water     - soil(s)%soilre )                                    &
-                  / ( soil(s)%slmsts - soil(s)%soilre )
+                  / ( soil(s)%soilpo - soil(s)%soilre )
          relmoist = max(0.0,min(relmoist,1.0))
          !---------------------------------------------------------------------------------!
 
@@ -1203,13 +1224,13 @@ module soil_coms
 
          !------ Find relative soil moisture. ---------------------------------------------!
          relmoist = ( soil_water      - soil8(s)%soilre )                                  &
-                  / ( soil8(s)%slmsts - soil8(s)%soilre )
+                  / ( soil8(s)%soilpo - soil8(s)%soilre )
          relmoist = max(0.d0,min(relmoist,1.d0))
          !---------------------------------------------------------------------------------!
 
 
          !----- Find the hydraulic conductivity. ------------------------------------------!
-         fibf         = 1.d0 - (1.d0 - relmoist**(1.d0/soil8(s)%slmm)) ** soil8(s)%slmm
+         fibf          = 1.d0 - (1.d0 - relmoist**(1.d0/soil8(s)%slmm)) ** soil8(s)%slmm
          hydr_conduct8 = slcons18(k,s) * relmoist ** soil8(s)%sltt * fibf * fibf
          hydr_conduct8 = fzcorr * max( hydcond_min8, hydr_conduct8 )
          !---------------------------------------------------------------------------------!

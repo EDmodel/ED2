@@ -267,7 +267,7 @@ module rk4_derivs
          rk4aux(ibuff)%psiplusz(k) = slzt8(k) + initp%soil_mstpot(k)
          rk4aux(ibuff)%drysoil (k) = (initp%soil_water(k) - soil8(nsoil)%soilcp)           &
                                    * initp%soil_fracliq(k)                        <= 0.d0
-         rk4aux(ibuff)%satsoil (k) = initp%soil_water(k) >= soil8(nsoil)%soilbp
+         rk4aux(ibuff)%satsoil (k) = initp%soil_water(k) >= soil8(nsoil)%slmsts
       end do
       !------------------------------------------------------------------------------------!
 
@@ -409,8 +409,8 @@ module rk4_derivs
          !---------------------------------------------------------------------------------!
          !     Aquifer. Soil in the layer beneath is always at bubbling point.             !
          !---------------------------------------------------------------------------------!
-         initp%soil_water       (kben) = soil8(nsoil)%soilbp
-         initp%soil_mstpot      (kben) = soil8(nsoil)%slpotbp
+         initp%soil_water       (kben) = soil8(nsoil)%slmsts
+         initp%soil_mstpot      (kben) = soil8(nsoil)%slpots
          initp%soil_fracliq     (kben) = initp%soil_fracliq (klsl)
          rk4aux(ibuff)%th_cond_s(kben) = ( soil8(nsoil)%thcond0                            &
                                          + soil8(nsoil)%thcond1 * initp%soil_water(kben) ) &

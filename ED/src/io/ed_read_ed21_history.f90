@@ -3318,7 +3318,7 @@ subroutine read_ed21_polyclone
                         do km=1,nzg
 
 !                           if( this_soil_water(slz_match(km),ipa) .gt.     &
-!                                soil(cpoly%ntext_soil(km,is))%soilbp .or.  &
+!                                soil(cpoly%ntext_soil(km,is))%slmsts .or.  &
 !                                this_soil_water(slz_match(km),ipa).le.0.0 ) then
 !
 !                              call fatal_error('Soil moisture is greater than porosity' &
@@ -3326,7 +3326,7 @@ subroutine read_ed21_polyclone
 !                           end if
                            csite%soil_water(km,ipa) = &
                                 min(this_soil_water(slz_match(km),ipa), &
-                                soil(cpoly%ntext_soil(km,is))%soilbp)
+                                soil(cpoly%ntext_soil(km,is))%slmsts)
                         end do
                      end do
                      deallocate(this_soil_water)

@@ -143,7 +143,7 @@ module plant_hydro
             !  than the bubbling point.                                                    !
             !------------------------------------------------------------------------------!
             swater_min = mg_safe * soil(nsoil)%soilcp  + om_safe * soil(nsoil)%soilwp
-            swater_max = mg_safe * soil(nsoil)%sfldcap + om_safe * soil(nsoil)%soilbp
+            swater_max = mg_safe * soil(nsoil)%sfldcap + om_safe * soil(nsoil)%slmsts
             swater_use = max( swater_min                                                   &
                             , min(swater_max                                               &
                                  ,csite%soil_water(k,ipa) * csite%soil_fracliq(k,ipa) ) )

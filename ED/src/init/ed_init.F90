@@ -758,18 +758,30 @@ module ed_init
          write (unit=*,fmt=efmt ) '   - Soil pH                  =', soil(nsoil)%slph
          write (unit=*,fmt=efmt ) '   - Cation exchange capacity =', soil(nsoil)%slcec
          write (unit=*,fmt=efmt ) '   - Dry bulk density         =', soil(nsoil)%sldbd
+         write (unit=*,fmt=efmt ) '   - Heat capacity            =', soil(nsoil)%slcpd
+         write (unit=*,fmt=efmt ) '   - Saturated hydr. conduct. =', soil(nsoil)%slcons
          write (unit=*,fmt=efmt ) '   - SLBS                     =', soil(nsoil)%slbs
          write (unit=*,fmt=efmt ) '   - SLNM                     =', soil(nsoil)%slnm
-         write (unit=*,fmt=efmt ) '   - SLPOTBP                  =', soil(nsoil)%slpotbp
-         write (unit=*,fmt=efmt ) '   - SLPOTS                   =', soil(nsoil)%slpots
-         write (unit=*,fmt=efmt ) '   - SLCONS                   =', soil(nsoil)%slcons
+         write (unit=*,fmt=efmt ) '   - SLTT                     =', soil(nsoil)%sltt
+         write (unit=*,fmt='(a)') ' + Matric potential [m]: '
+         write (unit=*,fmt=efmt ) '   - Dry air soil             =', soil(nsoil)%slpotcp
+         write (unit=*,fmt=efmt ) '   - Wilting point            =', soil(nsoil)%slpotwp
+         write (unit=*,fmt=efmt ) '   - Fire point               =', soil(nsoil)%slpotfr
+         write (unit=*,fmt=efmt ) '   - Leaf-shedding point      =', soil(nsoil)%slpotld
+         write (unit=*,fmt=efmt ) '   - Field capacity           =', soil(nsoil)%slpotfc
+         write (unit=*,fmt=efmt ) '   - Bubbling point           =', soil(nsoil)%slpotbp
+         write (unit=*,fmt=efmt ) '   - Saturation               =', soil(nsoil)%slpots
+         write (unit=*,fmt=efmt ) '   - Porosity                 =', soil(nsoil)%slpotpo
+         write (unit=*,fmt='(a)') ' + Volumetric soil moisture [m3/m3]: '
          write (unit=*,fmt=efmt ) '   - Residual                 =', soil(nsoil)%soilcp
          write (unit=*,fmt=efmt ) '   - Dry air soil             =', soil(nsoil)%soilcp
          write (unit=*,fmt=efmt ) '   - Wilting point            =', soil(nsoil)%soilwp
+         write (unit=*,fmt=efmt ) '   - Fire point               =', soil(nsoil)%soilfr
+         write (unit=*,fmt=efmt ) '   - Leaf-shedding point      =', soil(nsoil)%soilld
          write (unit=*,fmt=efmt ) '   - Field capacity           =', soil(nsoil)%sfldcap
          write (unit=*,fmt=efmt ) '   - Bubbling point           =', soil(nsoil)%soilbp
          write (unit=*,fmt=efmt ) '   - Saturation               =', soil(nsoil)%slmsts
-         write (unit=*,fmt=efmt ) '   - Heat capacity            =', soil(nsoil)%slcpd
+         write (unit=*,fmt=efmt ) '   - Porosity                 =', soil(nsoil)%soilpo
       end do
       write (unit=*,fmt='(a)') '   -------------------------------------------------------'
       write (unit=*,fmt='(a)') ' '

@@ -1398,7 +1398,7 @@ module rk4_misc
             !     Compute the available "room" for water at the top soil layer.  We must   !
             ! multiply by density and depth to make sure that the units match.             !
             !------------------------------------------------------------------------------!
-            wmass_room = max(0.d0, soil8(nsoil)%soilbp - initp%soil_water(nzg))            &
+            wmass_room = max(0.d0, soil8(nsoil)%slmsts - initp%soil_water(nzg))            &
                        * wdns8 * dslz8(nzg) 
             wmass_perc = min(wmass_perc,wmass_room)
             !------------------------------------------------------------------------------!
@@ -1502,7 +1502,7 @@ module rk4_misc
 
 
          !----- Find the amount of water (and energy) the top soil layer can receive. -----!
-         wmass_room  = max(0.d0, soil8(nsoil)%soilbp - initp%soil_water(nzg))              &
+         wmass_room  = max(0.d0, soil8(nsoil)%slmsts - initp%soil_water(nzg))              &
                      * wdns8 * dslz8(nzg)
          energy_room = energy_free * wmass_room / wmass_free
          !---------------------------------------------------------------------------------!
@@ -2047,7 +2047,7 @@ module rk4_misc
    ! range.  We currently test this only for the top soil layer because this is the most   !
    ! likely to cause problems, but if it does happen in other layers, we could easily      !
    ! extend this for all layers.  Depending on its derivative, soil moisture can go under  !
-   ! the minimum soil moisture possible (soilcp) or above the bubbling point (soilbp).     !
+   ! the minimum soil moisture possible (soilcp) or above the saturation point (slmsts).   !
    ! Both are bad things, and if the value is way off-bounds, then we leave it like that   !
    ! so the step can be rejected.   However, if the value is just slightly off(*) these    !
    ! limits, we make a small exchange of moisture with the neighbouring layer.  This will  !
@@ -2116,7 +2116,7 @@ module rk4_misc
       nstop         = rk4site%ntext_soil(kt)
 
       !----- Check whether we are just slightly off. --------------------------------------!
-      slightlymoist = initp%soil_water(kt) > soil8(nstop)%soilbp 
+      slightlymoist = initp%soil_water(kt) > soil8(nstop)%slmsts 
       slightlydry   = initp%soil_water(kt) < soil8(nstop)%soilcp
 
       !------------------------------------------------------------------------------------!
@@ -2411,7 +2411,7 @@ module rk4_misc
          ! will need to exchange with other environments, find it in kg/m2, the standard   !
          ! units.  Also, find the total energy that must go away with the water.           !
          !---------------------------------------------------------------------------------!
-         water_excess  = (initp%soil_water(kt) - soil8(nstop)%soilbp) * dslz8(kt) * wdns8
+         water_excess  = (initp%soil_water(kt) - soil8(nstop)%slmsts) * dslz8(kt) * wdns8
          energy_excess = water_excess                                                      &
                        * tl2uint8(initp%soil_tempk(kt),initp%soil_fracliq(kt))
          depth_excess  = water_excess * ( initp%soil_fracliq(kt) * wdnsi8                  &
@@ -2516,7 +2516,7 @@ module rk4_misc
          shcbeneath = soil8(nsbeneath)%slcpd
          call uextcm2tl8(initp%soil_energy(kb),initp%soil_water(kb)*wdns8,shcbeneath       &
                         ,initp%soil_tempk(kb),initp%soil_fracliq(kb))
-         water_room = (soil8(nsbeneath)%soilbp-initp%soil_water(kb)) * wdns8 * dslz8(kb)
+         water_room = (soil8(nsbeneath)%slmsts-initp%soil_water(kb)) * wdns8 * dslz8(kb)
 
          if (water_room > water_excess) then
             !------------------------------------------------------------------------------!
@@ -3106,7 +3106,7 @@ module rk4_misc
                !----- First guess. --------------------------------------------------------!
                wood_excess = rk4max_wood_water_im2 - initp%wood_water_im2(ico)
                leaf_demand = rk4max_leaf_water_im2 - initp%leaf_water_im2(ico)
-               soil_demand = (soil8(nstop)%soilbp-initp%soil_water(kt)) * dslz8(kt) * wdns8
+               soil_demand = (soil8(nstop)%slmsts-initp%soil_water(kt)) * dslz8(kt) * wdns8
                !----- Bounded guess. ------------------------------------------------------!
                leaf_demand = max(0.d0,min(wood_excess            ,leaf_demand))
                soil_demand = max(0.d0,min(wood_excess-leaf_demand,soil_demand))
@@ -4281,9 +4281,9 @@ module rk4_misc
       real(kind=8)                       :: can_theiv
       real(kind=8)                       :: can_vpdef
       !----- Local constants. -------------------------------------------------------------!
-      character(len=10), parameter :: phfmt='(91(a,1x))'
+      character(len=10), parameter :: phfmt='(93(a,1x))'
       character(len=48), parameter ::                                                      &
-                                   pbfmt='(3(i13,1x),4(es13.6,1x),3(i13,1x),81(es13.6,1x))'
+                                   pbfmt='(3(i13,1x),4(es13.6,1x),3(i13,1x),83(es13.6,1x))'
       character(len=10), parameter :: chfmt='(58(a,1x))'
       character(len=48), parameter ::                                                      &
                                    cbfmt='(3(i13,1x),2(es13.6,1x),4(i13,1x),49(es13.6,1x))'
@@ -4436,20 +4436,21 @@ module rk4_misc
                                   , '        GGVEG', '        GGNET' , '      OPENCAN'     &
                                   , '    SOIL.TEMP', '   SOIL.WATER' , '       SOILCP'     &
                                   , '       SOILWP', '       SOILFC' , '       SOILBP'     &
-                                  , '        USTAR', '        TSTAR' , '        QSTAR'     &
-                                  , '        CSTAR', '         ZETA' , '      RI.BULK'     &
-                                  , '   GND.RSHORT', '      GND.PAR' , '    GND.RLONG'     &
-                                  , '       WFLXLC', '       WFLXWC' , '       WFLXGC'     &
-                                  , '       WFLXAC', '       TRANSP' , '        WSHED'     &
-                                  , '    INTERCEPT', '  THROUGHFALL' , '       HFLXGC'     &
-                                  , '       HFLXLC', '       HFLXWC' , '       HFLXAC'     &
-                                  , '       CFLXAC', '       CFLXST' , '       FGC.RH'     &
-                                  , '       FSC.RH', '      STGC.RH' , '      STSC.RH'     &
-                                  , '       MSC.RH', '       SSC.RH' , '       PSC.RH'     &
-                                  , '          GPP', '       PLRESP' , ' PAR.BEAM.TOP'     &
-                                  , ' PAR.DIFF.TOP', ' NIR.BEAM.TOP' , ' NIR.DIFF.TOP'     &
-                                  , ' PAR.BEAM.BOT', ' PAR.DIFF.BOT' , ' NIR.BEAM.BOT'     &
-                                  , ' NIR.DIFF.BOT'
+                                  , '       SLMSTS', '       SOILPO' , '        USTAR'     &
+                                  , '        TSTAR' , '        QSTAR', '        CSTAR'     &
+                                  , '         ZETA' , '      RI.BULK', '   GND.RSHORT'     &
+                                  , '      GND.PAR' , '    GND.RLONG', '       WFLXLC'     &
+                                  , '       WFLXWC' , '       WFLXGC', '       WFLXAC'     &
+                                  , '       TRANSP' , '        WSHED', '    INTERCEPT'     &
+                                  , '  THROUGHFALL' , '       HFLXGC', '       HFLXLC'     &
+                                  , '       HFLXWC' , '       HFLXAC', '       CFLXAC'     &
+                                  , '       CFLXST' , '       FGC.RH', '       FSC.RH'     &
+                                  , '      STGC.RH' , '      STSC.RH', '       MSC.RH'     &
+                                  , '       SSC.RH' , '       PSC.RH', '          GPP'     &
+                                  , '       PLRESP' , ' PAR.BEAM.TOP', ' PAR.DIFF.TOP'     &
+                                  , ' NIR.BEAM.TOP' , ' NIR.DIFF.TOP', ' PAR.BEAM.BOT'     &
+                                  , ' PAR.DIFF.BOT' , ' NIR.BEAM.BOT', ' NIR.DIFF.BOT'
+                                  
                                   
          close (unit=83,status='keep')
       end if
@@ -4479,20 +4480,21 @@ module rk4_misc
                    , initp%ggveg           , initp%ggnet           , initp%opencan_frac    &
                    , initp%soil_tempk(nzg) , initp%soil_water(nzg) , soil8(nsoil)%soilcp   &
                    , soil8(nsoil)%soilwp   , soil8(nsoil)%sfldcap  , soil8(nsoil)%soilbp   &
-                   , initp%ustar           , initp%tstar           , initp%qstar           &
-                   , initp%cstar           , initp%zeta            , initp%ribulk          &
-                   , fluxp%flx_rshort_gnd  , fluxp%flx_par_gnd     , fluxp%flx_rlong_gnd   &
-                   , fluxp%flx_vapor_lc    , fluxp%flx_vapor_wc    , fluxp%flx_vapor_gc    &
-                   , fluxp%flx_vapor_ac    , fluxp%flx_transp      , fluxp%flx_wshed_vg    &
-                   , fluxp%flx_intercepted , fluxp%flx_throughfall , fluxp%flx_sensible_gc &
-                   , fluxp%flx_sensible_lc , fluxp%flx_sensible_wc , fluxp%flx_sensible_ac &
-                   , fluxp%flx_carbon_ac   , fluxp%flx_carbon_st   , initp%fgc_rh          &
-                   , initp%fsc_rh          , initp%stgc_rh         , initp%stsc_rh         &
-                   , initp%msc_rh          , initp%ssc_rh          , initp%psc_rh          &
-                   , sum_gpp               , sum_plresp            , rk4site%par_beam      &
-                   , rk4site%par_diffuse   , rk4site%nir_beam      , rk4site%nir_diffuse   &
-                   , par_b_beam            , par_b_diff            , nir_b_beam            &
-                   , nir_b_diff
+                   , soil8(nsoil)%slmsts   , soil8(nsoil)%soilpo   , initp%ustar           &
+                   , initp%tstar           , initp%qstar           , initp%cstar           &
+                   , initp%zeta            , initp%ribulk          , fluxp%flx_rshort_gnd  &
+                   , fluxp%flx_par_gnd     , fluxp%flx_rlong_gnd   , fluxp%flx_vapor_lc    &
+                   , fluxp%flx_vapor_wc    , fluxp%flx_vapor_gc    , fluxp%flx_vapor_ac    &
+                   , fluxp%flx_transp      , fluxp%flx_wshed_vg    , fluxp%flx_intercepted &
+                   , fluxp%flx_throughfall , fluxp%flx_sensible_gc , fluxp%flx_sensible_lc &
+                   , fluxp%flx_sensible_wc , fluxp%flx_sensible_ac , fluxp%flx_carbon_ac   &
+                   , fluxp%flx_carbon_st   , initp%fgc_rh          , initp%fsc_rh          &
+                   , initp%stgc_rh         , initp%stsc_rh         , initp%msc_rh          &
+                   , initp%ssc_rh          , initp%psc_rh          , sum_gpp               &
+                   , sum_plresp            , rk4site%par_beam      , rk4site%par_diffuse   &
+                   , rk4site%nir_beam      , rk4site%nir_diffuse   , par_b_beam            &
+                   , par_b_diff            , nir_b_beam            , nir_b_diff
+                   
                    
       close(unit=83,status='keep')
       !------------------------------------------------------------------------------------!
@@ -5036,7 +5038,7 @@ module rk4_misc
       do k = rk4site%lsl, nzg
          nsoil = rk4site%ntext_soil(k)
          rk4aux(ibuff)%rk4min_soil_water(k) = soil8(nsoil)%soilcp * (1.d0 - rk4eps)
-         rk4aux(ibuff)%rk4max_soil_water(k) = soil8(nsoil)%soilbp * (1.d0 + rk4eps)
+         rk4aux(ibuff)%rk4max_soil_water(k) = soil8(nsoil)%slmsts * (1.d0 + rk4eps)
       end do
       !------------------------------------------------------------------------------------!
 
