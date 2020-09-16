@@ -1579,6 +1579,8 @@ subroutine init_soil_coms
    integer      :: s                                 ! Soil texture flag
    logical      :: update_slx                        ! Update texture fractions?  [    T|F]
    logical      :: print_soil_table                  ! Print parameter table?     [    T|F]
+   real(kind=4) :: soilep                            ! Effective porosity (O19)   [  m3/m3]
+   real(kind=4) :: slpot33                           ! Potential for EP   (O19)   [      m]
    real(kind=4) :: slcons_mmhr                       ! Sat. hydraulic conduct.    [  mm/hr]
    real(kind=4) :: slcpd_mjm3k                       ! Soil heat capacity         [MJ/m3/K]
    real(kind=4) :: ksand                             ! k-factor for sand (de Vries model)
@@ -1594,6 +1596,7 @@ subroutine init_soil_coms
    real(kind=4), parameter :: fieldcp_K   =  0.1     ! hydr. cond. at field cap.   [mm/day]
    real(kind=4), parameter :: residual_K  =  1.e-5   ! minimum hydr. cond. (RS02)  [mm/day]
    real(kind=4), parameter :: slpots_MPa  = -0.0005  ! Saturation for vG80         [   MPa]
+   real(kind=4), parameter :: slpot33_MPa = -0.033   ! Potential for soilep (O19)  [   MPa]
    real(kind=4), parameter :: slpotfc_MPa = -0.010   ! Field capacity (TH98)       [   MPa]
    real(kind=4), parameter :: slpotcp_MPa = -3.1     ! Matric pot. - air dry soil  [   MPa]
    real(kind=4), parameter :: slpotwp_MPa = -1.5     ! Matric pot. - wilting point [   MPa]
@@ -1737,45 +1740,27 @@ subroutine init_soil_coms
    !    water-retention parameters for temperate and tropical soils: a new                 !
    !    water-retention pedo-transfer functions developed for tropical soils. Geoderma     !
    !    108: 155-180. doi:10.1016/S0016-7061(02)00105-2 (HT02).                            !
+   ! Montzka C, Herbst M, Weihermuller L, Verhoef A , Vereecken H. 2017. A global data set !
+   !    of soil hydraulic properties and sub-grid variability of soil water retention and  !
+   !    hydraulic conductivity curves. Earth Syst. Sci. Data, 9: 529-543.                  !
+   !    doi:10.5194/essd-9-529-2017 (M17).                                                 !
    ! Mualem Y. 1976. A new model for predicting the hydraulic conductivity of unsaturated  !
    !    porous media. Water Resour. Res., 12: 513-522. doi:10.1029/WR012i003p00513 (M76).  !
+   ! Ottoni MV, Ottoni Filho TB, Lopes-Assad MLR , Rotunno Filho OC. 2019. Pedotransfer    !
+   !    functions for saturated hydraulic conductivity using a database with temperate and !
+   !    tropical climate soils. J. Hydrol., 575: 1345-1358.                                !
+   !    doi:10.1016/j.jhydrol.2019.05.050 (O19).                                           !
    ! Romano N , Santini A. 2002. Field. In: Methods of soil analysis: Part 4 physical      !
    !    methods (eds. Dane JH. & Topp GC.). Soil Science Society of America, Madison, WI,  !
    !    SSSA Book Series 5.4, chap. 3.3.3, pp. 721--738 (RS02).                            !
+   ! Schaap MG , Leij FJ. 2000. Improved prediction of unsaturated hydraulic conductivity  !
+   !    with the Mualem- van Genuchten model. Soil Sci. Soc. Am. J., 64: 843-851.          !
+   !    doi:10.2136/sssaj2000.643843x (SL00).                                              !
    ! Tomasella J , Hodnett MG. 1998. Estimating soil water retention characteristics from  !
    !    limited data in Brazilian Amazonia. Soil Sci. 163: 190-202.                        !
    !    doi:10.1097/00010694-199803000-00003 (TH98).                                       !
    !---------------------------------------------------------------------------------------!
    do s=1,ed_nstyp
-
-
-
-
-      !------------------------------------------------------------------------------------!
-      !     Soil conductance.  Find this first, because field capacity may depend on it.   !
-      !------------------------------------------------------------------------------------!
-      select case (s)
-      case (12)
-         !----- Peat, use the default value from LEAF3. -----------------------------------!
-         soil(s)%slcons  =  8.0e-6    ! ED-2.2 2.357930e-6
-         !---------------------------------------------------------------------------------!
-      case (13)
-         !----- Bedrock, do nothing. ------------------------------------------------------!
-         soil(s)%slcons  = 0.0
-         !---------------------------------------------------------------------------------!
-
-      case default
-         !---------------------------------------------------------------------------------!
-         !      Hydraulic conductivity [m/s], currently assumed the same as C84 for all    !
-         ! soil_hydro_scheme options (but not for peat and bedrock).                       !
-         !---------------------------------------------------------------------------------!
-         soil(s)%slcons  = (10.**(-0.60 + 1.26*soil(s)%xsand - 0.64*soil(s)%xclay))        &
-                         * 0.0254/hr_sec
-         !---------------------------------------------------------------------------------!
-      end select
-      !------------------------------------------------------------------------------------!
-
-
 
       !----- Check soil texture.  Peat and bedrock must be handled separately. ------------!
       select case (s)
@@ -1792,6 +1777,9 @@ subroutine init_soil_coms
          !---------------------------------------------------------------------------------!
          soil(s)%method = 'BC64'
 
+         !----- Peat, use the default value from LEAF3. -----------------------------------!
+         soil(s)%slcons  =  8.0e-6    ! ED-2.2 2.357930e-6
+         !---------------------------------------------------------------------------------!
 
          !---- Pore tortuosity factor. Assumed 1 to be consistent with BC64. --------------!
          soil(s)%sltt = 1.0
@@ -1848,6 +1836,7 @@ subroutine init_soil_coms
       case (13)
          !----- Bedrock.  Hydraulics is disabled, only heat capacity is needed. -----------!
          soil(s)%method  = 'BDRK'
+         soil(s)%slcons  = 0.0
          soil(s)%sltt    = 0.0
          soil(s)%slnm    = 1.0
          soil(s)%slbs    = 1.0
@@ -1876,6 +1865,15 @@ subroutine init_soil_coms
             ! parameters for the functions are from C84, based on measurements in the      !
             ! United States.                                                               !
             !------------------------------------------------------------------------------!
+
+
+            !------------------------------------------------------------------------------!
+            !      Hydraulic conductivity at saturation [m/s].                             !
+            !------------------------------------------------------------------------------!
+            soil(s)%slcons  = (10.**(-0.60 + 1.26*soil(s)%xsand - 0.64*soil(s)%xclay))     &
+                            * 0.0254/hr_sec
+            !------------------------------------------------------------------------------!
+
 
             !---- Flag for method. --------------------------------------------------------!
             soil(s)%method = 'BC64'
@@ -1950,6 +1948,15 @@ subroutine init_soil_coms
 
             !---- Flag for method. --------------------------------------------------------!
             soil(s)%method = 'BC64'
+            !------------------------------------------------------------------------------!
+
+
+            !------------------------------------------------------------------------------!
+            !      Hydraulic conductivity at saturation [m/s].  Use C84 settings, follow-  !
+            ! ing M14.                                                                     !
+            !------------------------------------------------------------------------------!
+            soil(s)%slcons  = (10.**(-0.60 + 1.26*soil(s)%xsand - 0.64*soil(s)%xclay))     &
+                            * 0.0254/hr_sec
             !------------------------------------------------------------------------------!
 
 
@@ -2031,8 +2038,13 @@ subroutine init_soil_coms
             !------------------------------------------------------------------------------!
 
 
-            !---- Pore tortuosity factor. Assumed 0.5, following M14. ---------------------!
-            soil(s)%sltt = 0.5
+            !------------------------------------------------------------------------------!
+            !      Pore tortuosity factor. M14 assumed 0.5, but there is evidence that     !
+            ! this parameter should be regarded as empirical and some studies suggested    !
+            ! that it should be even negative (e.g., SL00 and M17).  We follow SL00 and    !
+            ! assume the parameter to be -1.0.                                             !
+            !------------------------------------------------------------------------------!
+            soil(s)%sltt = -1.0
             !------------------------------------------------------------------------------!
 
 
@@ -2116,6 +2128,17 @@ subroutine init_soil_coms
             !------------------------------------------------------------------------------!
             soil(s)%slpotfc = slpotfc_MPa * 1.e6 / (grav * wdns)
             soil(s)%sfldcap = soil_moisture(s,soil(s)%slpotfc)
+            !------------------------------------------------------------------------------!
+
+
+            !------------------------------------------------------------------------------!
+            !      Hydraulic conductivity at saturation [m/s].  Here we follow O19, which  !
+            ! depends upon the "effective porosity" (or difference between actual porosity !
+            ! and soil moisture at -0.033 MPa).                                            !
+            !------------------------------------------------------------------------------!
+            slpot33         = slpot33_MPa * 1.e6 / (grav * wdns)
+            soilep          = max(0.,soil(s)%slmsts - soil_moisture(s,slpot33))
+            soil(s)%slcons  = 19.31 / day_sec * soilep ** 1.948
             !------------------------------------------------------------------------------!
          end select
          !---------------------------------------------------------------------------------!

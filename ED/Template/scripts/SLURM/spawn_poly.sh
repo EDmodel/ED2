@@ -69,17 +69,17 @@ optsrc="-n"                   # Option for .bashrc (for special submission setti
 #----- Submit job automatically? (It may become false if something prevents submission). --#
 submit=false
 #----- Settings for this group of polygons. -----------------------------------------------#
-global_queue="huce_intel"     # Queue
-sim_memory=0                  # Memory per simulation. Zero uses queue's default
-n_cpt=12                      # Number of cpus per task (Zero uses queue's maximum)
-partial=false                 # Partial submission (false will ignore polya and npartial
-                              #    and send all polygons.
-polya=21                      # First polygon to submit
-npartial=300                  # Maximum number of polygons to include in this bundle
-                              #    (actual number will be adjusted for total number of 
-                              #     polygons if needed be).
-dttask=2                      # Time to wait between task submission
-runtime="00:00:00"         # Requested runtime.  Zero uses the queue's maximum.
+global_queue="shared,huce_intel" # Queue
+sim_memory=0                     # Memory per simulation. Zero uses queue's default
+n_cpt=12                         # Number of cpus per task (Zero uses queue's maximum)
+partial=false                    # Partial submission (false will ignore polya and npartial
+                                 #    and send all polygons.
+polya=21                         # First polygon to submit
+npartial=300                     # Maximum number of polygons to include in this bundle
+                                 #    (actual number will be adjusted for total number of 
+                                 #     polygons if needed be).
+dttask=2                         # Time to wait between task submission
+runtime="00:00:00"               # Requested runtime.  Zero uses the queue's maximum.
 #------------------------------------------------------------------------------------------#
 
 #==========================================================================================#
@@ -203,49 +203,56 @@ case ${ordinateur} in
 rclogin*|holy*|moorcroft*|rcnx*)
    #----- Odyssey queues. -----------------------------------------------------------------#
    case ${global_queue} in
-   general)
+   "general")
       n_nodes_max=118
       n_cpt_max=16
       n_cpn=32
       runtime_max="7-00:00:00"
       node_memory=262499
       ;;
-   moorcroft_amd)
+   "moorcroft_amd")
       n_nodes_max=8
       n_cpt_max=16
       n_cpn=64
       runtime_max="infinite"
       node_memory=256302
       ;;
-   moorcroft_6100)
+   "moorcroft_6100")
       n_nodes_max=33
       n_cpt_max=6
       n_cpn=12
       runtime_max="infinite"
       node_memory=22150
       ;;
-   shared)
+   "shared,huce_intel"|"huce_intel,shared")
+      n_nodes_max=276
+      n_cpt_max=12
+      n_cpn=24
+      runtime_max="7-00:00:00"
+      node_memory=126820
+      ;;
+   "shared")
       n_nodes_max=456
       n_cpt_max=24
       n_cpn=48
       runtime_max="7-00:00:00"
       node_memory=192892
       ;;
-   huce_intel)
+   "huce_intel")
       n_nodes_max=276
       n_cpt_max=12
       n_cpn=24
       runtime_max="14-00:00:00"
       node_memory=126820
       ;;
-   huce_amd)
+   "huce_amd")
       n_nodes_max=65
       n_cpt_max=32
       n_cpn=8
       runtime_max="14-00:00:00"
       node_memory=262499
       ;;
-   unrestricted)
+   "unrestricted")
       n_nodes_max=8
       n_cpt_max=16
       n_cpn=64
@@ -512,6 +519,7 @@ echo "  Queue:               ${global_queue}"
 echo "  Run time:            ${runtime}"
 echo "  First polygon:       ${polya}"
 echo "  Last polygon:        ${polyz}"
+echo "  Potl. task count:    ${ntasks}"
 echo "  Job Name:            ${jobname}"
 echo "  Total polygon count: ${npolys}"
 echo " "
@@ -519,7 +527,9 @@ echo " Partial submission:   ${partial}"
 echo " Automatic submission: ${submit}"
 echo "------------------------------------------------"
 echo ""
+echo -n " Waiting five seconds before proceeding... "
 sleep 5
+echo "Done!"
 #------------------------------------------------------------------------------------------#
 
 
@@ -545,7 +555,7 @@ rm -f ${sbatch}
 touch ${sbatch}
 chmod u+x ${sbatch}
 echo "#!/bin/bash" >> ${sbatch}
-echo "#SBATCH --ntasks=${ntasks}              # Number of tasks"               >> ${sbatch}
+echo "#SBATCH --ntasks=myntasks               # Number of tasks"               >> ${sbatch}
 echo "#SBATCH --cpus-per-task=${n_cpt}        # Number of CPUs per task"       >> ${sbatch}
 echo "#SBATCH --partition=${global_queue}     # Queue that will run job"       >> ${sbatch}
 echo "#SBATCH --job-name=${jobname}           # Job name"                      >> ${sbatch}
@@ -2507,11 +2517,8 @@ then
    echo " Reduce the number of simulations or try another queue..."
    exit 99
 else
-   #----- Find the right number of nodes to submit. ---------------------------------------#
-   let n_nodes=(${n_submit}+${n_cpn}-1)*${n_cpt}/${n_cpn}
-   let n_tasks=(${n_submit}+${n_nodes}-1)/${n_nodes}
-   sed -i~ s@mynnodes@${n_nodes}@g ${sbatch}
-   sed -i~ s@myntasks@${n_tasks}@g ${sbatch}
+   #----- Update the number of tasks in batch script. -------------------------------------#
+   sed -i~ s@myntasks@${n_submit}@g ${sbatch}
    #---------------------------------------------------------------------------------------#
 fi
 #------------------------------------------------------------------------------------------#

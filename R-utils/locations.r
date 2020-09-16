@@ -1631,6 +1631,11 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
          param  = c("yeara","iphen.scheme","isoil.text","treefall")
          na     = c(      9,            18,          27,        35)
          nz     = c(     11,            20,          28,        37)
+      }else if (lenici == 38 & grep(pattern="islhydro",x=ici)){
+         nparms = 3
+         param  = c("ivegt.dynamics","soil.hydro","hydrodyn.set")
+         na     = c(              14,          25,            37)
+         nz     = c(              15,          26,            38)
       }else if (lenici == 39){
          nparms = 3
          param  = c("struct","iphen.scheme","include.fire")

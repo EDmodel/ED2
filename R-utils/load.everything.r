@@ -277,6 +277,12 @@ loaded.package[["stats4"      ]] = discreet.require(stats4      )
 loaded.package[["vioplot"     ]] = discreet.require(vioplot     )
 loaded.package[["VoxR"        ]] = discreet.require(VoxR        )
 loaded.package[["zoo"         ]] = discreet.require(zoo         )
+#---- Packages that must be loaded at the end. --------------------------------------------#
+loaded.package[["forecast"    ]] = discreet.require(forecast    )
+#------------------------------------------------------------------------------------------#
+
+
+#---- Make sure all packages are loaded fine. ---------------------------------------------#
 loaded.package = unlist(loaded.package)
 if (! all(loaded.package)){
    miss = which(! loaded.package)
@@ -358,6 +364,16 @@ try(unlockBinding("pspline",envir),silent=TRUE)
 #------------------------------------------------------------------------------------------#
 envir = as.environment("package:ggplot2")
 try(unlockBinding("theme",envir),silent=TRUE)
+#------------------------------------------------------------------------------------------#
+
+
+
+#------------------------------------------------------------------------------------------#
+#  SHADY BUSINESS...  We must unlock %>% from package forecast and replace by our          #
+# function.                                                                                #
+#------------------------------------------------------------------------------------------#
+envir = as.environment("package:forecast")
+try(unlockBinding("%>%",envir),silent=TRUE)
 #------------------------------------------------------------------------------------------#
 
 

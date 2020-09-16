@@ -201,49 +201,56 @@ case ${ordinateur} in
 rclogin*|holy*|moorcroft*|rcnx*)
    #----- Odyssey queues. -----------------------------------------------------------------#
    case ${global_queue} in
-      general)
+      "general")
          n_nodes_max=166
          n_cpt=1
          n_tpn=32
          runtime_max="7-00:00:00"
          node_memory=262499
          ;;
-      shared)
+      "shared,huce_intel"|"huce_intel,shared")
+         n_nodes_max=276
+         n_cpt=1
+         n_tpn=24
+         runtime_max="7-00:00:00"
+         node_memory=126820
+         ;;
+      "shared")
          n_nodes_max=456
          n_cpt=1
          n_tpn=48
          runtime_max="7-00:00:00"
          node_memory=192892
          ;;
-      huce_intel)
+      "huce_intel")
          n_nodes_max=276
          n_cpt=1
          n_tpn=24
          runtime_max="14-00:00:00"
          node_memory=126820
          ;;
-      huce_amd)
+      "huce_amd")
          n_nodes_max=65
          n_cpt=1
          n_tpn=32
          runtime_max="14-00:00:00"
          node_memory=262499
          ;;
-      moorcroft_amd)
+      "moorcroft_amd")
          n_nodes_max=8
          n_cpt=1
          n_tpn=64
          runtime_max="infinite"
          node_memory=256302
          ;;
-      moorcroft_6100)
+      "moorcroft_6100")
          n_nodes_max=35
          n_cpt=1
          n_tpn=12
          runtime_max="infinite"
          node_memory=22150
          ;;
-      unrestricted)
+      "unrestricted")
          n_nodes_max=8
          n_cpt=1
          n_tpn=64

@@ -2,12 +2,22 @@
 #==========================================================================================#
 #     This function reads the ED2 monthly mean files that contain mean diurnal cycle.      #
 #   Inputs:                                                                                #
-#   - datum   -- The monthly structure that will contain the data.  It must be initialised #
-#                by create.monthly, otherwise it won't work.                               #
-#   - ntimes  -- Total number of times (including previously loaded times).                #
-#   - tresume -- The first time to read (in case data have been partially loaded.          #
+#   - datum     -- The monthly structure that will contain the data.  It must be           #
+#                  initialised by create.monthly, otherwise it won't work.                 #
+#   - ntimes    -- Total number of times (including previously loaded times).              #
+#   - tresume   -- The first time to read (in case data have been partially loaded.        #
+#   - sl.msttop -- Soil depth threshold for the top soil water content [m, negative]       #
+#   - sl.mstbot -- Soil depth threshold for the bottom soil water content [m, negative]    #
+#   - sl.tmptop -- Soil depth threshold for the top soil temperature [m, negative]         #
 #------------------------------------------------------------------------------------------#
-read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
+read.q.files <<- function( datum
+                         , ntimes
+                         , tresume   = 1
+                         , sasmonth  = 5
+                         , sl.msttop = -0.50
+                         , sl.mstbot = -2.0
+                         , sl.tmptop = -0.20
+                         ){
 
 
    #----- Copy some dimensions to scalars. ------------------------------------------------#
@@ -16,6 +26,7 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
    ndcycle    = datum$ndcycle
    isoilflg   = datum$isoilflg
    slz        = datum$slz
+   slt        = c(datum$slz[-1],0)
    slxsand    = datum$slxsand
    slxclay    = datum$slxclay
    ntext      = datum$ntext
@@ -24,8 +35,29 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
    soil.depth = datum$soil.depth
    soil.dry   = datum$soil.dry
    soil.poro  = datum$soil.poro
+   soilcp     = datum$soil.prop$soilcp
+   slmsts     = datum$soil.prop$slmsts
    ka         = datum$ka
    kz         = datum$kz
+   #---------------------------------------------------------------------------------------#
+
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #     Find weights for soil layers.                                                     #
+   #---------------------------------------------------------------------------------------#
+   tt.dslz   = pmax(0., pmin(0.       ,slt) - pmax(sl.tmptop,slz) )
+   tm.dslz   = pmax(0., pmin(0.       ,slt) - pmax(sl.msttop,slz) )
+   bm.dslz   = pmax(0., pmin(sl.msttop,slt) - pmax(sl.mstbot,slz) )
+   tt.wgtz   = tt.dslz / sum(tt.dslz)
+   tm.wgtz   = tm.dslz / sum(tm.dslz)
+   bm.wgtz   = bm.dslz / sum(bm.dslz)
+   q.tt.wgtz = matrix(data=tt.wgtz,nrow=ndcycle,ncol=nzg,byrow=TRUE)
+   q.tm.wgtz = matrix(data=tm.wgtz,nrow=ndcycle,ncol=nzg,byrow=TRUE)
+   q.bm.wgtz = matrix(data=bm.wgtz,nrow=ndcycle,ncol=nzg,byrow=TRUE)
+   dz.msttop = 0.        - sl.msttop
+   dz.mstbot = sl.msttop - sl.mstbot
    #---------------------------------------------------------------------------------------#
 
 
@@ -505,8 +537,23 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
       #------ Read in soil properties. ----------------------------------------------------#
       emean$soil.temp     [m,] =   mymont$MMEAN.SOIL.TEMP.PY - t00
       emean$soil.water    [m,] =   mymont$MMEAN.SOIL.WATER.PY
-      emean$soil.mstpot   [m,] = - mymont$MMEAN.SOIL.MSTPOT.PY * grav * wdnsi
+      emean$soil.mstpot   [m,] = - mymont$MMEAN.SOIL.MSTPOT.PY * grav * wdns * 1.e-6
       emean$soil.extracted[m,] = - mymont$MMEAN.TRANSLOSS.PY * day.sec / dslz
+      #------------------------------------------------------------------------------------#
+
+
+
+      #------------------------------------------------------------------------------------#
+      #     Find average near-surface soil temperature.                                    #
+      #------------------------------------------------------------------------------------#
+      soil.temp.lyr             = mymont$MMEAN.SOIL.TEMP.PY  - t00
+      soil.water.lyr            = mymont$MMEAN.SOIL.WATER.PY
+      soil.wetness.lyr          = (soil.water.lyr - soilcp) / (slmsts - soilcp)
+      emean$soil.temp.top   [m] = sum(soil.temp.lyr    * tt.wgtz)
+      emean$soil.water.top  [m] = sum(soil.water.lyr   * tm.wgtz) * wdns * dz.msttop
+      emean$soil.water.bot  [m] = sum(soil.water.lyr   * bm.wgtz) * wdns * dz.mstbot
+      emean$soil.wetness.top[m] = sum(soil.wetness.lyr * tm.wgtz)
+      emean$soil.wetness.bot[m] = sum(soil.wetness.lyr * bm.wgtz)
       #------------------------------------------------------------------------------------#
 
 
@@ -666,7 +713,7 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
       qmean$rk4step      [m,] =   mymont$QMEAN.RK4STEP.PY
       qmean$soil.water  [m,,] =   mymont$QMEAN.SOIL.WATER.PY
       qmean$soil.temp   [m,,] =   mymont$QMEAN.SOIL.TEMP.PY      - t00
-      qmean$soil.mstpot [m,,] = - mymont$QMEAN.SOIL.MSTPOT.PY    * grav * wdnsi
+      qmean$soil.mstpot [m,,] = - mymont$QMEAN.SOIL.MSTPOT.PY    * grav * wdns * 1.e-6
       #------------------------------------------------------------------------------------#
 
 
@@ -701,6 +748,21 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
       qmsqu$rshortup    [m,] =   mymont$QMSQU.RSHORTUP.PY
       qmsqu$rlongup     [m,] =   mymont$QMSQU.RLONGUP.PY
       qmsqu$parup       [m,] =   mymont$QMSQU.PARUP.PY     * Watts.2.Ein^2 * 1e12
+      #------------------------------------------------------------------------------------#
+
+
+
+      #------------------------------------------------------------------------------------#
+      #     Find average soil temperature and water content at specific layers.            #
+      #------------------------------------------------------------------------------------#
+      soil.temp.lyr              = mymont$QMEAN.SOIL.TEMP.PY [1,,] - t00
+      soil.water.lyr             = mymont$QMEAN.SOIL.WATER.PY[1,,]
+      soil.wetness.lyr           = (soil.water.lyr - soilcp) / (slmsts - soilcp)
+      qmean$soil.temp.top   [m,] = rowSums(soil.temp.lyr    * q.tt.wgtz)
+      qmean$soil.water.top  [m,] = rowSums(soil.water.lyr   * q.tm.wgtz) * wdns * dz.msttop
+      qmean$soil.water.bot  [m,] = rowSums(soil.water.lyr   * q.bm.wgtz) * wdns * dz.mstbot
+      qmean$soil.wetness.top[m,] = rowSums(soil.wetness.lyr * q.tm.wgtz)
+      qmean$soil.wetness.bot[m,] = rowSums(soil.wetness.lyr * q.bm.wgtz)
       #------------------------------------------------------------------------------------#
 
 
@@ -1707,6 +1769,18 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
       patch$rshort.gnd   [[plab]] =   mymont$MMEAN.RSHORT.GND.PA
       patch$par.gnd      [[plab]] =   mymont$MMEAN.PAR.GND.PA     * Watts.2.Ein * 1e6
       patch$rnet         [[plab]] =   mymont$MMEAN.RNET.PA
+      #----- Find soil averages. ----------------------------------------------------------#
+      soil.temp.lyr                  = mymont$MMEAN.SOIL.TEMP.PA - t00
+      soil.water.lyr                 = mymont$MMEAN.SOIL.WATER.PA
+      soil.wetness.lyr               = (soil.water.lyr - soilcp) / (slmsts - soilcp)
+      p.tt.wgtz                      = matrix(tt.wgtz,nrow=npatches,ncol=nzg,byrow=TRUE)
+      p.tm.wgtz                      = matrix(tm.wgtz,nrow=npatches,ncol=nzg,byrow=TRUE)
+      p.bm.wgtz                      = matrix(bm.wgtz,nrow=npatches,ncol=nzg,byrow=TRUE)
+      patch$soil.temp.top   [[plab]] = rowSums(soil.temp.lyr  * p.tt.wgtz)
+      patch$soil.water.top  [[plab]] = rowSums(soil.water.lyr * p.tm.wgtz) * wdns*dz.msttop
+      patch$soil.water.bot  [[plab]] = rowSums(soil.water.lyr * p.bm.wgtz) * wdns*dz.mstbot
+      patch$soil.wetness.top[[plab]] = rowSums(soil.water.lyr * p.tm.wgtz)
+      patch$soil.wetness.bot[[plab]] = rowSums(soil.water.lyr * p.bm.wgtz)
       #----- Bind the current mean diurnal cycle patch. -----------------------------------#
       qpatch$rk4step      [[plab]] =   mymont$QMEAN.RK4STEP.PA
       qpatch$nep          [[plab]] =   mymont$QMEAN.NEP.PA
@@ -1806,7 +1880,7 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
       patch$stsc.in       [[plab]] = mymont$MMEAN.STSC.IN.PA
       patch$soil.temp     [[plab]] = mymont$MMEAN.SOIL.TEMP.PA - t00
       patch$soil.water    [[plab]] = mymont$MMEAN.SOIL.WATER.PA
-      patch$soil.mstpot   [[plab]] = - mymont$MMEAN.SOIL.MSTPOT.PA * grav * wdnsi
+      patch$soil.mstpot   [[plab]] = - mymont$MMEAN.SOIL.MSTPOT.PA * grav * wdns * 1.e-6
       #------ Mean diurnal cycle. ---------------------------------------------------------#
       zero.qpatch = matrix(data=0., nrow=mymont$NPATCHES.GLOBAL,ncol=mymont$NDCYC)
       na.qpatch   = matrix(data=NA, nrow=mymont$NPATCHES.GLOBAL,ncol=mymont$NDCYC)

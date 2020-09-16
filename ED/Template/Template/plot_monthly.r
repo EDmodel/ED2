@@ -87,6 +87,7 @@ emean.line     = TRUE                   # Use lines instead of points and lines 
                                         #    TRUE  - Lines only
                                         #    FALSE - Use type defined in pmonthly_varlist.r
                                         #    NA    - Let the script decide
+sd.alpha       = 0.60                   # Transparency for the uncertainty.
 #------------------------------------------------------------------------------------------#
 
 
@@ -1204,8 +1205,16 @@ for (place in myplaces){
             par(mar=c(0.1,4.6,0.1,2.1))
             plot.new()
             plot.window(xlim=c(0,1),ylim=c(0,1))
-            legend(x="bottom",inset=0.0,legend=c("Model","Observation")
-                  ,col=lcolours,lwd=llwd,cex=cex.ptsz,pch=16,xpd=TRUE,bty="n")
+            legend( x      = "bottom"
+                  , inset  = 0.0
+                  , legend = c("ED-2.2","Tower")
+                  , col    = lcolours
+                  , lwd    = llwd
+                  , cex    = cex.ptsz
+                  , pch    = 16
+                  , xpd    = TRUE
+                  , bty    = "n"
+                  )#end legend
             #------------------------------------------------------------------------------#
 
 
@@ -1217,9 +1226,9 @@ for (place in myplaces){
             if (plotgrid){
                abline(v=whenplote$levels,h=axTicks(side=2),col=grid.colour,lty="solid")
             }#end if
-            points(x=thiswhen,y=thismean,col=lcolours[1],lwd=llwd[1],type=ltype
+            lines(x=thiswhen,y=thismean,col=lcolours[1],lwd=llwd[1],type="l"
                   ,pch=16,cex=1.0)
-            points(x=obswhen,y=obsmean ,col=lcolours[2],lwd=llwd[2],type=ltype
+            lines(x=obswhen,y=obsmean ,col=lcolours[2],lwd=llwd[2],type="l"
                   ,pch=16,cex=1.0)
             box()
             axis(side=1,at=whenplote$levels,labels=whenplote$labels,padj=whenplote$padj)
@@ -1393,13 +1402,31 @@ for (place in myplaces){
             plot.new()
             plot.window(xlim=c(0,1),ylim=c(0,1))
             if (plotsd){
-               legend(x="bottom",inset=0.0,legend=c("Model","Observation")
-                     ,fill=errcolours,angle=angle,density=dens,lwd=llwd,col=lcolours
-                     ,bg=background,title="Shaded areas = 1 SD",cex=cex.ptsz
-                     ,xpd=TRUE,pch=16,bty="n")
+               legend( x       = "bottom"
+                     , inset   = 0.0
+                     , legend  = c("ED-2.2","Tower")
+                     , fill    = errcolours
+                     , density = -1
+                     , lwd     = llwd
+                     , col     = alpha(lcolours,sd.alpha)
+                     , bg      = background
+                     , title   = "Shaded areas = 1 SD"
+                     , cex     = cex.ptsz
+                     , xpd     = TRUE
+                     , pch     = 16
+                     , bty     = "n"
+                     )#end legend
             }else{
-               legend(x="bottom",inset=0.0,legend=c("Model","Observation")
-                     ,col=lcolours,lwd=llwd,cex=cex.ptsz,xpd=TRUE,pch=16,bty="n")
+               legend( x      = "bottom"
+                     , inset  = 0.0
+                     , legend = c("ED-2.2","Tower")
+                     , col    = lcolours
+                     , lwd    = llwd
+                     , cex    = cex.ptsz
+                     , xpd    = TRUE
+                     , pch    = 16
+                     , bty    = "n"
+                     )#end legend
             }#end if
             #------------------------------------------------------------------------------#
 
@@ -1419,8 +1446,14 @@ for (place in myplaces){
                   mod.keep   = is.finite(mod.y.poly)
                   err.x      = mod.x.poly[mod.keep]
                   err.y      = mod.y.poly[mod.keep]
-                  polygon(x=err.x,y=err.y,col=errcolours[1],angle=angle[1],density=dens[1]
-                         ,lty="solid",lwd=shwd[1])
+                  polygon( x       = err.x
+                         , y       = err.y
+                         , col     = alpha(errcolours[1],sd.alpha)
+                         , border  = "transparent"
+                         , density = -1
+                         , lty     = "solid"
+                         , lwd     = shwd [1]
+                         )#end polygon
                }else{
                   mod.x.poly = c(mod.x,rev(mod.x))
                   mod.y.poly = c(mod.ylow,rev(mod.yhigh))
@@ -1431,8 +1464,14 @@ for (place in myplaces){
 
                   err.x = c(mod.x.poly[mod.keep],NA,obs.x.poly[obs.keep])
                   err.y = c(mod.y.poly[mod.keep],NA,obs.y.poly[obs.keep])
-                  polygon(x=err.x,y=err.y,col=errcolours,angle=angle,density=dens
-                         ,lty="solid",lwd=shwd)
+                  polygon( x       = err.x
+                         , y       = err.y
+                         , col     = alpha(errcolours,sd.alpha)
+                         , border  = "transparent"
+                         , density = -1
+                         , lty     = "solid"
+                         , lwd     = shwd
+                         )#end polygon
                }#end if
             }#end if
             points(x=montmont,y=thismean,col=lcolours[1],lwd=llwd[1],type=ltype
@@ -1608,13 +1647,31 @@ for (place in myplaces){
                plot.new()
                plot.window(xlim=c(0,1),ylim=c(0,1))
                if (plotsd){
-                  legend(x="bottom",inset=0.0,legend=c("Model","Observation")
-                        ,fill=errcolours,angle=angle,density=dens,lwd=llwd,col=lcolours
-                        ,bg=background,title="Shaded areas = 1 SD",cex=cex.ptsz,xpd=TRUE
-                        ,pch=16,bty="n")
+                  legend( x       = "bottom"
+                        , inset   = 0.0
+                        , legend  = c("ED-2.2","Tower")
+                        , fill    = errcolours
+                        , density = -1
+                        , lwd     = llwd
+                        , col     = alpha(lcolours,sd.alpha)
+                        , bg      = background
+                        , title   = "Shaded areas = 1 SD"
+                        , cex     = cex.ptsz
+                        , xpd     = TRUE
+                        , pch     = 16
+                        , bty     = "n"
+                        )#end legend
                }else{
-                  legend(x="bottom",inset=0.0,legend=c("Model","Observation")
-                        ,col=lcolours,lwd=llwd,cex=cex.ptsz,xpd=TRUE,pch=16,bty="n")
+                  legend( x       = "bottom"
+                        , inset   = 0.0
+                        , legend  = c("ED-2.2","Tower")
+                        , col     = lcolours
+                        , lwd     = llwd
+                        , cex     = cex.ptsz
+                        , xpd     = TRUE
+                        , pch     = 16
+                        , bty     = "n"
+                        )#end legend
                }#end if
                #---------------------------------------------------------------------------#
 
@@ -1650,8 +1707,14 @@ for (place in myplaces){
                      mod.keep   = is.finite(mod.y.poly)
                      err.x      = mod.x.poly[mod.keep]
                      err.y      = mod.y.poly[mod.keep]
-                     polygon(x=err.x,y=err.y,col=errcolours[1],angle=angle[1]
-                            ,density=dens[1],lty="solid",lwd=shwd[1])
+                     polygon( x       = err.x
+                            , y       = err.y
+                            , col     = alpha(errcolours[1],sd.alpha)
+                            , border  = "transparent"
+                            , density = -1
+                            , lty     = "solid"
+                            , lwd     = shwd[1]
+                            )#end polygon
                   }else{
                      mod.x.poly = c(mod.x.now,rev(mod.x.now))
                      mod.y.poly = c(mod.ylow.now,rev(mod.yhigh.now))
@@ -1659,10 +1722,16 @@ for (place in myplaces){
                      obs.x.poly = c(obs.x.now,rev(obs.x.now))
                      obs.y.poly = c(obs.ylow.now,rev(obs.yhigh.now))
                      obs.keep   = is.finite(obs.y.poly)
-                     err.x = c(mod.x.poly[mod.keep],NA,obs.x.poly[obs.keep])
-                     err.y = c(mod.y.poly[mod.keep],NA,obs.y.poly[obs.keep])
-                     polygon(x=err.x,y=err.y,col=errcolours,angle=angle,density=dens
-                            ,lty="solid",lwd=shwd)
+                     err.x      = c(mod.x.poly[mod.keep],NA,obs.x.poly[obs.keep])
+                     err.y      = c(mod.y.poly[mod.keep],NA,obs.y.poly[obs.keep])
+                     polygon( x       = err.x
+                            , y       = err.y
+                            , col     = alpha(errcolours,sd.alpha)
+                            , border  = "transparent"
+                            , density = -1
+                            , lty     = "solid"
+                            , lwd     = shwd
+                            )#end polygon
                   }#end if
                }#end if
                points(x=thisday,y=thismean[pmon,],col=lcolours[1]
