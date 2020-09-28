@@ -1208,7 +1208,9 @@ module structural_growth
       use allometry      , only : expand_bevery          ! ! subroutine
       use consts_coms    , only : almost_zero            & ! intent(in)
                                 , r_tol_trunc            ! ! intent(in)
-      use pft_coms       , only : agf_bs                 ! ! intent(in)
+      use pft_coms       , only : agf_bs                 & ! intent(in)
+                                , bevery_crit            & ! intent(in)
+                                , is_grass               ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       integer, intent(in)    :: ipft
@@ -1239,6 +1241,7 @@ module structural_growth
       real                   :: bdeada_aim
       real                   :: bdeadb_aim
       real                   :: bevery_aim
+      real                   :: f_growth_max
       real                   :: tr_bleaf
       real                   :: tr_broot
       real                   :: tr_bsapwooda
@@ -1268,6 +1271,26 @@ module structural_growth
 
 
 
+      !----- Find the target biomass. -----------------------------------------------------!
+      bevery_aim = bevery_in + f_growth * bstorage_in
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !      In case this is a grass PFT, make sure we do not exceed the critical biomass, !
+      ! to avoid ridiculously large DBH.                                                   !
+      !------------------------------------------------------------------------------------!
+      if (is_grass(ipft)) then
+         f_growth_max = ( bevery_crit(ipft) - bevery_in ) / bstorage_in
+         f_bstorage   = f_bstorage + max(0.,f_growth - f_growth_max)
+         f_growth     = min(f_growth,f_growth_max)
+         bevery_aim   = min(bevery_aim,bevery_crit(ipft))
+      end if
+      !------------------------------------------------------------------------------------!
+
+
+
 
       !------------------------------------------------------------------------------------!
       !      Allocation will depend on the structural growth option.  This option decides  !
@@ -1277,7 +1300,6 @@ module structural_growth
       select case (istruct_growth_scheme)
       case (1)
          !----- Find the new biomass with the storage inputs. -----------------------------!
-         bevery_aim = bevery_in + f_growth * bstorage_in
          call expand_bevery(ipft,bevery_aim,dbh_aim,hite_aim,bleaf_aim,broot_aim           &
                            ,bsapwooda_aim,bsapwoodb_aim,bbarka_aim,bbarkb_aim,balive_aim   &
                            ,bdeada_aim,bdeadb_aim)

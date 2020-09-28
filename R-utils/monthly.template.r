@@ -516,6 +516,7 @@ create.monthly <<- function(ntimes,montha,yeara,inpref,slz.min){
    szpft$census.tai        = array(data=0 ,dim=c(ntimes,ndbh+1,npft+1))
    szpft$census.agb        = array(data=0 ,dim=c(ntimes,ndbh+1,npft+1))
    szpft$census.ba         = array(data=0 ,dim=c(ntimes,ndbh+1,npft+1))
+   szpft$census.nplant     = array(data=0 ,dim=c(ntimes,ndbh+1,npft+1))
    szpft$par.leaf          = array(data=0 ,dim=c(ntimes,ndbh+1,npft+1))
    szpft$par.leaf.beam     = array(data=0 ,dim=c(ntimes,ndbh+1,npft+1))
    szpft$par.leaf.diff     = array(data=0 ,dim=c(ntimes,ndbh+1,npft+1))
@@ -1602,6 +1603,7 @@ update.monthly <<- function(new.ntimes,old.datum,montha,yeara,inpref,slz.min){
    new.datum$szpft$census.tai     [idx,,] = old.datum$szpft$census.tai      [sel,,]
    new.datum$szpft$census.agb     [idx,,] = old.datum$szpft$census.agb      [sel,,]
    new.datum$szpft$census.ba      [idx,,] = old.datum$szpft$census.ba       [sel,,]
+   new.datum$szpft$census.nplant  [idx,,] = old.datum$szpft$census.nplant   [sel,,]
    new.datum$szpft$par.leaf       [idx,,] = old.datum$szpft$par.leaf        [sel,,]
    new.datum$szpft$par.leaf.beam  [idx,,] = old.datum$szpft$par.leaf.beam   [sel,,]
    new.datum$szpft$par.leaf.diff  [idx,,] = old.datum$szpft$par.leaf.diff   [sel,,]

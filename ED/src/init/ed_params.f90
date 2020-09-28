@@ -522,10 +522,10 @@ subroutine init_decomp_params()
    !     alternate soil C and N models on C dynamics of CLM4. Biogeosciences, 10:          !
    !     7109-7131. doi:10.5194/bg-10-7109-2013 (K13).                                     !
    !---------------------------------------------------------------------------------------!
-   rh0          = 0.701 ! 0.425
-   rh_q10       = 1.500 ! 1.893
-   rh_p_smoist  = 0.836 ! 0.606
-   rh_p_oxygen  = 0.404 ! 0.164
+   rh0          = 0.700 ! 0.701 ! 0.425
+   rh_q10       = 1.500 ! 1.500 ! 1.893
+   rh_p_smoist  = 1.600 ! 0.836 ! 0.606
+   rh_p_oxygen  = 0.600 ! 0.404 ! 0.164
    !---------------------------------------------------------------------------------------!
 
 
@@ -8390,7 +8390,7 @@ subroutine init_derived_params_after_xml()
    real(kind=8)                      :: lnexphigh8
    real(kind=8)                      :: thigh_fun8
    !----- Local constants. ----------------------------------------------------------------!
-   real                  , parameter :: kplastic_ref_lai = 4.d0 ! used for trait_plasticity == 3
+   real(kind=4)          , parameter :: kplastic_ref_lai = 4.0 ! used for trait_plasticity == 3
    character(len=str_len), parameter :: zero_table_fn = 'pft_sizes.txt'
    character(len=str_len), parameter :: photo_file    = 'photo_param.txt'
    character(len=str_len), parameter :: allom_file    = 'allom_param.txt'
@@ -9371,20 +9371,25 @@ subroutine init_derived_params_after_xml()
       !                                                                                    !
       !------------------------------------------------------------------------------------!
       if (kplastic_rd0(ipft) == undef_real) then
-         !----- Set kplastic for Rd0. -----------------------------------------------------!
-         kplastic_rd0(ipft) = 0.0
+
+
+         !----- Default: assume the same as the Vcmax decay. ------------------------------!
+         kplastic_rd0(ipft) = kplastic_vm0(ipft)
          !---------------------------------------------------------------------------------!
+ 
 
          !---------------------------------------------------------------------------------!
-         ! rewrite plasticity for tropical trees based on BCI data if 
-         ! trait_plasticity_scheme is 3
+         !     Rewrite plasticity for tropical trees based on BCI data in case             !
+         ! trait_plasticity_scheme is 3.                                                   !
          !---------------------------------------------------------------------------------!
          select case (trait_plasticity_scheme)
          case (3)
+            !----- Make sure this is applied to tropical trees only. ----------------------!
             if (is_tropical(ipft) .and. (.not. is_grass(ipft))) then
                 kplastic_rd0(ipft) = - 1.0 * (0.559 * log(Rdark25) + 0.82)                 &
                                    / kplastic_ref_lai
-            endif
+            end if
+            !------------------------------------------------------------------------------!
          end select
          !---------------------------------------------------------------------------------!
       end if

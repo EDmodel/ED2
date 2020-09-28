@@ -2530,6 +2530,9 @@ echo ""                                                                        >
 echo "#----- Make sure that jobs complete before terminating script"           >> ${sbatch}
 echo "wait"                                                                    >> ${sbatch}
 echo ""                                                                        >> ${sbatch}
+echo "#----- Report efficiency of this job"                                    >> ${sbatch}
+echo "seff \${SLURM_JOBID}"                                                    >> ${sbatch}
+echo ""                                                                        >> ${sbatch}
 #------------------------------------------------------------------------------------------#
 
 

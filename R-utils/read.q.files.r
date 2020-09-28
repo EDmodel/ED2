@@ -3334,8 +3334,9 @@ read.q.files <<- function( datum
             #----- "Census" AGB and BA discard skinny trees. ------------------------------#
             sel = sel.pft & sel.dbh & sel.fat
             if (any(sel)){
-               szpft$census.agb[m,d,p] = sum(agbconow[sel] * w.nplant[sel])
-               szpft$census.ba [m,d,p] = sum(baconow [sel] * w.nplant[sel])
+               szpft$census.agb   [m,d,p] = sum(agbconow[sel] * w.nplant[sel])
+               szpft$census.ba    [m,d,p] = sum(baconow [sel] * w.nplant[sel])
+               szpft$census.nplant[m,d,p] = sum(                w.nplant[sel])
             }#end if
             #------------------------------------------------------------------------------#
 

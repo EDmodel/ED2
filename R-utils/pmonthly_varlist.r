@@ -384,7 +384,7 @@ tspftdbh[[n]]     = list( vnam     = "storage.resp"
                         )#end list
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "nplant"
-                        , desc     = "Plant density"
+                        , desc     = "Number density"
                         , e.unit   = untab$plom2
                         , i.unit   = untab$plom2
                         , plog     = TRUE
@@ -433,6 +433,20 @@ tspftdbh[[n]]     = list( vnam     = "leaf.gbw"
                         , bar.plot = FALSE
                         , stack    = FALSE
                         , scsout   = TRUE
+                        )#end list
+n                 = n + 1
+tspftdbh[[n]]     = list( vnam     = "census.nplant"
+                        , desc     = "Number density (DBH > 10cm)"
+                        , sas      = FALSE
+                        , e.unit   = untab$plom2
+                        , i.unit   = untab$plom2
+                        , plog     = FALSE
+                        , pft      = TRUE
+                        , pftdbh   = TRUE
+                        , sas      = FALSE
+                        , bar.plot = FALSE
+                        , stack    = TRUE
+                        , scsout   = FALSE
                         )#end list
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "census.lai"
