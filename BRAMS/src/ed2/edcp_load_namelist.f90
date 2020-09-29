@@ -165,6 +165,7 @@ subroutine read_ednl(iunit,filename)
                                    , iedcnfgf                              & ! intent(out)
                                    , ffilout                               & ! intent(out)
                                    , sfilout                               & ! intent(out)
+                                   , restore_file                          & ! intent(out)
                                    , sfilin                                & ! intent(out)
                                    , event_file                            & ! intent(out)
                                    , attach_metadata                       & ! intent(out)
@@ -533,6 +534,14 @@ subroutine read_ednl(iunit,filename)
                             !     with just the normal output...)
    patch_keep = 0           ! Keep all patches.
    !---------------------------------------------------------------------------------------!
+
+
+
+   !----- Restore file (not yet implemented in coupled runs). -----------------------------!
+   restore_file = trim(sfilout)//'_restore_time.txt'
+   !---------------------------------------------------------------------------------------!
+
+
 
    !---------------------------------------------------------------------------------------!
    !      We make sure that the maximum number of sites per polygon in ED2 is equivalent   !

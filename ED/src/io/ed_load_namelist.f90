@@ -19,14 +19,18 @@ subroutine read_nl(namelist_name)
       call fatal_error('The namelist file '//trim(namelist_name)//' is missing.'           &
                       ,'read_nl','ed_load_namelist.f90')
    end if
+   !---------------------------------------------------------------------------------------!
 
    !----- Initialise the name list with absurd, undefined values. -------------------------!
    call init_ename_vars(nl) 
+   !---------------------------------------------------------------------------------------!
   
    !----- Read grid point and options information from the namelist. ----------------------!
-   open (unit=10, status='OLD', file=namelist_name)
+   open (unit=10, status='old', file=namelist_name)
    read (unit=10, nml=ED_NL)
-   close(unit=10)
+   close(unit=10,status='keep')
+   !---------------------------------------------------------------------------------------!
+
 
    return
 end subroutine read_nl
@@ -765,5 +769,95 @@ subroutine copy_nl(copy_type)
 
    return
 end subroutine copy_nl
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!     This subroutine checks whether or not to restore a simulation.                       !
+!------------------------------------------------------------------------------------------!
+subroutine restore_nl()
+   use ed_misc_coms, only : sfilout       & ! intent(in)
+                          , runtype       & ! intent(inout)
+                          , iyearh        & ! intent(inout)
+                          , imonthh       & ! intent(inout)
+                          , idateh        & ! intent(inout)
+                          , itimeh        & ! intent(inout)
+                          , sfilin        & ! intent(inout)
+                          , restore_file  ! ! intent(out)
+   implicit none
+   !----- Local variables. ----------------------------------------------------------------!
+   logical :: is_restore
+   integer :: ierr
+   integer :: iyearr
+   integer :: imonthr
+   integer :: idater
+   integer :: itimer
+   !---------------------------------------------------------------------------------------!
+
+
+   !----- This file name points to the last time, which can be used for restoring jobs. ---!
+   restore_file = trim(sfilout)//'_restore_time.txt'
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !       Check whether to restore the simulation or start from beginning.                !
+   !---------------------------------------------------------------------------------------!
+   select case (trim(runtype))
+   case ('RESTORE')
+      !------ Check whether or not the file exists. ---------------------------------------!
+      inquire(file=trim(restore_file),exist=is_restore)
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !      We only restore a simulation if we can successfully read the file.            !
+      !------------------------------------------------------------------------------------!
+      if (is_restore) then
+         !----- Read the restoring date. --------------------------------------------------!
+         open (unit=55,file=trim(restore_file),status='old',form='formatted')
+         read (unit=55,fmt=*,iostat=ierr) iyearr,imonthr,idater,itimer
+         close(unit=55,status='keep')
+         !---------------------------------------------------------------------------------!
+
+
+         !---------------------------------------------------------------------------------!
+         !      In case the file was successfully read, turn this simulation into a        !
+         ! 'HISTORY' run, otherwise, assume 'INITIAL' run.                                 !
+         !---------------------------------------------------------------------------------!
+         select case (ierr)
+         case (0)
+            !----- File restore_file was successfully read. Restore the simulation. -------!
+            runtype = 'HISTORY'
+            iyearh  = iyearr
+            imonthh = imonthr
+            idateh  = idater
+            itimeh  = itimer
+            sfilin  = trim(sfilout)
+            !------------------------------------------------------------------------------!
+         case default
+            !----- Problems loading restore_file, start from the beginning. ---------------!
+            runtype = 'INITIAL'
+            !------------------------------------------------------------------------------!
+         end select
+         !---------------------------------------------------------------------------------!
+      else
+         !----- File doesn't exist, use INITIAL instead. ----------------------------------!
+         runtype = 'INITIAL'
+         !---------------------------------------------------------------------------------!
+      end if
+      !------------------------------------------------------------------------------------!
+   end select
+   !---------------------------------------------------------------------------------------!
+
+
+   return
+end subroutine restore_nl
 !==========================================================================================!
 !==========================================================================================!

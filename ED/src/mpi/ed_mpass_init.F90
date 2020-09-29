@@ -142,6 +142,7 @@ subroutine ed_masterput_nl(par_run)
                                    , nsub_euler                & ! intent(in)
                                    , end_time                  & ! intent(in)
                                    , current_time              & ! intent(in)
+                                   , restore_file              & ! intent(in)
                                    , sfilout                   & ! intent(in)
                                    , frqstate                  & ! intent(in)
                                    , isoutput                  & ! intent(in)
@@ -438,6 +439,7 @@ subroutine ed_masterput_nl(par_run)
    call MPI_Bcast(ied_init_mode,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
 
    call MPI_Bcast(sfilout,str_len,MPI_CHARACTER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(restore_file,str_len,MPI_CHARACTER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(frqstate,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
 
    call MPI_Bcast(nzg ,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
@@ -1400,6 +1402,7 @@ subroutine ed_nodeget_nl
                                    , nsub_euler                & ! intent(out)
                                    , end_time                  & ! intent(out)
                                    , current_time              & ! intent(out)
+                                   , restore_file              & ! intent(out)
                                    , sfilout                   & ! intent(out)
                                    , frqstate                  & ! intent(out)
                                    , isoutput                  & ! intent(out)
@@ -1690,6 +1693,7 @@ subroutine ed_nodeget_nl
    call MPI_Bcast(ied_init_mode,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
 
    call MPI_Bcast(sfilout,str_len,MPI_CHARACTER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(restore_file,str_len,MPI_CHARACTER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(frqstate,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
 
    call MPI_Bcast(nzg ,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)

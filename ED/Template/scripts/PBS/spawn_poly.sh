@@ -532,6 +532,16 @@ do
 
 
 
+   #---------------------------------------------------------------------------------------#
+   #     This should no longer occur, but it runtype is set to INITIAL, replace it with    #
+   # RESTORE.                                                                              #
+   #---------------------------------------------------------------------------------------#
+   if [[ "${runt}" == "INITIAL" ]] || [[ "${runt}" == "HISTORY" ]]
+   then
+      runt="RESTORE"
+   fi
+   #---------------------------------------------------------------------------------------#
+
 
 
    #---------------------------------------------------------------------------------------#
@@ -1695,7 +1705,7 @@ do
 
 
    #----- Check whether to use SFILIN as restart or history. ------------------------------#
-   if [ ${runt} == "INITIAL" ] && [ ${forcehisto} -eq 1 ]
+   if [ ${runt} == "RESTORE" ] && [ ${forcehisto} -eq 1 ]
    then
       runt="HISTORY"
       year=${yearh}
@@ -1703,7 +1713,7 @@ do
       date=${dateh}
       time=${timeh}
       thissfilin=${fullygrown}
-   elif [ ${runt} == "INITIAL" ] && [ ${initmode} -eq 5 ]
+   elif [ ${runt} == "RESTORE" ] && [ ${initmode} -eq 5 ]
    then
       if [ ! -s ${restart} ]
       then
@@ -1711,10 +1721,10 @@ do
          echo " Change the variable restart at the beginning of the script"
          exit 44
       else
-         runt="INITIAL"
+         runt="RESTORE"
          thissfilin=${restart}
       fi
-   elif [ ${runt} == "INITIAL" ] && [ ${initmode} -eq 6 ]
+   elif [ ${runt} == "RESTORE" ] && [ ${initmode} -eq 6 ]
    then
       thissfilin=${fullygrown}
 
@@ -2075,7 +2085,7 @@ do
       echo "Polygon has serious errors.  Script will not submit the job this time."
       submit_now=false
       ;;
-   "INITIAL"|"HISTORY")
+   "INITIAL"|"RESTORE"|"HISTORY")
       #------------------------------------------------------------------------------------#
       #     Check whether the job is still running
       #------------------------------------------------------------------------------------#

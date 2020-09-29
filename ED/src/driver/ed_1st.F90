@@ -66,12 +66,17 @@ subroutine ed_1st_master (ipara, nnodestotal,nslaves, headnode_num, max_threads,
    nthreads = max_threads
 
    !----- Read the namelist file. ---------------------------------------------------------!
-   write (unit=*,fmt='(a)') 'Reading namelist information'
+   write (unit=*,fmt='(a)') ' + Read namelist information.'
    call read_nl(trim(name_name))
 
-   write (unit=*,fmt='(a)') 'Copying namelist'
+
+   write (unit=*,fmt='(a)') ' + Copy most namelist variables.'
    call copy_nl('ALL_CASES')
 
+   write (unit=*,fmt='(a)') ' + Check whether to restore the run.'
+   call restore_nl()
+
+   write (unit=*,fmt='(a)') ' + Copy initialisation-dependent variables.'
    if (runtype == 'HISTORY') then
      call copy_nl('HISTORY')
    else

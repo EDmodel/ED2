@@ -203,26 +203,12 @@ case ${ordinateur} in
 rclogin*|holy*|moorcroft*|rcnx*)
    #----- Odyssey queues. -----------------------------------------------------------------#
    case ${global_queue} in
-   "general")
-      n_nodes_max=118
-      n_cpt_max=16
-      n_cpn=32
+   "serial_requeue")
+      n_nodes_max=900
+      n_cpt_max=12
+      n_cpn=24
       runtime_max="7-00:00:00"
-      node_memory=262499
-      ;;
-   "moorcroft_amd")
-      n_nodes_max=8
-      n_cpt_max=16
-      n_cpn=64
-      runtime_max="infinite"
-      node_memory=256302
-      ;;
-   "moorcroft_6100")
-      n_nodes_max=33
-      n_cpt_max=6
-      n_cpn=12
-      runtime_max="infinite"
-      node_memory=22150
+      node_memory=126820
       ;;
    "shared,huce_intel"|"huce_intel,shared")
       n_nodes_max=276
@@ -245,17 +231,10 @@ rclogin*|holy*|moorcroft*|rcnx*)
       runtime_max="14-00:00:00"
       node_memory=126820
       ;;
-   "huce_amd")
-      n_nodes_max=65
-      n_cpt_max=32
-      n_cpn=8
-      runtime_max="14-00:00:00"
-      node_memory=262499
-      ;;
    "unrestricted")
       n_nodes_max=8
-      n_cpt_max=16
-      n_cpn=64
+      n_cpt_max=24
+      n_cpn=48
       runtime_max="infinite"
       node_memory=262499
       ;;
@@ -915,6 +894,18 @@ do
    runt=$(cat  ${here}/${polyname}/statusrun.txt | awk '{print $6}')
    #---------------------------------------------------------------------------------------#
 
+
+
+   #---------------------------------------------------------------------------------------#
+   #    To ensure simulations can be requeued, we no longer set RUNTYPE to INITIAL or      #
+   # HISTORY (except when we should force history).  Instead, we select RESTORE and let    #
+   # the model decide between initial or history.                                          #
+   #---------------------------------------------------------------------------------------#
+   if [ "${runt}" == "INITIAL" ] || [ "${runt}" == "HISTORY" ]
+   then
+      runt="RESTORE"
+   fi
+   #---------------------------------------------------------------------------------------#
 
 
 
@@ -2081,7 +2072,7 @@ do
 
 
    #----- Check whether to use SFILIN as restart or history. ------------------------------#
-   if [ ${runt} == "INITIAL" ] && [ ${forcehisto} -eq 1 ]
+   if [ ${runt} == "RESTORE" ] && [ ${forcehisto} -eq 1 ]
    then
       runt="HISTORY"
       year=${yearh}
@@ -2089,7 +2080,7 @@ do
       date=${dateh}
       time=${timeh}
       thissfilin=${fullygrown}
-   elif [ ${runt} == "INITIAL" ] && [ ${initmode} -eq 5 ]
+   elif [ ${runt} == "RESTORE" ] && [ ${initmode} -eq 5 ]
    then
       if [ ! -s ${restart} ]
       then
@@ -2097,10 +2088,10 @@ do
          echo " Change the variable restart at the beginning of the script"
          exit 44
       else
-         runt="INITIAL"
+         runt="RESTORE"
          thissfilin=${restart}
       fi
-   elif [ ${runt} == "INITIAL" ] && [ ${initmode} -eq 6 ]
+   elif [ ${runt} == "RESTORE" ] && [ ${initmode} -eq 6 ]
    then
       thissfilin=${fullygrown}
 
@@ -2458,7 +2449,7 @@ do
    #---------------------------------------------------------------------------------------#
    #     We will not even consider the files that have gone extinct.                       #
    #---------------------------------------------------------------------------------------#
-   case ${runt} in
+   case "${runt}" in
    "THE_END")
       echo "Polygon has reached the end.  No need to re-submit it."
       ;;
@@ -2473,7 +2464,7 @@ do
       submit=false
       ;;
 
-   "INITIAL"|"HISTORY")
+   "RESTORE"|"HISTORY")
 
       #------------------------------------------------------------------------------------#
       #      Update job count.                                                             #

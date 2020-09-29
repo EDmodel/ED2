@@ -598,7 +598,7 @@ do
       runt=$(cat ${here}/${polyname}/statusrun.txt  | awk '{print $6}')
       if [ ${runt} != "INITIAL" ]
       then
-         runt="HISTORY"
+         runt="RESTORE"
       fi
       #------------------------------------------------------------------------------------#
 

@@ -50,6 +50,7 @@ module disturbance
       use disturb_coms        , only : min_patch_area             & ! intent(in)
                                      , plantation_year            & ! intent(in)
                                      , treefall_hite_threshold    & ! intent(in)
+                                     , does_hite_limit_tfpatch    & ! intent(in)
                                      , min_oldgrowth              & ! intent(in)
                                      , sl_skid_rel_area           ! ! intent(in)
       use ed_max_dims         , only : n_dist_types               & ! intent(in)
@@ -403,7 +404,8 @@ module disturbance
                   lambda_now(3) = 0.
                   !------------------------------------------------------------------------!
                else
-                  if (cpatch%hite(1) < treefall_hite_threshold) then
+                  if ( does_hite_limit_tfpatch                   .and.                     &
+                       cpatch%hite(1) < treefall_hite_threshold ) then
                      !----- Tallest cohort is too short to create gaps. -------------------!
                      lambda_now(3) = 0.
                      !---------------------------------------------------------------------!

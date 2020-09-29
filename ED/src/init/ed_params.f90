@@ -815,6 +815,7 @@ subroutine init_disturb_params
    use disturb_coms , only : treefall_disturbance_rate & ! intent(in)
                            , include_fire              & ! intent(in)
                            , treefall_hite_threshold   & ! intent(out)
+                           , does_hite_limit_tfpatch   & ! intent(out)
                            , forestry_on               & ! intent(out)
                            , agriculture_on            & ! intent(out)
                            , plantation_year           & ! intent(out)
@@ -842,6 +843,9 @@ subroutine init_disturb_params
 
    !----- Only trees above this height create a gap when they fall. -----------------------!
    treefall_hite_threshold = 10.0
+
+   !----- Flag to decide whether or not to limit disturbance to patches with tall trees. --!
+   does_hite_limit_tfpatch = .true.
 
    !----- Set to 1 if to do forest harvesting. --------------------------------------------!
    forestry_on = 0
