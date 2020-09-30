@@ -782,6 +782,8 @@ end subroutine copy_nl
 !     This subroutine checks whether or not to restore a simulation.                       !
 !------------------------------------------------------------------------------------------!
 subroutine restore_nl()
+   use ename_coms  , only : nl            ! ! intent(inout)
+   use grid_coms   , only : ngrids        ! ! intent(in)
    use ed_misc_coms, only : sfilout       & ! intent(in)
                           , runtype       & ! intent(inout)
                           , iyearh        & ! intent(inout)
@@ -793,6 +795,7 @@ subroutine restore_nl()
    implicit none
    !----- Local variables. ----------------------------------------------------------------!
    logical :: is_restore
+   integer :: i
    integer :: ierr
    integer :: iyearr
    integer :: imonthr
@@ -833,23 +836,47 @@ subroutine restore_nl()
          !---------------------------------------------------------------------------------!
          select case (ierr)
          case (0)
-            !----- File restore_file was successfully read. Restore the simulation. -------!
+            !------------------------------------------------------------------------------!
+            !      File restore_file was successfully read. Restore the simulation.        !
+            !------------------------------------------------------------------------------!
+
+
+            !----- Update the namelist itself as some variables may be copied. ------------!
+            nl%runtype = 'HISTORY'
+            nl%iyearh  = iyearr
+            nl%imonthh = imonthr
+            nl%idateh  = idater
+            nl%itimeh  = itimer
+            do i=1,ngrids
+               nl%sfilin(i)  = trim(sfilout)
+            end do
+            !------------------------------------------------------------------------------!
+
+
+            !----- Update the memory variables too (though they may be overwritten). ------!
             runtype = 'HISTORY'
             iyearh  = iyearr
             imonthh = imonthr
             idateh  = idater
             itimeh  = itimer
-            sfilin  = trim(sfilout)
+            do i=1,ngrids
+               sfilin(i)  = trim(sfilout)
+            end do
             !------------------------------------------------------------------------------!
          case default
             !----- Problems loading restore_file, start from the beginning. ---------------!
             runtype = 'INITIAL'
+            write (unit=*,fmt='(a,1x,i5)') ' IERR = ',ierr
+            call fatal_error('File '//trim(restore_file)//' found but it isn''t readable!' &
+                            ,'restore_nl','ed_load_namelist.f90')
             !------------------------------------------------------------------------------!
          end select
          !---------------------------------------------------------------------------------!
       else
          !----- File doesn't exist, use INITIAL instead. ----------------------------------!
          runtype = 'INITIAL'
+         call warning('File '//trim(restore_file)//' not found, using INITIAL settings!'   &
+                     ,'restore_nl','ed_load_namelist.f90')
          !---------------------------------------------------------------------------------!
       end if
       !------------------------------------------------------------------------------------!

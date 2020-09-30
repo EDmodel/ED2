@@ -77,11 +77,12 @@ subroutine ed_1st_master (ipara, nnodestotal,nslaves, headnode_num, max_threads,
    call restore_nl()
 
    write (unit=*,fmt='(a)') ' + Copy initialisation-dependent variables.'
-   if (runtype == 'HISTORY') then
+   select case (trim(runtype))
+   case ('HISTORY')
      call copy_nl('HISTORY')
-   else
+   case default
      call copy_nl('NOT_HISTORY')
-   end if
+   end select
 
    !---------------------------------------------------------------------------------------!
    !    Now that the namelist is loaded, I check whether all settings provided by the user !
