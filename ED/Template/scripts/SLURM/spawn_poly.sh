@@ -69,17 +69,17 @@ optsrc="-n"                   # Option for .bashrc (for special submission setti
 #----- Submit job automatically? (It may become false if something prevents submission). --#
 submit=false
 #----- Settings for this group of polygons. -----------------------------------------------#
-global_queue="huce_intel"     # Queue
-sim_memory=0                  # Memory per simulation. Zero uses queue's default
-n_cpt=12                      # Number of cpus per task (Zero uses queue's maximum)
-partial=false                 # Partial submission (false will ignore polya and npartial
-                              #    and send all polygons.
-polya=21                      # First polygon to submit
-npartial=300                  # Maximum number of polygons to include in this bundle
-                              #    (actual number will be adjusted for total number of 
-                              #     polygons if needed be).
-dttask=2                      # Time to wait between task submission
-runtime="00:00:00"         # Requested runtime.  Zero uses the queue's maximum.
+global_queue="shared,huce_intel" # Queue
+sim_memory=0                     # Memory per simulation. Zero uses queue's default
+n_cpt=12                         # Number of cpus per task (Zero uses queue's maximum)
+partial=false                    # Partial submission (false will ignore polya and npartial
+                                 #    and send all polygons.
+polya=21                         # First polygon to submit
+npartial=300                     # Maximum number of polygons to include in this bundle
+                                 #    (actual number will be adjusted for total number of 
+                                 #     polygons if needed be).
+dttask=2                         # Time to wait between task submission
+runtime="00:00:00"               # Requested runtime.  Zero uses the queue's maximum.
 #------------------------------------------------------------------------------------------#
 
 #==========================================================================================#
@@ -203,52 +203,38 @@ case ${ordinateur} in
 rclogin*|holy*|moorcroft*|rcnx*)
    #----- Odyssey queues. -----------------------------------------------------------------#
    case ${global_queue} in
-   general)
-      n_nodes_max=118
-      n_cpt_max=16
-      n_cpn=32
+   "serial_requeue")
+      n_nodes_max=900
+      n_cpt_max=12
+      n_cpn=24
       runtime_max="7-00:00:00"
-      node_memory=262499
+      node_memory=126820
       ;;
-   moorcroft_amd)
-      n_nodes_max=8
-      n_cpt_max=16
-      n_cpn=64
-      runtime_max="infinite"
-      node_memory=256302
-      ;;
-   moorcroft_6100)
-      n_nodes_max=33
-      n_cpt_max=6
-      n_cpn=12
-      runtime_max="infinite"
-      node_memory=22150
-      ;;
-   shared)
-      n_nodes_max=404
-      n_cpt_max=16
-      n_cpn=32
+   "shared,huce_intel"|"huce_intel,shared")
+      n_nodes_max=276
+      n_cpt_max=12
+      n_cpn=24
       runtime_max="7-00:00:00"
-      node_memory=129072
+      node_memory=126820
       ;;
-   huce_intel)
+   "shared")
+      n_nodes_max=456
+      n_cpt_max=24
+      n_cpn=48
+      runtime_max="7-00:00:00"
+      node_memory=192892
+      ;;
+   "huce_intel")
       n_nodes_max=276
       n_cpt_max=12
       n_cpn=24
       runtime_max="14-00:00:00"
       node_memory=126820
       ;;
-   huce_amd)
-      n_nodes_max=65
-      n_cpt_max=32
-      n_cpn=8
-      runtime_max="14-00:00:00"
-      node_memory=262499
-      ;;
-   unrestricted)
+   "unrestricted")
       n_nodes_max=8
-      n_cpt_max=16
-      n_cpn=64
+      n_cpt_max=24
+      n_cpn=48
       runtime_max="infinite"
       node_memory=262499
       ;;
@@ -512,6 +498,7 @@ echo "  Queue:               ${global_queue}"
 echo "  Run time:            ${runtime}"
 echo "  First polygon:       ${polya}"
 echo "  Last polygon:        ${polyz}"
+echo "  Potl. task count:    ${ntasks}"
 echo "  Job Name:            ${jobname}"
 echo "  Total polygon count: ${npolys}"
 echo " "
@@ -519,7 +506,9 @@ echo " Partial submission:   ${partial}"
 echo " Automatic submission: ${submit}"
 echo "------------------------------------------------"
 echo ""
+echo -n " Waiting five seconds before proceeding... "
 sleep 5
+echo "Done!"
 #------------------------------------------------------------------------------------------#
 
 
@@ -545,7 +534,7 @@ rm -f ${sbatch}
 touch ${sbatch}
 chmod u+x ${sbatch}
 echo "#!/bin/bash" >> ${sbatch}
-echo "#SBATCH --ntasks=${ntasks}              # Number of tasks"               >> ${sbatch}
+echo "#SBATCH --ntasks=myntasks               # Number of tasks"               >> ${sbatch}
 echo "#SBATCH --cpus-per-task=${n_cpt}        # Number of CPUs per task"       >> ${sbatch}
 echo "#SBATCH --partition=${global_queue}     # Queue that will run job"       >> ${sbatch}
 echo "#SBATCH --job-name=${jobname}           # Job name"                      >> ${sbatch}
@@ -667,102 +656,107 @@ do
    polyntext=$(echo ${oi}    | awk '{print $19 }')
    polysand=$(echo ${oi}     | awk '{print $20 }')
    polyclay=$(echo ${oi}     | awk '{print $21 }')
-   polydepth=$(echo ${oi}    | awk '{print $22 }')
-   polysoilbc=$(echo ${oi}   | awk '{print $23 }')
-   polysldrain=$(echo ${oi}  | awk '{print $24 }')
-   polycol=$(echo ${oi}      | awk '{print $25 }')
-   slzres=$(echo ${oi}       | awk '{print $26 }')
-   queue=$(echo ${oi}        | awk '{print $27 }')
-   metdriver=$(echo ${oi}    | awk '{print $28 }')
-   dtlsm=$(echo ${oi}        | awk '{print $29 }')
-   monyrstep=$(echo ${oi}    | awk '{print $30 }')
-   iphysiol=$(echo ${oi}     | awk '{print $31 }')
-   vmfactc3=$(echo ${oi}     | awk '{print $32 }')
-   vmfactc4=$(echo ${oi}     | awk '{print $33 }')
-   mphototrc3=$(echo ${oi}   | awk '{print $34 }')
-   mphototec3=$(echo ${oi}   | awk '{print $35 }')
-   mphotoc4=$(echo ${oi}     | awk '{print $36 }')
-   bphotoblc3=$(echo ${oi}   | awk '{print $37 }')
-   bphotonlc3=$(echo ${oi}   | awk '{print $38 }')
-   bphotoc4=$(echo ${oi}     | awk '{print $39 }')
-   kwgrass=$(echo ${oi}      | awk '{print $40 }')
-   kwtree=$(echo ${oi}       | awk '{print $41 }')
-   gammac3=$(echo ${oi}      | awk '{print $42 }')
-   gammac4=$(echo ${oi}      | awk '{print $43 }')
-   d0grass=$(echo ${oi}      | awk '{print $44 }')
-   d0tree=$(echo ${oi}       | awk '{print $45 }')
-   alphac3=$(echo ${oi}      | awk '{print $46 }')
-   alphac4=$(echo ${oi}      | awk '{print $47 }')
-   klowco2=$(echo ${oi}      | awk '{print $48 }')
-   decomp=$(echo ${oi}       | awk '{print $49 }')
-   rrffact=$(echo ${oi}      | awk '{print $50 }')
-   growthresp=$(echo ${oi}   | awk '{print $51 }')
-   lwidthgrass=$(echo ${oi}  | awk '{print $52 }')
-   lwidthbltree=$(echo ${oi} | awk '{print $53 }')
-   lwidthnltree=$(echo ${oi} | awk '{print $54 }')
-   q10c3=$(echo ${oi}        | awk '{print $55 }')
-   q10c4=$(echo ${oi}        | awk '{print $56 }')
-   h2olimit=$(echo ${oi}     | awk '{print $57 }')
-   imortscheme=$(echo ${oi}  | awk '{print $58 }')
-   ddmortconst=$(echo ${oi}  | awk '{print $59 }')
-   cbrscheme=$(echo ${oi}    | awk '{print $60 }')
-   isfclyrm=$(echo ${oi}     | awk '{print $61 }')
-   icanturb=$(echo ${oi}     | awk '{print $62 }')
-   ubmin=$(echo ${oi}        | awk '{print $63 }')
-   ugbmin=$(echo ${oi}       | awk '{print $64 }')
-   ustmin=$(echo ${oi}       | awk '{print $65 }')
-   gamm=$(echo ${oi}         | awk '{print $66 }')
-   gamh=$(echo ${oi}         | awk '{print $67 }')
-   tprandtl=$(echo ${oi}     | awk '{print $68 }')
-   ribmax=$(echo ${oi}       | awk '{print $69 }')
-   atmco2=$(echo ${oi}       | awk '{print $70 }')
-   thcrit=$(echo ${oi}       | awk '{print $71 }')
-   smfire=$(echo ${oi}       | awk '{print $72 }')
-   ifire=$(echo ${oi}        | awk '{print $73 }')
-   fireparm=$(echo ${oi}     | awk '{print $74 }')
-   ipercol=$(echo ${oi}      | awk '{print $75 }')
-   runoff=$(echo ${oi}       | awk '{print $76 }')
-   imetrad=$(echo ${oi}      | awk '{print $77 }')
-   ibranch=$(echo ${oi}      | awk '{print $78 }')
-   icanrad=$(echo ${oi}      | awk '{print $79 }')
-   ihrzrad=$(echo ${oi}      | awk '{print $80 }')
-   crown=$(echo   ${oi}      | awk '{print $81 }')
-   ltransvis=$(echo ${oi}    | awk '{print $82 }')
-   lreflectvis=$(echo ${oi}  | awk '{print $83 }')
-   ltransnir=$(echo ${oi}    | awk '{print $84 }')
-   lreflectnir=$(echo ${oi}  | awk '{print $85 }')
-   orienttree=$(echo ${oi}   | awk '{print $86 }')
-   orientgrass=$(echo ${oi}  | awk '{print $87 }')
-   clumptree=$(echo ${oi}    | awk '{print $88 }')
-   clumpgrass=$(echo ${oi}   | awk '{print $89 }')
-   igoutput=$(echo ${oi}     | awk '{print $90 }')
-   ivegtdyn=$(echo ${oi}     | awk '{print $91 }')
-   ihydro=$(echo ${oi}       | awk '{print $92 }')
-   istemresp=$(echo ${oi}    | awk '{print $93 }')
-   istomata=$(echo ${oi}     | awk '{print $94 }')
-   iplastic=$(echo ${oi}     | awk '{print $95 }')
-   icarbonmort=$(echo ${oi}  | awk '{print $96 }')
-   ihydromort=$(echo ${oi}   | awk '{print $97 }')
-   igndvap=$(echo ${oi}      | awk '{print $98 }')
-   iphen=$(echo ${oi}        | awk '{print $99 }')
-   iallom=$(echo ${oi}       | awk '{print $100}')
-   ieconomics=$(echo ${oi}   | awk '{print $101}')
-   igrass=$(echo ${oi}       | awk '{print $102}')
-   ibigleaf=$(echo ${oi}     | awk '{print $103}')
-   integscheme=$(echo ${oi}  | awk '{print $104}')
-   nsubeuler=$(echo ${oi}    | awk '{print $105}')
-   irepro=$(echo ${oi}       | awk '{print $106}')
-   treefall=$(echo ${oi}     | awk '{print $107}')
-   ianthdisturb=$(echo ${oi} | awk '{print $108}')
-   ianthdataset=$(echo ${oi} | awk '{print $109}')
-   slscale=$(echo ${oi}      | awk '{print $110}')
-   slyrfirst=$(echo ${oi}    | awk '{print $111}')
-   slnyrs=$(echo ${oi}       | awk '{print $112}')
-   bioharv=$(echo ${oi}      | awk '{print $113}')
-   skidarea=$(echo ${oi}     | awk '{print $114}')
-   skidsmall=$(echo ${oi}    | awk '{print $115}')
-   skidlarge=$(echo ${oi}    | awk '{print $116}')
-   fellingsmall=$(echo ${oi} | awk '{print $117}')
+   polyslsoc=$(echo ${oi}    | awk '{print $22 }')
+   polyslph=$(echo ${oi}     | awk '{print $23 }')
+   polyslcec=$(echo ${oi}    | awk '{print $24 }')
+   polysldbd=$(echo ${oi}    | awk '{print $25 }')
+   polydepth=$(echo ${oi}    | awk '{print $26 }')
+   polyslhydro=$(echo ${oi}  | awk '{print $27 }')
+   polysoilbc=$(echo ${oi}   | awk '{print $28 }')
+   polysldrain=$(echo ${oi}  | awk '{print $29 }')
+   polycol=$(echo ${oi}      | awk '{print $30 }')
+   slzres=$(echo ${oi}       | awk '{print $31 }')
+   queue=$(echo ${oi}        | awk '{print $32 }')
+   metdriver=$(echo ${oi}    | awk '{print $33 }')
+   dtlsm=$(echo ${oi}        | awk '{print $34 }')
+   monyrstep=$(echo ${oi}    | awk '{print $35 }')
+   iphysiol=$(echo ${oi}     | awk '{print $36 }')
+   vmfactc3=$(echo ${oi}     | awk '{print $37 }')
+   vmfactc4=$(echo ${oi}     | awk '{print $38 }')
+   mphototrc3=$(echo ${oi}   | awk '{print $39 }')
+   mphototec3=$(echo ${oi}   | awk '{print $40 }')
+   mphotoc4=$(echo ${oi}     | awk '{print $41 }')
+   bphotoblc3=$(echo ${oi}   | awk '{print $42 }')
+   bphotonlc3=$(echo ${oi}   | awk '{print $43 }')
+   bphotoc4=$(echo ${oi}     | awk '{print $44 }')
+   kwgrass=$(echo ${oi}      | awk '{print $45 }')
+   kwtree=$(echo ${oi}       | awk '{print $46 }')
+   gammac3=$(echo ${oi}      | awk '{print $47 }')
+   gammac4=$(echo ${oi}      | awk '{print $48 }')
+   d0grass=$(echo ${oi}      | awk '{print $49 }')
+   d0tree=$(echo ${oi}       | awk '{print $50 }')
+   alphac3=$(echo ${oi}      | awk '{print $51 }')
+   alphac4=$(echo ${oi}      | awk '{print $52 }')
+   klowco2=$(echo ${oi}      | awk '{print $53 }')
+   decomp=$(echo ${oi}       | awk '{print $54 }')
+   rrffact=$(echo ${oi}      | awk '{print $55 }')
+   growthresp=$(echo ${oi}   | awk '{print $56 }')
+   lwidthgrass=$(echo ${oi}  | awk '{print $57 }')
+   lwidthbltree=$(echo ${oi} | awk '{print $58 }')
+   lwidthnltree=$(echo ${oi} | awk '{print $59 }')
+   q10c3=$(echo ${oi}        | awk '{print $60 }')
+   q10c4=$(echo ${oi}        | awk '{print $61 }')
+   h2olimit=$(echo ${oi}     | awk '{print $62 }')
+   imortscheme=$(echo ${oi}  | awk '{print $63 }')
+   ddmortconst=$(echo ${oi}  | awk '{print $64 }')
+   cbrscheme=$(echo ${oi}    | awk '{print $65 }')
+   isfclyrm=$(echo ${oi}     | awk '{print $66 }')
+   icanturb=$(echo ${oi}     | awk '{print $67 }')
+   ubmin=$(echo ${oi}        | awk '{print $68 }')
+   ugbmin=$(echo ${oi}       | awk '{print $69 }')
+   ustmin=$(echo ${oi}       | awk '{print $70 }')
+   gamm=$(echo ${oi}         | awk '{print $71 }')
+   gamh=$(echo ${oi}         | awk '{print $72 }')
+   tprandtl=$(echo ${oi}     | awk '{print $73 }')
+   ribmax=$(echo ${oi}       | awk '{print $74 }')
+   atmco2=$(echo ${oi}       | awk '{print $75 }')
+   thcrit=$(echo ${oi}       | awk '{print $76 }')
+   smfire=$(echo ${oi}       | awk '{print $77 }')
+   ifire=$(echo ${oi}        | awk '{print $78 }')
+   fireparm=$(echo ${oi}     | awk '{print $79 }')
+   ipercol=$(echo ${oi}      | awk '{print $80 }')
+   runoff=$(echo ${oi}       | awk '{print $81 }')
+   imetrad=$(echo ${oi}      | awk '{print $82 }')
+   ibranch=$(echo ${oi}      | awk '{print $83 }')
+   icanrad=$(echo ${oi}      | awk '{print $84 }')
+   ihrzrad=$(echo ${oi}      | awk '{print $85 }')
+   crown=$(echo   ${oi}      | awk '{print $86 }')
+   ltransvis=$(echo ${oi}    | awk '{print $87 }')
+   lreflectvis=$(echo ${oi}  | awk '{print $88 }')
+   ltransnir=$(echo ${oi}    | awk '{print $89 }')
+   lreflectnir=$(echo ${oi}  | awk '{print $90 }')
+   orienttree=$(echo ${oi}   | awk '{print $91 }')
+   orientgrass=$(echo ${oi}  | awk '{print $92 }')
+   clumptree=$(echo ${oi}    | awk '{print $93 }')
+   clumpgrass=$(echo ${oi}   | awk '{print $94 }')
+   igoutput=$(echo ${oi}     | awk '{print $95 }')
+   ivegtdyn=$(echo ${oi}     | awk '{print $96 }')
+   ihydro=$(echo ${oi}       | awk '{print $97 }')
+   istemresp=$(echo ${oi}    | awk '{print $98 }')
+   istomata=$(echo ${oi}     | awk '{print $99 }')
+   iplastic=$(echo ${oi}     | awk '{print $100}')
+   icarbonmort=$(echo ${oi}  | awk '{print $101}')
+   ihydromort=$(echo ${oi}   | awk '{print $102}')
+   igndvap=$(echo ${oi}      | awk '{print $103}')
+   iphen=$(echo ${oi}        | awk '{print $104}')
+   iallom=$(echo ${oi}       | awk '{print $105}')
+   ieconomics=$(echo ${oi}   | awk '{print $106}')
+   igrass=$(echo ${oi}       | awk '{print $107}')
+   ibigleaf=$(echo ${oi}     | awk '{print $108}')
+   integscheme=$(echo ${oi}  | awk '{print $109}')
+   nsubeuler=$(echo ${oi}    | awk '{print $110}')
+   irepro=$(echo ${oi}       | awk '{print $111}')
+   treefall=$(echo ${oi}     | awk '{print $112}')
+   ianthdisturb=$(echo ${oi} | awk '{print $113}')
+   ianthdataset=$(echo ${oi} | awk '{print $114}')
+   slscale=$(echo ${oi}      | awk '{print $115}')
+   slyrfirst=$(echo ${oi}    | awk '{print $116}')
+   slnyrs=$(echo ${oi}       | awk '{print $117}')
+   bioharv=$(echo ${oi}      | awk '{print $118}')
+   skidarea=$(echo ${oi}     | awk '{print $119}')
+   skidsmall=$(echo ${oi}    | awk '{print $120}')
+   skidlarge=$(echo ${oi}    | awk '{print $121}')
+   fellingsmall=$(echo ${oi} | awk '{print $122}')
    #---------------------------------------------------------------------------------------#
 
 
@@ -900,6 +894,18 @@ do
    runt=$(cat  ${here}/${polyname}/statusrun.txt | awk '{print $6}')
    #---------------------------------------------------------------------------------------#
 
+
+
+   #---------------------------------------------------------------------------------------#
+   #    To ensure simulations can be requeued, we no longer set RUNTYPE to INITIAL or      #
+   # HISTORY (except when we should force history).  Instead, we select RESTORE and let    #
+   # the model decide between initial or history.                                          #
+   #---------------------------------------------------------------------------------------#
+   if [ "${runt}" == "INITIAL" ] || [ "${runt}" == "HISTORY" ]
+   then
+      runt="RESTORE"
+   fi
+   #---------------------------------------------------------------------------------------#
 
 
 
@@ -2066,7 +2072,7 @@ do
 
 
    #----- Check whether to use SFILIN as restart or history. ------------------------------#
-   if [ ${runt} == "INITIAL" ] && [ ${forcehisto} -eq 1 ]
+   if [ ${runt} == "RESTORE" ] && [ ${forcehisto} -eq 1 ]
    then
       runt="HISTORY"
       year=${yearh}
@@ -2074,7 +2080,7 @@ do
       date=${dateh}
       time=${timeh}
       thissfilin=${fullygrown}
-   elif [ ${runt} == "INITIAL" ] && [ ${initmode} -eq 5 ]
+   elif [ ${runt} == "RESTORE" ] && [ ${initmode} -eq 5 ]
    then
       if [ ! -s ${restart} ]
       then
@@ -2082,10 +2088,10 @@ do
          echo " Change the variable restart at the beginning of the script"
          exit 44
       else
-         runt="INITIAL"
+         runt="RESTORE"
          thissfilin=${restart}
       fi
-   elif [ ${runt} == "INITIAL" ] && [ ${initmode} -eq 6 ]
+   elif [ ${runt} == "RESTORE" ] && [ ${initmode} -eq 6 ]
    then
       thissfilin=${fullygrown}
 
@@ -2270,6 +2276,11 @@ do
    sed -i~ s@mynslcon@${polyntext}@g             ${ED2IN}
    sed -i~ s@myslxsand@${polysand}@g             ${ED2IN}
    sed -i~ s@myslxclay@${polyclay}@g             ${ED2IN}
+   sed -i~ s@myslsoc@${polyslsoc}@g              ${ED2IN}
+   sed -i~ s@myslph@${polyslph}@g                ${ED2IN}
+   sed -i~ s@myslcec@${polyslcec}@g              ${ED2IN}
+   sed -i~ s@mysldbd@${polysldbd}@g              ${ED2IN}
+   sed -i~ s@myslhydro@${polyslhydro}@g          ${ED2IN}
    sed -i~ s@mysoilbc@${polysoilbc}@g            ${ED2IN}
    sed -i~ s@mysldrain@${polysldrain}@g          ${ED2IN}
    sed -i~ s@mysoilcol@${polycol}@g              ${ED2IN}
@@ -2438,7 +2449,7 @@ do
    #---------------------------------------------------------------------------------------#
    #     We will not even consider the files that have gone extinct.                       #
    #---------------------------------------------------------------------------------------#
-   case ${runt} in
+   case "${runt}" in
    "THE_END")
       echo "Polygon has reached the end.  No need to re-submit it."
       ;;
@@ -2453,7 +2464,7 @@ do
       submit=false
       ;;
 
-   "INITIAL"|"HISTORY")
+   "RESTORE"|"HISTORY")
 
       #------------------------------------------------------------------------------------#
       #      Update job count.                                                             #
@@ -2497,11 +2508,8 @@ then
    echo " Reduce the number of simulations or try another queue..."
    exit 99
 else
-   #----- Find the right number of nodes to submit. ---------------------------------------#
-   let n_nodes=(${n_submit}+${n_cpn}-1)*${n_cpt}/${n_cpn}
-   let n_tasks=(${n_submit}+${n_nodes}-1)/${n_nodes}
-   sed -i~ s@mynnodes@${n_nodes}@g ${sbatch}
-   sed -i~ s@myntasks@${n_tasks}@g ${sbatch}
+   #----- Update the number of tasks in batch script. -------------------------------------#
+   sed -i~ s@myntasks@${n_submit}@g ${sbatch}
    #---------------------------------------------------------------------------------------#
 fi
 #------------------------------------------------------------------------------------------#
@@ -2512,6 +2520,9 @@ echo ""                                                                        >
 echo ""                                                                        >> ${sbatch}
 echo "#----- Make sure that jobs complete before terminating script"           >> ${sbatch}
 echo "wait"                                                                    >> ${sbatch}
+echo ""                                                                        >> ${sbatch}
+echo "#----- Report efficiency of this job"                                    >> ${sbatch}
+echo "seff \${SLURM_JOBID}"                                                    >> ${sbatch}
 echo ""                                                                        >> ${sbatch}
 #------------------------------------------------------------------------------------------#
 

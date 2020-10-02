@@ -13,7 +13,12 @@ subroutine read_ednl(iunit,filename)
                                    , soil_database                         & ! intent(out)
                                    , slcol_database                        & ! intent(out)
                                    , isoilstateinit                        & ! intent(out)
+                                   , soil_hydro_scheme                     & ! intent(out)
                                    , islcolflg                             & ! intent(out)
+                                   , slsoc                                 & ! intent(out)
+                                   , slph                                  & ! intent(out)
+                                   , slcec                                 & ! intent(out)
+                                   , sldbd                                 & ! intent(out)
                                    , isoildepthflg                         & ! intent(out)
                                    , isoilbc                               & ! intent(out)
                                    , sldrain                               & ! intent(out)
@@ -160,6 +165,7 @@ subroutine read_ednl(iunit,filename)
                                    , iedcnfgf                              & ! intent(out)
                                    , ffilout                               & ! intent(out)
                                    , sfilout                               & ! intent(out)
+                                   , restore_file                          & ! intent(out)
                                    , sfilin                                & ! intent(out)
                                    , event_file                            & ! intent(out)
                                    , attach_metadata                       & ! intent(out)
@@ -281,16 +287,16 @@ subroutine read_ednl(iunit,filename)
                        ,iyoutput,itoutput,iooutput,isoutput,iadd_site_means                &
                        ,iadd_patch_means,iadd_cohort_means,attach_metadata,outfast         &
                        ,outstate,ffilout,sfilout,ied_init_mode,edres,sfilin,islcolflg      &
-                       ,veg_database,soil_database,slcol_database,lu_database              &
-                       ,plantation_file,lu_rescale_file,thsums_database,obstime_db         &
-                       ,soilstate_db,soildepth_db,isoilstateinit,isoildepthflg             &
-                       ,ivegt_dynamics,ibigleaf,integration_scheme,nsub_euler              &
-                       ,rk4_tolerance,ibranch_thermo,iphysiol,iallom,economics_scheme      &
-                       ,igrass,iphen_scheme,radint,radslp,repro_scheme,lapse_scheme        &
-                       ,crown_mod,icanrad,ihrzrad,ltrans_vis,ltrans_nir,lreflect_vis       &
-                       ,lreflect_nir,orient_tree,orient_grass,clump_tree,clump_grass       &
-                       ,decomp_scheme,h2o_plant_lim,plant_hydro_scheme,istomata_scheme     &
-                       ,istruct_growth_scheme,istem_respiration_scheme                     &
+                       ,slsoc,slph,slcec,sldbd,veg_database,soil_database,slcol_database   &
+                       ,lu_database,plantation_file,lu_rescale_file,thsums_database        &
+                       ,obstime_db,soilstate_db,soildepth_db,isoilstateinit,isoildepthflg  &
+                       ,soil_hydro_scheme,ivegt_dynamics,ibigleaf,integration_scheme       &
+                       ,nsub_euler,rk4_tolerance,ibranch_thermo,iphysiol,iallom            &
+                       ,economics_scheme,igrass,iphen_scheme,radint,radslp,repro_scheme    &
+                       ,lapse_scheme,crown_mod,icanrad,ihrzrad,ltrans_vis,ltrans_nir       &
+                       ,lreflect_vis,lreflect_nir,orient_tree,orient_grass,clump_tree      &
+                       ,clump_grass,decomp_scheme,h2o_plant_lim,plant_hydro_scheme         &
+                       ,istomata_scheme,istruct_growth_scheme,istem_respiration_scheme     &
                        ,trait_plasticity_scheme,iddmort_scheme,cbr_scheme,ddmort_const     &
                        ,carbon_mortality_scheme,hydraulic_mortality_scheme,vmfact_c3       &
                        ,vmfact_c4,mphoto_trc3,mphoto_tec3,mphoto_c4,bphoto_blc3            &
@@ -357,6 +363,10 @@ subroutine read_ednl(iunit,filename)
                                                           ,i=1,size(sfilin))
       write (unit=*,fmt=*) ' islcolflg                 =',(islcolflg(i)//';'               &
                                                           ,i=1,size(islcolflg))
+      write (unit=*,fmt=*) ' slsoc                     =',slcol
+      write (unit=*,fmt=*) ' slsoc                     =',slph
+      write (unit=*,fmt=*) ' slsoc                     =',slcec
+      write (unit=*,fmt=*) ' slsoc                     =',sldbd
       write (unit=*,fmt=*) ' veg_database              =',(trim(veg_database(i))//';'      &
                                                           ,i=1,size(veg_database))
       write (unit=*,fmt=*) ' soil_database             =',(trim(soil_database(i))//';'     &
@@ -374,6 +384,7 @@ subroutine read_ednl(iunit,filename)
       write (unit=*,fmt=*) ' soildepth_db              =',trim(soildepth_db)
       write (unit=*,fmt=*) ' isoilstateinit            =',isoilstateinit
       write (unit=*,fmt=*) ' isoildepthflg             =',isoildepthflg
+      write (unit=*,fmt=*) ' soil_hydro_scheme         =',soil_hydro_scheme
       write (unit=*,fmt=*) ' ivegt_dynamics            =',ivegt_dynamics
       write (unit=*,fmt=*) ' ibigleaf                  =',ibigleaf
       write (unit=*,fmt=*) ' integration_scheme        =',integration_scheme
@@ -523,6 +534,14 @@ subroutine read_ednl(iunit,filename)
                             !     with just the normal output...)
    patch_keep = 0           ! Keep all patches.
    !---------------------------------------------------------------------------------------!
+
+
+
+   !----- Restore file (not yet implemented in coupled runs). -----------------------------!
+   restore_file = trim(sfilout)//'_restore_time.txt'
+   !---------------------------------------------------------------------------------------!
+
+
 
    !---------------------------------------------------------------------------------------!
    !      We make sure that the maximum number of sites per polygon in ED2 is equivalent   !

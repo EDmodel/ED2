@@ -19,13 +19,24 @@ calc.ind.veg.hcap <<- function(dbh,ipft,hout=c("leaf","wood","veg"),use.crit=TRU
    #---------------------------------------------------------------------------------------#
 
 
+
+   #----- Make sure that the PFT variable has the same length as dbh. ---------------------#
+   if (length(ipft) == 1){
+     zpft = rep(ipft,times=length(dbh))
+   }else{
+     zpft = ipft
+   }#end if
+   #---------------------------------------------------------------------------------------#
+
+
+
    #----- Find biomass of all pools. ------------------------------------------------------#
-   hgt    = dbh2h  (dbh=dbh,ipft=ipft)
-   bleaf  = size2bl(dbh=dbh,hgt=hgt,ipft=ipft)
+   hgt    = dbh2h  (dbh=dbh,ipft=zpft)
+   bleaf  = size2bl(dbh=dbh,hgt=hgt,sla=pft$SLA[zpft],ipft=zpft)
    if (hout %in% c("wood","veg")){
-      bdeada = pft$brf.wd[ipft] * pft$agf.bs[ipft] * size2bd(dbh=dbh,hgt=hgt,ipft=ipft)
-      bsapa  = pft$brf.wd[ipft] * pft$agf.bs[ipft] * bleaf * pft$qsw  [ipft] * hgt
-      bbarka = pft$brf.wd[ipft] * pft$agf.bs[ipft] * bleaf * pft$qbark[ipft] * hgt
+      bdeada = pft$brf.wd[zpft] * pft$agf.bs[zpft] * size2bd(dbh=dbh,hgt=hgt,ipft=zpft)
+      bsapa  = pft$brf.wd[zpft] * pft$agf.bs[zpft] * bleaf * pft$qsw  [zpft] * hgt
+      bbarka = pft$brf.wd[zpft] * pft$agf.bs[zpft] * bleaf * pft$qbark[zpft] * hgt
       bwooda = bdeada + bsapa
    }#end if (hout %in% c("wood","veg"))
    #---------------------------------------------------------------------------------------#
@@ -33,14 +44,14 @@ calc.ind.veg.hcap <<- function(dbh,ipft,hout=c("leaf","wood","veg"),use.crit=TRU
 
    #----- Decide which heat capacity to return. -------------------------------------------#
    if (hout %in% "leaf"){
-      ans = C2B *   bleaf  * pft$c.leaf[ipft] * (1. + pft$qwatdry.leaf[ipft])
+      ans = C2B *   bleaf  * pft$c.leaf[zpft] * (1. + pft$qwatdry.leaf[zpft])
    }else if (hout %in% "wood"){
-      ans = C2B * ( bwooda * pft$c.wood[ipft] * (1. + pft$qwatdry.wood[ipft])
-                  + bbarka * pft$c.bark[ipft] * (1. + pft$qwatdry.bark[ipft]) )
+      ans = C2B * ( bwooda * pft$c.wood[zpft] * (1. + pft$qwatdry.wood[zpft])
+                  + bbarka * pft$c.bark[zpft] * (1. + pft$qwatdry.bark[zpft]) )
    }else if (hout %in% "veg" ){
-      ans = C2B * ( bleaf  * pft$c.leaf[ipft] * (1. + pft$qwatdry.leaf[ipft])
-                  + bwooda * pft$c.wood[ipft] * (1. + pft$qwatdry.wood[ipft])
-                  + bbarka * pft$c.bark[ipft] * (1. + pft$qwatdry.bark[ipft]) )
+      ans = C2B * ( bleaf  * pft$c.leaf[zpft] * (1. + pft$qwatdry.leaf[zpft])
+                  + bwooda * pft$c.wood[zpft] * (1. + pft$qwatdry.wood[zpft])
+                  + bbarka * pft$c.bark[zpft] * (1. + pft$qwatdry.bark[zpft]) )
    }#end if (hout %in% "leaf")
    #---------------------------------------------------------------------------------------#
 

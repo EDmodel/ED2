@@ -407,7 +407,7 @@ module rk4_derivs
 
       case (3)
          !---------------------------------------------------------------------------------!
-         !     Aquifer. Soil in the layer beneath is always saturated.                     !
+         !     Aquifer. Soil in the layer beneath is always at bubbling point.             !
          !---------------------------------------------------------------------------------!
          initp%soil_water       (kben) = soil8(nsoil)%slmsts
          initp%soil_mstpot      (kben) = soil8(nsoil)%slpots

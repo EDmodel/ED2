@@ -23,6 +23,7 @@ subroutine ed_model()
                                   , iqoutput                    & ! intent(in)
                                   , itoutput                    & ! intent(in)
                                   , iooutput                    & ! intent(in)
+                                  , restore_file                & ! intent(in)
                                   , frqsum                      & ! intent(in)
                                   , unitfast                    & ! intent(in)
                                   , unitstate                   & ! intent(in)
@@ -140,6 +141,8 @@ subroutine ed_model()
                                                     !    during synchronization, so you
                                                     !    can find out which node is the
                                                     !    slow one
+   !----- String for output format. -------------------------------------------------------!
+   character(len=26), parameter :: fmtrest = '(i4.4,2(1x,i2.2),1x,2i2.2)'
    !----- External functions. -------------------------------------------------------------!
    real    , external :: walltime ! Wall time
    integer , external :: num_days ! Number of days in the current month
@@ -545,6 +548,20 @@ subroutine ed_model()
       !------------------------------------------------------------------------------------!
       call ed_output(observation_time,analysis_time,new_day,new_year,dail_analy_time       &
                     ,mont_analy_time,dcyc_analy_time,annual_time,history_time,dcycle_time)
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Write a file with the current history time.                                    !
+      !------------------------------------------------------------------------------------!
+      if (history_time .and. mynum == 1) then
+         open (unit=18,file=trim(restore_file),form='formatted',status='replace'           &
+              ,action='write')
+         write(unit=18,fmt=fmtrest) current_time%year,current_time%month,current_time%date &
+                                   ,current_time%hour,current_time%min
+         close(unit=18,status='keep')
+      end if
       !------------------------------------------------------------------------------------!
 
 

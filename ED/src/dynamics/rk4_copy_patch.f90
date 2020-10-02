@@ -957,7 +957,8 @@ module rk4_copy_patch
       use soil_coms            , only : soil8                & ! intent(in)
                                       , dslz8                & ! intent(in)
                                       , slz8                 & ! intent(in)
-                                      , slzt8                ! ! intent(in)
+                                      , slzt8                & ! intent(in)
+                                      , matric_potential8    ! ! intent(in)
       use grid_coms            , only : nzg                  & ! intent(in)
                                       , nzs                  ! ! intent(in)
       use therm_lib            , only : thetaeiv             & ! subroutine
@@ -1252,9 +1253,7 @@ module rk4_copy_patch
                mcheight         = 5.d-1 * ( dble(cpatch%hite(ico))                         &
                                           + dble(h2crownbh(cpatch%hite(ico),ipft)) )
                psiplusz         = slzt8(k) - mcheight                                      &
-                                + soil8(nsoil)%slpots                                      &
-                                / (initp%soil_water(k) / soil8(nsoil)%slmsts)              &
-                                ** soil8(nsoil)%slbs
+                                + matric_potential8(nsoil,initp%soil_water(k))
                available_water  = available_water                                          &
                                 + max(0.d0,(psiplusz - soil8(nsoil)%slpotwp)) * dslz8(k)   &
                                 / (soil8(nsoil)%slpotld - soil8(nsoil)%slpotwp)

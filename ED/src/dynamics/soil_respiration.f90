@@ -55,6 +55,7 @@ module soil_respiration
       real                                       :: avg_soil_mstpot
       real                                       :: avg_soil_temp
       real                                       :: avg_soil_fliq
+      real                                       :: lyr_slpot
       real                                       :: af_temperature
       real                                       :: af_moisture
       real                                       :: af_oxygen
@@ -259,62 +260,73 @@ module soil_respiration
       !------------------------------------------------------------------------------------!
       k                   = mzg
       nsoil               = ntext_soil(k)
-
-      !------------------------------------------------------------------------------------!
-      !   Relative moisture may be defined in terms of moisture or potential, depending on !
-      ! the decomposition module.                                                          !
-      !------------------------------------------------------------------------------------!
-      select case (decomp_scheme)
-      case (5)
-         !---------------------------------------------------------------------------------!
-         !    Use (logarithmic) matric potential to define relative moisture, following    !
-         ! K13.                                                                            !
-         !                                                                                 !
-         !   Koven CD, Riley WJ, Subin ZM, Tang JY, Torn MS, Collins WD, Bonan GB,         !
-         !      Lawrence DM, Swenson SC. 2013. The effect of vertically resolved soil      !
-         !      biogeochemistry and alternate soil C and N models on C dynamics of CLM4.   !
-         !      Biogeosciences, 10:7109-7131. doi:10.5194/bg-10-7109-2013.                 !
-         !---------------------------------------------------------------------------------!
-         arl_soil_moist = min(1.0, max( 0.0                                                &
-                                      , log(csite%soil_mstpot(k,ipa)/soil(nsoil)%slpotcp)  &
-                                      / log(soil(nsoil)%slpotfc     /soil(nsoil)%slpotcp) ))
+      !----- Decide on the method to compute relative moisture and oxygen. ----------------!
+      select case (nsoil)
+      case (13)
+         !----- Bedrock.  Assume zero moisture and zero oxygen. ---------------------------!
+         arl_soil_moist  = 0.0
+         arl_soil_oxygen = 0.0
          !---------------------------------------------------------------------------------!
       case default
-         !------ Use soil moisture. -------------------------------------------------------!
-         arl_soil_moist = min(1.0, max( 0.0                                                &
-                                      , (csite%soil_water(k,ipa) - soil(nsoil)%soilcp)     &
-                                      / (soil(nsoil)%slmsts      - soil(nsoil)%soilcp) ) )
          !---------------------------------------------------------------------------------!
-      end select
-      !------------------------------------------------------------------------------------!
+         !   Relative moisture may be defined in terms of moisture or potential, depending !
+         ! on the decomposition module.                                                    !
+         !---------------------------------------------------------------------------------!
+         select case (decomp_scheme)
+         case (5)
+            !------------------------------------------------------------------------------!
+            !    Use (logarithmic) matric potential to define relative moisture, following !
+            ! K13.                                                                         !
+            !                                                                              !
+            !   Koven CD, Riley WJ, Subin ZM, Tang JY, Torn MS, Collins WD, Bonan GB,      !
+            !      Lawrence DM, Swenson SC. 2013. The effect of vertically resolved soil   !
+            !      biogeochemistry and alternate soil C and N models on C dynamics of      !
+            !      CLM4. Biogeosciences, 10:7109-7131. doi:10.5194/bg-10-7109-2013.        !
+            !------------------------------------------------------------------------------!
+            lyr_slpot      = min(soil(nsoil)%slpots,csite%soil_mstpot(k,ipa))
+            arl_soil_moist = min(1.0, max( 0.0                                             &
+                                         , log(lyr_slpot          /soil(nsoil)%slpotcp)    &
+                                         / log(soil(nsoil)%slpotfc/soil(nsoil)%slpotcp) ) )
+            !------------------------------------------------------------------------------!
+         case default
+            !------ Use soil moisture. ----------------------------------------------------!
+            arl_soil_moist = min(1.0, max( 0.0                                             &
+                                         , (csite%soil_water(k,ipa)-soil(nsoil)%soilcp)    &
+                                         / (soil(nsoil)%slmsts     -soil(nsoil)%soilcp) ) )
+            !------------------------------------------------------------------------------!
+         end select
+         !---------------------------------------------------------------------------------!
 
 
 
-      !------------------------------------------------------------------------------------!
-      !      When soil moisture is excessively high (i.e., above field capacity), oxygen   !
-      ! may become a limiting factor for decomposition.  Most approaches account for this  !
-      ! as a single term in the the moisture function, but decomp_scheme=5 treats these    !
-      ! as separate limitations.                                                           !
-      !------------------------------------------------------------------------------------!
-      select case (decomp_scheme)
-      case (5)
          !---------------------------------------------------------------------------------!
-         !    Use (logarithmic) matric potential to define relative moisture, following    !
-         ! K13.                                                                            !
-         !                                                                                 !
-         !   Koven CD, Riley WJ, Subin ZM, Tang JY, Torn MS, Collins WD, Bonan GB,         !
-         !      Lawrence DM, Swenson SC. 2013. The effect of vertically resolved soil      !
-         !      biogeochemistry and alternate soil C and N models on C dynamics of CLM4.   !
-         !      Biogeosciences, 10:7109-7131. doi:10.5194/bg-10-7109-2013.                 !
+         !      When soil moisture is excessively high (i.e., above field capacity),       !
+         ! oxygen may become a limiting factor for decomposition.  Most approaches account !
+         ! for this as a single term in the the moisture function, but decomp_scheme=5     !
+         ! treats these as separate limitations.                                           !
          !---------------------------------------------------------------------------------!
-         arl_soil_oxygen = min(1.0, max( 0.0                                               &
-                                       , log(csite%soil_mstpot(k,ipa)/soil(nsoil)%slpots)  &
-                                       / log(soil(nsoil)%slpotfc     /soil(nsoil)%slpots) ))
-         !---------------------------------------------------------------------------------!
-      case default
-         !------ Set as the complement of rel_soil_moist. ---------------------------------!
-         arl_soil_oxygen = 1.0 - arl_soil_moist
-         !---------------------------------------------------------------------------------!
+         select case (decomp_scheme)
+         case (5)
+            !------------------------------------------------------------------------------!
+            !    Use (logarithmic) matric potential to define relative moisture, following !
+            ! K13.                                                                         !
+            !                                                                              !
+            !   Koven CD, Riley WJ, Subin ZM, Tang JY, Torn MS, Collins WD, Bonan GB,      !
+            !      Lawrence DM, Swenson SC. 2013. The effect of vertically resolved soil   !
+            !      biogeochemistry and alternate soil C and N models on C dynamics of      !
+            !      CLM4. Biogeosciences, 10:7109-7131. doi:10.5194/bg-10-7109-2013.        !
+            !------------------------------------------------------------------------------!
+            lyr_slpot       = min(soil(nsoil)%slpots,csite%soil_mstpot(k,ipa))
+            arl_soil_oxygen = min(1.0, max( 0.0                                            &
+                                          , log(lyr_slpot          /soil(nsoil)%slpots)    &
+                                          / log(soil(nsoil)%slpotfc/soil(nsoil)%slpots)) )
+            !---------------------------------------------------------------------------------!
+         case default
+            !------ Set as the complement of rel_soil_moist. ---------------------------------!
+            arl_soil_oxygen = 1.0 - arl_soil_moist
+            !---------------------------------------------------------------------------------!
+         end select
+         !------------------------------------------------------------------------------------!
       end select
       !------------------------------------------------------------------------------------!
 

@@ -111,7 +111,7 @@ if (file.exists(hasrun) && ! sigsegv){
 
 
 #----- Retrieve the last history file. ----------------------------------------------------#
-histodir    = paste(histomain,polyg,"histo",NULL,sep="/")
+histodir    = file.path(histomain,polyg,"histo","")
 histolist   = dir(histodir)
 bye         =-grep("-Z-",histolist)
 if (length(bye) > 0) histolist   = histolist[bye]
@@ -238,8 +238,8 @@ if (hasoutput){
          agb.pft    = matrix(NA,nrow=ntest,ncol=npft)
          scb.scp    = matrix(NA,nrow=ntest,ncol=   3)
          for (y in 1:ntest){
-            thishisto    = grep(paste("-",years.test[y],"-",sep=""),histolist)
-            pathhisto    = paste(histodir,histolist[thishisto],sep="/")
+            thishisto    = grep(paste0("-",years.test[y],"-"),histolist)
+            pathhisto    = file.path(histodir,histolist[thishisto])
             olddata      = hdf5load(file=pathhisto,load=FALSE,verbosity=0,tidy=TRUE)
             agb.pft[y,]  = colSums(olddata$AGB.PY[1,,])
             scb.scp[y,1] = olddata$FAST.SOIL.C.PY
@@ -346,7 +346,7 @@ if (running && hasoutput){
       status    = paste(polyg,yyyy,mm,dd,hhhh,"HISTORY",agb,bsa,lai,scb,npa,sep=" ")
    }#end if
 }else if(running){
-   status    = paste(polyg,yyyy,mm,dd,hhhh,"INITIAL",agb,bsa,lai,scb,npa,sep=" ")
+   status    = paste(polyg,yyyy,mm,dd,hhhh,"HISTORY",agb,bsa,lai,scb,npa,sep=" ")
 }else if (sigsegv){
    status    = paste(polyg,yyyy,mm,dd,hhhh,"SIGSEGV",agb,bsa,lai,scb,npa,sep=" ")
 }else if(crashed){
@@ -377,6 +377,6 @@ if (running && hasoutput){
 #------------------------------------------------------------------------------------------#
 #     Dump the output to a file.                                                           #
 #------------------------------------------------------------------------------------------#
-statusout    = paste(output,"statusrun.txt",sep="/")
+statusout    = file.path(output,"statusrun.txt")
 dum          = write(x=status,file=statusout,append=FALSE)
 #------------------------------------------------------------------------------------------#

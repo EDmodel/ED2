@@ -153,7 +153,12 @@ default = list( run           = "unnamed"
               , istext        = 1
               , sand          = -1.0
               , clay          = -1.0
+              , slsoc         = 0.0266
+              , slph          = 4.7
+              , slcec         = 0.124
+              , sldbd         = 1192.
               , depth         = "F"
+              , isoil.hydro   = 2
               , isoilbc       = 1
               , sldrain       = 90.
               , scolour       = 16
@@ -295,10 +300,23 @@ for (n in sequence(nvars)){
       joborder$skid.small    = sapply(myruns$sl.type,FUN=switch,ril=0.60,cvl=0.30,NA)
       joborder$skid.large    = sapply(myruns$sl.type,FUN=switch,ril=1.00,cvl=0.75,NA)
       joborder$felling.small = sapply(myruns$sl.type,FUN=switch,ril=0.35,cvl=0.10,NA)
+   }else if (name.now %in% "ihydrodyn"){
+      idx                  = myruns$ihydrodyn + 1
+      joborder$ihydro      = c(0,0,1)[idx]
+      joborder$istemresp   = c(0,1,1)[idx]
+      joborder$istomata    = c(0,0,1)[idx]
+      joborder$growthresp  = c(0.30,0.45,0.45)[idx]
+      joborder$iphen       = c(3,3,4)[idx]
+      joborder$iplastic    = c(2,3,3)[idx]
+      joborder$icarbonmort = c(1,2,2)[idx]
+      joborder$ihydromort  = c(0,0,1)[idx]
+      joborder$iallom      = c(3,4,4)[idx]
+      joborder$h2o.limit   = c(5,5,4)[idx]
+      joborder$igrass      = c(1,1,0)[idx]
    }else if (name.now %in% names(joborder)){
       joborder[[name.now]] = myruns[[name.now]]
    }else{
-      stop(paste(" Variable ",name.now," is not a valid joborder variable!",sep=""))
+      stop(paste0(" Variable ",name.now," is not a valid joborder variable!"))
    }#end if
    #---------------------------------------------------------------------------------------#
 }#end for (n in sequence(nvars))
@@ -374,12 +392,14 @@ if (is.null(lonlat)){
    #     Replace other POI-specific variables as long as they are not to be specified by   #
    # the user settings.                                                                    #
    #---------------------------------------------------------------------------------------#
-   keep    = ( names(poitout) %in% names(joborder) 
-             & ( ! names(poitout) %in% names(myruns) )
-             & ( ! names(poitout) %in% c("iata","met.driver") )
-             )#end keep
-   poidata = poitout[,keep]
-   npois   = ncol(poidata)
+   skip.phen = "ihydrodyn" %in% names(myruns)
+   keep      = ( names(poitout) %in% names(joborder) 
+               & ( ! names(poitout) %in% names(myruns) )
+               & ( ! names(poitout) %in% c("iata","met.driver") )
+               & ( ! ( ( names(poitout) %in% "iphen" ) & skip.phen ) )
+               )#end keep
+   poidata   = poitout[,keep]
+   npois     = ncol(poidata)
    for (p in sequence(npois)){
       joborder[[names(poidata)[p]]] = poidata[[names(poidata)[p]]]
    }#end for (p in sequence(npois))

@@ -2047,12 +2047,12 @@ module rk4_misc
    ! range.  We currently test this only for the top soil layer because this is the most   !
    ! likely to cause problems, but if it does happen in other layers, we could easily      !
    ! extend this for all layers.  Depending on its derivative, soil moisture can go under  !
-   ! the minimum soil moisture possible (soilcp) or above the saturation (slmsts).  Both   !
-   ! are bad things, and if the value is way off-bounds, then we leave it like that so the !
-   ! step can be rejected.   However, if the value is just slightly off(*) these limits,   !
-   ! we make a small exchange of moisture with the neighbouring layer.  This will prevent  !
-   ! the soil to go outside the range in those double precision => single precision =>     !
-   ! double precision conversion.                                                          !
+   ! the minimum soil moisture possible (soilcp) or above the saturation point (slmsts).   !
+   ! Both are bad things, and if the value is way off-bounds, then we leave it like that   !
+   ! so the step can be rejected.   However, if the value is just slightly off(*) these    !
+   ! limits, we make a small exchange of moisture with the neighbouring layer.  This will  !
+   ! prevent the soil to go outside the range in those double precision => single          !
+   ! precision => double precision conversion.                                             !
    !                                                                                       !
    ! (*) slightly off is defined as outside the range but within the desired accuracy      !
    !     (rk4eps).                                                                         !
@@ -3813,7 +3813,7 @@ module rk4_misc
                                         ,'     STGC_RH','     STSC_RH','      MSC_RH'      &
                                         ,'      SSC_RH','      PSC_RH','AVGDAILY_TMP'      &
                                         ,'     SUM_CHD','     SUM_DGD'
-      write (unit=*,fmt='(i12,1x,12(es12.4,1x))')  csite%dist_type(ipa),csite%age(ipa)     &
+      write (unit=*,fmt='(i12,1x,13(es12.4,1x))')  csite%dist_type(ipa),csite%age(ipa)     &
             ,csite%area(ipa),csite%rh(ipa),csite%fgc_rh(ipa),csite%fsc_rh(ipa)             &
             ,csite%stgc_rh(ipa),csite%stsc_rh(ipa),csite%msc_rh(ipa),csite%ssc_rh(ipa)     &
             ,csite%psc_rh(ipa),csite%avg_daily_temp(ipa),csite%sum_chd(ipa)                &
@@ -4281,9 +4281,9 @@ module rk4_misc
       real(kind=8)                       :: can_theiv
       real(kind=8)                       :: can_vpdef
       !----- Local constants. -------------------------------------------------------------!
-      character(len=10), parameter :: phfmt='(91(a,1x))'
+      character(len=10), parameter :: phfmt='(93(a,1x))'
       character(len=48), parameter ::                                                      &
-                                   pbfmt='(3(i13,1x),4(es13.6,1x),3(i13,1x),81(es13.6,1x))'
+                                   pbfmt='(3(i13,1x),4(es13.6,1x),3(i13,1x),83(es13.6,1x))'
       character(len=10), parameter :: chfmt='(58(a,1x))'
       character(len=48), parameter ::                                                      &
                                    cbfmt='(3(i13,1x),2(es13.6,1x),4(i13,1x),49(es13.6,1x))'
@@ -4435,21 +4435,22 @@ module rk4_misc
                                   , '    WOOD.TEMP', '   WOOD.WATER' , '       GGBARE'     &
                                   , '        GGVEG', '        GGNET' , '      OPENCAN'     &
                                   , '    SOIL.TEMP', '   SOIL.WATER' , '       SOILCP'     &
-                                  , '       SOILWP', '       SOILFC' , '       SLMSTS'     &
-                                  , '        USTAR', '        TSTAR' , '        QSTAR'     &
-                                  , '        CSTAR', '         ZETA' , '      RI.BULK'     &
-                                  , '   GND.RSHORT', '      GND.PAR' , '    GND.RLONG'     &
-                                  , '       WFLXLC', '       WFLXWC' , '       WFLXGC'     &
-                                  , '       WFLXAC', '       TRANSP' , '        WSHED'     &
-                                  , '    INTERCEPT', '  THROUGHFALL' , '       HFLXGC'     &
-                                  , '       HFLXLC', '       HFLXWC' , '       HFLXAC'     &
-                                  , '       CFLXAC', '       CFLXST' , '       FGC.RH'     &
-                                  , '       FSC.RH', '      STGC.RH' , '      STSC.RH'     &
-                                  , '       MSC.RH', '       SSC.RH' , '       PSC.RH'     &
-                                  , '          GPP', '       PLRESP' , ' PAR.BEAM.TOP'     &
-                                  , ' PAR.DIFF.TOP', ' NIR.BEAM.TOP' , ' NIR.DIFF.TOP'     &
-                                  , ' PAR.BEAM.BOT', ' PAR.DIFF.BOT' , ' NIR.BEAM.BOT'     &
-                                  , ' NIR.DIFF.BOT'
+                                  , '       SOILWP', '       SOILFC' , '       SOILBP'     &
+                                  , '       SLMSTS', '       SOILPO' , '        USTAR'     &
+                                  , '        TSTAR' , '        QSTAR', '        CSTAR'     &
+                                  , '         ZETA' , '      RI.BULK', '   GND.RSHORT'     &
+                                  , '      GND.PAR' , '    GND.RLONG', '       WFLXLC'     &
+                                  , '       WFLXWC' , '       WFLXGC', '       WFLXAC'     &
+                                  , '       TRANSP' , '        WSHED', '    INTERCEPT'     &
+                                  , '  THROUGHFALL' , '       HFLXGC', '       HFLXLC'     &
+                                  , '       HFLXWC' , '       HFLXAC', '       CFLXAC'     &
+                                  , '       CFLXST' , '       FGC.RH', '       FSC.RH'     &
+                                  , '      STGC.RH' , '      STSC.RH', '       MSC.RH'     &
+                                  , '       SSC.RH' , '       PSC.RH', '          GPP'     &
+                                  , '       PLRESP' , ' PAR.BEAM.TOP', ' PAR.DIFF.TOP'     &
+                                  , ' NIR.BEAM.TOP' , ' NIR.DIFF.TOP', ' PAR.BEAM.BOT'     &
+                                  , ' PAR.DIFF.BOT' , ' NIR.BEAM.BOT', ' NIR.DIFF.BOT'
+                                  
                                   
          close (unit=83,status='keep')
       end if
@@ -4478,21 +4479,22 @@ module rk4_misc
                    , avg_wood_temp         , sum_wood_water        , initp%ggbare          &
                    , initp%ggveg           , initp%ggnet           , initp%opencan_frac    &
                    , initp%soil_tempk(nzg) , initp%soil_water(nzg) , soil8(nsoil)%soilcp   &
-                   , soil8(nsoil)%soilwp   , soil8(nsoil)%sfldcap  , soil8(nsoil)%slmsts   &
-                   , initp%ustar           , initp%tstar           , initp%qstar           &
-                   , initp%cstar           , initp%zeta            , initp%ribulk          &
-                   , fluxp%flx_rshort_gnd  , fluxp%flx_par_gnd     , fluxp%flx_rlong_gnd   &
-                   , fluxp%flx_vapor_lc    , fluxp%flx_vapor_wc    , fluxp%flx_vapor_gc    &
-                   , fluxp%flx_vapor_ac    , fluxp%flx_transp      , fluxp%flx_wshed_vg    &
-                   , fluxp%flx_intercepted , fluxp%flx_throughfall , fluxp%flx_sensible_gc &
-                   , fluxp%flx_sensible_lc , fluxp%flx_sensible_wc , fluxp%flx_sensible_ac &
-                   , fluxp%flx_carbon_ac   , fluxp%flx_carbon_st   , initp%fgc_rh          &
-                   , initp%fsc_rh          , initp%stgc_rh         , initp%stsc_rh         &
-                   , initp%msc_rh          , initp%ssc_rh          , initp%psc_rh          &
-                   , sum_gpp               , sum_plresp            , rk4site%par_beam      &
-                   , rk4site%par_diffuse   , rk4site%nir_beam      , rk4site%nir_diffuse   &
-                   , par_b_beam            , par_b_diff            , nir_b_beam            &
-                   , nir_b_diff
+                   , soil8(nsoil)%soilwp   , soil8(nsoil)%sfldcap  , soil8(nsoil)%soilbp   &
+                   , soil8(nsoil)%slmsts   , soil8(nsoil)%soilpo   , initp%ustar           &
+                   , initp%tstar           , initp%qstar           , initp%cstar           &
+                   , initp%zeta            , initp%ribulk          , fluxp%flx_rshort_gnd  &
+                   , fluxp%flx_par_gnd     , fluxp%flx_rlong_gnd   , fluxp%flx_vapor_lc    &
+                   , fluxp%flx_vapor_wc    , fluxp%flx_vapor_gc    , fluxp%flx_vapor_ac    &
+                   , fluxp%flx_transp      , fluxp%flx_wshed_vg    , fluxp%flx_intercepted &
+                   , fluxp%flx_throughfall , fluxp%flx_sensible_gc , fluxp%flx_sensible_lc &
+                   , fluxp%flx_sensible_wc , fluxp%flx_sensible_ac , fluxp%flx_carbon_ac   &
+                   , fluxp%flx_carbon_st   , initp%fgc_rh          , initp%fsc_rh          &
+                   , initp%stgc_rh         , initp%stsc_rh         , initp%msc_rh          &
+                   , initp%ssc_rh          , initp%psc_rh          , sum_gpp               &
+                   , sum_plresp            , rk4site%par_beam      , rk4site%par_diffuse   &
+                   , rk4site%nir_beam      , rk4site%nir_diffuse   , par_b_beam            &
+                   , par_b_diff            , nir_b_beam            , nir_b_diff
+                   
                    
       close(unit=83,status='keep')
       !------------------------------------------------------------------------------------!

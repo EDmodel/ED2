@@ -8,7 +8,7 @@ h2dbh <<- function(h,ipft){
      zpft = ipft
    }#end if
 
-   tropo = pft$tropical[zpft] & iallom %in% c(0,1,3)
+   tropo = pft$tropical[zpft] & iallom %in% c(0,1,3,4)
    tropn = pft$tropical[zpft] & iallom %in% c(2)
    tempe = ! pft$tropical[zpft]
 
@@ -54,7 +54,7 @@ dbh2h <<- function(dbh,ipft,use.crit=TRUE){
       dbhuse = dbh
    }#end if (use.crit)
 
-   tropo         = pft$tropical[zpft] & iallom %in% c(0,1,3)
+   tropo         = pft$tropical[zpft] & iallom %in% c(0,1,3,4)
    tropn         = pft$tropical[zpft] & iallom %in% c(2)
    tempe         = ! pft$tropical[zpft]
 
@@ -82,7 +82,7 @@ dbh2h <<- function(dbh,ipft,use.crit=TRUE){
 
 #==========================================================================================#
 #==========================================================================================#
-size2bl <<- function(dbh,hgt,ipft,use.crit=TRUE){
+size2bl <<- function(dbh,hgt,sla,ipft,use.crit=TRUE){
    #----- Make sure that the PFT variable has the same length as dbh. ---------------------#
    if (length(ipft) == 1){
      zpft = rep(ipft,times=length(dbh))
@@ -102,21 +102,65 @@ size2bl <<- function(dbh,hgt,ipft,use.crit=TRUE){
 
 
    #----- Decide which variable to use as dependent variable (DBH or DBH^2*Hgt). ----------#
-   size     = ifelse( test = pft$tropical[zpft] & (! pft$liana[zpft]) & (iallom %in% 3)
+   size     = ifelse( test = pft$tropical[zpft] & (! pft$liana[zpft]) & (iallom %in% c(3,4))
                     , yes  = dbhuse * dbhuse * hgt
                     , no   = dbhuse
                     )#end ifelse
    #---------------------------------------------------------------------------------------#
 
 
-
-   #----- Find leaf biomass. --------------------------------------------------------------#
-   bleaf = pft$b1Bl[zpft] / C2B * size ^ pft$b2Bl[zpft]
    #---------------------------------------------------------------------------------------#
-
+   #      For iallom == 4 (tropical trees), b1Bl and b2Bl represents leaf area based       #
+   # allometry, we need to convert it to biomass using cohort-level SLA.                   #
+   #---------------------------------------------------------------------------------------#
+   bleaf = ifelse( test = pft$tropical[zpft] & (! pft$liana[zpft]) & (iallom %in% c(4))
+                 , yes  = pft$b1Bl[zpft] / sla * size ^ pft$b2Bl[zpft]
+                 , no   = pft$b1Bl[zpft] / C2B * size ^ pft$b2Bl[zpft]
+                 )#end ifelse
+   #---------------------------------------------------------------------------------------#
 
    return(bleaf)
 }# end function size2bl
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
+#    Function to find sapwood area fraction.                                               #
+#------------------------------------------------------------------------------------------#
+dbh2sf <<- function(dbh,ipft){
+   #----- Make sure that the PFT variable has the same length as dbh. ---------------------#
+   if (length(ipft) == 1){
+     zpft = rep(ipft,times=length(dbh))
+   }else{
+     zpft = ipft
+   }#end if
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #     For grasses, we assume all of the 'stem' of grass is sapwood.  In reality, we do  #
+   # not use sapwood area for grasses, but we keep it consistent across species.           #
+   #---------------------------------------------------------------------------------------#
+   sapw.area  = ifelse( test = pft$grass[zpft]
+                      , yes  = 1.0
+                      , no   = pft$b1SA[zpft] * dbh ^ pft$b2SA[zpft]
+                      )#end ifelse
+   basal.area = ifelse( test = pft$grass[zpft]
+                      , yes  = 1.0
+                      , no   = pio4 * dbh * dbh
+                      )#end ifelse
+   fsapwood   = pmin(1.0, sapw.area / basal.area) + 0 * sapw.area
+   #---------------------------------------------------------------------------------------#
+
+   return(fsapwood)
+}#end function dbh2sf
 #==========================================================================================#
 #==========================================================================================#
 
@@ -138,7 +182,7 @@ size2bd <<- function(dbh,hgt,ipft){
 
 
    #----- Decide which variable to use as dependent variable (DBH or DBH^2*Hgt). ----------#
-   size     = ifelse( test = pft$tropical[zpft] & (! pft$liana[zpft]) & (iallom %in% 3)
+   size     = ifelse( test = pft$tropical[zpft] & (! pft$liana[zpft]) & (iallom %in% c(3,4))
                     , yes  = dbh * dbh * dbh2h(dbh,ipft=zpft)
                     , no   = dbh
                     )#end ifelse
@@ -174,7 +218,7 @@ size2bw <<- function(dbh,hgt,ipft,use.crit=TRUE){
 
 
    bdead  = size2bd(dbh=dbh,hgt=hgt,ipft=zpft)
-   bleaf  = size2bl(dbh=dbh,hgt=hgt,ipft=zpft,use.crit=use.crit)
+   bleaf  = size2bl(dbh=dbh,hgt=hgt,sla=pft$SLA[zpft],ipft=zpft,use.crit=use.crit)
    bsapw  = pft$qsw  [ipft] * hgt * bleaf
    bbark  = pft$qbark[ipft] * hgt * bleaf
    bwood  = bdead + bsapw + bbark
@@ -255,7 +299,7 @@ size2de <<- function(dbh,hgt,ipft,dbh.by=0.1,...){
 #==========================================================================================#
 #    Canopy Area allometry from Dietze and Clark (2008).                                   #
 #------------------------------------------------------------------------------------------#
-size2ca <<- function(dbh,hgt,ipft,use.crit=TRUE){
+size2ca <<- function(dbh,hgt,sla,ipft,use.crit=TRUE){
    if (length(ipft) == 1){
      zpft = rep(ipft,times=length(dbh))
    }else{
@@ -263,7 +307,7 @@ size2ca <<- function(dbh,hgt,ipft,use.crit=TRUE){
    }#end if
 
    #----- Find local LAI, the minimum size for a crown area. ------------------------------#
-   loclai = pft$SLA[zpft] * size2bl(dbh,hgt,ipft)
+   loclai = sla * size2bl(dbh,hgt,sla,ipft)
    #---------------------------------------------------------------------------------------#
 
 
@@ -277,7 +321,7 @@ size2ca <<- function(dbh,hgt,ipft,use.crit=TRUE){
 
 
    #----- Decide which variable to use as dependent variable (DBH or DBH^2*Hgt). ----------#
-   size     = ifelse( test = pft$tropical[zpft] & (! pft$liana[zpft]) & (iallom %in% 3)
+   size     = ifelse( test = pft$tropical[zpft] & (! pft$liana[zpft]) & (iallom %in% c(3,4))
                     , yes  = dbhuse * dbhuse * hgt
                     , no   = dbhuse
                     )#end ifelse
@@ -324,7 +368,7 @@ size2wai <<- function(dbh,hgt,ipft,use.crit=TRUE){
 
 
    #----- Decide which variable to use as dependent variable (DBH or DBH^2*Hgt). ----------#
-   size     = ifelse( test = pft$tropical[zpft] & (! pft$liana[zpft]) & (iallom %in% 3)
+   size     = ifelse( test = pft$tropical[zpft] & (! pft$liana[zpft]) & (iallom %in% c(3,4))
                     , yes  = dbhuse * dbhuse * hgt
                     , no   = dbhuse
                     )#end ifelse
@@ -376,7 +420,7 @@ ed.biomass <<- function(dbh,ipft,use.crit=TRUE){
    }#end if
 
    hgt    = dbh2h(dbh=dbh,ipft=zpft)
-   bleaf  = size2bl(dbh=dbh,hgt=hgt,ipft=zpft,use.crit=use.crit)
+   bleaf  = size2bl(dbh=dbh,hgt=hgt,sla=pft$SLA[zpft],ipft=zpft,use.crit=use.crit)
    bsapa  = pft$agf.bs[zpft] * pft$qsw  [zpft] * hgt * bleaf
    bbarka = pft$agf.bs[zpft] * pft$qbark[zpft] * hgt * bleaf
    bdeada = pft$agf.bs[zpft] * size2bd(dbh=dbh,hgt=hgt,ipft=zpft)
@@ -403,7 +447,7 @@ size2bt <<- function(dbh,hgt,ipft){
 
    #----- Find bdead and bsapwooda. -------------------------------------------------------#
    bdead    = size2bd(dbh=dbh,hgt=hgt,ipft=zpft)
-   bleaf    = size2bl(dbh=dbh,hgt=hgt,ipft=zpft)
+   bleaf    = size2bl(dbh=dbh,hgt=hgt,sla=pft$SLA[zpft],ipft=zpft)
    bsapwood = pft$agf.bs[zpft] * pft$qsw  [zpft] * hgt * bleaf
    bbark    = pft$agf.bs[zpft] * pft$qbark[zpft] * hgt * bleaf
    #---------------------------------------------------------------------------------------#
@@ -461,7 +505,7 @@ size2rd <<- function(hgt,dbh,ipft){
       #------------------------------------------------------------------------------------#
       vol  = size2vol(hgt=hgt,dbh=dbh,ipft=zpft)
       rd   = pft$b1Rd[zpft] * (hgt * dbh * dbh) ^ pft$b2Rd[zpft]
-   }else if (iallom %in% c(1,2)){
+   }else if (iallom %in% c(1,2,4)){
       #------------------------------------------------------------------------------------#
       #    This is just a test allometry, that imposes root depth to be 0.5 m for          #
       # plants that are 0.15-m tall, and 5.0 m for plants that are 35-m tall.              #
@@ -644,19 +688,19 @@ dbh2bl.alt <<- function (dbh,genus){
 
    }else if(genushere == "grass"){
       hgt   = dbh2h  (dbh=dbh,ipft=1)
-      bleaf = size2bl(dbh=dbh,hgt=hgt,ipft=1)
+      bleaf = size2bl(dbh=dbh,hgt=hgt,sla=pft$SLA[1],ipft=1)
 
    }else if(genushere == "early"){
       hgt   = dbh2h  (dbh=dbh,ipft=2)
-      bleaf = size2bl(dbh=dbh,hgt=hgt,ipft=2)
+      bleaf = size2bl(dbh=dbh,hgt=hgt,sla=pft$SLA[2],ipft=2)
 
    }else if(genushere == "mid"){
       hgt   = dbh2h  (dbh=dbh,ipft=3)
-      bleaf = size2bl(dbh=dbh,hgt=hgt,ipft=3)
+      bleaf = size2bl(dbh=dbh,hgt=hgt,sla=pft$SLA[3],ipft=3)
 
    }else if(genushere == "late"){
       hgt   = dbh2h  (dbh=dbh,ipft=4)
-      bleaf = size2bl(dbh=dbh,hgt=hgt,ipft=4)
+      bleaf = size2bl(dbh=dbh,hgt=hgt,sla=pft$SLA[4],ipft=4)
 
    }else{
       stop (paste("Genus ",genus," wasn't found.  ",

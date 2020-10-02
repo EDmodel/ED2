@@ -1417,6 +1417,8 @@ recursive subroutine read_ed_xml_config(filename)
         
         call getConfigREAL  ('treefall_hite_threshold','disturbance',i,rval,texist)
         if(texist) treefall_hite_threshold = sngloff(rval,tiny_offset)
+        call getConfigINT  ('does_hite_limit_tfpatch' ,'disturbance',i,ival,texist)
+        if(texist) does_hite_limit_tfpatch = ival == 1
 
         !! FORESTRY
         call getConfigINT  ('plantation_year','disturbance',i,ival,texist)
@@ -2400,6 +2402,12 @@ subroutine write_ed_xml_config
      call putConfigREAL("treefall_disturbance_rate",treefall_disturbance_rate)
      call putConfigSCIENTIFIC("Time2Canopy",Time2Canopy)
      call putConfigREAL("treefall_hite_threshold",treefall_hite_threshold)
+     if (does_hite_limit_tfpatch) then
+        ival = 1
+     else
+        ival = 0
+     end if
+     call putConfigINT("does_hite_limit_tfpatch",ival)
      ! --- Forestry
      call putConfigINT("forestry_on",forestry_on)
      call putConfigINT("agriculture_on",agriculture_on)

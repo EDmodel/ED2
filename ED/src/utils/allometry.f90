@@ -350,16 +350,21 @@ module allometry
       !------------------------------------------------------------------------------------!
 
 
-      !----- Use the general functional form. ---------------------------------------------!
-      size2bl = b1Bl(ipft) / C2B * size ** b2Bl(ipft)
-      !------------------------------------------------------------------------------------!
 
-      !----- for iallom == 4, b1Bl and b2Bl represents leaf area based allometry, we need  !
-      ! to convert it to biomass using cohort-level SLA  !
+      !------------------------------------------------------------------------------------!
+      !      For iallom == 4 (tropical trees), b1Bl and b2Bl represents leaf area based    !
+      ! allometry, we need to convert it to biomass using cohort-level SLA.                !
+      !------------------------------------------------------------------------------------!
       if (iallom == 4 .and. is_tropical(ipft) .and. (.not. is_liana(ipft))) then
-          size2bl = size2bl * C2B / sla_in
-          !---- the unit of sla is m2 leaf /kgC
-      endif
+         !----- Use specific form (notice that C2B was cancelled out. ---------------------!
+         size2bl = b1Bl(ipft) / sla_in * size ** b2Bl(ipft)
+         !---------------------------------------------------------------------------------!
+      else
+         !----- Use the general functional form. ------------------------------------------!
+         size2bl = b1Bl(ipft) / C2B * size ** b2Bl(ipft)
+         !---------------------------------------------------------------------------------!
+      end if
+      !------------------------------------------------------------------------------------!
 
       return
    end function size2bl

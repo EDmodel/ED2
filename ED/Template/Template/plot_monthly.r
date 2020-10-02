@@ -3,7 +3,9 @@
 #     Leave these commands at the beginning.  They will refresh the session.               #
 #------------------------------------------------------------------------------------------#
 rm(list=ls())
+options(warn=0)
 graphics.off()
+gc()
 #==========================================================================================#
 #==========================================================================================#
 
@@ -87,6 +89,7 @@ emean.line     = TRUE                   # Use lines instead of points and lines 
                                         #    TRUE  - Lines only
                                         #    FALSE - Use type defined in pmonthly_varlist.r
                                         #    NA    - Let the script decide
+sd.alpha       = 0.60                   # Transparency for the uncertainty.
 #------------------------------------------------------------------------------------------#
 
 
@@ -100,6 +103,7 @@ klight              = myklight     # Weighting factor for maximum carbon balance
 corr.growth.storage = mycorrection # Correction factor to be applied to growth and
                                    #   storage respiration
 iallom              = myallom      # Allometry to use
+isoil.hydro         = myslhydro    # Soil hydrology method
 #------------------------------------------------------------------------------------------#
 
 
@@ -728,10 +732,12 @@ for (place in myplaces){
                     , na.rm  = TRUE
                     )#end apply
    distave   = apply(X=lu$dist,MARGIN=c(2,3),FUN=mean)
-   selpft    = pftave  %>% 0.
+   selpftl   = pftave  %>% 0.
+   selpfts   = pftave  %>% 0. & (! (pft$key %in% "ALL") )
    sellu     = luave   %>% 0.
    seldist   = distave %>% 0.
-   n.selpft  = sum(selpft )
+   n.selpftl = sum(selpftl)
+   n.selpfts = sum(selpfts)
    n.sellu   = sum(sellu  )
    n.seldist = sum(seldist)
    #---------------------------------------------------------------------------------------#
@@ -763,6 +769,19 @@ for (place in myplaces){
       unit        = thistspft$e.unit
       plog        = thistspft$plog
       plotit      = thistspft$pft
+      stackit     = thistspft$stack
+
+
+      #----- Decide which PFT to use (we skip total when stacking). -----------------------#
+      if (stackit){
+         selpft   = selpfts
+         n.selpft = n.selpfts
+      }else{
+         selpft   = selpftl
+         n.selpft = n.selpftl
+      }#end if (stackit)
+      #------------------------------------------------------------------------------------#
+
 
       #----- Check whether the user wants to have this variable plotted. ------------------#
       if (plotit && any(selpft)){
@@ -779,14 +798,51 @@ for (place in myplaces){
             thisvar = szpft[[vnam]][,ndbh+1,]
             if (plog){
                #----- Eliminate non-positive values in case it is a log plot. -------------#
-               badlog          = ! (thisvar %>% 0)
-               thisvar[badlog] = NA
+               badlog          = (! (thisvar %>% 0) ) & (! stackit)
+               thisvar[badlog] = NA_real_
             }#end if
          }else{
-            thisvar = matrix(NA,ncol=npft+1,nrow=ntimes)
+            thisvar = matrix(NA_real_,ncol=npft+1,nrow=ntimes)
          }#end if
          #---------------------------------------------------------------------------------#
 
+
+         #---------------------------------------------------------------------------------#
+         #   In case the datum is stacked, apply cumulative sum.                           #
+         #---------------------------------------------------------------------------------#
+         if (stackit){
+            if (plog){
+               bottom = rep(0.5*min(c(thisvar),na.rm=TRUE),times=ntimes)
+            }else{
+               bottom = rep(0.,times=ntimes)
+            }#end if
+
+            thisvar = cbind(bottom,thisvar[,sequence(npft),drop=FALSE])
+            thisvar = t(apply(X=thisvar,MARGIN=1,FUN=cumsum))
+         }#end if (stackit)
+         #---------------------------------------------------------------------------------#
+
+
+         #---------------------------------------------------------------------------------#
+         #     Find the limit, make some room for the legend, and in case the field is     #
+         # a constant, nudge the limits so the plot command will not complain.             #
+         #---------------------------------------------------------------------------------#
+         xlimit = pretty.xylim(u=as.numeric(datum$tomonth),fracexp=0.0,is.log=FALSE)
+         if (stackit){
+            ylimit = pretty.xylim(u=thisvar         ,fracexp=0.0,is.log=plog )
+         }else{
+            ylimit = pretty.xylim(u=thisvar[,selpft],fracexp=0.0,is.log=plog )
+         }#end if (stackit)
+         if (plog){
+            xylog    = "y"
+            ydrought = c( exp(sqrt(ylimit[1]^3/ylimit[2]))
+                        , exp(sqrt(ylimit[2]^3/ylimit[1]))
+                        )#end c
+         }else{
+            xylog    = ""
+            ydrought = c(ylimit[1] - 0.5 * diff(ylimit), ylimit[2] + 0.5 * diff(ylimit))
+         }#end if
+         #---------------------------------------------------------------------------------#
 
 
          #----- Loop over output formats. -------------------------------------------------#
@@ -799,24 +855,6 @@ for (place in myplaces){
                                , ptsz    = ptsz
                                , depth   = depth
                                )#end open.plot
-            #------------------------------------------------------------------------------#
-
-
-            #------------------------------------------------------------------------------#
-            #     Find the limit, make some room for the legend, and in case the field is  #
-            # a constant, nudge the limits so the plot command will not complain.          #
-            #------------------------------------------------------------------------------#
-            xlimit = pretty.xylim(u=as.numeric(datum$tomonth),fracexp=0.0,is.log=FALSE)
-            ylimit = pretty.xylim(u=thisvar[,selpft]         ,fracexp=0.0,is.log=plog )
-            if (plog){
-               xylog    = "y"
-               ydrought = c( exp(sqrt(ylimit[1]^3/ylimit[2]))
-                           , exp(sqrt(ylimit[2]^3/ylimit[1]))
-                           )#end c
-            }else{
-               xylog    = ""
-               ydrought = c(ylimit[1] - 0.5 * diff(ylimit), ylimit[2] + 0.5 * diff(ylimit))
-            }#end if
             #------------------------------------------------------------------------------#
 
 
@@ -843,16 +881,32 @@ for (place in myplaces){
             par(mar=c(0.1,4.6,0.1,2.1))
             plot.new()
             plot.window(xlim=c(0,1),ylim=c(0,1))
-            legend( x      = "bottom"
-                  , inset  = 0.0
-                  , legend = legs
-                  , col    = cols
-                  , lwd    = lwidth
-                  , ncol   = min(pretty.box(n.selpft)$ncol,3)
-                  , title  = expression(bold("Plant Functional Type"))
-                  , xpd    = TRUE
-                  , bty    = "n"
-                  )#end legend
+            if (stackit){
+               legend( x       = "bottom"
+                     , inset   = 0.0
+                     , legend  = legs
+                     , fill    = cols
+                     , border  = cols
+                     , density = -1
+                     , ncol    = 1
+                     , title   = expression(bold("Plant Functional Type"))
+                     , xpd     = TRUE
+                     , cex     = 0.8
+                     , bty     = "n"
+                     )#end legend
+            }else{
+               legend( x       = "bottom"
+                     , inset   = 0.0
+                     , legend  = legs
+                     , col     = cols
+                     , lwd     = lwidth
+                     , ncol    = 1
+                     , title   = expression(bold("Plant Functional Type"))
+                     , xpd     = TRUE
+                     , cex     = 0.8
+                     , bty     = "n"
+                     )#end legend
+            }#end if (stackit)
             #------------------------------------------------------------------------------#
 
 
@@ -879,21 +933,37 @@ for (place in myplaces){
             if (plotgrid){ 
                abline(v=whenplot8$levels,h=axTicks(side=2),col=grid.colour,lty="solid")
             }#end if
-            #----- Plot lines. ------------------------------------------------------------#
-            for (n in 1:(npft+1)){
-               if (selpft[n]){
+            #----- Plot curves. -----------------------------------------------------------#
+            pftloop = which(selpft)
+            if (stackit){
+               #----- Plot polygons. ------------------------------------------------------#
+               for (n in pftloop){
+                  epolygon( x       = c(datum$tomonth,rev(datum$tomonth))
+                          , y       = c(thisvar[,n],rev(thisvar[,n+1]))
+                          , col     = pft$colour[n]
+                          , border  = "transparent"
+                          , density = -1
+                          )#end polygon
+               }#end for
+               #---------------------------------------------------------------------------#
+            }else{
+               #----- Plot lines. ---------------------------------------------------------#
+               for (n in pftloop){
                   lines(datum$tomonth,thisvar[,n],type="l",col=pft$colour[n],lwd=lwidth)
-               }#end if
-            }#end for
+               }#end for
+               #---------------------------------------------------------------------------#
+            }#end if (stackit)
             #------------------------------------------------------------------------------#
 
 
             #----- Close the device. ------------------------------------------------------#
             dummy = close.plot(outform=outform[o])
             #------------------------------------------------------------------------------#
-         } #end for outform
+         }#end for (o in sequence(outform))
+         #---------------------------------------------------------------------------------#
       }#end if (tseragbpft)
-   } #end for tseries
+      #------------------------------------------------------------------------------------#
+   }#end for tseries
    #---------------------------------------------------------------------------------------#
 
 
@@ -915,19 +985,20 @@ for (place in myplaces){
       unit           = thistspftdbh$e.unit
       plog           = thistspftdbh$plog
       plotit         = thistspftdbh$pftdbh
-      
+      stackit        = thistspftdbh$stack
+
       #----- Load variable ----------------------------------------------------------------#
       if (vnam %in% names(szpft)){
          thisvar = szpft[[vnam]]
          if (plog){
             xylog           = "y"
-            badlog          = ! (thisvar %>% 0)
-            thisvar[badlog] = NA
+            badlog          = ( ! (thisvar %>% 0) ) & (! stackit)
+            thisvar[badlog] = NA_real_
          }else{
             xylog           = ""
          }#end if
       }else{
-         thisvar = array(NA,dim=c(ntimes,ndbh+1,npft+1))
+         thisvar = array(NA_real_,dim=c(ntimes,ndbh+1,npft+1))
       }#end if
       #----- Check whether the user wants to have this variable plotted. ------------------#
       if (plotit && length(pftuse) > 0 && any(is.finite(thisvar))){
@@ -952,8 +1023,14 @@ for (place in myplaces){
          # constant, nudge the limits so the plot command will not complain.               #
          #---------------------------------------------------------------------------------#
          xlimit     = pretty.xylim(u=datum$tomonth    ,fracexp=0.0,is.log=FALSE)
-         ylimit.pft = pretty.xylim(u=thisvar[,,pftuse],fracexp=0.0,is.log=plog)
-         ylimit.all = pretty.xylim(u=thisvar[,,npft+1],fracexp=0.0,is.log=plog)
+         if (plog && stackit){
+            bottom = 0.5*min(c(thisvar),na.rm=TRUE)
+         }else{
+            bottom = NULL
+         }#end if
+
+         ylimit.pft = pretty.xylim(u=c(bottom,thisvar[,,pftuse]),fracexp=0.0,is.log=plog)
+         ylimit.all = pretty.xylim(u=c(bottom,thisvar[,,npft+1]),fracexp=0.0,is.log=plog)
          #---------------------------------------------------------------------------------#
 
 
@@ -971,6 +1048,26 @@ for (place in myplaces){
                ylimit = ylimit.pft
             }#end if
             cat0("        - ",pft$name[p],".")
+
+
+            #------------------------------------------------------------------------------#
+            #     Select variable for DBH. In case this is variable should be reported     #
+            # stacked, we accumulate them.                                                 #
+            #------------------------------------------------------------------------------#
+            if (stackit){
+               if (plog){
+                  bottom = rep(0.5*min(c(thisvar),na.rm=TRUE),times=ntimes)
+               }else{
+                  bottom = rep(0.,times=ntimes)
+               }#end if
+               thisdbh = thisvar[,,p]
+               thisdbh = cbind(bottom,thisdbh[,sequence(ndbh),drop=FALSE])
+               thisdbh = t(apply(X=thisdbh,MARGIN=1,FUN=cumsum))
+            }else{
+               thisdbh = thisvar[,,p]
+            }#end if (stackit)
+            #------------------------------------------------------------------------------#
+
 
 
             #------------------------------------------------------------------------------#
@@ -1023,17 +1120,34 @@ for (place in myplaces){
                par(mar=c(0.1,4.6,0.1,2.1))
                plot.new()
                plot.window(xlim=c(0,1),ylim=c(0,1))
-               legend( x      = "bottom"
-                     , inset  = 0.0
-                     , bg     = background
-                     , legend = dbhnames
-                     , col    = dbhcols
-                     , ncol   = min(pretty.box(ndbh+1)$ncol,3)
-                     , title  = expression(bold("DBH class"))
-                     , lwd    = lwidth
-                     , bty    = "n"
-                     , xpd    = TRUE
-                     )#end legend
+               if (stackit){
+                  legend( x       = "bottom"
+                        , inset   = 0.0
+                        , bg      = background
+                        , legend  = dbhnames[sequence(ndbh)]
+                        , fill    = dbhcols [sequence(ndbh)]
+                        , border  = dbhcols [sequence(ndbh)]
+                        , density = -1
+                        , ncol    = 1
+                        , title   = expression(bold("DBH class"))
+                        , bty     = "n"
+                        , xpd     = TRUE
+                        , cex     = 0.8
+                        )#end legend
+               }else{
+                  legend( x       = "bottom"
+                        , inset   = 0.0
+                        , bg      = background
+                        , legend  = dbhnames
+                        , col     = dbhcols
+                        , ncol    = 1
+                        , title   = expression(bold("DBH class"))
+                        , lwd     = lwidth
+                        , bty     = "n"
+                        , xpd     = TRUE
+                        , cex     = 0.8
+                        )#end legend
+               }#end if (stackit)
                #---------------------------------------------------------------------------#
 
 
@@ -1060,9 +1174,24 @@ for (place in myplaces){
                   abline(v=whenplot8$levels,h=axTicks(side=2),col=grid.colour,lty="solid")
                }#end if
                #----- Plot lines. ---------------------------------------------------------#
-               for (d in seq(from=1,to=ndbh+1,by=1)){
-                  lines(datum$tomonth,thisvar[,d,p],type="l",col=dbhcols[d],lwd=lwidth)
-               }#end for
+               if (stackit){
+                  #----- Stacked polygons, the total appears naturally, skip it. ----------#
+                  for (d in sequence(ndbh)){
+                     epolygon( x       = c(datum$tomonth,rev(datum$tomonth))
+                             , y       = c(thisdbh[,d]  ,rev(thisdbh[,d+1]))
+                             , col     = dbhcols[d]
+                             , border  = "transparent"
+                             , density = -1
+                             )#end epolygon
+                  }#end for (d in sequence(ndbh))
+                  #------------------------------------------------------------------------#
+               }else{
+                  #----- Lines, plot all including the total. -----------------------------#
+                  for (d in sequence(ndbh+1)){
+                     lines(datum$tomonth,thisdbh[,d],type="l",col=dbhcols[d],lwd=lwidth)
+                  }#end for (d in sequence(ndbh+1))
+                  #------------------------------------------------------------------------#
+               }#end if (stackit)
                #---------------------------------------------------------------------------#
 
 
@@ -1203,8 +1332,16 @@ for (place in myplaces){
             par(mar=c(0.1,4.6,0.1,2.1))
             plot.new()
             plot.window(xlim=c(0,1),ylim=c(0,1))
-            legend(x="bottom",inset=0.0,legend=c("Model","Observation")
-                  ,col=lcolours,lwd=llwd,cex=cex.ptsz,pch=16,xpd=TRUE,bty="n")
+            legend( x      = "bottom"
+                  , inset  = 0.0
+                  , legend = c("ED-2.2","Tower")
+                  , col    = lcolours
+                  , lwd    = llwd
+                  , cex    = cex.ptsz
+                  , pch    = 16
+                  , xpd    = TRUE
+                  , bty    = "n"
+                  )#end legend
             #------------------------------------------------------------------------------#
 
 
@@ -1216,9 +1353,9 @@ for (place in myplaces){
             if (plotgrid){
                abline(v=whenplote$levels,h=axTicks(side=2),col=grid.colour,lty="solid")
             }#end if
-            points(x=thiswhen,y=thismean,col=lcolours[1],lwd=llwd[1],type=ltype
+            lines(x=thiswhen,y=thismean,col=lcolours[1],lwd=llwd[1],type="l"
                   ,pch=16,cex=1.0)
-            points(x=obswhen,y=obsmean ,col=lcolours[2],lwd=llwd[2],type=ltype
+            lines(x=obswhen,y=obsmean ,col=lcolours[2],lwd=llwd[2],type="l"
                   ,pch=16,cex=1.0)
             box()
             axis(side=1,at=whenplote$levels,labels=whenplote$labels,padj=whenplote$padj)
@@ -1392,13 +1529,31 @@ for (place in myplaces){
             plot.new()
             plot.window(xlim=c(0,1),ylim=c(0,1))
             if (plotsd){
-               legend(x="bottom",inset=0.0,legend=c("Model","Observation")
-                     ,fill=errcolours,angle=angle,density=dens,lwd=llwd,col=lcolours
-                     ,bg=background,title="Shaded areas = 1 SD",cex=cex.ptsz
-                     ,xpd=TRUE,pch=16,bty="n")
+               legend( x       = "bottom"
+                     , inset   = 0.0
+                     , legend  = c("ED-2.2","Tower")
+                     , fill    = errcolours
+                     , density = -1
+                     , lwd     = llwd
+                     , col     = alpha(lcolours,sd.alpha)
+                     , bg      = background
+                     , title   = "Shaded areas = 1 SD"
+                     , cex     = cex.ptsz
+                     , xpd     = TRUE
+                     , pch     = 16
+                     , bty     = "n"
+                     )#end legend
             }else{
-               legend(x="bottom",inset=0.0,legend=c("Model","Observation")
-                     ,col=lcolours,lwd=llwd,cex=cex.ptsz,xpd=TRUE,pch=16,bty="n")
+               legend( x      = "bottom"
+                     , inset  = 0.0
+                     , legend = c("ED-2.2","Tower")
+                     , col    = lcolours
+                     , lwd    = llwd
+                     , cex    = cex.ptsz
+                     , xpd    = TRUE
+                     , pch    = 16
+                     , bty    = "n"
+                     )#end legend
             }#end if
             #------------------------------------------------------------------------------#
 
@@ -1418,8 +1573,14 @@ for (place in myplaces){
                   mod.keep   = is.finite(mod.y.poly)
                   err.x      = mod.x.poly[mod.keep]
                   err.y      = mod.y.poly[mod.keep]
-                  polygon(x=err.x,y=err.y,col=errcolours[1],angle=angle[1],density=dens[1]
-                         ,lty="solid",lwd=shwd[1])
+                  polygon( x       = err.x
+                         , y       = err.y
+                         , col     = alpha(errcolours[1],sd.alpha)
+                         , border  = "transparent"
+                         , density = -1
+                         , lty     = "solid"
+                         , lwd     = shwd [1]
+                         )#end polygon
                }else{
                   mod.x.poly = c(mod.x,rev(mod.x))
                   mod.y.poly = c(mod.ylow,rev(mod.yhigh))
@@ -1430,8 +1591,14 @@ for (place in myplaces){
 
                   err.x = c(mod.x.poly[mod.keep],NA,obs.x.poly[obs.keep])
                   err.y = c(mod.y.poly[mod.keep],NA,obs.y.poly[obs.keep])
-                  polygon(x=err.x,y=err.y,col=errcolours,angle=angle,density=dens
-                         ,lty="solid",lwd=shwd)
+                  polygon( x       = err.x
+                         , y       = err.y
+                         , col     = alpha(errcolours,sd.alpha)
+                         , border  = "transparent"
+                         , density = -1
+                         , lty     = "solid"
+                         , lwd     = shwd
+                         )#end polygon
                }#end if
             }#end if
             points(x=montmont,y=thismean,col=lcolours[1],lwd=llwd[1],type=ltype
@@ -1607,13 +1774,31 @@ for (place in myplaces){
                plot.new()
                plot.window(xlim=c(0,1),ylim=c(0,1))
                if (plotsd){
-                  legend(x="bottom",inset=0.0,legend=c("Model","Observation")
-                        ,fill=errcolours,angle=angle,density=dens,lwd=llwd,col=lcolours
-                        ,bg=background,title="Shaded areas = 1 SD",cex=cex.ptsz,xpd=TRUE
-                        ,pch=16,bty="n")
+                  legend( x       = "bottom"
+                        , inset   = 0.0
+                        , legend  = c("ED-2.2","Tower")
+                        , fill    = errcolours
+                        , density = -1
+                        , lwd     = llwd
+                        , col     = alpha(lcolours,sd.alpha)
+                        , bg      = background
+                        , title   = "Shaded areas = 1 SD"
+                        , cex     = cex.ptsz
+                        , xpd     = TRUE
+                        , pch     = 16
+                        , bty     = "n"
+                        )#end legend
                }else{
-                  legend(x="bottom",inset=0.0,legend=c("Model","Observation")
-                        ,col=lcolours,lwd=llwd,cex=cex.ptsz,xpd=TRUE,pch=16,bty="n")
+                  legend( x       = "bottom"
+                        , inset   = 0.0
+                        , legend  = c("ED-2.2","Tower")
+                        , col     = lcolours
+                        , lwd     = llwd
+                        , cex     = cex.ptsz
+                        , xpd     = TRUE
+                        , pch     = 16
+                        , bty     = "n"
+                        )#end legend
                }#end if
                #---------------------------------------------------------------------------#
 
@@ -1649,8 +1834,14 @@ for (place in myplaces){
                      mod.keep   = is.finite(mod.y.poly)
                      err.x      = mod.x.poly[mod.keep]
                      err.y      = mod.y.poly[mod.keep]
-                     polygon(x=err.x,y=err.y,col=errcolours[1],angle=angle[1]
-                            ,density=dens[1],lty="solid",lwd=shwd[1])
+                     polygon( x       = err.x
+                            , y       = err.y
+                            , col     = alpha(errcolours[1],sd.alpha)
+                            , border  = "transparent"
+                            , density = -1
+                            , lty     = "solid"
+                            , lwd     = shwd[1]
+                            )#end polygon
                   }else{
                      mod.x.poly = c(mod.x.now,rev(mod.x.now))
                      mod.y.poly = c(mod.ylow.now,rev(mod.yhigh.now))
@@ -1658,10 +1849,16 @@ for (place in myplaces){
                      obs.x.poly = c(obs.x.now,rev(obs.x.now))
                      obs.y.poly = c(obs.ylow.now,rev(obs.yhigh.now))
                      obs.keep   = is.finite(obs.y.poly)
-                     err.x = c(mod.x.poly[mod.keep],NA,obs.x.poly[obs.keep])
-                     err.y = c(mod.y.poly[mod.keep],NA,obs.y.poly[obs.keep])
-                     polygon(x=err.x,y=err.y,col=errcolours,angle=angle,density=dens
-                            ,lty="solid",lwd=shwd)
+                     err.x      = c(mod.x.poly[mod.keep],NA,obs.x.poly[obs.keep])
+                     err.y      = c(mod.y.poly[mod.keep],NA,obs.y.poly[obs.keep])
+                     polygon( x       = err.x
+                            , y       = err.y
+                            , col     = alpha(errcolours,sd.alpha)
+                            , border  = "transparent"
+                            , density = -1
+                            , lty     = "solid"
+                            , lwd     = shwd
+                            )#end polygon
                   }#end if
                }#end if
                points(x=thisday,y=thismean[pmon,],col=lcolours[1]

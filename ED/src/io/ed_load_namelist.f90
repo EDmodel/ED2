@@ -19,14 +19,18 @@ subroutine read_nl(namelist_name)
       call fatal_error('The namelist file '//trim(namelist_name)//' is missing.'           &
                       ,'read_nl','ed_load_namelist.f90')
    end if
+   !---------------------------------------------------------------------------------------!
 
    !----- Initialise the name list with absurd, undefined values. -------------------------!
    call init_ename_vars(nl) 
+   !---------------------------------------------------------------------------------------!
   
    !----- Read grid point and options information from the namelist. ----------------------!
-   open (unit=10, status='OLD', file=namelist_name)
+   open (unit=10, status='old', file=namelist_name)
    read (unit=10, nml=ED_NL)
-   close(unit=10)
+   close(unit=10,status='keep')
+   !---------------------------------------------------------------------------------------!
+
 
    return
 end subroutine read_nl
@@ -56,6 +60,10 @@ subroutine copy_nl(copy_type)
                                    , isoilcol                  & ! intent(out)
                                    , slxclay                   & ! intent(out)
                                    , slxsand                   & ! intent(out)
+                                   , slsoc                     & ! intent(out)
+                                   , slph                      & ! intent(out)
+                                   , slcec                     & ! intent(out)
+                                   , sldbd                     & ! intent(out)
                                    , slmstr                    & ! intent(out)
                                    , stgoff                    & ! intent(out)
                                    , zrough                    & ! intent(out)
@@ -63,6 +71,7 @@ subroutine copy_nl(copy_type)
                                    , slcol_database            & ! intent(out)
                                    , isoilstateinit            & ! intent(out)
                                    , isoildepthflg             & ! intent(out)
+                                   , soil_hydro_scheme         & ! intent(out)
                                    , isoilbc                   & ! intent(out)
                                    , sldrain                   & ! intent(out)
                                    , soilstate_db              & ! intent(out)
@@ -371,6 +380,10 @@ subroutine copy_nl(copy_type)
       isoilcol                  = nl%isoilcol
       slxclay                   = nl%slxclay
       slxsand                   = nl%slxsand
+      slsoc                     = nl%slsoc
+      slph                      = nl%slph
+      slcec                     = nl%slcec
+      sldbd                     = nl%sldbd
       slmstr(1:nzgmax)          = nl%slmstr(1:nzgmax)
       stgoff(1:nzgmax)          = nl%stgoff(1:nzgmax)
 
@@ -388,6 +401,7 @@ subroutine copy_nl(copy_type)
       soildepth_db              = nl%soildepth_db
       isoilstateinit            = nl%isoilstateinit
       isoildepthflg             = nl%isoildepthflg
+      soil_hydro_scheme         = nl%soil_hydro_scheme
       isoilbc                   = nl%isoilbc
       sldrain                   = nl%sldrain
 
@@ -755,5 +769,122 @@ subroutine copy_nl(copy_type)
 
    return
 end subroutine copy_nl
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!     This subroutine checks whether or not to restore a simulation.                       !
+!------------------------------------------------------------------------------------------!
+subroutine restore_nl()
+   use ename_coms  , only : nl            ! ! intent(inout)
+   use grid_coms   , only : ngrids        ! ! intent(in)
+   use ed_misc_coms, only : sfilout       & ! intent(in)
+                          , runtype       & ! intent(inout)
+                          , iyearh        & ! intent(inout)
+                          , imonthh       & ! intent(inout)
+                          , idateh        & ! intent(inout)
+                          , itimeh        & ! intent(inout)
+                          , sfilin        & ! intent(inout)
+                          , restore_file  ! ! intent(out)
+   implicit none
+   !----- Local variables. ----------------------------------------------------------------!
+   logical :: is_restore
+   integer :: i
+   integer :: ierr
+   integer :: iyearr
+   integer :: imonthr
+   integer :: idater
+   integer :: itimer
+   !---------------------------------------------------------------------------------------!
+
+
+   !----- This file name points to the last time, which can be used for restoring jobs. ---!
+   restore_file = trim(sfilout)//'_restore_time.txt'
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !       Check whether to restore the simulation or start from beginning.                !
+   !---------------------------------------------------------------------------------------!
+   select case (trim(runtype))
+   case ('RESTORE')
+      !------ Check whether or not the file exists. ---------------------------------------!
+      inquire(file=trim(restore_file),exist=is_restore)
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !      We only restore a simulation if we can successfully read the file.            !
+      !------------------------------------------------------------------------------------!
+      if (is_restore) then
+         !----- Read the restoring date. --------------------------------------------------!
+         open (unit=55,file=trim(restore_file),status='old',form='formatted')
+         read (unit=55,fmt=*,iostat=ierr) iyearr,imonthr,idater,itimer
+         close(unit=55,status='keep')
+         !---------------------------------------------------------------------------------!
+
+
+         !---------------------------------------------------------------------------------!
+         !      In case the file was successfully read, turn this simulation into a        !
+         ! 'HISTORY' run, otherwise, assume 'INITIAL' run.                                 !
+         !---------------------------------------------------------------------------------!
+         select case (ierr)
+         case (0)
+            !------------------------------------------------------------------------------!
+            !      File restore_file was successfully read. Restore the simulation.        !
+            !------------------------------------------------------------------------------!
+
+
+            !----- Update the namelist itself as some variables may be copied. ------------!
+            nl%runtype = 'HISTORY'
+            nl%iyearh  = iyearr
+            nl%imonthh = imonthr
+            nl%idateh  = idater
+            nl%itimeh  = itimer
+            do i=1,ngrids
+               nl%sfilin(i)  = trim(sfilout)
+            end do
+            !------------------------------------------------------------------------------!
+
+
+            !----- Update the memory variables too (though they may be overwritten). ------!
+            runtype = 'HISTORY'
+            iyearh  = iyearr
+            imonthh = imonthr
+            idateh  = idater
+            itimeh  = itimer
+            do i=1,ngrids
+               sfilin(i)  = trim(sfilout)
+            end do
+            !------------------------------------------------------------------------------!
+         case default
+            !----- Problems loading restore_file, start from the beginning. ---------------!
+            runtype = 'INITIAL'
+            write (unit=*,fmt='(a,1x,i5)') ' IERR = ',ierr
+            call fatal_error('File '//trim(restore_file)//' found but it isn''t readable!' &
+                            ,'restore_nl','ed_load_namelist.f90')
+            !------------------------------------------------------------------------------!
+         end select
+         !---------------------------------------------------------------------------------!
+      else
+         !----- File doesn't exist, use INITIAL instead. ----------------------------------!
+         runtype = 'INITIAL'
+         call warning('File '//trim(restore_file)//' not found, using INITIAL settings!'   &
+                     ,'restore_nl','ed_load_namelist.f90')
+         !---------------------------------------------------------------------------------!
+      end if
+      !------------------------------------------------------------------------------------!
+   end select
+   !---------------------------------------------------------------------------------------!
+
+
+   return
+end subroutine restore_nl
 !==========================================================================================!
 !==========================================================================================!

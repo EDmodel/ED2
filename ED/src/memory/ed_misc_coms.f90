@@ -93,6 +93,7 @@ module ed_misc_coms
    character(len=str_len)                     :: sfilout
    character(len=str_len)                     :: gfilout
    character(len=str_len)                     :: obstime_db
+   character(len=str_len)                     :: restore_file
    integer :: ied_init_mode
    
    character(len=str_len) :: thsums_database

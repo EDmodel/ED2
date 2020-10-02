@@ -313,27 +313,37 @@ module update_derived_utils
                           * merge(1., min(1.,1. / cpatch%llspan(ico)),instant_change_flag)
         cpatch%vm_bar(ico) = cpatch%vm_bar(ico) * (1. + trait_change_frac)
       case default
+        !----- Use light level to change Vm0. ---------------------------------------------!
         lnexp              = max(lnexp_min,kplastic_vm0(ipft) * max_cum_lai)
         cpatch%vm_bar(ico) = vm_bar_toc * exp(lnexp)
+        !----------------------------------------------------------------------------------!
       end select
       !------------------------------------------------------------------------------------!
+
+
 
       !------------------------------------------------------------------------------------!
       ! 3.  Update Rd0.  This should be defined at the top of canopy [sun-lit leaves].     !
       !     Note that the sign of kplastic_rd0 is typically negative, so this should       !
-      !     reduce Rd0. We only update Rd0 when trait_plasticity_scheme is 3      !
+      !     reduce Rd0. We only update Rd0 when trait_plasticity_scheme is -2, 2, or 3.    !
       !------------------------------------------------------------------------------------!
       select case (trait_plasticity_scheme)
+      case (-2,2)
+        !----- Use an approach similar to Vm0. --------------------------------------------!
+        lnexp              = max(lnexp_min,kplastic_rd0(ipft) * max_cum_lai)
+        cpatch%rd_bar(ico) = rd_bar_toc * exp(lnexp)
+        !----------------------------------------------------------------------------------!
       case (3)
-        !------------------------------------------------------------------------------------!
-        ! Check the plasticity for vm0 above for details                                     !
-        !------------------------------------------------------------------------------------!
+        !----------------------------------------------------------------------------------!
+        !     Check the plasticity for vm0 above for details.                              !
+        !----------------------------------------------------------------------------------!
         lnexp              = max(lnexp_min,kplastic_rd0(ipft) * max_cum_lai)
         trait_change_frac  = rd_bar_toc * exp(lnexp) / cpatch%rd_bar(ico) - 1.
         instant_change_flag = (abs(trait_change_frac) < 0.05) .or. is_instant
-        trait_change_frac = trait_change_frac                                          &
+        trait_change_frac = trait_change_frac                                              &
                           * merge(1., min(1.,1. / cpatch%llspan(ico)),instant_change_flag)
         cpatch%rd_bar(ico) = cpatch%rd_bar(ico) * (1. + trait_change_frac)
+        !----------------------------------------------------------------------------------!
 
       end select
       !------------------------------------------------------------------------------------!

@@ -384,7 +384,7 @@ tspftdbh[[n]]     = list( vnam     = "storage.resp"
                         )#end list
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "nplant"
-                        , desc     = "Plant density"
+                        , desc     = "Number density"
                         , e.unit   = untab$plom2
                         , i.unit   = untab$plom2
                         , plog     = TRUE
@@ -433,6 +433,20 @@ tspftdbh[[n]]     = list( vnam     = "leaf.gbw"
                         , bar.plot = FALSE
                         , stack    = FALSE
                         , scsout   = TRUE
+                        )#end list
+n                 = n + 1
+tspftdbh[[n]]     = list( vnam     = "census.nplant"
+                        , desc     = "Number density (DBH > 10cm)"
+                        , sas      = FALSE
+                        , e.unit   = untab$plom2
+                        , i.unit   = untab$plom2
+                        , plog     = FALSE
+                        , pft      = TRUE
+                        , pftdbh   = TRUE
+                        , sas      = FALSE
+                        , bar.plot = FALSE
+                        , stack    = TRUE
+                        , scsout   = FALSE
                         )#end list
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "census.lai"
@@ -3092,6 +3106,101 @@ compmodel[[n]] = list( vnam   = "rnet"
                      , dens   = c(           40,      40)
                      , lwd    = c(          2.5,     2.5)
                      , shwd   = c(          1.0,     1.0)
+                     , type   = "o"
+                     , plog   = ""
+                     , legpos = "topleft"
+                     , mmean  = TRUE
+                     , qmean  = TRUE
+                     , emean  = TRUE
+                     , scsout = TRUE
+                     )#end list
+n              = n + 1
+compmodel[[n]] = list( vnam   = "soil.temp.top"
+                     , desc   = "Soil temperature (0-20cm)"
+                     , unit   = untab$degC
+                     , plotsd = TRUE
+                     , colour = c(orange.fg,grey.fg)
+                     , errcol = c(orange.bg,grey.bg)
+                     , angle  = c(         45,     -45)
+                     , dens   = c(         40,      40)
+                     , lwd    = c(        2.5,     2.5)
+                     , shwd   = c(        1.0,     1.0)
+                     , type   = "o"
+                     , plog   = ""
+                     , legpos = "topleft"
+                     , mmean  = TRUE
+                     , qmean  = TRUE
+                     , emean  = TRUE
+                     , scsout = TRUE
+                     )#end list
+n              = n + 1
+compmodel[[n]] = list( vnam   = "soil.water.top"
+                     , desc   = "Soil water (0-50cm)"
+                     , unit   = untab$kgwom2
+                     , plotsd = TRUE
+                     , colour = c(sky.fg,grey.fg)
+                     , errcol = c(sky.bg,grey.bg)
+                     , angle  = c(          45,     -45)
+                     , dens   = c(          40,      40)
+                     , lwd    = c(         2.5,     2.5)
+                     , shwd   = c(         1.0,     1.0)
+                     , type   = "o"
+                     , plog   = ""
+                     , legpos = "topleft"
+                     , mmean  = TRUE
+                     , qmean  = TRUE
+                     , emean  = TRUE
+                     , scsout = TRUE
+                     )#end list
+n              = n + 1
+compmodel[[n]] = list( vnam   = "soil.water.bot"
+                     , desc   = "Soil water (50-200cm)"
+                     , unit   = untab$kgwom2
+                     , plotsd = TRUE
+                     , colour = c(sky.fg,grey.fg)
+                     , errcol = c(sky.bg,grey.bg)
+                     , angle  = c(          45,     -45)
+                     , dens   = c(          40,      40)
+                     , lwd    = c(         2.5,     2.5)
+                     , shwd   = c(         1.0,     1.0)
+                     , type   = "o"
+                     , plog   = ""
+                     , legpos = "topleft"
+                     , mmean  = TRUE
+                     , qmean  = TRUE
+                     , emean  = TRUE
+                     , scsout = TRUE
+                     )#end list
+n              = n + 1
+compmodel[[n]] = list( vnam   = "soil.wetness.top"
+                     , desc   = "Soil wetness (0-50cm)"
+                     , unit   = untab$empty
+                     , plotsd = TRUE
+                     , colour = c(sky.fg,grey.fg)
+                     , errcol = c(sky.bg,grey.bg)
+                     , angle  = c(          45,     -45)
+                     , dens   = c(          40,      40)
+                     , lwd    = c(         2.5,     2.5)
+                     , shwd   = c(         1.0,     1.0)
+                     , type   = "o"
+                     , plog   = ""
+                     , legpos = "topleft"
+                     , mmean  = TRUE
+                     , qmean  = TRUE
+                     , emean  = TRUE
+                     , scsout = TRUE
+                     )#end list
+n              = n + 1
+compmodel[[n]] = list( vnam   = "soil.wetness.bot"
+                     , desc   = "Soil wetness (50-200cm)"
+                     , unit   = untab$empty
+                     , plotsd = TRUE
+                     , colour = c(sky.fg,grey.fg)
+                     , errcol = c(sky.bg,grey.bg)
+                     , angle  = c(          45,     -45)
+                     , dens   = c(          40,      40)
+                     , lwd    = c(         2.5,     2.5)
+                     , shwd   = c(         1.0,     1.0)
                      , type   = "o"
                      , plog   = ""
                      , legpos = "topleft"
