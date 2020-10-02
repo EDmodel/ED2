@@ -6319,7 +6319,8 @@ subroutine init_pft_hydro_params()
    !----- Parameters related with stomatal conductance, estimated from L15 and M11. ---------------!
 
    ! stoma_lambda has a unit of mol CO2 / mol H2O
-   ! 3.5e-2 in the model is equivalent to a g1 of 1 in L11
+   ! 2.85e-2 / (3.77) ** 2 will generate most reasonal seasonality in GPP and ET over tropical
+   ! forests. Therefore, we treat 2.85e-2 is equivalent to a g1 of 1 in L11
    ! lambda ~ 1/sqrt(g1)
    ! therefore, we convert PFT average g1 values in L11 to stoma_lambda
    stoma_lambda(:) = merge( merge( 1.62                     &  ! C4 grass
@@ -6332,7 +6333,7 @@ subroutine init_pft_hydro_params()
                                  ,is_tropical(:))           &
                            ,is_grass(:))
 
-   stoma_lambda = 3.5e-2 / stoma_lambda ** 2
+   stoma_lambda = 2.85e-2 / stoma_lambda ** 2
 
 
    ! stoma_beta is based on Table 2 in M11
