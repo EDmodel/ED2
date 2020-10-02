@@ -4396,8 +4396,9 @@ subroutine init_pft_alloc_params()
    case (4)
       !------------------------------------------------------------------------------------!
       !    Test allometry based on excavation data in Panama based on  H.                  !
+      !    Multiply it by 2 so that a 40 m tree can get access to water below 5m depth     !
       !------------------------------------------------------------------------------------!
-      b1Rd(:) = -0.609
+      b1Rd(:) = -0.609 * 2.
       b2Rd(:) = 0.580
 
    end select
@@ -6088,8 +6089,9 @@ subroutine init_pft_hydro_params()
    ! kg/m2 while the observed is ~ 0.12), probably due to large uncertainties in both equations
 
    ! Now we use data from Powers and Tiffin 2009 to calculate leaf_water_sat from wood density
-   ! This will generate much reasonable values for leaf_water_sat
-   leaf_water_sat(:) = 2.57 * exp(-0.94 * rho_bnd(:)) ! R2 = 0.24
+   ! This will generate much reasonable values for leaf_water_sat. We add a correcting factor of 1.3
+   ! so that the average leaf water content from Powers & Tiffin is the same as K09
+   leaf_water_sat(:) = 1.3 * 2.57 * exp(-0.94 * rho_bnd(:)) ! R2 = 0.24
    !---------------------------------------------------------------------------------------!
 
 
@@ -9055,7 +9057,9 @@ subroutine init_derived_params_after_xml()
       Jm_hor      (:) = Vm_hor      (:)
    end where
    where (Jm_q10      (:) == undef_real)
-      Jm_q10      (:) = Vm_q10      (:)
+      Jm_q10      (:) = 0.8 * Vm_q10      (:)
+      ! Jm usually shows reduced temperature sensitivity
+      ! than Vcmax (e.g. Slot et al. 2017 PCE)
    end where
 
    where (Rd_low_temp (:) == undef_real)

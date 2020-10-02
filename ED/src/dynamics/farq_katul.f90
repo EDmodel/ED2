@@ -251,21 +251,28 @@ module farq_katul
           ! use fsw to account for water stress in photosyn_driv
           water_stress_factor = 1.
       case (4)
-          ! down scale Vm, Jm, TPm
-          ! These values will decrease by ~10% when leaf_psi 
-          ! is equal to leaf_psi_tlp [a test value, no real data to
-          ! parameterize it. However, leaf functions usually start
-          ! to deteriorate after turgor is lost]
-          water_stress_factor = max(1e-6,           &
-                                min(1.0,            &
-                                    1. / (1. +      &
-                                    0.1 * (leaf_psi / leaf_psi_tlp(ipft)) ** 6.0)))
+          ! leaf water potential will influence stomata optimization 
+          ! at two different scales
+          ! (1) [instantaneous] RUBP regeneration will be limited due 
+          !     to low activity of ATP synthesas while the amount of 
+          !     Rubisco does not change (Tezara et al. 2001 Science)
+          ! (2) [daily or longer] stomatal sensitivity to water loss 
+          !     would increase (Manzoni et al. 2011 Func. Ecol.)
+            
+          ! Jm0 will decrease by ~10% when leaf_psi
+          ! is equal to leaf_psi_tlp [a test value, no real data to 
+          ! parameterize it. However, leaf functions usually start to
+          ! deteriorate after turgor is lost.
+          water_stress_factor = max(1e-6,               &
+                                    min(1.0,            &
+                                        1. / (1. +      &
+                                0.1 * (leaf_psi / leaf_psi_tlp(ipft)) ** 6.0)))
           lambda8 = lambda8 * dble(exp(stoma_beta(ipft) * dmax_leaf_psi))
       end select
          
-      thispft(ib)%vm0  = thispft(ib)%vm0 * dble(water_stress_factor)
+      !thispft(ib)%vm0  = thispft(ib)%vm0 * dble(water_stress_factor)
       thispft(ib)%jm0  = thispft(ib)%jm0 * dble(water_stress_factor)
-      thispft(ib)%TPm0  = thispft(ib)%TPm0 * dble(water_stress_factor)
+      !thispft(ib)%TPm0  = thispft(ib)%TPm0 * dble(water_stress_factor)
       thispft(ib)%alpha0  = thispft(ib)%alpha0 * dble(water_stress_factor)
 
       !------------------------------------------------------------------------------------!
@@ -405,6 +412,13 @@ module farq_katul
         real(kind=8)                :: test_fc_light
         real(kind=8)                :: test_fc_rubp
         real(kind=8)                :: test_fc_3rd
+        real(kind=8)                :: opt_ci_light
+        real(kind=8)                :: opt_ci_rubp
+        real(kind=8)                :: opt_ci_3rd
+        real(kind=8)                :: opt_gsc_light
+        real(kind=8)                :: opt_gsc_rubp
+        real(kind=8)                :: opt_gsc_3rd
+        character(len=256)          :: limit_case
 
         ! for debugging purposes
         integer                     :: k
@@ -421,32 +435,33 @@ module farq_katul
         if (is_resolvable) then
             ! If resolvable use Regular Falsi to solve the optimization problem
             ! the purpose is to find a root for dfcdg - lambda * dfedg = 0
-         
+
+            ! loop over different photosyn_pathways
+
+            !=======================!
+            ! First RUBP limitation
+            !======================!
+            limit_case='RUBP'
             ! initial range of gsc is cuticular_gsc and gsc_max
             rfx_lower = gsc_min / 2.d0 ! a very small value, half of cuticular conductance
             rfx_upper = gsc_max * 20.d0 ! a very large value
   
             ! calculate the y values for rfx_lower
-            call photosynthesis_stomata_solver8(ib,rfx_lower,                                     &
-                                                test_fc_light,test_fc_rubp,test_fc_3rd,           &
+            call photosynthesis_stomata_solver8(ib,rfx_lower,limit_case,                          &
                                                 test_ci,test_fc,test_fe,                          &
-                                                test_dcidg,test_dfcdg,test_dfedg,                 &
-                                                limit_flag)
+                                                test_dcidg,test_dfcdg,test_dfedg)
             rfy_lower = test_dfcdg - lambda * test_dfedg 
   
   
             ! do it again for rfx_upper
-            call photosynthesis_stomata_solver8(ib,rfx_upper,                                     &
-                                                test_fc_light,test_fc_rubp,test_fc_3rd,           &
+            call photosynthesis_stomata_solver8(ib,rfx_upper,limit_case,                          &
                                                 test_ci,test_fc,test_fe,                          &
-                                                test_dcidg,test_dfcdg,test_dfedg,                 &
-                                                limit_flag)
+                                                test_dcidg,test_dfcdg,test_dfedg)
             rfy_upper = test_dfcdg - lambda * test_dfedg 
   
   
             ! Start iteration
             iter = 0
-  
             ! check whether the y values have the same sign
             if (rfy_lower * rfy_upper >= 0.d0) then
                 ! In this case, there is no root within the given range
@@ -469,11 +484,10 @@ module farq_katul
   
                     ! update rfx and rfy with Illinois Method
                     rfx_new = (rfx_lower * rfy_upper - rfx_upper * rfy_lower) / (rfy_upper - rfy_lower)
-                    call photosynthesis_stomata_solver8(ib,rfx_new,                                       &
-                                                        test_fc_light,test_fc_rubp,test_fc_3rd,           &
+                    call photosynthesis_stomata_solver8(ib,rfx_new,limit_case,                            &
                                                         test_ci,test_fc,test_fe,                          &
-                                                        test_dcidg,test_dfcdg,test_dfedg,                 &
-                                                        limit_flag)
+                                                        test_dcidg,test_dfcdg,test_dfedg)
+
                     rfy_new = test_dfcdg - lambda * test_dfedg
   
                     if (rfy_new * rfy_lower > 0.d0) then
@@ -514,18 +528,244 @@ module farq_katul
             test_gsc = max(gsc_min,min(test_gsc,gsc_max))
   
             ! calculate the realized fc, ci
-            call photosynthesis_stomata_solver8(ib,test_gsc,                                     &
-                                                test_fc_light,test_fc_rubp,test_fc_3rd,           &
+            call photosynthesis_stomata_solver8(ib,test_gsc,limit_case,                           &
                                                 test_ci,test_fc,test_fe,                          &
-                                                test_dcidg,test_dfcdg,test_dfedg,                 &
-                                                limit_flag)
+                                                test_dcidg,test_dfcdg,test_dfedg)
+
+            ! save the optimal gsc and carbon fluxes
+            opt_fc_rubp = test_fc
+            opt_gsc_rubp = test_gsc
+            opt_ci_rubp = test_ci
   
-            opt_fc       = test_fc
-            opt_ci       = test_ci
-            opt_gsc      = test_gsc
-            opt_fc_rubp  = test_fc_rubp
-            opt_fc_light = test_fc_light
-            opt_fc_3rd   = test_fc_3rd
+            !=======================!
+            ! Second LIGHT limitation
+            !======================!
+            limit_case='LIGHT'
+            ! initial range of gsc is cuticular_gsc and gsc_max
+            rfx_lower = gsc_min / 2.d0 ! a very small value, half of cuticular conductance
+            rfx_upper = gsc_max * 20.d0 ! a very large value
+  
+            ! calculate the y values for rfx_lower
+            call photosynthesis_stomata_solver8(ib,rfx_lower,limit_case,                          &
+                                                test_ci,test_fc,test_fe,                          &
+                                                test_dcidg,test_dfcdg,test_dfedg)
+            rfy_lower = test_dfcdg - lambda * test_dfedg 
+  
+  
+            ! do it again for rfx_upper
+            call photosynthesis_stomata_solver8(ib,rfx_upper,limit_case,                          &
+                                                test_ci,test_fc,test_fe,                          &
+                                                test_dcidg,test_dfcdg,test_dfedg)
+            rfy_upper = test_dfcdg - lambda * test_dfedg 
+  
+  
+            ! Start iteration
+            iter = 0
+            ! check whether the y values have the same sign
+            if (rfy_lower * rfy_upper >= 0.d0) then
+                ! In this case, there is no root within the given range
+                ! if rfy_lower is positive, we take the value of rfx_upper
+                ! else we take the value of rfx_lower
+                if  (rfy_lower > 0.) then
+                    test_gsc = rfx_upper
+                else
+                    test_gsc = rfx_lower
+                endif
+            else
+                ! There is at least one root
+                ! Run regula falsi
+                rf_side = 0 !
+                do iter = 1, iter_max
+                    ! exit condition
+                    if (abs(rfx_lower - rfx_upper) .le. dg_min) then
+                        exit
+                    endif
+  
+                    ! update rfx and rfy with Illinois Method
+                    rfx_new = (rfx_lower * rfy_upper - rfx_upper * rfy_lower) / (rfy_upper - rfy_lower)
+                    call photosynthesis_stomata_solver8(ib,rfx_new,limit_case,                            &
+                                                        test_ci,test_fc,test_fe,                          &
+                                                        test_dcidg,test_dfcdg,test_dfedg)
+
+                    rfy_new = test_dfcdg - lambda * test_dfedg
+  
+                    if (rfy_new * rfy_lower > 0.d0) then
+                        ! the new point has the same sign as the lower
+                        ! update the lower
+                        rfx_lower = rfx_new
+                        rfy_lower = rfy_new
+  
+                        ! Illinois Method, improve efficiency
+                        if (rf_side == -1) then
+                            rfy_upper = rfy_upper / 2.d0
+                        endif
+  
+                        rf_side = -1
+                    elseif (rfy_new * rfy_upper > 0.d0) then
+                        ! the new point has the same sign as the upper
+                        ! update the lower
+                        rfx_upper = rfx_new
+                        rfy_upper = rfy_new
+  
+                        ! Illinois Method, improve efficiency
+                        if (rf_side == 1) then
+                            rfy_lower = rfy_lower / 2.d0
+                        endif
+  
+                        rf_side = 1
+  
+                    else
+                        ! numerically they are the same
+                        exit
+                    endif
+                enddo
+  
+                test_gsc = (rfx_lower + rfx_upper) / 2.d0
+            endif
+  
+            ! final gsc should be bounded within gsc_min and gsc_max
+            test_gsc = max(gsc_min,min(test_gsc,gsc_max))
+  
+            ! calculate the realized fc, ci
+            call photosynthesis_stomata_solver8(ib,test_gsc,limit_case,                           &
+                                                test_ci,test_fc,test_fe,                          &
+                                                test_dcidg,test_dfcdg,test_dfedg)
+
+            ! save the optimal gsc and carbon fluxes
+            opt_fc_light = test_fc
+            opt_gsc_light = test_gsc
+            opt_ci_light = test_ci
+ 
+            !=======================!
+            ! third TPU or CO2 limitation
+            !======================!
+            select case (thispft(ib)%photo_pathway)
+            case (3)
+                limit_case='TPU'
+            case (4)
+                limit_case='CO2'
+            end select
+            ! initial range of gsc is cuticular_gsc and gsc_max
+            rfx_lower = gsc_min / 2.d0 ! a very small value, half of cuticular conductance
+            rfx_upper = gsc_max * 20.d0 ! a very large value
+  
+            ! calculate the y values for rfx_lower
+            call photosynthesis_stomata_solver8(ib,rfx_lower,limit_case,                          &
+                                                test_ci,test_fc,test_fe,                          &
+                                                test_dcidg,test_dfcdg,test_dfedg)
+            rfy_lower = test_dfcdg - lambda * test_dfedg 
+  
+  
+            ! do it again for rfx_upper
+            call photosynthesis_stomata_solver8(ib,rfx_upper,limit_case,                          &
+                                                test_ci,test_fc,test_fe,                          &
+                                                test_dcidg,test_dfcdg,test_dfedg)
+            rfy_upper = test_dfcdg - lambda * test_dfedg 
+  
+  
+            ! Start iteration
+            iter = 0
+            ! check whether the y values have the same sign
+            if (rfy_lower * rfy_upper >= 0.d0) then
+                ! In this case, there is no root within the given range
+                ! if rfy_lower is positive, we take the value of rfx_upper
+                ! else we take the value of rfx_lower
+                if  (rfy_lower > 0.) then
+                    test_gsc = rfx_upper
+                else
+                    test_gsc = rfx_lower
+                endif
+            else
+                ! There is at least one root
+                ! Run regula falsi
+                rf_side = 0 !
+                do iter = 1, iter_max
+                    ! exit condition
+                    if (abs(rfx_lower - rfx_upper) .le. dg_min) then
+                        exit
+                    endif
+  
+                    ! update rfx and rfy with Illinois Method
+                    rfx_new = (rfx_lower * rfy_upper - rfx_upper * rfy_lower) / (rfy_upper - rfy_lower)
+                    call photosynthesis_stomata_solver8(ib,rfx_new,limit_case,                            &
+                                                        test_ci,test_fc,test_fe,                          &
+                                                        test_dcidg,test_dfcdg,test_dfedg)
+
+                    rfy_new = test_dfcdg - lambda * test_dfedg
+  
+                    if (rfy_new * rfy_lower > 0.d0) then
+                        ! the new point has the same sign as the lower
+                        ! update the lower
+                        rfx_lower = rfx_new
+                        rfy_lower = rfy_new
+  
+                        ! Illinois Method, improve efficiency
+                        if (rf_side == -1) then
+                            rfy_upper = rfy_upper / 2.d0
+                        endif
+  
+                        rf_side = -1
+                    elseif (rfy_new * rfy_upper > 0.d0) then
+                        ! the new point has the same sign as the upper
+                        ! update the lower
+                        rfx_upper = rfx_new
+                        rfy_upper = rfy_new
+  
+                        ! Illinois Method, improve efficiency
+                        if (rf_side == 1) then
+                            rfy_lower = rfy_lower / 2.d0
+                        endif
+  
+                        rf_side = 1
+  
+                    else
+                        ! numerically they are the same
+                        exit
+                    endif
+                enddo
+  
+                test_gsc = (rfx_lower + rfx_upper) / 2.d0
+            endif
+  
+            ! final gsc should be bounded within gsc_min and gsc_max
+            test_gsc = max(gsc_min,min(test_gsc,gsc_max))
+  
+            ! calculate the realized fc, ci
+            call photosynthesis_stomata_solver8(ib,test_gsc,limit_case,                           &
+                                                test_ci,test_fc,test_fe,                          &
+                                                test_dcidg,test_dfcdg,test_dfedg)
+
+            ! save the optimal gsc and carbon fluxes
+            opt_fc_3rd = test_fc
+            opt_gsc_3rd = test_gsc
+            opt_ci_3rd = test_ci
+ 
+            !------------------------------------------------------------------------------------!
+            ! Compare fc and set limit flag
+            !------------------------------------------------------------------------------------!
+            if ((opt_fc_light <= opt_fc_rubp) .and. &
+                (opt_fc_light <= opt_fc_3rd)) then
+                ! light-limited
+                opt_fc = opt_fc_light
+                opt_ci = opt_ci_light
+                opt_gsc = opt_gsc_light
+                limit_flag = 1
+            elseif (opt_fc_rubp <= opt_fc_3rd) then
+                ! RubisCO limited
+                opt_fc = opt_fc_rubp
+                opt_ci = opt_ci_rubp
+                opt_gsc = opt_gsc_rubp
+                limit_flag = 2
+            else
+                ! Triose Phosphate Utilisation or CO2 limited
+                opt_fc = opt_fc_3rd
+                opt_ci = opt_ci_3rd
+                opt_gsc = opt_gsc_3rd
+                limit_flag = 3
+            endif
+            !------------------------------------------------------------------------------------!
+
+       
             opt_fc_closed = -aparms(ib)%leaf_resp
             opt_gsc_closed = gsc_min
             opt_ci_closed = met(ib)%can_co2 - opt_fc_closed /                   &
@@ -546,6 +786,7 @@ module farq_katul
                             (opt_gsc_closed + met(ib)%blyr_cond_co2)
         endif
   
+
         
         if (debug_flag) then
             write (unit=*,fmt='(80a)')         ('=',k=1,80)
@@ -581,12 +822,10 @@ module farq_katul
    !> \details Both C3 and C4 have three cases of limitation:\n
    !> C3: Light, RuBisCO, TPU\n
    !> C4: Light, RuBisCO, CO2\n
-   !> This subroutine calculates them all together and select the scenario with the smallest co2
-   !> assimilation
    !> \author Xiangtao Xu, 19 MAY 2018
    !---------------------------------------------------------------------------------------!
-    subroutine photosynthesis_stomata_solver8(ib,gsc,fc_light,fc_rubp,fc_3rd,  &
-                                              ci,fc,fe,dcidg,dfcdg,dfedg,limit_flag)
+    subroutine photosynthesis_stomata_solver8(ib,gsc,limit_case,                            &
+                                              ci,fc,fe,dcidg,dfcdg,dfedg)
     use c34constants,    only : met                      & ! intent(in)
                               , aparms                   & ! intent(in) 
                               , thispft                  ! ! intent(in)
@@ -596,18 +835,15 @@ module farq_katul
     use consts_coms,     only : tiny_num8                ! ! intent(in)
     implicit none
         !------ Arguments. ------------------------------------------------------------------!
-        integer     , intent(in)    :: ib           !! Multithread ID
-        real(kind=8), intent(in)    :: gsc          !! input stomatal conductance for CO2,   [mol/m2/s]
-        real(kind=8), intent(out)   :: fc_light     !! light limited assimilation rate       [molCO2/m2/s]
-        real(kind=8), intent(out)   :: fc_rubp      !! Rubisco limited assimilation rate     [molCO2/m2/s]
-        real(kind=8), intent(out)   :: fc_3rd       !! TPU/CO2 limited assimilation rate     [molCO2/m2/s]
+        integer     , intent(in)        :: ib           !! Multithread ID
+        real(kind=8), intent(in)        :: gsc          !! input stomatal conductance for CO2,   [mol/m2/s]
+        character(len=*), intent(in)    :: limit_case   !! flag telling which case we are solving
         real(kind=8), intent(out)   :: ci           !! Intercellular CO2 under gsc           [molCO2/molAir]
         real(kind=8), intent(out)   :: fc           !! Realized assimilation rate under gsc  [molCO2/m2/s]
         real(kind=8), intent(out)   :: fe           !! transpiration                         [molH2O/m2/s]
         real(kind=8), intent(out)   :: dcidg        !! derivative of ci wrt. gsc
         real(kind=8), intent(out)   :: dfcdg        !! derivative of fc wrt. gsc
         real(kind=8), intent(out)   :: dfedg        !! derivative of fe wrt. gsc
-        integer,      intent(out)   :: limit_flag   !! Flag for photosynthesislimitation
 
         !------ Local Variables  ------------------------------------------------------------!
         real(kind=8)                :: gsbc         !! CO2 conductance from canopy air space to leaf (stomata + boundary layer)
@@ -639,7 +875,8 @@ module farq_katul
         select case (thispft(ib)%photo_pathway)
         case (3)
             ! C3 plant
-
+            select case (trim(limit_case))
+            case ('RUBP')
             !-------------!
             ! RUBP limited
             !-------------!
@@ -652,8 +889,8 @@ module farq_katul
 
             ! solve the quadratic equation
             rad = sqrt(b ** 2 - 4.d0 * a * c)
-            ci_rubp = - (b - rad) / (2.d0 * a)
-            fc_rubp = gsbc * (met(ib)%can_co2 - ci_rubp)
+            ci = - (b - rad) / (2.d0 * a)
+            fc = gsbc * (met(ib)%can_co2 - ci)
 
             ! calculate derivatives
             dbdg = -(k1 - aparms(ib)%leaf_resp) / gsc ** 2 ! Note that gbc cancelled out
@@ -661,14 +898,14 @@ module farq_katul
 
             if (abs(rad) < tiny_num8 ) then
                 ! rad is effectively zero
-                dcidg_rubp = -5.d-1 * dbdg
+                dcidg = -5.d-1 * dbdg
             else
-                dcidg_rubp = -5.d-1 * dbdg + (5.d-1 * b * dbdg - dcdg) / rad
+                dcidg = -5.d-1 * dbdg + (5.d-1 * b * dbdg - dcdg) / rad
             endif
-            dfcdg_rubp = (gsbc / gsc) ** 2 * (met(ib)%can_co2 - ci_rubp) &
-                    + gsbc * (-1.d0 * dcidg_rubp)
+            dfcdg = (gsbc / gsc) ** 2 * (met(ib)%can_co2 - ci) &
+                    + gsbc * (-1.d0 * dcidg)
 
-
+            case ('LIGHT')
             !-------------!
             ! Light limited
             !-------------!
@@ -680,8 +917,8 @@ module farq_katul
             c = (-k1 * aparms(ib)%compp - k2 * aparms(ib)%leaf_resp) / gsbc - k2 * met(ib)%can_co2
 
             rad = sqrt(b ** 2 - 4.d0 * a * c)
-            ci_light = - (b - rad) / (2.d0 * a)
-            fc_light = gsbc * (met(ib)%can_co2 - ci_light)
+            ci = - (b - rad) / (2.d0 * a)
+            fc = gsbc * (met(ib)%can_co2 - ci)
 
             ! calculate derivatives
             dbdg = -(k1 - aparms(ib)%leaf_resp) / gsc ** 2 ! Note that gbc cancelled out
@@ -689,72 +926,76 @@ module farq_katul
 
             if (abs(rad) < tiny_num8 ) then
                 ! rad is effectively zero
-                dcidg_light = -5.d-1 * dbdg
+                dcidg = -5.d-1 * dbdg
             else
-                dcidg_light = -5.d-1 * dbdg + (5.d-1 * b * dbdg - dcdg) / rad
+                dcidg = -5.d-1 * dbdg + (5.d-1 * b * dbdg - dcdg) / rad
             endif
-            dfcdg_light = (gsbc / gsc) ** 2 * (met(ib)%can_co2 - ci_light) &
-                    + gsbc * (-1.d0 * dcidg_light)
+            dfcdg = (gsbc / gsc) ** 2 * (met(ib)%can_co2 - ci) &
+                    + gsbc * (-1.d0 * dcidg)
 
 
-
+            case ('TPU')
             !-------------!
             ! TPU limited
             !-------------!
             ! only account for TPU limiation when iphysio is 1 or 3
             ! otherwise set fc to be a huge value so that TPU is always unlimited
-            select case (iphysiol)
-            case (0,2)
-                fc_3rd = huge(1.)
-                ci_3rd = tiny(1.)
-                dcidg_3rd = tiny(1.)
-                dfcdg_3rd = 0.
-            case (1,3)
-                ! This is a linear case
-                fc_3rd = 3.d0 * aparms(ib)%tpm - aparms(ib)%leaf_resp
-                ci_3rd = met(ib)%can_co2 - fc_3rd / gsbc 
+                select case (iphysiol)
+                case (0,2)
+                    fc = huge(1.)
+                    ci = tiny(1.)
+                    dcidg = tiny(1.)
+                    dfcdg = 0.
+                case (1,3)
+                    ! This is a linear case
+                    fc = 3.d0 * aparms(ib)%tpm - aparms(ib)%leaf_resp
+                    ci = met(ib)%can_co2 - fc / gsbc 
 
-                ! calculate derivatives
-                dcidg_3rd = fc_3rd / gsc ** 2 ! note gbc cancelledout
-                dfcdg_3rd = 0. ! constant fc
+                    ! calculate derivatives
+                    dcidg = fc / gsc ** 2 ! note gbc cancelledout
+                    dfcdg = 0. ! constant fc
+                end select
+
             end select
-
-
         case (4)
             ! C4 plant
             !-------------!
+            select case (trim(limit_case))
+            case ('RUBP')
             ! RUBP limited, linear case
             !-------------!
-            fc_rubp = aparms(ib)%vm - aparms(ib)%leaf_resp
-            ci_rubp = met(ib)%can_co2 - fc_rubp / gsbc 
+            fc = aparms(ib)%vm - aparms(ib)%leaf_resp
+            ci = met(ib)%can_co2 - fc / gsbc 
 
             ! calculate derivatives
-            dcidg_rubp = fc_rubp / gsc ** 2 ! note gbc cancelledout
-            dfcdg_rubp = 0. ! constant fc
-
+            dcidg = fc / gsc ** 2 ! note gbc cancelledout
+            dfcdg = 0. ! constant fc
+            
+            case ('LIGHT')
             !-------------!
             ! Light limited, linear case
             !-------------!
-            fc_light = aparms(ib)%jact / 4.d0 - aparms(ib)%leaf_resp
-            ci_light = met(ib)%can_co2 - fc_light / gsbc
+            fc = aparms(ib)%jact / 4.d0 - aparms(ib)%leaf_resp
+            ci = met(ib)%can_co2 - fc / gsbc
 
             ! calculate derivatives
-            dcidg_light = fc_light / gsc ** 2 ! note gbc cancelledout
-            dfcdg_light = 0. ! constant fc
+            dcidg = fc / gsc ** 2 ! note gbc cancelledout
+            dfcdg = 0. ! constant fc
 
-
+            case ('CO2')
             !-------------!
             ! CO2 limited, linear case
             !-------------!
-            ci_3rd = (aparms(ib)%leaf_resp + gsbc * met(ib)%can_co2) / (klowco28 * aparms(ib)%vm + gsbc)
-            fc_3rd = gsbc * (met(ib)%can_co2 - ci_3rd)
+            ci = (aparms(ib)%leaf_resp + gsbc * met(ib)%can_co2) / (klowco28 * aparms(ib)%vm + gsbc)
+            fc = gsbc * (met(ib)%can_co2 - ci)
 
             ! calculate derivatives
-            dcidg_3rd = (klowco28 * aparms(ib)%vm - aparms(ib)%leaf_resp) &
+            dcidg = (klowco28 * aparms(ib)%vm - aparms(ib)%leaf_resp) &
                     / (klowco28 * aparms(ib)%vm + gsbc) ** 2            &
                     * (gsbc / gsc) ** 2
-            dfcdg_3rd = (gsbc / gsc) ** 2 * (met(ib)%can_co2 - ci_3rd) &
-                    + gsbc * (-1.d0 * dcidg_3rd)
+            dfcdg = (gsbc / gsc) ** 2 * (met(ib)%can_co2 - ci) &
+                    + gsbc * (-1.d0 * dcidg)
+            end select
 
         end select
         !------------------------------------------------------------------------------------!
@@ -769,40 +1010,11 @@ module farq_katul
 
 
 
-        !------------------------------------------------------------------------------------!
-        ! Third, compare fc and set limit flag
-        !------------------------------------------------------------------------------------!
-        if ((fc_light <= fc_rubp) .and. &
-            (fc_light <= fc_3rd)) then
-            ! light-limited
-            fc = fc_light
-            ci = ci_light
-            dcidg = dcidg_light
-            dfcdg = dfcdg_light
-            limit_flag = 1
-        elseif (fc_rubp <= fc_3rd) then
-            ! RubisCO limited
-            fc = fc_rubp
-            ci = ci_rubp
-            dcidg = dcidg_rubp
-            dfcdg = dfcdg_rubp
-            limit_flag = 2
-        else
-            ! Triose Phosphate Utilisation or CO2 limited
-            fc = fc_3rd
-            ci = ci_3rd
-            dcidg = dcidg_3rd
-            dfcdg = dfcdg_3rd
-            limit_flag = 3
-        endif
-        !------------------------------------------------------------------------------------!
-
 
         return
     end subroutine photosynthesis_stomata_solver8 
    !=======================================================================================!
    !=======================================================================================!
-
 
 
   end module farq_katul
