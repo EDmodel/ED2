@@ -163,3 +163,6 @@ ED/build/allom_param.txt
 ED/build/pft_sizes.txt
 R-utils/quick.template.r
 R-utils/read.q.quick.r
+#Xiangtao Ignores
+ED/build/ed2_gfortran
+ED/build/ed2_ifort
