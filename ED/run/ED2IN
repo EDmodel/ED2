@@ -902,6 +902,11 @@ $ED_NL
    !               DBH and Height as dependent variables, and DBH-Height takes a simpler   !
    !               log-linear form fitted using SMA so it can be inverted (useful for      !
    !               airborne lidar initialisation).                                         !
+   !           4. (Under Development) Similar to 3 but (a) leaf and height allometric      !
+   !               equations depend on wood density; (b) use leaf area based allometry     !
+   !               instead of leaf biomass based allometry, which is more compatible with  !
+   !               trait plasticity in SLA; (c) use height-based root allometry from       !
+   !               Smith-Martin et al. (2020, New Phyt.)                                   !
    !---------------------------------------------------------------------------------------!
    NL%IALLOM          = 3
    !---------------------------------------------------------------------------------------!
@@ -971,11 +976,19 @@ $ED_NL
    !     tropical  - drought-deciduous (light phenology);                                  !
    !     conifers  - evergreen;                                                            !
    !     hardwoods - cold-deciduous;                                                       !
+   !  4: (Beta).                                                                           !
+   !     grasses   - drought-deciduous (hydraulics scheme);                                !
+   !     tropical  - drought-deciduous (hydraulics scheme);                                !
+   !     conifers  - evergreen;                                                            !
+   !     hardwoods - cold-deciduous;                                                       !
+   !                                                                                       !
    !                                                                                       !
    !  Old scheme: plants shed their leaves once instantaneous amount of available water    !
    !              becomes less than a critical value.                                      !
    !  New scheme: plants shed their leaves once a 10-day running average of available      !
    !              water becomes less than a critical value.                                !
+   !  Hydraulics scheme: plants shed their leaves once predawn leaf water potential is     !
+   !              lower than tugor loss point for 10 consecutive days                      !
    !---------------------------------------------------------------------------------------!
    NL%IPHEN_SCHEME    = 2
    !---------------------------------------------------------------------------------------!
@@ -1284,6 +1297,9 @@ $ED_NL
    !      extinction factors for each trait.  This is not applicable to grass PFTs.        !
    !      (Xu et al. in prep.)                                                             !
    !  2 - (Beta) Similar to 1, but traits are updated monthly.                             !
+   !  3 - (Beta) Similar to 1, but traits are updated monthly and the magnitude of change  !
+   !      each month is constrained current leaf turnover rate based on the assumption     !
+   !      that leaf trait changes can only be acheived by replacing old leaves             !
    ! -1 - (Beta) Similar to 1, but use height to adjust SLA.                               !
    ! -2 - (Beta) Similar to 2, but use height to adjust SLA.                               !
    !---------------------------------------------------------------------------------------!
