@@ -12,8 +12,6 @@
 !!   in order to set different/site-specific values and/or 
 !!   when running batch/optimization/ensemble runs to reset parameters between runs
 !!
-!! TODO:
-!! * write_ed_xml_config(filename,data) -> produce a record of parameters used in a run
 
 subroutine count_pft_xml_config(filename,maxpft)
   integer(4) :: npft,i,myPFT
@@ -643,6 +641,8 @@ recursive subroutine read_ed_xml_config(filename)
            if(texist) qbark(myPFT) = sngloff(rval,tiny_offset)
            call getConfigREAL  ('SRA','pft',i,rval,texist)
            if(texist) SRA(myPFT) = sngloff(rval,tiny_offset)
+           call getConfigREAL  ('eSRA_c','pft',i,rval,texist)
+           if(texist) eSRA_c(myPFT) = sngloff(rval,tiny_offset)
            call getConfigREAL  ('root_beta','pft',i,rval,texist)
            if(texist) root_beta(myPFT) = sngloff(rval,tiny_offset)
            call getConfigREAL  ('init_density','pft',i,rval,texist)
@@ -2074,6 +2074,7 @@ subroutine write_ed_xml_config
         call putConfigREAL("qsw"            ,qsw            (i))
         call putConfigREAL("qbark"          ,qbark          (i))
         call putConfigREAL("SRA"            ,SRA            (i))
+        call putConfigREAL("eSRA_c"         ,eSRA_c         (i))
         call putConfigREAL("root_beta"      ,root_beta      (i))
         call putConfigREAL("init_density"   ,init_density   (i))
         call putConfigREAL("f_bstorage_init",f_bstorage_init(i))

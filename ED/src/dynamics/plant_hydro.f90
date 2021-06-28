@@ -58,7 +58,11 @@ module plant_hydro
       use physiology_coms      , only : plant_hydro_scheme     ! ! intent(in)
       use pft_coms             , only : C2B                    & ! intent(in)
                                       , leaf_water_cap         & ! intent(in)
+                                      , wood_water_cap         & ! intent(in)
+                                      , SRA                    & ! intent(in)
+                                      , eSRA_c                 & ! intent(in)
                                       , leaf_psi_min           & ! intent(in)
+                                      , wood_psi_min           & ! intent(in)
                                       , small_psi_min          ! ! intent(in)
 
       implicit none
@@ -82,6 +86,8 @@ module plant_hydro
       real                                :: bsap        !< sapwood biomass        [    kgC]
       real                                :: transp      !< transpiration rate     [   kg/s]
       real                                :: c_leaf      !< leaf capacitance       [   kg/m]
+      real                                :: c_stem      !< stem capacitance       [   kg/m]
+      real                                :: RAI_total   !< total root area index  [   m2/m2]
       logical                             :: track_hydraulics !< whether track hydraulics
       !----- Variables for debugging purposes ---------------------------------------------!
       integer, parameter                  :: dco        = 0 ! the cohort to debug
@@ -207,6 +213,13 @@ module plant_hydro
                transp      = ( cpatch%fs_open(ico) * cpatch%psi_open(ico)                  &
                              + (1. - cpatch%fs_open(ico)) * cpatch%psi_closed(ico) )       &
                            * cpatch%lai(ico) / cpatch%nplant(ico)            ! kg / s
+      
+               c_leaf = leaf_water_cap(ipft) * C2B * cpatch%bleaf(ico)            ! kg H2O / m
+               c_stem = wood_water_cap(ipft) * C2B * (cpatch%broot(ico) + bsap)   ! kg H2O / m
+
+               RAI_total = (   SRA(ipft) * cpatch%broot(ico)                               & ! fine root
+                             + eSRA_c(ipft) * (cpatch%bdeadb(ico) + cpatch%bsapwoodb(ico)) & ! coarse root
+                           ) * cpatch%nplant(ico)                                 ! m2/m2
                !---------------------------------------------------------------------------!
 
 
@@ -220,7 +233,7 @@ module plant_hydro
                !---------------------------------------------------------------------------!
                call rwc2psi(cpatch%leaf_rwc(ico),cpatch%wood_rwc(ico),ipft                 &
                            ,cpatch%leaf_psi(ico),cpatch%wood_psi(ico))
-               c_leaf = leaf_water_cap(ipft) * C2B * cpatch%bleaf(ico)
+
                if (c_leaf > 0.) then
                   cpatch%leaf_psi(ico) = cpatch%leaf_psi(ico)  & ! m
                                        + transp * dtlsm        & ! kgH2O
@@ -245,8 +258,12 @@ module plant_hydro
                error_flag(1) = isnan_real(cpatch%leaf_psi(ico)) ! NaN values
                error_flag(2) = cpatch%leaf_psi(ico) > 0.        ! Positive potential
                error_flag(3) = merge( cpatch%leaf_psi(ico) < small_psi_min(ipft)           &
-                                    , cpatch%leaf_psi(ico) < leaf_psi_min (ipft)           &
-                                    , cpatch%is_small(ico)                        )
+                                    , merge( cpatch%leaf_psi(ico) < leaf_psi_min (ipft)    &
+                                           , cpatch%leaf_psi(ico) < ( wood_psi_min (ipft)  &
+                                                                    - cpatch%hite(ico)   ) &
+                                           , c_leaf > 0.)                                  &
+                                    , cpatch%is_small(ico)                                 &
+                                    ) ! too negative depending on cohort status
                if ((debug_flag .and. (dco == 0 .or. ico == dco)) .or. any(error_flag)) then
                   write (unit=*,fmt='(a)') ' '
                   write (unit=*,fmt='(92a)') ('=',k=1,92)
@@ -335,17 +352,17 @@ module plant_hydro
 
 
 
+
                !---------------------------------------------------------------------------!
                !    Find water fluxes.  Note that transp is from last timestep's psi_open  !
-               ! and psi_closed.                                                           !
+               ! and psi_closed.                                                           
                !---------------------------------------------------------------------------!
                call calc_plant_water_flux(                            &
                         dtlsm                                         &!input
-                       ,sap_area,cpatch%nplant(ico),ipft              &!input
-                       ,cpatch%is_small(ico),cpatch%krdepth(ico)      &!input
-                       ,cpatch%bleaf(ico),bsap,cpatch%broot(ico)      &!input
-                       ,cpatch%hite(ico),transp                       &!input
+                       ,c_leaf,c_stem,sap_area,RAI_total              &!input
+                       ,cpatch%hite(ico),cpatch%krdepth(ico),transp   &!input
                        ,cpatch%leaf_psi(ico),cpatch%wood_psi(ico)     &!input
+                       ,cpatch%nplant(ico),ipft,cpatch%is_small(ico)  &!input
                        ,soil_psi,soil_cond,ipa,ico                    &!input
                        ,cpatch%wflux_wl(ico),cpatch%wflux_gw(ico)     &!output
                        ,cpatch%wflux_gw_layer(:,ico))                 !!output
@@ -449,9 +466,9 @@ module plant_hydro
    !> \author Xiangtao Xu, 29 Jan. 2018
    !---------------------------------------------------------------------------------------!
    subroutine calc_plant_water_flux(dt                                  & !timestep
-               ,sap_area,nplant,ipft,is_small,krdepth                   & !plant input
-               ,bleaf,bsap,broot,hite                                   & !plant input
-               ,transp,leaf_psi,wood_psi                                & !plant input
+               ,c_leaf,c_stem,sap_area,RAI_total,hite,krdepth           & !cohort hydraulic properties
+               ,transp,leaf_psi,wood_psi                                & !cohort hydraulic input
+               ,nplant,ipft,is_small                                    & !other cohort input
                ,soil_psi,soil_cond                                      & !soil  input
                ,ipa,ico                                                 & !debug input
                ,wflux_wl,wflux_gw,wflux_gw_layer)                       ! !flux  output
@@ -461,34 +478,30 @@ module plant_hydro
       use consts_coms     , only : pi18                 & ! intent(in)
                                  , lnexp_min8           ! ! intent(in)
       use rk4_coms        , only : tiny_offset          ! ! intent(in)
-      use pft_coms        , only : leaf_water_cap       & ! intent(in) 
-                                 , wood_water_cap       & ! intent(in)
-                                 , leaf_psi_min         & ! intent(in)
+      use pft_coms        , only : leaf_psi_min         & ! intent(in)
                                  , wood_psi_min         & ! intent(in)
                                  , small_psi_min        & ! intent(in)
                                  , wood_psi50           & ! intent(in)
                                  , wood_Kmax            & ! intent(in)
                                  , wood_Kexp            & ! intent(in)
                                  , vessel_curl_factor   & ! intent(in)
-                                 , root_beta            & ! intent(in)
-                                 , SRA                  & ! intent(in)
-                                 , C2B                  ! ! intent(in)
+                                 , root_beta            ! ! intent(in)
       use ed_misc_coms    , only : current_time         ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       real   ,                 intent(in)  :: dt             !time step           [      s]
+      real   ,                 intent(in)  :: c_leaf         !leaf capacitance    [kgH2O/m]
+      real   ,                 intent(in)  :: c_stem         !stem capacitance    [kgH2O/m]
       real   ,                 intent(in)  :: sap_area       !sapwood_area        [     m2]
-      real   ,                 intent(in)  :: nplant         !plant density       [  pl/m2]
-      integer,                 intent(in)  :: ipft           !plant funct. type   [    ---]
-      integer,                 intent(in)  :: krdepth        !Max. rooting depth  [    ---]
-      logical,                 intent(in)  :: is_small       !Small cohort?       [    T|F]
-      real   ,                 intent(in)  :: bleaf          !leaf biomass        [    kgC]
-      real   ,                 intent(in)  :: bsap           !sapwood biomass     [ kgC/pl]
-      real   ,                 intent(in)  :: broot          !fine root biomass   [ kgC/pl]
+      real   ,                 intent(in)  :: RAI_total      !total root area ind.[ m2/m2]
       real   ,                 intent(in)  :: hite           !plant height        [      m]
+      integer,                 intent(in)  :: krdepth        !Max. rooting depth  [    ---]
       real   ,                 intent(in)  :: transp         !transpiration       [   kg/s]
       real   ,                 intent(in)  :: leaf_psi       !leaf water pot.     [      m]
       real   ,                 intent(in)  :: wood_psi       !wood water pot.     [      m]
+      real   ,                 intent(in)  :: nplant         !plant density       [  pl/m2]
+      integer,                 intent(in)  :: ipft           !plant funct. type   [    ---]
+      logical,                 intent(in)  :: is_small       !Small cohort?       [    T|F]
       real   , dimension(nzg), intent(in)  :: soil_psi       !soil water pot.     [      m]
       real   , dimension(nzg), intent(in)  :: soil_cond      !soil water cond.    [kg/m2/s]
       integer,                 intent(in)  :: ipa            !Patch index         [    ---]
@@ -499,10 +512,10 @@ module plant_hydro
       !----- Temporary double precision variables (input/output). -------------------------!
       real(kind=8)                 :: dt_d
       real(kind=8)                 :: sap_area_d
-      real(kind=8)                 :: bleaf_d
-      real(kind=8)                 :: bsap_d
-      real(kind=8)                 :: broot_d
+      real(kind=8)                 :: c_leaf_d
+      real(kind=8)                 :: c_stem_d
       real(kind=8)                 :: nplant_d
+      real(kind=8)                 :: RAI_total_d
       real(kind=8)                 :: hite_d
       real(kind=8)                 :: transp_d
       real(kind=8)                 :: leaf_psi_d
@@ -518,7 +531,6 @@ module plant_hydro
       real(kind=8)                 :: leaf_psi_lwr_d
       real(kind=8)                 :: wood_psi_lwr_d
       real(kind=8)                 :: root_beta_d
-      real(kind=8)                 :: SRA_d
       real(kind=8)                 :: wood_psi50_d
       real(kind=8)                 :: wood_Kexp_d
       real(kind=8)                 :: wood_Kmax_d
@@ -529,8 +541,6 @@ module plant_hydro
       real(kind=8)                          :: bp                   ![m s-1]
       real(kind=8)                          :: stem_cond            !stem conductance
       real(kind=8)                          :: plc                  !plant loss of conductance
-      real(kind=8)                          :: c_leaf               !leaf water capacitance
-      real(kind=8)                          :: c_stem               !stem water capacitance
       real(kind=8)                          :: RAI                  !root area index
       real(kind=8)                          :: root_frac            !fraction of roots
       real(kind=8)                          :: proj_leaf_psi        !projected leaf water pot.
@@ -567,10 +577,10 @@ module plant_hydro
       !------------------------------------------------------------------------------------!
       dt_d                 = dble(dt                      )
       sap_area_d           = dble(sap_area                )
-      bleaf_d              = dble(bleaf                   )
-      bsap_d               = dble(bsap                    )
-      broot_d              = dble(broot                   )
-      nplant_d             = dble(nplant                   )
+      c_leaf_d             = dble(c_leaf                  )
+      c_stem_d             = dble(c_stem                  )
+      RAI_total_d          = dble(RAI_total               )
+      nplant_d             = dble(nplant                  )
       hite_d               = dble(hite                    )
       transp_d             = dble(transp                  )
       leaf_psi_d           = dble(leaf_psi                )
@@ -578,7 +588,6 @@ module plant_hydro
       soil_psi_d           = dble(soil_psi                )
       soil_cond_d          = dble(soil_cond               )
       root_beta_d          = dble(root_beta         (ipft))
-      SRA_d                = dble(SRA               (ipft))
       !----- Minimum threshold depends on whether the plant is small or large. ------------!
       if (is_small) then
          leaf_psi_min_d    = dble(small_psi_min     (ipft))
@@ -625,10 +634,6 @@ module plant_hydro
       ! First, check the relative magnitude of leaf and sapwood water pool
       ! If it is a small tree/grass, force psi_leaf to be the same as psi_stem
       !------------------------------------------------------------------------------------!
-      c_leaf = dble(leaf_water_cap(ipft) * C2B) * bleaf_d            ! kg H2O / m
-      c_stem = dble(wood_water_cap(ipft) * C2B) * (broot_d + bsap_d) ! kg H2O / m
-      !------------------------------------------------------------------------------------!
-
 
 
       !------------------------------------------------------------------------------------!
@@ -640,13 +645,13 @@ module plant_hydro
          !   1.1.  Small tree, force leaf_psi to be the same as wood_psi.  Calculate the 
          !         new veg_psi of mixing leaf and wood
          !---------------------------------------------------------------------------------!
-         wood_psi_d   = (c_leaf * leaf_psi_d + c_stem * wood_psi_d) / (c_leaf+c_stem)
+         wood_psi_d   = (c_leaf_d * leaf_psi_d + c_stem_d * wood_psi_d) / (c_leaf_d+c_stem_d)
          leaf_psi_d   = wood_psi_d
          !---------------------------------------------------------------------------------!
 
 
          !----- Use c_leaf+c_stem as the total capacitance to solve stem_psi later. -------!
-         c_stem = c_stem + c_leaf
+         c_stem_d = c_stem_d + c_leaf_d
          !---------------------------------------------------------------------------------!
 
 
@@ -697,7 +702,7 @@ module plant_hydro
          !          sapwood. We need to zero the flow in this case as well, until 
          !          leaf_psi_d drops below wood_psi_d - hite_d.
          !---------------------------------------------------------------------------------!
-         zero_flow_wl = ( c_leaf == 0.d0                            ) .or.  & ! Case 1
+         zero_flow_wl = ( c_leaf_d == 0.d0                            ) .or.  & ! Case 1
                         ( leaf_psi_d >= (wood_psi_d - hite_d) .and.         &
                           leaf_psi_d <= leaf_psi_lwr_d              ) .or.  & ! Case 2a
                         ( leaf_psi_d <= (wood_psi_d - hite_d) .and.         &
@@ -718,7 +723,7 @@ module plant_hydro
             wflux_wl_d = 0.d0
 
             !------ Proj_leaf_psi is only dependent upon transpiration. -------------------!
-            if (c_leaf > 0.) then
+            if (c_leaf_d > 0.) then
                 proj_leaf_psi = leaf_psi_d - transp_d * dt_d / c_leaf
             else
                 proj_leaf_psi = leaf_psi_d
@@ -762,8 +767,8 @@ module plant_hydro
                ! 1.2.3. "Normal case", with positive c_leaf and positive stem_cond.  Check
                !        reference X16 for derivation of the equations.
                !---------------------------------------------------------------------------!
-               ap = - stem_cond / c_leaf                                            ! [1/s]
-               bp = ((wood_psi_d - hite_d) * stem_cond - transp_d) / c_leaf         ! [m/s]
+               ap = - stem_cond / c_leaf_d                                           ! [1/s]
+               bp = ((wood_psi_d - hite_d) * stem_cond - transp_d) / c_leaf_d        ! [m/s]
 
                !----- Project the final leaf psi. -----------------------------------------!
                exp_term      = exp(max(ap * dt_d,lnexp_min8))
@@ -773,7 +778,7 @@ module plant_hydro
 
 
                !----- Calculate the average sapflow rate within the time step [kgH2O/s]. --!
-               wflux_wl_d = (proj_leaf_psi - leaf_psi_d) * c_leaf / dt_d + transp_d
+               wflux_wl_d = (proj_leaf_psi - leaf_psi_d) * c_leaf_d / dt_d + transp_d
                !---------------------------------------------------------------------------!
             end if
             !------------------------------------------------------------------------------!
@@ -814,7 +819,7 @@ module plant_hydro
          !---------------------------------------------------------------------------------!
          !  Calculate RAI in each layer.                                                   !
          !---------------------------------------------------------------------------------!
-         RAI = broot_d * SRA_d * root_frac * nplant_d  ! m2/m2
+         RAI = RAI_total_d * root_frac ! m2/m2
          !---------------------------------------------------------------------------------!
 
          !---------------------------------------------------------------------------------!
@@ -855,7 +860,7 @@ module plant_hydro
       !    Now we can calculate ground->wood water flow.
       ! First we handle special cases
       !------------------------------------------------------------------------------------!
-      zero_flow_gw = (c_stem           == 0.d0) .or.  & ! No sapwood or fine  roots
+      zero_flow_gw = (c_stem_d         == 0.d0) .or.  & ! No sapwood or fine  roots
                      (weighted_gw_cond == 0.d0)       ! ! soil is drier than wood
 
       if (zero_flow_gw) then
@@ -863,10 +868,10 @@ module plant_hydro
          !     No need to calculate water flow: wood psi is only dependent upon sapflow.
          !---------------------------------------------------------------------------------!
          wflux_gw_d    = 0.d0
-         if (c_stem > 0.) then
+         if (c_stem_d > 0.) then
             !----- Make sure that projected wood psi will be bounded. ---------------------!
-            wflux_wl_d    = min(wflux_wl_d, (wood_psi_d - wood_psi_lwr_d) * c_stem / dt_d )
-            proj_wood_psi = wood_psi_d - wflux_wl_d * dt_d / c_stem
+            wflux_wl_d    = min(wflux_wl_d, (wood_psi_d - wood_psi_lwr_d) * c_stem_d / dt_d )
+            proj_wood_psi = wood_psi_d - wflux_wl_d * dt_d / c_stem_d
             !------------------------------------------------------------------------------!
          else
             proj_wood_psi = wood_psi_d
@@ -877,8 +882,8 @@ module plant_hydro
          !     Calculate the average soil water uptake. Check reference X16 for derivation
          ! of the equations.
          !---------------------------------------------------------------------------------!
-         ap = - weighted_gw_cond  / c_stem  ! ! 1/s
-         bp = (weighted_soil_psi - wflux_wl_d) / c_stem ! m/s
+         ap = - weighted_gw_cond  / c_stem_d  ! ! 1/s
+         bp = (weighted_soil_psi - wflux_wl_d) / c_stem_d ! m/s
          !---------------------------------------------------------------------------------!
 
          !----- Project the final wood psi, but ensure it will be bounded. ----------------!
@@ -889,7 +894,7 @@ module plant_hydro
 
 
          !----- Calculate the average root extraction within the time step [kgH2O/s]. -----!
-         wflux_gw_d     = (proj_wood_psi - wood_psi_d) * c_stem  / dt_d + wflux_wl_d
+         wflux_gw_d     = (proj_wood_psi - wood_psi_d) * c_stem_d  / dt_d + wflux_wl_d
          !---------------------------------------------------------------------------------!
       end if
       !------------------------------------------------------------------------------------!
@@ -906,7 +911,7 @@ module plant_hydro
          ! do need to update wood->leaf (wflux_wl_d).
          !---------------------------------------------------------------------------------!
          proj_leaf_psi = proj_wood_psi
-         wflux_wl_d    = (proj_leaf_psi - org_leaf_psi)  * c_leaf / dt_d + transp_d
+         wflux_wl_d    = (proj_leaf_psi - org_leaf_psi)  * c_leaf_d / dt_d + transp_d
          !---------------------------------------------------------------------------------!
       end if
       !------------------------------------------------------------------------------------!
@@ -936,12 +941,23 @@ module plant_hydro
       !     c.  Current leaf/wood potential is positive
       !     d.  Projected leaf/wood potential is less than minimum acceptable
       !     e.  Current leaf/wood potential is less than minimum acceptable
+      !     For, d/e, use wood_psi_min_d - hite_d when c_leaf = 0 (no leaf)
       !------------------------------------------------------------------------------------!
       error_flag(1) = isnan(wflux_wl_d)              .or. isnan(wflux_gw_d)
       error_flag(2) = proj_leaf_psi > 0.             .or. proj_wood_psi > 0.
       error_flag(3) = leaf_psi_d    > 0.             .or. wood_psi_d    > 0.
-      error_flag(4) = proj_leaf_psi < leaf_psi_min_d .or. proj_wood_psi < wood_psi_min_d
-      error_flag(5) = leaf_psi_d    < leaf_psi_min_d .or. wood_psi_d    < wood_psi_min_d
+      error_flag(4) = merge(                                                    &
+                            proj_leaf_psi < leaf_psi_min_d                      &
+                       .or. proj_wood_psi < wood_psi_min_d                      &
+                           ,proj_leaf_psi < (wood_psi_min_d - hite_d)           &
+                       .or. proj_wood_psi < wood_psi_min_d                      &
+                           , c_leaf_d > 0.)
+      error_flag(5) = merge(                                                    &
+                            leaf_psi_d < leaf_psi_min_d                         &
+                       .or. wood_psi_d < wood_psi_min_d                         &
+                           ,leaf_psi_d < (wood_psi_min_d - hite_d)              &
+                       .or. wood_psi_d < wood_psi_min_d                         &
+                           , c_leaf_d > 0.)
 
       if ( (debug_flag .and. (dco == 0 .or. ico == dco)) .or. any(error_flag)) then
          write (unit=*,fmt='(a)') ' '
@@ -965,9 +981,9 @@ module plant_hydro
          write (unit=*,fmt=lfmt   ) ' + ZERO_FLOW_GW     =',zero_flow_gw
 
          write (unit=*,fmt='(a)'  ) ' '
-         write (unit=*,fmt=efmt   ) ' + BLEAF            =',bleaf
-         write (unit=*,fmt=efmt   ) ' + BSAPWOOD         =',bsap
-         write (unit=*,fmt=efmt   ) ' + BROOT            =',broot
+         write (unit=*,fmt=efmt   ) ' + C_LEAF           =',c_leaf
+         write (unit=*,fmt=efmt   ) ' + C_STEM           =',c_stem
+         write (unit=*,fmt=efmt   ) ' + RAI_TOTAL        =',RAI_total
          write (unit=*,fmt=efmt   ) ' + SAPWOOD_AREA     =',sap_area
 
          write (unit=*,fmt='(a)'  ) ' '
