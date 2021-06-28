@@ -662,6 +662,10 @@ module pft_coms
    real   , dimension(n_pft)    :: qrhob
    !----- Specific Root Area (m2root area/kg_C]. ------------------------------------------!
    real   , dimension(n_pft)    :: SRA
+   
+   !----- Equivalent Specific Root Area for course root (m2root area/kg_C]. ------------------------------------------!
+   real   , dimension(n_pft)    :: eSRA_c
+
    !----- Root vertical profile parameter. Fraction of root biomass below max root depth --!
    real   , dimension(n_pft)    :: root_beta
    !---------------------------------------------------------------------------------------!
