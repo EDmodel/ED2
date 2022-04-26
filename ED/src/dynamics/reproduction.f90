@@ -27,6 +27,7 @@ module reproduction
                                      , one_plant_c                 & ! intent(in)
                                      , c2n_recruit                 & ! intent(in)
                                      , include_pft                 & ! intent(in)
+                                     , include_pft_pt              & ! intent(in)
                                      , include_pft_ag              & ! intent(in)
                                      , include_pft_fp              & ! intent(in)
                                      , q                           & ! intent(in)
@@ -235,9 +236,9 @@ module reproduction
                      !---------------------------------------------------------------------!
                      select case (csite%dist_type(ipa))
                      case (1)
-                        !----- Agriculture (cropland or pasture). -------------------------!
+                        !----- Pasture. ---------------------------------------------------!
                         allow_pft =                                                        &
-                           include_pft_ag(ipft)                                      .and. &
+                           include_pft_pt(ipft)                                      .and. &
                            cpoly%min_monthly_temp(isi) >= plant_min_temp(ipft) - 5.0 .and. &
                            repro_scheme                /= 0
                         !------------------------------------------------------------------!
@@ -246,6 +247,13 @@ module reproduction
                         !----- Forest plantation. -----------------------------------------!
                         allow_pft =                                                        &
                            include_pft_fp(ipft)                                      .and. &
+                           cpoly%min_monthly_temp(isi) >= plant_min_temp(ipft) - 5.0 .and. &
+                           repro_scheme                /= 0
+                        !------------------------------------------------------------------!
+                     case (8)
+                        !----- Cropland. --------------------------------------------------!
+                        allow_pft =                                                        &
+                           include_pft_ag(ipft)                                      .and. &
                            cpoly%min_monthly_temp(isi) >= plant_min_temp(ipft) - 5.0 .and. &
                            repro_scheme                /= 0
                         !------------------------------------------------------------------!
@@ -732,9 +740,9 @@ module reproduction
                      !---------------------------------------------------------------------!
                      select case (csite%dist_type(ipa))
                      case (1)
-                        !----- Agriculture (cropland or pasture). -------------------------!
+                        !----- Pasture. ---------------------------------------------------!
                         allow_pft =                                                        &
-                           include_pft_ag(ipft)                                      .and. &
+                           include_pft_pt(ipft)                                      .and. &
                            cpoly%min_monthly_temp(isi) >= plant_min_temp(ipft) - 5.0 .and. &
                            repro_scheme                /= 0
                         !------------------------------------------------------------------!
@@ -743,6 +751,14 @@ module reproduction
                         !----- Forest plantation. -----------------------------------------!
                         allow_pft =                                                        &
                            include_pft_fp(ipft)                                      .and. &
+                           cpoly%min_monthly_temp(isi) >= plant_min_temp(ipft) - 5.0 .and. &
+                           repro_scheme                /= 0
+                        !------------------------------------------------------------------!
+
+                     case (8)
+                        !----- Cropland. --------------------------------------------------!
+                        allow_pft =                                                        &
+                           include_pft_ag(ipft)                                      .and. &
                            cpoly%min_monthly_temp(isi) >= plant_min_temp(ipft) - 5.0 .and. &
                            repro_scheme                /= 0
                         !------------------------------------------------------------------!
@@ -931,6 +947,7 @@ module reproduction
                                     , seed_rain             & ! intent(in)
                                     , one_plant_c           & ! intent(in)
                                     , include_pft           & ! intent(in)
+                                    , include_pft_pt        & ! intent(in)
                                     , include_pft_ag        & ! intent(in)
                                     , include_pft_fp        ! ! intent(in)
       use ed_misc_coms       , only : ibigleaf              & ! intent(in)
@@ -1014,9 +1031,9 @@ module reproduction
                   !------------------------------------------------------------------------!
                   select case (csite%dist_type(ipa))
                   case (1)
-                     !----- Agriculture (cropland or pasture). ----------------------------!
+                     !----- Pasture. ------------------------------------------------------!
                      allow_pft =                                                           &
-                        include_pft_ag(ipft)                                      .and.    &
+                        include_pft_pt(ipft)                                      .and.    &
                         cpoly%min_monthly_temp(isi) >= plant_min_temp(ipft) - 5.0 .and.    &
                         repro_scheme                /= 0
                      !---------------------------------------------------------------------!
@@ -1025,6 +1042,14 @@ module reproduction
                      !----- Forest plantation. --------------------------------------------!
                      allow_pft =                                                           &
                         include_pft_fp(ipft)                                      .and.    &
+                        cpoly%min_monthly_temp(isi) >= plant_min_temp(ipft) - 5.0 .and.    &
+                        repro_scheme                /= 0
+                     !---------------------------------------------------------------------!
+
+                  case (8)
+                     !----- Cropland. -----------------------------------------------------!
+                     allow_pft =                                                           &
+                        include_pft_ag(ipft)                                      .and.    &
                         cpoly%min_monthly_temp(isi) >= plant_min_temp(ipft) - 5.0 .and.    &
                         repro_scheme                /= 0
                      !---------------------------------------------------------------------!
