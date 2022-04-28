@@ -2910,7 +2910,7 @@ module rk4_misc
                !     Leaves have too much water.  If possible, send water back to wood.    !
                ! If wood is also saturated, leaves expel the excess water as shedding.     !
                !---------------------------------------------------------------------------!
-               leaf_excess     = rk4max_leaf_water_im2 - initp%leaf_water_im2(ico)
+               leaf_excess     = initp%leaf_water_im2(ico) - rk4max_leaf_water_im2
                wood_demand     = min(leaf_excess,max(0.d0                                  &
                                     ,rk4max_wood_water_im2-initp%wood_water_im2(ico)))
                leaf_wshed      = leaf_excess - wood_demand
@@ -3104,7 +3104,7 @@ module rk4_misc
                ! the excess water goes to shedding.                                        !
                !---------------------------------------------------------------------------!
                !----- First guess. --------------------------------------------------------!
-               wood_excess = rk4max_wood_water_im2 - initp%wood_water_im2(ico)
+               wood_excess = initp%wood_water_im2(ico) - rk4max_wood_water_im2
                leaf_demand = rk4max_leaf_water_im2 - initp%leaf_water_im2(ico)
                soil_demand = (soil8(nstop)%slmsts-initp%soil_water(kt)) * dslz8(kt) * wdns8
                !----- Bounded guess. ------------------------------------------------------!
@@ -3151,7 +3151,7 @@ module rk4_misc
                if (fast_diagnostics) then
                   initp%avg_wflux_wl          (ico) = initp%avg_wflux_wl          (ico)    &
                                                     + leaf_demand
-                  initp%avg_wflux_gw          (ico) = initp%avg_wflux_wl          (ico)    &
+                  initp%avg_wflux_gw          (ico) = initp%avg_wflux_gw          (ico)    &
                                                     - soil_demand
                   initp%avg_wshed_lg          (ico) = initp%avg_wshed_lg          (ico)    &
                                                     + leaf_wshed
