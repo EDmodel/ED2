@@ -28538,7 +28538,7 @@ module ed_state_vars
       if (associated(csite%sfcwater_depth)) then
          nvar=nvar+1
            call vtable_edio_r(npts,csite%sfcwater_depth,nvar,igr,init,csite%paglob_id, &
-           var_len,var_len_global,max_ptrs,'SFCWATER_DEPTH :33:hist:opti') 
+           var_len,var_len_global,max_ptrs,'SFCWATER_DEPTH :33:hist') 
          call metadata_edio(nvar,igr,'No metadata available','[NA]','m') 
       end if
 
