@@ -8049,6 +8049,7 @@ subroutine init_derived_params_after_xml()
                                    , undef_real                ! ! intent(in)
    use consts_coms          , only : onesixth                  & ! intent(in)
                                    , twothirds                 & ! intent(in)
+                                   , solar                     & ! intent(in)
                                    , t008                      & ! intent(in)
                                    , cliq                      & ! intent(in)
                                    , day_sec                   & ! intent(in)
@@ -8308,7 +8309,8 @@ subroutine init_derived_params_after_xml()
                                    , k_rh_active               & ! intent(out)
                                    , rh08                      & ! intent(out)
                                    , rh_q108                   ! ! intent(out)
-   use phenology_coms       , only : repro_scheme              & ! intent(in)
+   use phenology_coms       , only : iphen_scheme              & ! intent(in)
+                                   , repro_scheme              & ! intent(in)
                                    , radint                    & ! intent(in)
                                    , radslp                    & ! intent(in)
                                    , radavg_window             & ! intent(in)
@@ -8478,24 +8480,40 @@ subroutine init_derived_params_after_xml()
 
    !---------------------------------------------------------------------------------------!
    !      Minimum and maximum radiation should be defined according to the                 !
-   ! economics_scheme, as the model formulation is different.                              !
+   ! economics_scheme, as the model formulation is different.  But set dummy values for    !
+   ! both in case this simulation is not using light-controlled phenology.                 !
    !---------------------------------------------------------------------------------------!
-   select case (economics_scheme)
-   case (1)
+   select case (iphen_scheme)
+   case (3)
       !------------------------------------------------------------------------------------!
-      !      Turnover amplitude is a log-linear function of radiation, based on litter     !
-      ! fall data directly related to radiation.                                           !
+      !    Light phenology is enabled.                                                     !
       !------------------------------------------------------------------------------------!
-      radto_min = (turnamp_min / radint) ** (1./radslp)
-      radto_max = (turnamp_max / radint) ** (1./radslp)
+      select case (economics_scheme)
+      case (1)
+         !---------------------------------------------------------------------------------!
+         !      Turnover amplitude is a log-linear function of radiation, based on litter  !
+         ! fall data directly related to radiation.                                        !
+         !---------------------------------------------------------------------------------!
+         radto_min = (turnamp_min / radint) ** (1./radslp)
+         radto_max = (turnamp_max / radint) ** (1./radslp)
+         !---------------------------------------------------------------------------------!
+      case default
+         !---------------------------------------------------------------------------------!
+         !      Turnover amplitude is a linear function of radiation, like the original    !
+         ! approach.                                                                       !
+         !---------------------------------------------------------------------------------!
+         radto_min       = (turnamp_min - radint) / radslp
+         radto_max       = (turnamp_max - radint) / radslp
+         !---------------------------------------------------------------------------------!
+      end select
       !------------------------------------------------------------------------------------!
    case default
       !------------------------------------------------------------------------------------!
-      !      Turnover amplitude is a linear function of radiation, like the original       !
-      ! approach.                                                                          !
+      !    Light phenology is disabled.  Set dummy values for minimum and maximum          !
+      ! radiation so the turnover amplitude is never calculated.                           !
       !------------------------------------------------------------------------------------!
-      radto_min       = (turnamp_min - radint) / radslp
-      radto_max       = (turnamp_max - radint) / radslp
+      radto_min = solar
+      radto_max = solar
       !------------------------------------------------------------------------------------!
    end select
    !---------------------------------------------------------------------------------------!
