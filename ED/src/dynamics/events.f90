@@ -118,7 +118,7 @@ subroutine prescribed_event(year,doy)
                     call getConfigREAL   ('fol_frac','harvest',j,rval(3),texist)
                     if(.not.texist) rval(3) = 1.0d+0
                     !! storage fraction removed
-                    call getConfigREAL   ('stor_frac','harvest',j,rval(3),texist)
+                    call getConfigREAL   ('stor_frac','harvest',j,rval(4),texist)
                     if(.not.texist) rval(4) = 1.0d+0
 
                     call event_harvest(rval(1),rval(2),rval(3),rval(4))
@@ -137,16 +137,16 @@ subroutine prescribed_event(year,doy)
                     ! nitrogen
                     call getConfigREAL  ('NH4','fertilize',j,rval(1),texist)
                     if(.not.texist) rval(1) = 0.0d+0
-                    call getConfigREAL  ('N03','fertilize',j,rval(1),texist)
+                    call getConfigREAL  ('N03','fertilize',j,rval(2),texist)
                     if(.not.texist) rval(2) = 0.0d+0
                     ! Phosphorus
-                    call getConfigREAL  ('P','fertilize',j,rval(1),texist)
+                    call getConfigREAL  ('P','fertilize',j,rval(3),texist)
                     if(.not.texist) rval(3) = 0.0d+0
                     ! Potassium
-                    call getConfigREAL  ('K','fertilize',j,rval(1),texist)
+                    call getConfigREAL  ('K','fertilize',j,rval(4),texist)
                     if(.not.texist) rval(4) = 0.0d+0
                     ! Calcium
-                    call getConfigREAL  ('Ca','fertilize',j,rval(1),texist)
+                    call getConfigREAL  ('Ca','fertilize',j,rval(5),texist)
                     if(.not.texist) rval(5) = 0.0d+0
 
                     call event_fertilize(rval(1:5))
