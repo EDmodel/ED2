@@ -30,7 +30,7 @@ on:
 # Certain actions will only run when this is the master/main repo.
 env:
   MAIN_REPO: EDmodel/ED2
-  DOCKERHUB_ORG: pecan
+  DOCKERHUB_ORG: edmodel
   # no linux/arm64 (mac) missing hdf5 libraries.
   PLATFORM: "linux/amd64"
 
