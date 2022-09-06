@@ -75,7 +75,8 @@ jobs:
           fi
 
           # create a list of all images to be pushed
-          REPO=${GITHUB_REPOSITORY,,}
+          REPO="${{ github.repository_owner }}"
+          REPO="${REPO,,}"
           IMAGE="${{ github.event.repository.name }}"
           IMAGE="${IMAGE,,}"
           IMAGES=""
