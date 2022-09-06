@@ -31,7 +31,8 @@ on:
 env:
   MAIN_REPO: EDModel/ED2
   DOCKERHUB_ORG: pecan
-  PLATFORM: "linux/amd64,linux/arm64"
+  # no linux/arm64 (mac) missing hdf5 libraries.
+  PLATFORM: "linux/amd64"
 
 jobs:
   docker:
