@@ -76,6 +76,7 @@ jobs:
           # create a list of all images to be pushed
           REPO=${GITHUB_REPOSITORY,,}
           IMAGE="${{ github.event.repository.name }}"
+          IMAGE="${IMAGE,,}"
           IMAGES=""
           for tag in ${tags}; do
             if [ "$DOCKERHUB_PUSH" == "true" ]; then
