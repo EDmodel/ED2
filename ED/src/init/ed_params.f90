@@ -6047,7 +6047,7 @@ subroutine init_pft_hydro_params()
    ! update them for temperate PFTs                                                        !
    !                                                                                       !
    !     Don't panic on the number of parameters here.  Most of them are used to calculate !
-   ! a few traits that control plant hydaulic calculations.   These traits are listed in   !
+   ! a few traits that control plant hydraulic calculations.   These traits are listed in   !
    ! the next section.                                                                     !
    !---------------------------------------------------------------------------------------!
    LMA(:) = 1.e3 * C2B / SLA(:)
