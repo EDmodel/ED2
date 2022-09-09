@@ -89,11 +89,11 @@ subroutine load_ed_ecosystem_params()
 
 
 
-   !---------------------------------------------------------------------------------------! 
+   !---------------------------------------------------------------------------------------!
    !    This flag should be used to define whether the plant is a savannah tree or not.    !
    ! Currently this is used only to define fire adaptation, i.e. bark thickness            !
    ! parameters.  Grasses are not set as savannah because they have no bark                !
-   !---------------------------------------------------------------------------------------! 
+   !---------------------------------------------------------------------------------------!
    is_savannah(1:11)  = .false.
    is_savannah(12:14) = .true.
    is_savannah(15:17) = .false.
@@ -110,9 +110,9 @@ subroutine load_ed_ecosystem_params()
 
 
 
-   !---------------------------------------------------------------------------------------! 
+   !---------------------------------------------------------------------------------------!
    !    This flag should be used to define whether the plant is conifer or flowering.      !
-   !---------------------------------------------------------------------------------------! 
+   !---------------------------------------------------------------------------------------!
    is_conifer(1:5)   = .false.
    is_conifer(6:8)   = .true.
    is_conifer(9:14)  = .false.
@@ -122,9 +122,9 @@ subroutine load_ed_ecosystem_params()
 
 
 
-   !---------------------------------------------------------------------------------------! 
+   !---------------------------------------------------------------------------------------!
    !    This flag should be used to define whether the plant is tree or grass.             !
-   !---------------------------------------------------------------------------------------! 
+   !---------------------------------------------------------------------------------------!
    is_grass(1)     = .true.
    is_grass(2:4)   = .false.
    is_grass(5)     = .true.
@@ -339,7 +339,7 @@ subroutine init_decomp_params()
    implicit none
    !---------------------------------------------------------------------------------------!
 
-   
+
    resp_opt_water            = 0.8938
    resp_water_below_opt      = 5.0786
    resp_water_above_opt      = 4.5139
@@ -452,7 +452,7 @@ subroutine init_decomp_params()
       decay_rate_stsc =  1.5   / yr_day
       decay_rate_msc  =  6.0   / yr_day
       decay_rate_ssc  =  0.15  / yr_day
-      decay_rate_psc  =  0.012 / yr_day 
+      decay_rate_psc  =  0.012 / yr_day
       !------------------------------------------------------------------------------------!
    end select
    !---------------------------------------------------------------------------------------!
@@ -668,9 +668,9 @@ subroutine init_ff_coms
    !                       multiplication factor.                                          !
    !---------------------------------------------------------------------------------------!
    niter_cohfus = 100
-   exp_cohfus   = 1. / (niter_cohfus - 1.0) 
+   exp_cohfus   = 1. / (niter_cohfus - 1.0)
    niter_patfus = 100
-   exp_patfus   = 1. / (niter_patfus-1.0) 
+   exp_patfus   = 1. / (niter_patfus-1.0)
    !---------------------------------------------------------------------------------------!
 
 
@@ -693,10 +693,10 @@ subroutine init_ff_coms
    !---------------------------------------------------------------------------------------!
    !     Old cohort fusion variables (slated to be deleted in the near future).            !
    !---------------------------------------------------------------------------------------!
-   fusetol           =  0.4    ! Cohort fusion tolerance on DBH (dimensionless) 
+   fusetol           =  0.4    ! Cohort fusion tolerance on DBH (dimensionless)
    fusetol_h         =  0.5    ! Cohort fusion tolerance on height (m) !
    lai_fuse_tol      =  0.8    ! Cohort fusion tolerance on LAI (m2 leaf/m2 ground)
-   coh_tolerance_max = 10.0    ! Cohort maximum tolerance factor 
+   coh_tolerance_max = 10.0    ! Cohort maximum tolerance factor
    fuse_relax        = .false. ! Flag to allow a less strict fusion test
    !---------------------------------------------------------------------------------------!
 
@@ -1219,7 +1219,7 @@ subroutine init_physiology_params()
    ! to determine the CO2-limited photosynthesis for C4 grasses.  Notice that Foley et al. !
    ! (1996) applied Vm0 so the slope is a function of temperature like in Collatz (1992).  !
    !---------------------------------------------------------------------------------------!
-   klowco2      = klowco2in 
+   klowco2      = klowco2in
    !---------------------------------------------------------------------------------------!
 
 
@@ -1365,7 +1365,7 @@ subroutine init_met_params()
    atm_shv_min = 1.0e-6   ! That corresponds to a relative humidity of 0.1% at 1000hPa
    atm_shv_max = 8.0e-2   ! That corresponds to a dew point of 41degC at 1000hPa.
    !----- Minimum and maximum acceptable CO2 mixing ratio [umol/mol]. ---------------------!
-   atm_co2_min =   10.    ! Very low limit to allow Tonzi TS to run.  Plants may find it 
+   atm_co2_min =   10.    ! Very low limit to allow Tonzi TS to run.  Plants may find it
                           ! hard to thrive with such low CO2.
    atm_co2_max = 2000.    ! This should allow any RCP simulation to run with no problem
    !----- Minimum and maximum acceptable pressure [Pa]. -----------------------------------!
@@ -2453,7 +2453,7 @@ subroutine init_soil_coms
                                      ,soil(s)%slbs    ,soil(s)%slmm    ,soil(s)%slmu       &
                                      ,soil(s)%malpha  ,slcons_mmhr     ,soil(s)%fhydraul   &
                                      ,slcpd_mjm3k     ,soil(s)%thcond0 ,soil(s)%thcond1    &
-                                     ,soil(s)%thcond2 ,soil(s)%thcond3 
+                                     ,soil(s)%thcond2 ,soil(s)%thcond3
          !---------------------------------------------------------------------------------!
       end do
       !------------------------------------------------------------------------------------!
@@ -3267,19 +3267,19 @@ subroutine init_pft_alloc_params()
          select case (ipft)
          case (5)     ! Temperate C3 grass.
             sla_s0(ipft) = 22.0
-         case (6)     ! Northern pines. 
+         case (6)     ! Northern pines.
             sla_s0(ipft) = 6.0
          case (7)     ! Southern pines.
             sla_s0(ipft) = 9.0
-         case (8)     ! Late conifers. 
+         case (8)     ! Late conifers.
             sla_s0(ipft) = 10.0
          case (9)     ! Early hardwood.
             sla_s0(ipft) = 30.0
-         case (10)    ! Mid hardwood. 
+         case (10)    ! Mid hardwood.
             sla_s0(ipft) = 24.2
-         case (11)    ! Late hardwood. 
+         case (11)    ! Late hardwood.
             sla_s0(ipft) = 60.0 ! Possible unit conversion issue? In ED-1 it used to be 30.
-         case default ! Just in case. 
+         case default ! Just in case.
             sla_s0(ipft) = SLA_ref
          end select
          !---------------------------------------------------------------------------------!
@@ -3676,27 +3676,27 @@ subroutine init_pft_alloc_params()
          !    doi:10.1111/j.1365-2486.2006.01254.x.                                        !
          !---------------------------------------------------------------------------------!
          select case (ipft)
-         case (5)     ! Temperate C3 grass. 
+         case (5)     ! Temperate C3 grass.
             b1Ht   (ipft) =  0.4778
             b2Ht   (ipft) = -0.75
             hgt_ref(ipft) =  0.0
-         case (6,7)   ! Northern and Southern Pines. 
+         case (6,7)   ! Northern and Southern Pines.
             b1Ht   (ipft) = 27.14
             b2Ht   (ipft) = -0.03884
             hgt_ref(ipft) = 1.3
-         case (8)     ! Late conifers. 
+         case (8)     ! Late conifers.
             b1Ht   (ipft) = 22.79
-            b2Ht   (ipft) = -0.04445 
+            b2Ht   (ipft) = -0.04445
             hgt_ref(ipft) = 1.3
-         case (9)     ! Early hardwood. 
+         case (9)     ! Early hardwood.
             b1Ht   (ipft) = 22.6799
             b2Ht   (ipft) = -0.06534
             hgt_ref(ipft) = 1.3
-         case (10)    ! Mid hardwood. 
+         case (10)    ! Mid hardwood.
             b1Ht   (ipft) = 25.18
             b2Ht   (ipft) = -0.04964
             hgt_ref(ipft) = 1.3
-         case (11)    ! Late hardwood. 
+         case (11)    ! Late hardwood.
             b1Ht   (ipft) = 23.3874
             b2Ht   (ipft) = -0.05404
             hgt_ref(ipft) = 1.3
@@ -3955,7 +3955,7 @@ subroutine init_pft_alloc_params()
             b1Bl (ipft) = C2B * exp(nleaf(1)) * rho(ipft) / nleaf(3)
             b2Bl (ipft) = nleaf(2)
             !------------------------------------------------------------------------------!
-        case (3) 
+        case (3)
             !------------------------------------------------------------------------------!
             !    Allometry based on the BAAD data based (F15).  We only used leaves from   !
             ! wild tropical, flowering trees, and applied a stratified sample by DBH class !
@@ -3995,22 +3995,22 @@ subroutine init_pft_alloc_params()
          ! is no distinction between small and large cohorts.                              !
          !---------------------------------------------------------------------------------!
          select case (ipft)
-         case (5)   ! Temperate C3 grass. 
+         case (5)   ! Temperate C3 grass.
             b1Bl(ipft) = 0.08
             b2Bl(ipft) = 1.0
-         case (6,7) ! Northern and Southern Pines. 
+         case (6,7) ! Northern and Southern Pines.
             b1Bl(ipft) = 0.024
             b2Bl(ipft) = 1.899
-         case (8)   ! Late conifers. 
+         case (8)   ! Late conifers.
             b1Bl(ipft) = 0.0454
             b2Bl(ipft) = 1.6829
-         case (9)   ! Early hardwood. 
+         case (9)   ! Early hardwood.
             b1Bl(ipft) = 0.0129
             b2Bl(ipft) = 1.7477
-         case (10) ! Mid hardwood. 
+         case (10) ! Mid hardwood.
             b1Bl(ipft) = 0.048
             b2Bl(ipft) = 1.455
-         case (11) ! Late hardwood. 
+         case (11) ! Late hardwood.
             b1Bl(ipft) = 0.017
             b2Bl(ipft) = 1.731
          case default ! Just in case
@@ -4127,22 +4127,22 @@ subroutine init_pft_alloc_params()
          ! is no distinction between small and large cohorts.                              !
          !---------------------------------------------------------------------------------!
          select case (ipft)
-         case (5)   ! Temperate C3 grass. 
+         case (5)   ! Temperate C3 grass.
             b1Bs_small(ipft) = 1.0e-5
             b2Bs_small(ipft) = 1.0
-         case (6,7) ! Northern and Southern Pines. 
+         case (6,7) ! Northern and Southern Pines.
             b1Bs_small(ipft) = 0.147
             b2Bs_small(ipft) = 2.238
-         case (8)   ! Late conifers. 
+         case (8)   ! Late conifers.
             b1Bs_small(ipft) = 0.1617
             b2Bs_small(ipft) = 2.1536
-         case (9)   ! Early hardwood. 
+         case (9)   ! Early hardwood.
             b1Bs_small(ipft) = 0.02648
             b2Bs_small(ipft) = 2.95954
-         case (10)  ! Mid hardwood. 
+         case (10)  ! Mid hardwood.
             b1Bs_small(ipft) = 0.1617
             b2Bs_small(ipft) = 2.4572
-         case (11)  ! Late hardwood. 
+         case (11)  ! Late hardwood.
             b1Bs_small(ipft) = 0.235
             b2Bs_small(ipft) = 2.2518
          end select
@@ -4177,7 +4177,7 @@ subroutine init_pft_alloc_params()
       b1Bl      (15) = 0.07322115
       b1Bl      (16) = 0.04538826
       b1Bl      (17) = 0.07322115
-      
+
       b2Bl      ( 1) = 1.316338
       b2Bl      ( 2) = 1.509083
       b2Bl      ( 3) = 1.646576
@@ -4188,7 +4188,7 @@ subroutine init_pft_alloc_params()
       b2Bl      (15) = 1.509083
       b2Bl      (16) = 1.316338
       b2Bl      (17) = 1.509083
-      
+
       b1Bs_small( 1) = 0.05291854
       b1Bs_small( 2) = 0.15940854
       b1Bs_small( 3) = 0.21445616
@@ -4199,7 +4199,7 @@ subroutine init_pft_alloc_params()
       b1Bs_small(15) = 0.15940854
       b1Bs_small(16) = 0.05291854
       b1Bs_small(17) = 0.15940854
-      
+
       b2Bs_small( 1) = 3.706955
       b2Bs_small( 2) = 2.342587
       b2Bs_small( 3) = 2.370640
@@ -4303,12 +4303,12 @@ subroutine init_pft_alloc_params()
        b1SA(:) = merge( 1.0                                                                &
                       , merge( 0.30, merge(0.6572,0.30,is_tropical(:)), is_conifer(:) )     &
                       , is_grass(:)                                                   )
-       b2SA(:) = merge(1.8530,2.0,is_tropical(:) .and. (.not. is_grass(:)))  
+       b2SA(:) = merge(1.8530,2.0,is_tropical(:) .and. (.not. is_grass(:)))
    case default
        b1SA(:) = merge( 1.0                                                                &
                       , merge( 0.30, merge(1.582,0.30,is_tropical(:)), is_conifer(:) )     &
                       , is_grass(:)                                                   )
-       b2SA(:) = merge(1.764,2.0,is_tropical(:) .and. (.not. is_grass(:)))  
+       b2SA(:) = merge(1.764,2.0,is_tropical(:) .and. (.not. is_grass(:)))
    end select
    !---------------------------------------------------------------------------------------!
 
@@ -4694,7 +4694,7 @@ subroutine init_pft_photo_params()
 
 
    !---------------------------------------------------------------------------------------!
-   !>    Vm_decay_elow and Vm_decay_ehigh are the correction terms for high and low 
+   !>    Vm_decay_elow and Vm_decay_ehigh are the correction terms for high and low
    !> temperatures when running the original ED-2.1 correction as in Moorcroft et al.
    !> (2001).
    !---------------------------------------------------------------------------------------!
@@ -4736,7 +4736,7 @@ subroutine init_pft_photo_params()
    !---------------------------------------------------------------------------------------!
    !----- Find the additional factor to multiply Vm0. -------------------------------------!
    select case (ibigleaf)
-   case (0) ! SAS, use only the modification from the namelist. 
+   case (0) ! SAS, use only the modification from the namelist.
       ssfact = 1.0
    case (1)
       ssfact = 3.0
@@ -4797,7 +4797,7 @@ subroutine init_pft_photo_params()
          case default
             !------ Original parameters. --------------------------------------------------!
             select case (ipft)
-            case (1)     ! C4 grass. 
+            case (1)     ! C4 grass.
                Vm0_v0(ipft) = 12.50
             case (2,12)  ! Early-successional tropical tree
                Vm0_v0(ipft) = 18.75
@@ -4807,7 +4807,7 @@ subroutine init_pft_photo_params()
                Vm0_v0(ipft) = 6.25
             case (16)
                Vm0_v0(ipft) = 18.75
-            case default !  Just in case. 
+            case default !  Just in case.
                Vm0_v0(ipft) = 15.625
             end select
             Vm0_v1(ipft) = 0.0
@@ -4817,15 +4817,15 @@ subroutine init_pft_photo_params()
       else
          !------ Temperate PFTs. ----------------------------------------------------------!
          select case (ipft)
-         case (5)     ! C3 grass. 
+         case (5)     ! C3 grass.
             Vm0_v0(ipft) = 18.300000
-         case (6,7)   ! Pines (N/S). 
+         case (6,7)   ! Pines (N/S).
             Vm0_v0(ipft) = 11.350000
-         case (8)     ! Late conifers. 
+         case (8)     ! Late conifers.
             Vm0_v0(ipft) = 4.540000
-         case (9)     ! Early hardwood. 
+         case (9)     ! Early hardwood.
             Vm0_v0(ipft) = 20.387075
-         case (10)    ! Mid hardwood. 
+         case (10)    ! Mid hardwood.
             Vm0_v0(ipft) = 17.454687
          case (11)    ! Late hardwood.
             Vm0_v0(ipft) = 6.981875
@@ -4833,7 +4833,7 @@ subroutine init_pft_photo_params()
             Vm0_v0(ipft) = 10.
          case (17)    ! Liana
             Vm0_v0(ipft) = 9.097
-         case default !  Just in case. 
+         case default !  Just in case.
             Vm0_v0(ipft) = 15.625
          end select
          Vm0_v1(ipft) = 0.0
@@ -5164,17 +5164,17 @@ subroutine init_pft_resp_params()
       !      Temperate trees have optimised turnover rates.  Fill each PFT separately.     !
       !------------------------------------------------------------------------------------!
       select case (ipft)
-      case (6)     ! Northern pines. 
+      case (6)     ! Northern pines.
          root_turnover_rate(ipft) = 3.927218 ! 0.333
-      case (7)     ! Southern pines. 
+      case (7)     ! Southern pines.
          root_turnover_rate(ipft) = 4.117847 ! 0.333
-      case (8)     ! Late conifers. 
+      case (8)     ! Late conifers.
          root_turnover_rate(ipft) = 3.800132 ! 0.333
-      case (9)     ! Early hardwoods. 
+      case (9)     ! Early hardwoods.
          root_turnover_rate(ipft) = 5.772506
-      case (10)    ! Mid hardwoods. 
+      case (10)    ! Mid hardwoods.
          root_turnover_rate(ipft) = 5.083700
-      case (11)    ! Late hardwoods. 
+      case (11)    ! Late hardwoods.
          root_turnover_rate(ipft) = 5.070992
       case default ! Grasses, tropical trees, and lianas
          select case (economics_scheme)
@@ -5384,12 +5384,12 @@ subroutine init_pft_mort_params()
    real, parameter        :: gamma0_c18   =  0.0110928 ! scale for gamma
    real, parameter        :: gamma1_c18   = -2.2347380 ! exponent for gamma
    real, parameter        :: delta_c18    =  0.8998337 ! average correction term
-   real, parameter        :: epsilon_ed2  =  1.20      ! quick scaling factor to transform 
+   real, parameter        :: epsilon_ed2  =  1.20      ! quick scaling factor to transform
                                                        !    CBAREL into growth
    real, parameter        :: extinct_mort = 10.0       ! Maximum mortality rate for C18
                                                        !    This should be high to cause
-                                                       !    near-extinction but not so 
-                                                       !    high that it would be 
+                                                       !    near-extinction but not so
+                                                       !    high that it would be
                                                        !    difficult to display in output
    !---------------------------------------------------------------------------------------!
 
@@ -5519,7 +5519,7 @@ subroutine init_pft_mort_params()
    !              for that.                                                                !
    !---------------------------------------------------------------------------------------!
    do ipft=1,n_pft
-      if (is_liana(ipft)) then ! Lianas, taken from O. Phillips (2005). 
+      if (is_liana(ipft)) then ! Lianas, taken from O. Phillips (2005).
          mort3(ipft) = 0.06311576
       elseif (is_tropical(ipft) .and. is_conifer(ipft)) then
          mort3(ipft) = 0.00111 ! Based on TRY (but likely guesstimated).
@@ -5562,13 +5562,13 @@ subroutine init_pft_mort_params()
          select case (ipft)
          case (5)     ! Temperate C3 grasses.
             mort3(ipft) = 0.066
-         case (6)     ! Northern pines. 
+         case (6)     ! Northern pines.
             mort3(ipft) = 0.0033928
-         case (7)     ! Southern pines. 
+         case (7)     ! Southern pines.
             mort3(ipft) = 0.0043
          case (8)     ! Late-successional conifers.
             mort3(ipft) = 0.0023568
-         case (9)     ! Early-successional hardwoods. 
+         case (9)     ! Early-successional hardwoods.
             mort3(ipft) = 0.006144
          case (10)    ! Mid-successional hardwoods.
             mort3(ipft) = 0.003808
@@ -5610,7 +5610,7 @@ subroutine init_pft_mort_params()
    select case (hydraulic_mortality_scheme)
    case (1)
        ! Assume cohort will die in half month when PLC is 1. (100%, all conductance is lost)
-       ! and die in 1. year when PLC is 0.6 (Estimated from Adams et al. 2017 and 
+       ! and die in 1. year when PLC is 0.6 (Estimated from Adams et al. 2017 and
        ! Hammond et al. 2019)
        hydro_mort0(:) = merge(0.0,24.0,is_grass(:))
        do ipft=1,n_pft
@@ -5625,8 +5625,8 @@ subroutine init_pft_mort_params()
        hydro_mort0(:) = 0.0
        hydro_mort1(:) = 1.0
    end select
-       
- 
+
+
    !---------------------------------------------------------------------------------------!
    !     Here we check whether we need to re-calculate the treefall disturbance rate so it !
    ! is consistent with the time to reach the canopy.                                      !
@@ -5800,19 +5800,19 @@ subroutine init_pft_nitro_params()
    !---------------------------------------------------------------------------------------!
    pftloop: do ipft=1,n_pft
       !------ Temperate trees. Use non-optimised Vm0 values. ------------------------------!
-      ! MLO - There must be something uninitialised.  This works when I use if, but it 
+      ! MLO - There must be something uninitialised.  This works when I use if, but it
       !       fails with -O3 when I use select case (which normally should be safer).
-      if (ipft == 6 .or. ipft == 7) then ! Northern and Southern Pines. 
+      if (ipft == 6 .or. ipft == 7) then ! Northern and Southern Pines.
          vm0_ref = 15.625
-      elseif (ipft == 8) then     ! Late conifers. 
+      elseif (ipft == 8) then     ! Late conifers.
          vm0_ref = 6.25
-      elseif (ipft == 9) then     ! Early hardwood. 
+      elseif (ipft == 9) then     ! Early hardwood.
          vm0_ref = 18.25
-      elseif (ipft == 10) then   ! Mid hardwood. 
+      elseif (ipft == 10) then   ! Mid hardwood.
          vm0_ref = 15.625
-      elseif (ipft == 11) then   ! Late hardwood. 
+      elseif (ipft == 11) then   ! Late hardwood.
          vm0_ref = 6.25
-      else ! Use actual Vm0 in case we missed some PFT. 
+      else ! Use actual Vm0 in case we missed some PFT.
          vm0_ref = Vm0(ipft)
       end if
       !------------------------------------------------------------------------------------!
@@ -5870,7 +5870,7 @@ subroutine init_pft_nitro_params()
    c2n_stem(:)          = 150.0 ! Carbon to Nitrogen ratio, structural stem.
    c2n_storage          = 150.0 ! Carbon to Nitrogen ratio, storage pool.
    l2n_stem             = 150.0 ! Carbon to Lignin ratio, structural stem.
-   plant_N_supply_scale = 0.5 
+   plant_N_supply_scale = 0.5
 
 
    c2n_fast_0           = 30.0  ! Carbon to Nitrogen ratio, slow pool.
@@ -5887,7 +5887,7 @@ end subroutine init_pft_nitro_params
 
 !==========================================================================================!
 !==========================================================================================!
-!  SUBROUTINE: INIT_PFT_HYDRO_PARAMS   
+!  SUBROUTINE: INIT_PFT_HYDRO_PARAMS
 !> \brief This subroutine initializes plant hydraulic parameters.
 !> \warning Some plant hydraulic paramters are depedent on SLA and LMA. So this
 !> subroutine should always be after init_pft_alloc_params
@@ -5984,7 +5984,7 @@ subroutine init_pft_hydro_params()
    !, C. Macinins-Ng, A. Rey, L. Rowland, S. A. Setterfield, S. Tausz-Posch,               !
    ! J. Zaragoza-Castells, M. S. J. Broadmeadow, J. E. Drake, M. Freeman, O. Ghannoum,     !
    ! L. B. Hutley, J. W. Kelly, K. Kikuzawa, P. Kolari, K. Koyama, J.-M. Limousin, P. Meir,!
-   ! A. C. Lola da Costa, T. N. Mikkelsen, N. Salinas, W. Sun, and L. Wingate. 2015.       ! 
+   ! A. C. Lola da Costa, T. N. Mikkelsen, N. Salinas, W. Sun, and L. Wingate. 2015.       !
    ! Optimal stomatal behaviour around the world. Nature Clim. Change 5:459-464. (L15)     !
    !                                                                                       !
    ! Manzoni S, Vico G, Katul G, Fay PA, Polley W, Palmroth S , Porporato A. 2011.         !
@@ -6034,7 +6034,7 @@ subroutine init_pft_hydro_params()
 
 
    !----- This is kind of arbitrary, total hydraulic path is 50% more than tree height. ---!
-   vessel_curl_factor(:)  = 1.5 
+   vessel_curl_factor(:)  = 1.5
    !---------------------------------------------------------------------------------------!
 
 
@@ -6047,7 +6047,7 @@ subroutine init_pft_hydro_params()
    ! update them for temperate PFTs                                                        !
    !                                                                                       !
    !     Don't panic on the number of parameters here.  Most of them are used to calculate !
-   ! a few traits that control plant hydaulic calculations.   These traits are listed in   !
+   ! a few traits that control plant hydraulic calculations.   These traits are listed in   !
    ! the next section.                                                                     !
    !---------------------------------------------------------------------------------------!
    LMA(:) = 1.e3 * C2B / SLA(:)
@@ -6110,7 +6110,7 @@ subroutine init_pft_hydro_params()
    !----- Sapwood minimum relative water content, or residual fraction. -------------------!
    rwc_tlp_wood(:) = 1.00 - (1.00 - 0.75 * rho_bnd(:)) / (2.74 + 2.01 * rho_bnd(:))
    wood_rwc_min(:) = wood_elastic_mod(:) * (1.00 - rwc_tlp_wood(:) - f_cap)             &
-                        / (wood_psi_osmotic(:) / MPa2M * (1.00 - f_cap) ) + 1.00 - f_cap 
+                        / (wood_psi_osmotic(:) / MPa2M * (1.00 - f_cap) ) + 1.00 - f_cap
 
    ! note that there is a typo in the original equation, the last epsilon_x before fcap is extra
    !---------------------------------------------------------------------------------------!
@@ -6158,7 +6158,7 @@ subroutine init_pft_hydro_params()
 
 
    !----- Wood P50 [m]. -------------------------------------------------------------------!
-   wood_psi50(:) = (-1.09 - (3.57 * rho_bnd(:) ** 1.73)) * MPa2m 
+   wood_psi50(:) = (-1.09 - (3.57 * rho_bnd(:) ** 1.73)) * MPa2m
    !---------------------------------------------------------------------------------------!
 
 
@@ -6175,7 +6175,7 @@ subroutine init_pft_hydro_params()
    !     Sapwood maximum conductivity [kg/m2/s].  This is estimated from Figure S2.2       !
    ! of C16.                                                                               !
    !---------------------------------------------------------------------------------------!
-   !wood_Kmax(:)  = exp(2.11 - 20.05 * rho_bnd(:) / Amax_25(:)) / MPa2m 
+   !wood_Kmax(:)  = exp(2.11 - 20.05 * rho_bnd(:) / Amax_25(:)) / MPa2m
    ! TODO: remove above after test
    wood_Kmax(:) = exp( 2.32 - 2.27 * rho_bnd(:)                                            &
                      - 0.48 * log(-wood_psi50(:) / MPa2m)                                  &
@@ -6367,7 +6367,7 @@ end subroutine init_pft_hydro_params
 
 !==========================================================================================!
 !==========================================================================================!
-!  SUBROUTINE: INIT_PFT_SPHEAT_PARAMS   
+!  SUBROUTINE: INIT_PFT_SPHEAT_PARAMS
 !> \brief This subroutine initialises specific heat parameters for plants.
 !> \details This subroutine initialises specific heat of leaves, wood, and bark, and it
 !>          must be called after init_pft_hydro_params.
@@ -6515,7 +6515,7 @@ subroutine init_pft_phen_params()
          select case (iphen_scheme)
          case (-1) ! Assume that they are all evergreen
             phenology(ipft) = 0
-         case (0,1) ! Old drought-deciduous scheme 
+         case (0,1) ! Old drought-deciduous scheme
             phenology(ipft) = 1
          case (2)   ! New drought-deciduous scheme
             phenology(ipft) = 4
@@ -6713,17 +6713,17 @@ subroutine init_pft_repro_params()
       else
          !----- Temperate broadleaf trees. ------------------------------------------------!
          select case (ipft)
-         case (6:7)   ! Pines. 
+         case (6:7)   ! Pines.
             nonlocal_dispersal(ipft) = 0.766
-         case (8)     ! Late conifers. 
+         case (8)     ! Late conifers.
             nonlocal_dispersal(ipft) = 0.001
-         case (9)     ! Early hardwood. 
+         case (9)     ! Early hardwood.
             nonlocal_dispersal(ipft) = 1.000
-         case (10)    ! Mid hardwood. 
+         case (10)    ! Mid hardwood.
             nonlocal_dispersal(ipft) = 0.325
-         case (11)    ! Late hardwood. 
+         case (11)    ! Late hardwood.
             nonlocal_dispersal(ipft) = 0.074
-         case default ! This shouldn't happen. 
+         case default ! This shouldn't happen.
             nonlocal_dispersal(ipft) = 1.000
          end select
          !---------------------------------------------------------------------------------!
@@ -7038,7 +7038,7 @@ subroutine init_can_air_params()
    !---------------------------------------------------------------------------------------!
 
 
-   
+
    !----- Legacy variable, we can probably remove it. -------------------------------------!
    ez  = 0.172
    !---------------------------------------------------------------------------------------!
@@ -7343,14 +7343,14 @@ subroutine init_can_rad_params()
    !  1 -- homogeneous, no clumping.                                                       !
    !---------------------------------------------------------------------------------------!
    do ipft=1,n_pft
-      if (is_conifer(ipft)) then ! Conifers (subtropical and temperate). 
+      if (is_conifer(ipft)) then ! Conifers (subtropical and temperate).
          clumping_factor(ipft) = 7.350d-1
          !---------------------------------------------------------------------------------!
-      elseif (is_tropical(ipft) .and. is_grass(ipft)) then ! Tropical grasses. 
+      elseif (is_tropical(ipft) .and. is_grass(ipft)) then ! Tropical grasses.
          clumping_factor(ipft) = dble(clump_grass)
-      elseif (is_tropical(ipft)) then ! Lianas and tropical trees. 
+      elseif (is_tropical(ipft)) then ! Lianas and tropical trees.
          clumping_factor(ipft) = dble(clump_tree)
-      else ! Temperate broadleaf (trees pr grasses). 
+      else ! Temperate broadleaf (trees pr grasses).
          clumping_factor(ipft) = 8.400d-1
       end if
    end do
@@ -7366,13 +7366,13 @@ subroutine init_can_rad_params()
    ! -1 -- all leaves are perfectly vertical.                                              !
    !---------------------------------------------------------------------------------------!
    do ipft=1,n_pft
-      if (.not. is_tropical(ipft)) then ! Temperate PFTs (grasses and trees). 
+      if (.not. is_tropical(ipft)) then ! Temperate PFTs (grasses and trees).
          orient_factor(ipft) = 0.d0
       elseif (is_conifer(ipft)) then ! Araucaria, (CLM value for evergreen needleleaf).
          orient_factor(ipft) = 1.0d-2
-      elseif (is_grass(ipft)) then ! Tropical grasses. 
+      elseif (is_grass(ipft)) then ! Tropical grasses.
          orient_factor(ipft) = dble(orient_grass)
-      else ! Lianas and tropical broadleaf trees. 
+      else ! Lianas and tropical broadleaf trees.
          orient_factor(ipft) = dble(orient_tree)
       end if
    end do
@@ -7910,7 +7910,7 @@ subroutine overwrite_with_xml_config(thisnode)
    !---------------------------------------------------------------------------------------!
 
    if (iedcnfgf /= '') then
-   
+
       !----- Test whether the file exists. ------------------------------------------------!
       inquire (file=iedcnfgf,exist=iamhere)
       !------------------------------------------------------------------------------------!
@@ -8231,7 +8231,7 @@ subroutine init_derived_params_after_xml()
                                    , srf_decay_elow            & ! intent(inout)
                                    , srf_decay_ehigh           & ! intent(inout)
                                    , srf_hor                   & ! intent(inout)
-                                   , srf_q10                   & ! intent(inout) 
+                                   , srf_q10                   & ! intent(inout)
                                    , bleaf_crit                & ! intent(inout)
                                    , d1DBH_small               & ! intent(out)
                                    , d2DBH_small               & ! intent(out)
@@ -8707,7 +8707,7 @@ subroutine init_derived_params_after_xml()
       !----- Find the DBH and carbon pools associated with a newly formed recruit. --------!
       dbh          = h2dbh(hgt_min(ipft),ipft)
       rdepth_min   = size2prd(hgt_min(ipft),dbh,ipft)
-      bleaf_min    = size2bl(dbh,hgt_min(ipft),SLA(ipft),ipft) 
+      bleaf_min    = size2bl(dbh,hgt_min(ipft),SLA(ipft),ipft)
       broot_min    = bleaf_min * q(ipft)
       bsapwood_min = bleaf_min * qsw(ipft)   * hgt_min(ipft)
       bbark_min    = bleaf_min * qbark(ipft) * hgt_min(ipft)
@@ -8738,7 +8738,7 @@ subroutine init_derived_params_after_xml()
       !------------------------------------------------------------------------------------!
       !    Biomass of one individual plant at recruitment.                                 !
       !------------------------------------------------------------------------------------!
-      bleaf_bl     = size2bl(dbh_bigleaf(ipft),hgt_min(ipft),SLA(ipft),ipft) 
+      bleaf_bl     = size2bl(dbh_bigleaf(ipft),hgt_min(ipft),SLA(ipft),ipft)
       broot_bl     = bleaf_bl * q(ipft)
       bsapwood_bl  = bleaf_bl * qsw(ipft)   * hgt_max(ipft)
       bbark_bl     = bleaf_bl * qbark(ipft) * hgt_max(ipft)
@@ -8817,11 +8817,11 @@ subroutine init_derived_params_after_xml()
          ! By default, this variable is initialised as a function of the cohort's minimum  !
          ! size.  Setting the size to be 1/10 of the minimum size to allow the model to    !
          ! try establishing cohorts in different months.                                   !
-         !---------------------------------------------------------------------------------! 
+         !---------------------------------------------------------------------------------!
          if (seed_rain(ipft) == undef_real) then
             seed_rain(ipft)  = 0.1 * min_recruit_size(ipft) / one_plant_c(ipft)
          end if
-         !---------------------------------------------------------------------------------! 
+         !---------------------------------------------------------------------------------!
       case default
          !----- Old method, nplant_res_min is a fraction of the smallest initial density. -!
          nplant_res_min     = 0.1 * minval(init_density)
@@ -8867,22 +8867,22 @@ subroutine init_derived_params_after_xml()
          ! By default, this variable is initialised as a function of the cohort's minimum  !
          ! size to ensure it allows for reintroduction.  In case this has been initialised !
          ! through xml, then don't change the values.                                      !
-         !---------------------------------------------------------------------------------! 
+         !---------------------------------------------------------------------------------!
          if (seed_rain(ipft) == undef_real) seed_rain(ipft)  = 0.1 * init_density(ipft)
-         !---------------------------------------------------------------------------------! 
+         !---------------------------------------------------------------------------------!
       end select
-      !------------------------------------------------------------------------------------! 
+      !------------------------------------------------------------------------------------!
 
 
-      !------------------------------------------------------------------------------------! 
+      !------------------------------------------------------------------------------------!
       !    The following variable is the absolute minimum cohort population that a cohort  !
       ! can have.  This should be used only to avoid nplant=0, but IMPORTANT: this will    !
       ! lead to a ridiculously small cohort almost guaranteed to be extinct and SHOULD BE  !
       ! USED ONLY IF THE AIM IS TO ELIMINATE THE COHORT.                                   !
-      !------------------------------------------------------------------------------------! 
+      !------------------------------------------------------------------------------------!
       negligible_nplant(ipft) = onesixth * min_cohort_size(ipft)                           &
                               / (bdead_max + balive_max + bstorage_max)
-      !------------------------------------------------------------------------------------! 
+      !------------------------------------------------------------------------------------!
 
 
       !----- Find the recruit carbon to nitrogen ratio. -----------------------------------!
@@ -8894,12 +8894,12 @@ subroutine init_derived_params_after_xml()
                         / ( bfast_min    / c2n_leaf(ipft)                                  &
                           + bstruct_min  / c2n_stem(ipft)                                  &
                           + bstorage_min / c2n_storage    )
-      !------------------------------------------------------------------------------------! 
+      !------------------------------------------------------------------------------------!
 
 
       !------------------------------------------------------------------------------------!
       !     Add PFT parameters to the reference table.                                     !
-      !------------------------------------------------------------------------------------! 
+      !------------------------------------------------------------------------------------!
       if (print_zero_table) then
          write (unit=61,fmt='(i5,1x,a16,1x,9(f12.8,1x),28(f12.5,1x),1(es12.5,1x))')        &
                                                      ipft,pft_name16(ipft),hgt_min(ipft)   &
@@ -9372,9 +9372,9 @@ subroutine init_derived_params_after_xml()
          !----- Set kplastic for Vm0. -----------------------------------------------------!
          kplastic_vm0(ipft) = sngloff(tlow_fun8,tiny_num8)
          !---------------------------------------------------------------------------------!
-         
+
          !---------------------------------------------------------------------------------!
-         ! rewrite plasticity for tropical trees based on BCI data if 
+         ! rewrite plasticity for tropical trees based on BCI data if
          ! trait_plasticity_scheme is 3
          !---------------------------------------------------------------------------------!
          select case (trait_plasticity_scheme)
@@ -9403,7 +9403,7 @@ subroutine init_derived_params_after_xml()
          !----- Default: assume the same as the Vcmax decay. ------------------------------!
          kplastic_rd0(ipft) = kplastic_vm0(ipft)
          !---------------------------------------------------------------------------------!
- 
+
 
          !---------------------------------------------------------------------------------!
          !     Rewrite plasticity for tropical trees based on BCI data in case             !
@@ -9442,9 +9442,9 @@ subroutine init_derived_params_after_xml()
       !------------------------------------------------------------------------------------!
       if (kplastic_SLA(ipft) == undef_real) then
          kplastic_SLA(ipft) = 0.462 - 0.1239 * log(SLA(ipft))
-            
+
          !---------------------------------------------------------------------------------!
-         ! rewrite plasticity for tropical trees based on BCI data if 
+         ! rewrite plasticity for tropical trees based on BCI data if
          ! trait_plasticity_scheme is 3
          !---------------------------------------------------------------------------------!
          select case (trait_plasticity_scheme)
@@ -9479,9 +9479,9 @@ subroutine init_derived_params_after_xml()
       !------------------------------------------------------------------------------------!
       if (kplastic_LL(ipft) == undef_real .and. leaf_turnover_rate(ipft) > 0.) then
          kplastic_LL(ipft) = 0.2126 - 0.062 * log(12./leaf_turnover_rate(ipft))
-         
+
          !---------------------------------------------------------------------------------!
-         ! rewrite plasticity for tropical trees based on BCI data if 
+         ! rewrite plasticity for tropical trees based on BCI data if
          ! trait_plasticity_scheme is 3
          !---------------------------------------------------------------------------------!
          select case (trait_plasticity_scheme)
@@ -9592,7 +9592,7 @@ subroutine init_derived_params_after_xml()
                                         ,'  LEAF_WIDTH','       RRFF0','KPLASTIC_VM0'      &
                                         ,'KPLASTIC_RD0','KPLASTIC_SLA',' KPLASTIC_LL'      &
                                         ,'EPLASTIC_VM0','EPLASTIC_SLA'
-                                        
+
          do ipft=1,n_pft
             write(char_pathway,fmt='(a,i1)') 'C',photosyn_pathway(ipft)
 
@@ -9683,7 +9683,7 @@ subroutine init_derived_params_after_xml()
                                      ,'          QSW','        QBARK','        QRHOB'      &
                                      ,'     d18O_REF','      B1_D18O','      B2_D18O'      &
                                      ,'      B1_EFRD','      B2_EFRD','  INIT_LAIMAX'
-                                     
+
 
       do ipft=1,n_pft
          write (unit=18,fmt='(9x,i5,5(13x,l1),47(1x,f13.6),1(1x,es13.6))')                 &

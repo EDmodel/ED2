@@ -61,8 +61,8 @@ module pft_coms
    ! culture and plantation stockS. They are currently a single PFT, but they should       !
    ! become vectors eventually (and thus multiple PFTs can be used...).                    !
    !---------------------------------------------------------------------------------------!
-   integer :: pasture_stock 
-   integer :: agri_stock 
+   integer :: pasture_stock
+   integer :: agri_stock
    integer :: plantation_stock
    !=======================================================================================!
    !=======================================================================================!
@@ -92,8 +92,8 @@ module pft_coms
    !    The following variables are flags that control which PFTs mare used in general,    !
    ! for agriculture and grasses.                                                          !
    !---------------------------------------------------------------------------------------!
-   
-   
+
+
    !---------------------------------------------------------------------------------------!
    !    This is the list of PFTs that are included.  0 means off, 1 means on.              !
    !---------------------------------------------------------------------------------------!
@@ -165,17 +165,17 @@ module pft_coms
    !---------------------------------------------------------------------------------------!
 
    !----- Temperature [C] below which leaf metabolic activity begins to rapidly decline. --!
-   real, dimension(n_pft) :: Vm_low_temp 
+   real, dimension(n_pft) :: Vm_low_temp
 
    !----- Temperature [C] above which leaf metabolic activity begins to rapidly decline. --!
-   real, dimension(n_pft) :: Vm_high_temp 
+   real, dimension(n_pft) :: Vm_high_temp
 
    !----- Decay factors for the exponential correction. -----------------------------------!
    real, dimension(n_pft) :: Vm_decay_elow
    real, dimension(n_pft) :: Vm_decay_ehigh
 
    !----- Maximum carboxylation rate at the reference temperature [umol/m2/s]. ------------!
-   real, dimension(n_pft) :: Vm0 
+   real, dimension(n_pft) :: Vm0
    !----- Parameters used by the model that predicts Vm0 based on SLA. --------------------!
    real, dimension(n_pft) :: Vm0_v0
    real, dimension(n_pft) :: Vm0_v1
@@ -184,29 +184,29 @@ module pft_coms
    !----- Parameters currently used only by trait plasticity. -----------------------------!
    real, dimension(n_pft) :: kplastic_vm0 ! Expansion factor for Vm0 (extinction if < 0).
    !----- Exponent for Vm in the Arrhenius equation [K]. ----------------------------------!
-   real, dimension(n_pft) :: Vm_hor 
+   real, dimension(n_pft) :: Vm_hor
 
    !----- Base (Q10 term) for Vm in Collatz equation. -------------------------------------!
    real, dimension(n_pft) :: Vm_q10
 
    !----- Temperature [C] below which leaf metabolic activity begins to rapidly decline. --!
-   real, dimension(n_pft) :: Jm_low_temp 
+   real, dimension(n_pft) :: Jm_low_temp
 
    !----- Temperature [C] above which leaf metabolic activity begins to rapidly decline. --!
-   real, dimension(n_pft) :: Jm_high_temp 
+   real, dimension(n_pft) :: Jm_high_temp
 
    !----- Decay factors for the exponential correction. -----------------------------------!
    real, dimension(n_pft) :: Jm_decay_elow
    real, dimension(n_pft) :: Jm_decay_ehigh
 
    !----- Maximum electron transport rate at the reference temperature [umol/m2/s]. -------!
-   real, dimension(n_pft) :: Jm0 
+   real, dimension(n_pft) :: Jm0
 
    !----- Parameters used by the new stomatal conductance model (Farquhar-Katul). ---------!
    real, dimension(n_pft) :: Jmax25      ! Jm0 at 25degC
 
    !----- Exponent for Jm in the Arrhenius equation [K]. ----------------------------------!
-   real, dimension(n_pft) :: Jm_hor 
+   real, dimension(n_pft) :: Jm_hor
 
    !----- Base (Q10 term) for Jm in Collatz equation. -------------------------------------!
    real, dimension(n_pft) :: Jm_q10
@@ -215,10 +215,10 @@ module pft_coms
    real, dimension(n_pft) :: TPm0
 
    !----- Temperature [C] below which leaf metabolic activity begins to rapidly decline. --!
-   real, dimension(n_pft) :: Rd_low_temp 
+   real, dimension(n_pft) :: Rd_low_temp
 
    !----- Temperature [C] above which leaf metabolic activity begins to rapidly decline. --!
-   real, dimension(n_pft) :: Rd_high_temp 
+   real, dimension(n_pft) :: Rd_high_temp
 
    !----- Decay factors for the exponential correction. -----------------------------------!
    real, dimension(n_pft) :: Rd_decay_elow
@@ -228,7 +228,7 @@ module pft_coms
    real, dimension(n_pft) :: Rd0
 
    !----- Exponent for Rd in the Arrhenius equation [K]. ----------------------------------!
-   real, dimension(n_pft) :: Rd_hor 
+   real, dimension(n_pft) :: Rd_hor
 
    !----- Base (Q10 term) for respiration in Collatz equation. ----------------------------!
    real, dimension(n_pft) :: Rd_q10
@@ -262,7 +262,7 @@ module pft_coms
    !=======================================================================================!
    !     Respiration and turnover properties.                                              !
    !---------------------------------------------------------------------------------------!
-  
+
    !---------------------------------------------------------------------------------------!
    !   This variable determines level of growth respiration.  Starting with accumulated    !
    ! photosynthesis (P), leaf (Rl) and root respiration (Rr) are first subtracted.  Then,  !
@@ -311,7 +311,7 @@ module pft_coms
 
 
    !----- Turnover rate of plant storage pools [1/year]. ----------------------------------!
-   real, dimension(n_pft) :: storage_turnover_rate 
+   real, dimension(n_pft) :: storage_turnover_rate
 
    !---------------------------------------------------------------------------------------!
    !    This variable sets the stem maintainence respiration rate per unit surface area    !
@@ -326,17 +326,17 @@ module pft_coms
    real, dimension(n_pft) :: stem_resp_size_scaler
 
    !----- Temperature [C] below which stem metabolic activity begins to rapidly decline. --!
-   real, dimension(n_pft) :: srf_low_temp 
+   real, dimension(n_pft) :: srf_low_temp
 
    !----- Temperature [C] above which stem metabolic activity begins to rapidly decline. --!
-   real, dimension(n_pft) :: srf_high_temp 
+   real, dimension(n_pft) :: srf_high_temp
 
    !----- Decay factors for the exponential correction. -----------------------------------!
    real, dimension(n_pft) :: srf_decay_elow
    real, dimension(n_pft) :: srf_decay_ehigh
 
    !----- Exponent for Rr in the Arrhenius equation [K]. ----------------------------------!
-   real, dimension(n_pft) :: srf_hor 
+   real, dimension(n_pft) :: srf_hor
 
    !----- Base (Q10 term) for respiration in Collatz equation. ----------------------------!
    real, dimension(n_pft) :: srf_q10
@@ -346,36 +346,36 @@ module pft_coms
    !    This variable sets the contribution of roots to respiration at the reference       !
    ! temperature of 15C.  Its units is umol_CO2/kg_fine_roots/s.                           !
    !---------------------------------------------------------------------------------------!
-   real, dimension(n_pft) :: root_respiration_factor 
+   real, dimension(n_pft) :: root_respiration_factor
 
    !----- Temperature [C] below which root metabolic activity begins to rapidly decline. --!
-   real, dimension(n_pft) :: rrf_low_temp 
+   real, dimension(n_pft) :: rrf_low_temp
 
    !----- Temperature [C] above which root metabolic activity begins to rapidly decline. --!
-   real, dimension(n_pft) :: rrf_high_temp 
+   real, dimension(n_pft) :: rrf_high_temp
 
    !----- Decay factors for the exponential correction. -----------------------------------!
    real, dimension(n_pft) :: rrf_decay_elow
    real, dimension(n_pft) :: rrf_decay_ehigh
 
    !----- Exponent for Rr in the Arrhenius equation [K]. ----------------------------------!
-   real, dimension(n_pft) :: rrf_hor 
+   real, dimension(n_pft) :: rrf_hor
 
    !----- Base (Q10 term) for respiration in Collatz equation. ----------------------------!
    real, dimension(n_pft) :: rrf_q10
 
    !----- Temperature [C] below which storage respiration begins to rapidly decline. ------!
-   real, dimension(n_pft) :: strf_low_temp 
+   real, dimension(n_pft) :: strf_low_temp
 
    !----- Temperature [C] above which storage respiration begins to rapidly decline. ------!
-   real, dimension(n_pft) :: strf_high_temp 
+   real, dimension(n_pft) :: strf_high_temp
 
    !----- Decay factor for the exponential correction. ------------------------------------!
    real, dimension(n_pft) :: strf_decay_elow
    real, dimension(n_pft) :: strf_decay_ehigh
 
    !----- Exponent for Rr in the Arrhenius equation [K]. ----------------------------------!
-   real, dimension(n_pft) :: strf_hor 
+   real, dimension(n_pft) :: strf_hor
 
    !----- Base (Q10 term) for respiration in Collatz equation. ----------------------------!
    real, dimension(n_pft) :: strf_q10
@@ -413,7 +413,7 @@ module pft_coms
    !     This variable controls the density-independent mortality rate due to ageing       !
    ! [1/years].                                                                            !
    !---------------------------------------------------------------------------------------!
-   real, dimension(n_pft) :: mort3 
+   real, dimension(n_pft) :: mort3
 
    !---------------------------------------------------------------------------------------!
    ! This is the way to initialize mort3 through hard parameterization (ie. non dependent) !
@@ -429,7 +429,7 @@ module pft_coms
    !     This variable controls the hydraulic failure moratlity at reference PLC           !
    !---------------------------------------------------------------------------------------!
    real, dimension(n_pft) :: hydro_mort0
-   
+
    !---------------------------------------------------------------------------------------!
    !     This variable controls the sensitivity of hydrauilic failure mortality to PLC     !
    !---------------------------------------------------------------------------------------!
@@ -446,7 +446,7 @@ module pft_coms
    !     This variable determines how rapidly trees die if it is too cold for them         !
    ! [1/years].                                                                            !
    !---------------------------------------------------------------------------------------!
-   real, dimension(n_pft) :: frost_mort  
+   real, dimension(n_pft) :: frost_mort
 
    !----- Fraction of seedlings that suffer mortality without becoming a recruit. ---------!
    real, dimension(n_pft) :: seedling_mortality
@@ -512,7 +512,7 @@ module pft_coms
    !----- Leaf carbon to nitrogen ratio. --------------------------------------------------!
    real, dimension(n_pft) :: c2n_leaf
    !----- Recruit carbon to nitrogen ratio. -----------------------------------------------!
-   real, dimension(n_pft) :: c2n_recruit 
+   real, dimension(n_pft) :: c2n_recruit
    !----- Fraction of structural stem that is assumed to be above ground. -----------------!
    real, dimension(n_pft) :: agf_bs
    !----- Fraction of above-ground wood biomass that is in the branches and twigs. --------!
@@ -522,7 +522,7 @@ module pft_coms
    !---------------------------------------------------------------------------------------!
    !    Supply coefficient for plant water uptake [m2_ground/kgC_root/sec].                !
    !---------------------------------------------------------------------------------------!
-   real, dimension(n_pft) :: water_conductance  
+   real, dimension(n_pft) :: water_conductance
    !=======================================================================================!
    !=======================================================================================!
 
@@ -532,35 +532,35 @@ module pft_coms
    ! Plant hydrodynamics -- see "initialize_pft_hydro_params".                             !
    !---------------------------------------------------------------------------------------!
    real, dimension(n_pft) :: leaf_water_cap
-   !< Leaf hydaulic capacitance [kg H2O/kg biomass/m ]. This variable is assumed as
+   !< Leaf hydraulic capacitance [kg H2O/kg biomass/m ]. This variable is assumed as
    !< constants for now
 
    real, dimension(n_pft) :: wood_water_cap
-   !< Wood hydaulic capacitance [kg H2O/kg biomass/m ]. This variable is assumed as
+   !< Wood hydraulic capacitance [kg H2O/kg biomass/m ]. This variable is assumed as
    !< constants for now
 
    real, dimension(n_pft) :: leaf_water_sat
    !< Leaf water content at saturation (&Psi;=0, rwc=1.) [kg H2O/kg biomass]
-   
+
    real, dimension(n_pft) :: wood_water_sat
    !< Wood water content at saturation (&Psi;=0, rwc=1.) [kg H2O/kg biomass]
-   
+
    real, dimension(n_pft) :: bark_water_sat
    !< Wood water content at saturation (&Psi;=0, rwc=1.) [kg H2O/kg biomass]
-   
-   real, dimension(n_pft) :: leaf_rwc_min  
+
+   real, dimension(n_pft) :: leaf_rwc_min
    !< Leaf minimum relative water content or leaf residual fraction [-]
-   
+
    real, dimension(n_pft) :: leaf_psi_min
    !< Leaf minimum water potential based on leaf_rwc_min [m]
 
-   real, dimension(n_pft) :: wood_rwc_min  
+   real, dimension(n_pft) :: wood_rwc_min
    !< Sapwood minimum relative water content or Sapwood residual fraction [-]
 
    real, dimension(n_pft) :: wood_psi_min
    !< Sapwood minimum water potential based on leaf_rwc_min [m]
 
-   real, dimension(n_pft) :: small_rwc_min  
+   real, dimension(n_pft) :: small_rwc_min
    !< Small-tree minimum relative water content or small-tree residual fraction [-]
 
    real, dimension(n_pft) :: small_psi_min
@@ -579,20 +579,20 @@ module pft_coms
    !< Sapwood osmotic water potential at saturation [m]
 
    real, dimension(n_pft) :: leaf_elastic_mod
-   !< Leaf bulk elastic modulus [MPa]                    
+   !< Leaf bulk elastic modulus [MPa]
 
    real, dimension(n_pft) :: wood_elastic_mod
-   !< Sapwood bulk elastic modulus [MPa]                   
+   !< Sapwood bulk elastic modulus [MPa]
 
-   real, dimension(n_pft) :: wood_Kmax     
-   !< Maximum hydraulic conductivity of the stem [kg H2O / m / s]       
-   
-   real, dimension(n_pft) :: wood_Kexp     
+   real, dimension(n_pft) :: wood_Kmax
+   !< Maximum hydraulic conductivity of the stem [kg H2O / m / s]
+
+   real, dimension(n_pft) :: wood_Kexp
    !< Exponent for the hydraulic vulnerability curve of stem conductivity under
    !< the Weibull function 1/(1+(psi/psi50) ** Kexp_stem) [-]
 
    real, dimension(n_pft) :: wood_psi50
-   !< Water potential at which 50% of stem conductivity is lost [m]     
+   !< Water potential at which 50% of stem conductivity is lost [m]
 
    real, dimension(n_pft) :: vessel_curl_factor
    !< Ratio of actual vessel length (water conducting length) to tree height [-]
@@ -605,11 +605,11 @@ module pft_coms
    real, dimension(n_pft) :: stoma_beta
    !< Sensitivity of stoma_lambda to leaf water potential [m-1]
 
-   real, dimension(n_pft) :: stoma_psi_b  
-   !< Water potential scaler to modify stomatal conductance under water stress from 
+   real, dimension(n_pft) :: stoma_psi_b
+   !< Water potential scaler to modify stomatal conductance under water stress from
    !< Powell et al. 2017  [ m]
-   real, dimension(n_pft) :: stoma_psi_c  
-   !< Exponent to modify stomatal conductance under water stress from 
+   real, dimension(n_pft) :: stoma_psi_c
+   !< Exponent to modify stomatal conductance under water stress from
    !< Powell et al. 2017  [ unitless]
 
    ! Parameters for new drought phenology
@@ -757,7 +757,7 @@ module pft_coms
    ! 3. Light controlled;                                                                  !
    ! 4. Drought deciduous - based on 10day average.                                        !
    !---------------------------------------------------------------------------------------!
-   integer, dimension(n_pft) :: phenology 
+   integer, dimension(n_pft) :: phenology
 
 
    !----- Leaf width [m], which is used to compute the leaf boundary layer conductance. ---!
@@ -868,7 +868,7 @@ module pft_coms
    !----- External input of seeds [kgC/m2/year]. ------------------------------------------!
    real   , dimension(n_pft) :: seed_rain
    !----- Fraction of seed dispersal that is gridcell-wide. -------------------------------!
-   real   , dimension(n_pft) :: nonlocal_dispersal !  
+   real   , dimension(n_pft) :: nonlocal_dispersal !
    !----- Minimum height plants need to attain before allocating to reproduction. ---------!
    real   , dimension(n_pft) :: repro_min_h
    !----- Minimum DBH plants need to attain before allocating to reproduction. ------------!
@@ -1026,8 +1026,8 @@ module pft_coms
    end type recruittype
    !=======================================================================================!
    !=======================================================================================!
-   
-   
+
+
    contains
 
 

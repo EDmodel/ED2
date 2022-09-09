@@ -76,7 +76,7 @@ subroutine ed_opspec_grid
    elseif (ngrids > maxgrds) then
       write(reason,'(2(a,1x,i4,a))')  &
            'Number of grids cannot be larger than ',maxgrds,'.',' (Yours is ',ngrids,').'
-      call opspec_fatal(reason,'opspec_grid')  
+      call opspec_fatal(reason,'opspec_grid')
       ifaterr=ifaterr+1
    end if
    !---------------------------------------------------------------------------------------!
@@ -92,32 +92,32 @@ subroutine ed_opspec_grid
       write(reason,'(a,1x,i4,1x,a,1x,i4,1x,a)')                                            &
             'One of n_poi or n_ed_region needs to be zero.( Yours: n_poi='                 &
            ,n_poi,', n_ed_region=',n_ed_region,').'
-      call opspec_fatal(reason,'opspec_grid')  
+      call opspec_fatal(reason,'opspec_grid')
       ifaterr=ifaterr+1
 
    elseif (n_poi < 0) then
       write(reason,'(a,1x,i4,a)')                                                          &
          'N_POI needs to be non-negative. Yours is currently set to ',n_poi,'.'
-      call opspec_fatal(reason,'opspec_grid')  
+      call opspec_fatal(reason,'opspec_grid')
       ifaterr=ifaterr+1
 
    elseif (n_ed_region < 0) then
       write(reason,'(a,1x,i4,a)')                                                          &
          'N_ED_REGION needs to be non-negative. Yours is currently set to ',n_ed_region,'.'
-      call opspec_fatal(reason,'opspec_grid')  
+      call opspec_fatal(reason,'opspec_grid')
       ifaterr=ifaterr+1
 
    elseif (n_poi > max_poi) then
       write(reason,'(a,1x,i4,a,1x,i4,a)')                                                  &
          'N_POI cannot be greater than',max_poi,'. Yours is currently set to ',n_poi,'.'
-      call opspec_fatal(reason,'opspec_grid')  
+      call opspec_fatal(reason,'opspec_grid')
       ifaterr=ifaterr+1
 
    elseif (n_ed_region> max_ed_regions) then
       write(reason,'(a,1x,i4,a,1x,i4,a)')                                                  &
           'N_ED_REGION cannot be greater than',max_ed_regions                              &
          ,'. Yours is currently set to ',n_ed_region,'.'
-      call opspec_fatal(reason,'opspec_grid')  
+      call opspec_fatal(reason,'opspec_grid')
       ifaterr=ifaterr+1
    end if
    !---------------------------------------------------------------------------------------!
@@ -131,29 +131,29 @@ subroutine ed_opspec_grid
          write(reason,'(3(a,1x,i4,a))')                                                    &
               'Number of x-points cannot be greater than ',nxpmax,'.',' (Yours is'         &
              ,nnxp(ifm),' ','in grid',ifm,').'
-         call opspec_fatal(reason,'opspec_grid')  
+         call opspec_fatal(reason,'opspec_grid')
          ifaterr=ifaterr+1
       end if
       if (nnyp(ifm) > nypmax) then
          write(reason,'(3(a,1x,i4,a))')                                                    &
               'Number of y-points cannot be greater than ',nypmax,'.',' (Yours is'         &
              ,nnyp(ifm),' ','in grid',ifm,').'
-         call opspec_fatal(reason,'opspec_grid')  
+         call opspec_fatal(reason,'opspec_grid')
          ifaterr=ifaterr+1
       end if
       if (nstratx(ifm) < 1) then
          write (reason,'(a,1x,i4,1x,a,1x,i4,a)')                                           &
                'Nest x ratio should be at least 1. Your nstratx for grid',ifm              &
               ,'is currently set to',nstratx(ifm),'.'
-         call opspec_fatal(reason,'opspec_grid')  
-         ifaterr=ifaterr+1        
+         call opspec_fatal(reason,'opspec_grid')
+         ifaterr=ifaterr+1
       end if
       if (nstraty(ifm) < 1) then
          write (reason,'(a,1x,i4,1x,a,1x,i4,a)')                                           &
                'Nest y ratio should be at least 1. Your nstraty for grid',ifm              &
               ,'is currently set to',nstratx(ifm),'.'
-         call opspec_fatal(reason,'opspec_grid')  
-         ifaterr=ifaterr+1        
+         call opspec_fatal(reason,'opspec_grid')
+         ifaterr=ifaterr+1
       end if
    end do
    !---------------------------------------------------------------------------------------!
@@ -166,7 +166,7 @@ subroutine ed_opspec_grid
          write (reason,'(a,2x,a,1x,i4,a)')                                                 &
                'Grid_type should be either 0 or 1 for regional runs.'                      &
               ,'Yours is currently set to',grid_type,'.'
-         call opspec_fatal(reason,'opspec_grid')  
+         call opspec_fatal(reason,'opspec_grid')
          ifaterr=ifaterr+1
       end if
       if (grid_type == 0) then
@@ -175,62 +175,62 @@ subroutine ed_opspec_grid
                write (reason,'(a,1x,i4,a,1x,es14.7,a)')                                    &
                      'ED_REG_LATMIN is outside [-90.;90.] for region ',ifm                 &
                     ,'. Yours is currently set to',ed_reg_latmin(ifm),'...'
-               call opspec_fatal(reason,'opspec_grid')  
+               call opspec_fatal(reason,'opspec_grid')
                ifaterr=ifaterr+1
             end if
             if (ed_reg_latmax(ifm) < -90. .or. ed_reg_latmax(ifm) > 90. ) then
                write (reason,'(a,1x,i4,a,1x,es14.7,a)')                                    &
                      'ED_REG_LATMAX is outside [-90.;90.] for region ',ifm                 &
                     ,'. Yours is currently set to',ed_reg_latmax(ifm),'...'
-               call opspec_fatal(reason,'opspec_grid')  
+               call opspec_fatal(reason,'opspec_grid')
                ifaterr=ifaterr+1
             end if
             if (ed_reg_lonmin(ifm) < -180. .or. ed_reg_lonmin(ifm) > 180. ) then
                write (reason,'(a,1x,i4,a,1x,es14.7,a)')                                    &
                      'ED_REG_LONMIN is outside [-180.;180.] for region ',ifm               &
                     ,'. Yours is currently set to',ed_reg_latmin(ifm),'...'
-               call opspec_fatal(reason,'opspec_grid')  
+               call opspec_fatal(reason,'opspec_grid')
                ifaterr=ifaterr+1
             end if
             if (ed_reg_lonmax(ifm) < -180. .or. ed_reg_lonmax(ifm) > 180. ) then
                write (reason,'(a,1x,i4,a,1x,es14.7,a)')                                    &
                      'ED_REG_LONMAX is outside [-180.;180.] for region ',ifm               &
                     ,'. Yours is currently set to',ed_reg_latmax(ifm),'...'
-               call opspec_fatal(reason,'opspec_grid')  
+               call opspec_fatal(reason,'opspec_grid')
                ifaterr=ifaterr+1
             end if
          end do
          if (grid_res <= 0.) then
             write (reason,'(a,1x,es14.7,a)')                                               &
                   'GRID_RES must be positive. Yours is currently set to',grid_res,'...'
-            call opspec_fatal(reason,'opspec_grid')  
+            call opspec_fatal(reason,'opspec_grid')
             ifaterr=ifaterr+1
          end if
       elseif (grid_type == 1) then
          if (deltax <= 0.) then
             write (reason,'(a,1x,es14.7,a)')                                               &
                   'DELTAX must be positive. Yours is currently set to',deltax,'...'
-            call opspec_fatal(reason,'opspec_grid')  
+            call opspec_fatal(reason,'opspec_grid')
             ifaterr=ifaterr+1
          end if
          if (deltay <= 0.) then
             write (reason,'(a,1x,es14.7,a)')                                               &
                   'DELTAY must be positive. Yours is currently set to',deltax,'...'
-            call opspec_fatal(reason,'opspec_grid')  
+            call opspec_fatal(reason,'opspec_grid')
             ifaterr=ifaterr+1
          end if
          if (polelat < -90. .or. polelat > 90.) then
             write (reason,'(a,1x,i4,a)')                                                   &
                   'POLELAT is outside [-90.;90.].',' Yours is currently set to'            &
                  ,polelat,'...'
-            call opspec_fatal(reason,'opspec_grid')  
+            call opspec_fatal(reason,'opspec_grid')
             ifaterr=ifaterr+1
          end if
          if (polelon < -180. .or. polelon > 180.) then
             write (reason,'(a,1x,i4,a)')                                                   &
                   'POLELON is outside [-180.;180.].',' Yours is currently set to'          &
                  ,polelon,'...'
-            call opspec_fatal(reason,'opspec_grid')  
+            call opspec_fatal(reason,'opspec_grid')
             ifaterr=ifaterr+1
          end if
          do ifm=1,n_ed_region
@@ -238,14 +238,14 @@ subroutine ed_opspec_grid
                write (reason,'(a,1x,i4,a,1x,es14.7,a)')                                    &
                      'CENTLAT is outside [-90.;90.] for region ',ifm                       &
                     ,'. Yours is currently set to',centlat(ifm),'...'
-               call opspec_fatal(reason,'opspec_grid')  
+               call opspec_fatal(reason,'opspec_grid')
                ifaterr=ifaterr+1
             end if
             if (centlon(ifm) < -180. .or. centlon(ifm) > 180. ) then
                write (reason,'(a,1x,i4,a,1x,es14.7,a)')                                    &
                      'CENTLON is outside [-180.;180.] for region ',ifm                     &
                     ,'. Yours is currently set to',centlon(ifm),'...'
-               call opspec_fatal(reason,'opspec_grid')  
+               call opspec_fatal(reason,'opspec_grid')
                ifaterr=ifaterr+1
             end if
          end do
@@ -263,21 +263,21 @@ subroutine ed_opspec_grid
             write (reason,'(a,1x,i4,a,1x,es14.7,a)')                                       &
                   'POI_LAT is outside [-90.;90.] for POI #',ifm                            &
                  ,'. Yours is currently set to',poi_lat(ifm),'...'
-            call opspec_fatal(reason,'opspec_grid')  
+            call opspec_fatal(reason,'opspec_grid')
             ifaterr=ifaterr+1
          end if
          if (poi_lon(ifm) < -180. .or. poi_lon(ifm) > 180. ) then
             write (reason,'(a,1x,i4,a,1x,es14.7,a)')                                       &
                   'POI_LON is outside [-180.;180.] for POI #',ifm                          &
                   ,'. Yours is currently set to',poi_lon(ifm),'...'
-            call opspec_fatal(reason,'opspec_grid')  
+            call opspec_fatal(reason,'opspec_grid')
             ifaterr=ifaterr+1
          end if
          if (poi_res(ifm) < 0.001 .or. poi_res(ifm) > 5.) then
             write (reason,'(a,1x,i4,a,1x,es14.7,a)')                                       &
                   'POI_RES is outside [0.001;5.] range for POI #'                          &
                  ,ifm,'. Yours is currently set to',poi_res(ifm),'...'
-            call opspec_fatal(reason,'opspec_grid')  
+            call opspec_fatal(reason,'opspec_grid')
             ifaterr=ifaterr+1
          end if
       end do
@@ -292,22 +292,22 @@ subroutine ed_opspec_grid
       write (reason,'(a,1x,i4,a)')                                                         &
             'Too few soil layers.  Set it to at least 2. Your nzg is currently set to'     &
            ,nzg,'...'
-      call opspec_fatal(reason,'opspec_grid')  
-      ifaterr=ifaterr+1        
-   elseif (nzg > nzgmax) then 
+      call opspec_fatal(reason,'opspec_grid')
+      ifaterr=ifaterr+1
+   elseif (nzg > nzgmax) then
       write (reason,'(2(a,1x,i5,a))')                                                      &
             'The number of soil layers cannot be greater than ',nzgmax,'.'                 &
            ,' Your nzg is currently set to',nzg,'.'
-      call opspec_fatal(reason,'opspec_grid') 
-      ifaterr=ifaterr+1 
+      call opspec_fatal(reason,'opspec_grid')
+      ifaterr=ifaterr+1
    end if
    do k=1,nzg
       if (slz(k) > -.001) then
          write (reason,'(a,1x,i4,1x,a,1x,es14.7,a)')                                       &
                'Your soil level #',k,'is not enough below ground. It is currently set to'  &
                ,slz(k),', make it deeper than -0.001...'
-         call opspec_fatal(reason,'opspec_grid')  
-         ifaterr=ifaterr+1        
+         call opspec_fatal(reason,'opspec_grid')
+         ifaterr=ifaterr+1
       end if
    end do
 
@@ -316,8 +316,8 @@ subroutine ed_opspec_grid
          write (reason,'(2(a,1x,i4,1x),a,2x,a,1x,es14.7,1x,a,1x,es14.7,a)')                &
                'Soil layers #',k,'and',k+1,'are not enough apart (i.e. > 0.001).'          &
               ,'They are currently set as ',slz(k),'and',slz(k+1),'...'
-         call opspec_fatal(reason,'opspec_grid')  
-         ifaterr=ifaterr+1        
+         call opspec_fatal(reason,'opspec_grid')
+         ifaterr=ifaterr+1
       end if
    end do
 
@@ -330,14 +330,14 @@ subroutine ed_opspec_grid
       write (reason,'(a,2x,a,1x,i4,a)')                                                    &
             'Too few maximum # of snow layers. Set it to at least 1.'                      &
            ,'Your nzs is currently set to',nzs,'.'
-      call opspec_fatal(reason,'opspec_grid')  
-      ifaterr=ifaterr+1        
-   elseif (nzs > nzsmax) then 
+      call opspec_fatal(reason,'opspec_grid')
+      ifaterr=ifaterr+1
+   elseif (nzs > nzsmax) then
       write (reason,'(2(a,1x,i5,a))')                                                      &
             'The number of snow layers cannot be greater than ',nzsmax,'.'                 &
            ,' Your nzs is currently set to',nzs,'.'
-      call opspec_fatal(reason,'opspec_grid') 
-      ifaterr=ifaterr+1 
+      call opspec_fatal(reason,'opspec_grid')
+      ifaterr=ifaterr+1
    end if
    !---------------------------------------------------------------------------------------!
 
@@ -381,7 +381,7 @@ subroutine ed_opspec_par
    if (nmachs > maxmach-1) then
       write(reason,'(2(a,1x,i4,a))')  &
            'Number of nodes cannot be larger than ',maxmach,'.',' (Yours is ',nmachs+1,').'
-      call opspec_fatal(reason,'opspec_par')  
+      call opspec_fatal(reason,'opspec_par')
       ifaterr=ifaterr+1
    end if
    do ifm=1,ngrids
@@ -389,16 +389,16 @@ subroutine ed_opspec_par
          write (reason,'(3(a,1x,i5,1x),a)')                                                 &
                'Region number',ifm,'is too small. You have only',nnxp(ifm)*nnyp(ifm)        &
               ,'points for',nmachs+1,'nodes.'
-         call opspec_fatal(reason,'opspec_par')  
+         call opspec_fatal(reason,'opspec_par')
          ifaterr=ifaterr+1
       end if
    end do
-   ! Checking if the user is trying to run POI in parallel 
+   ! Checking if the user is trying to run POI in parallel
    ! (this will be allowed at some point).
    if (n_poi > 0 .and. nmachs > 0) then
       write (reason,'(3(a,1x,i5,1x),a)')                                                    &
         'You are attempting to run POI runs in parallel, this is not supported currently...'
-      call opspec_fatal(reason,'opspec_par')  
+      call opspec_fatal(reason,'opspec_par')
       ifaterr=ifaterr+1
    end if
 
@@ -517,7 +517,7 @@ subroutine ed_opspec_times
       !----- User set outfast < frqfast. Resetting it and printing a warning --------------!
       elseif(outfast > 0. .and. outfast < frqfast) then
          outfast = frqfast
-         nrec_fast  = 1 
+         nrec_fast  = 1
          write (unit=*,fmt='(a)') ' '
          write (unit=*,fmt='(a)') '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
          write (unit=*,fmt='(a)') '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
@@ -579,7 +579,7 @@ subroutine ed_opspec_times
       !----- User set outfast < frqfast. Resetting it and printing a warning --------------!
       elseif(outfast > 0. .and. outfast < frqfast) then
          outfast = frqfast
-         nrec_fast  = 1 
+         nrec_fast  = 1
          write (unit=*,fmt='(a)') ' '
          write (unit=*,fmt='(a)') '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
          write (unit=*,fmt='(a)') '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
@@ -625,7 +625,7 @@ subroutine ed_opspec_times
          write(reason,fmt='(a,1x,f8.2,1x,a,1x,es14.7)')                                    &
              'FRQFAST must be a round number when unitfast is ',unitfast,                  &
              '(months). Yours is currently set to ',frqfast
-         call opspec_fatal(reason,'opspec_times')  
+         call opspec_fatal(reason,'opspec_times')
          ifaterr = ifaterr + 1
       !------------------------------------------------------------------------------------!
       !    If unifrq is monthly, it needs to be a divisor of 12, so it closes a year cycle.!
@@ -636,7 +636,7 @@ subroutine ed_opspec_times
          write(reason,fmt='(a,1x,f8.2,1x,a,1x,es14.7)')                                    &
              'FRQFAST must be a divisor of 12 (one year) when unitfast is ',unitfast,      &
              '(months). Yours is currently set to ',frqfast
-         call opspec_fatal(reason,'opspec_times')  
+         call opspec_fatal(reason,'opspec_times')
          ifaterr = ifaterr + 1
       !------------------------------------------------------------------------------------!
       !    This is fine but now outfast must be set exactly as frqfast. If the user wasn't !
@@ -675,7 +675,7 @@ subroutine ed_opspec_times
          write(reason,fmt='(a,1x,f8.2,1x,a,1x,es14.7)')                                    &
              'FRQFAST must be a round number when unitfast is ',unitfast,                  &
              '(years). Yours is currently set to ',frqfast
-         call opspec_fatal(reason,'opspec_times')  
+         call opspec_fatal(reason,'opspec_times')
          ifaterr = ifaterr + 1
       elseif (iqoutput /= 0) then
          !---------------------------------------------------------------------------------!
@@ -717,7 +717,7 @@ subroutine ed_opspec_times
    case default
       write (reason,fmt='(a,1x,i4,a)') &
         'Invalid UNITFAST, it must be between 0 and 3. Yours is set to',unitfast,'...'
-      call opspec_fatal(reason,'opspec_times')  
+      call opspec_fatal(reason,'opspec_times')
       ifaterr = ifaterr +1
    end select
    !---------------------------------------------------------------------------------------!
@@ -765,7 +765,7 @@ subroutine ed_opspec_times
       !----- User set outstate < frqstate. Resetting it and printing a warning ------------!
       elseif(outstate > 0. .and. outstate < frqstate) then
          outstate = frqstate
-         nrec_state  = 1 
+         nrec_state  = 1
          write (unit=*,fmt='(a)') ' '
          write (unit=*,fmt='(a)') '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
          write (unit=*,fmt='(a)') '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
@@ -818,7 +818,7 @@ subroutine ed_opspec_times
       !----- User set outstate < frqstate. Resetting it and printing a warning --------------!
       elseif(outstate > 0. .and. outstate < frqstate) then
          outstate = frqstate
-         nrec_state  = 1 
+         nrec_state  = 1
          write (unit=*,fmt='(a)') ' '
          write (unit=*,fmt='(a)') '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
          write (unit=*,fmt='(a)') '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
@@ -856,7 +856,7 @@ subroutine ed_opspec_times
          write(reason,fmt='(a,1x,f8.2,1x,a,1x,es14.7)')                                    &
              'FRQSTATE must be a round number when unitstate is ',unitstate,               &
              '(months). Yours is currently set to ',frqstate
-         call opspec_fatal(reason,'opspec_times')  
+         call opspec_fatal(reason,'opspec_times')
          ifaterr = ifaterr + 1
       !------------------------------------------------------------------------------------!
       !    If unistate is monthly, it needs to be a divisor of 12, so it closes a year     !
@@ -867,7 +867,7 @@ subroutine ed_opspec_times
          write(reason,fmt='(a,1x,f8.2,1x,a,1x,es14.7)')                                    &
              'FRQSTATE must be a divisor of 12 (one year) when unitstate is ',unitstate,   &
              '(months). Yours is currently set to ',frqstate
-         call opspec_fatal(reason,'opspec_times')  
+         call opspec_fatal(reason,'opspec_times')
          ifaterr = ifaterr + 1
       !------------------------------------------------------------------------------------!
       !    This is fine but now outstate must be set exactly as frqstate. If the user wasn't !
@@ -906,7 +906,7 @@ subroutine ed_opspec_times
          write(reason,fmt='(a,1x,f8.2,1x,a,1x,es14.7)')                                    &
              'FRQSTATE must be a round number when unitstate is ',unitstate,                  &
              '(years). Yours is currently set to ',frqstate
-         call opspec_fatal(reason,'opspec_times')  
+         call opspec_fatal(reason,'opspec_times')
          ifaterr = ifaterr + 1
       !------------------------------------------------------------------------------------!
       !    This is fine but now outstate must be set exactly as frqstate. If the user      !
@@ -943,7 +943,7 @@ subroutine ed_opspec_times
    case default
       write (reason,fmt='(a,1x,i4,a)') &
         'Invalid UNITSTATE, it must be between 0 and 3. Yours is set to',unitstate,'...'
-      call opspec_fatal(reason,'opspec_times')  
+      call opspec_fatal(reason,'opspec_times')
       ifaterr = ifaterr +1
    end select
    !---------------------------------------------------------------------------------------!
@@ -968,7 +968,7 @@ subroutine ed_opspec_times
          write(reason,fmt='(a,1x,2(a,1x,f10.2,1x))')                                       &
               'FRQFAST must be a divisor of FRQSTATE if both are outputing data.',         &
               'Yours is set to FRQFAST=',frqfast,' sec and FRQSTATE=',frqstate,'days!'
-         call opspec_fatal(reason,'opspec_times')  
+         call opspec_fatal(reason,'opspec_times')
          ifaterr=ifaterr+1
       end if
       !----- Now we check other combinations ----------------------------------------------!
@@ -1018,7 +1018,7 @@ subroutine ed_opspec_times
                'If UNITFAST is in months, UNITSTATE must be either months or year, and',   &
                'currently UNITSTATE=',unitstate
             ifaterr=ifaterr+1
-      
+
          case (3) !---- State years, frqfast must be divisor ------------------------------!
             if (mod(frqstate*12.,frqfast) /= 0.) then
                write(reason,fmt='(a,1x,2(a,1x,f10.2,1x),a)')                               &
@@ -1036,7 +1036,7 @@ subroutine ed_opspec_times
                'If UNITFAST is in months, UNITSTATE must be either months or year, and',   &
                'currently UNITSTATE=',unitstate
             ifaterr=ifaterr+1
-      
+
          case (2) !---- State months, frqfast must be divisor -----------------------------!
             if (mod(frqstate,frqfast*12.) /= 0.) then
                write(reason,fmt='(a,1x,2(a,1x,f10.2,1x),a)')                               &
@@ -1048,7 +1048,7 @@ subroutine ed_opspec_times
       end select
    end if
 
-   !----- 
+   !-----
 
 
    !Check if this simulation has a positive timmax.
@@ -1057,7 +1057,7 @@ subroutine ed_opspec_times
          'Your end time is before the initial time.'                  &
          ,'Initial:',imontha,'/',idatea,'/',iyeara,itimea,'GMT'       &
          ,'Final  :',imonthz,'/',idatez,'/',iyearz,itimez,'GMT'
-      call opspec_fatal(reason,'opspec_times')  
+      call opspec_fatal(reason,'opspec_times')
       ifaterr=ifaterr+1
    end if
 
@@ -1072,14 +1072,14 @@ subroutine ed_opspec_times
       if (mod(frqsum,dtlsm) /= 0.0) then
          write(reason,fmt='(a,1x,f8.2,1x,a,1x,es14.7)')  &
              'DTLSM must be a divisor of ',frqsum,' sec. Yours is set to ',dtlsm
-         call opspec_fatal(reason,'opspec_times')  
+         call opspec_fatal(reason,'opspec_times')
          ifaterr=ifaterr+1
       end if
 
       if (mod(frqsum,radfrq) /= 0.0) then
          write(reason,fmt='(a,1x,f8.2,1x,a,1x,es14.7)')  &
              'RADFRQ must be a divisor of ',frqsum,' sec. Yours is set to ',radfrq
-         call opspec_fatal(reason,'opspec_times')  
+         call opspec_fatal(reason,'opspec_times')
          ifaterr=ifaterr+1
       end if
       !------------------------------------------------------------------------------------!
@@ -1095,7 +1095,7 @@ subroutine ed_opspec_times
       write(reason,fmt='(a,1x,f8.2,1x,a,1x,f8.2,a)')  &
           'DTLSM must be a divisor of RADFRQ. Your DTLSM is set to',dtlsm, &
           'and your RADFRQ is set to',radfrq,'...'
-      call opspec_fatal(reason,'opspec_times')  
+      call opspec_fatal(reason,'opspec_times')
       ifaterr=ifaterr+1
    end if
    !---------------------------------------------------------------------------------------!
@@ -1107,7 +1107,7 @@ subroutine ed_opspec_times
    if (month_yrstep < 1 .or. month_yrstep > 12) then
       write(reason,fmt='(2a,1x,i6,a)') 'MONTH_YRSTEP must be a a valid calendar month '    &
                                       ,'(1-12), and yours is set to',month_yrstep,'...'
-      call opspec_fatal(reason,'opspec_times')  
+      call opspec_fatal(reason,'opspec_times')
       ifaterr=ifaterr+1
    end if
    !---------------------------------------------------------------------------------------!
@@ -1384,19 +1384,19 @@ subroutine ed_opspec_misc
    if (iyoutput /= 0 .and. iyoutput /= 3) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
         'Invalid IYOUTPUT, it must be 0 (none) or 3 (HDF5). Yours is set to',iyoutput,'...'
-      call opspec_fatal(reason,'opspec_misc')  
+      call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if
    if (iooutput /= 0 .and. iooutput /= 3) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
         'Invalid IOOUTPUT, it must be 0 (none) or 3 (HDF5). Yours is set to',iooutput,'...'
-      call opspec_fatal(reason,'opspec_misc')  
+      call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if
    if (itoutput /= 0 .and. itoutput /= 3) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
         'Invalid ITOUTPUT, it must be 0 (none) or 3 (HDF5). Yours is set to',itoutput,'...'
-      call opspec_fatal(reason,'opspec_misc')  
+      call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if
    if (isoutput /= 0 .and. isoutput /= 3) then
@@ -1440,7 +1440,7 @@ subroutine ed_opspec_misc
       ifaterr = ifaterr +1
    end if
 
-   if (ied_init_mode == -8) then 
+   if (ied_init_mode == -8) then
       !------------------------------------------------------------------------------------!
       !     The special 8-layer model works only in size- and age-structured runs.         !
       !------------------------------------------------------------------------------------!
@@ -1489,7 +1489,7 @@ subroutine ed_opspec_misc
       ifaterr = ifaterr +1
    end if
 
-      
+
 #if defined(COUPLED)
    do ifm=1,ngrids
       if (isoilflg(ifm) < 0 .or. isoilflg(ifm) > 3) then
@@ -1555,7 +1555,7 @@ do ifm=1,ngrids
       write (unit=*,fmt='(a)') 'PARAMETERS WILL BE USED based on NL%NLSCON.                '
       write (unit=*,fmt='(a)') '==========================================================='
    end if
-   
+
    if (isoilflg(ifm)==2 .and. slxclay>1.) then
       write (unit=*,fmt='(a)') '==========================================================='
       write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!   '
@@ -1573,7 +1573,7 @@ do ifm=1,ngrids
       write (unit=*,fmt='(a)') 'PARAMETERS WILL BE USED based on NL%NLSCON.                '
       write (unit=*,fmt='(a)') '==========================================================='
    end if
-   
+
    if (isoilflg(ifm)==2 .and. slxsand>1.) then
       write (unit=*,fmt='(a)') '==========================================================='
       write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!   '
@@ -1582,7 +1582,7 @@ do ifm=1,ngrids
       write (unit=*,fmt='(a)') 'PARAMETERS WILL BE USED based on NL%NLSCON.                '
       write (unit=*,fmt='(a)') '==========================================================='
    end if
-   
+
 
    if (isoilflg(ifm)==2 .and. (slxsand+slxclay)>1.) then
       write (unit=*,fmt='(a)') '==========================================================='
@@ -1695,7 +1695,7 @@ end do
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if
-   
+
    if (growth_resp_scheme < 0 .or. growth_resp_scheme > 1) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
          'Invalid GROWTH_RESP_SCHEME, it must be 0 or 1. Yours is set to'                  &
@@ -1703,7 +1703,7 @@ end do
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if
-   
+
    if (storage_resp_scheme < 0 .or. storage_resp_scheme > 1) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
          'Invalid STORAGE_RESP_SCHEME, it must be 0 or 1. Yours is set to'                 &
@@ -1747,7 +1747,7 @@ end do
       !   Check the Runge-Kutta tolerance.                                                 !
       !------------------------------------------------------------------------------------!
       if (rk4_tolerance < 1.e-7 .or. rk4_tolerance > 1.e-1) then
-         write (reason,fmt='(a,2x,a,1x,es12.5,a)')                                         & 
+         write (reason,fmt='(a,2x,a,1x,es12.5,a)')                                         &
               'Invalid RK4_TOLERANCE, it must be between 1.e-7 and 1.e-1.'                 &
              ,'Yours is set to',rk4_tolerance,'...'
          call opspec_fatal(reason,'opspec_misc')
@@ -1869,7 +1869,7 @@ end do
                    ,'in big leaf ED (IBIGLEAF = 1)...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
-   
+
    end if
 
    if (iphen_scheme < -1 .or. iphen_scheme > 4) then
@@ -1995,7 +1995,7 @@ end do
 
    if (hydraulic_mortality_scheme < 0 .or. hydraulic_mortality_scheme > 1) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
-                    'Invalid HYDAULIC_MORTALITY_SCHEME, it must be between 0 and 1. Yours is set to'   &
+                    'Invalid HYDRAULIC_MORTALITY_SCHEME, it must be between 0 and 1. Yours is set to'   &
                     ,hydraulic_mortality_scheme,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
@@ -2048,7 +2048,7 @@ end do
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if
- 
+
    if (bphoto_blc3 < 500. .or. bphoto_blc3 > 50000.) then
       write (reason,fmt='(a,1x,es12.5,a)')                                                 &
                 'Invalid BPHOTO_BLC3, it must be between 500. and 50000.  Yours is set to' &
@@ -2056,7 +2056,7 @@ end do
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if
- 
+
    if (bphoto_nlc3 < 500. .or. bphoto_nlc3 > 50000.) then
       write (reason,fmt='(a,1x,es12.5,a)')                                                 &
                 'Invalid BPHOTO_NLC3, it must be between 500. and 50000.  Yours is set to' &
@@ -2064,7 +2064,7 @@ end do
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if
- 
+
    if (bphoto_c4 < 500. .or. bphoto_c4 > 50000.) then
       write (reason,fmt='(a,1x,es12.5,a)')                                                 &
                 'Invalid BPHOTO_C4, it must be between 500. and 50000.  Yours is set to'   &
@@ -2072,7 +2072,7 @@ end do
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if
-  
+
   if (kw_grass < .15 .or. kw_grass > 15000.) then
       write (reason,fmt='(a,1x,es12.5,a)')                                                 &
                     'Invalid KW_GRASS, it must be between .15 and 15000.  Yours is set to' &
@@ -2080,7 +2080,7 @@ end do
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if
-   
+
   if (kw_tree < .15 .or. kw_tree > 15000.) then
       write (reason,fmt='(a,1x,es12.5,a)')                                                 &
                     'Invalid KW_TREE, it must be between .15 and 15000.  Yours is set to'  &
@@ -2120,7 +2120,7 @@ end do
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if
-   
+
    if (alpha_c3 < 0.001 .or. alpha_c3 > 1.) then
       write (reason,fmt='(a,1x,es12.5,a)')                                                 &
                     'Invalid ALPHA_C3, it must be between 0.001 and 1.  Yours is set to'   &
@@ -2152,7 +2152,7 @@ end do
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if
-     
+
    if (growthresp < 0.0 .or. growthresp > 1.0) then
       write (reason,fmt='(a,1x,es12.5,a)')                                                 &
                     'Invalid GROWTHRESP, it must be between 0 and 1. Yours is set to'      &
@@ -2184,7 +2184,7 @@ end do
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if
-   
+
    if (q10_c3 < 1.0 .or. q10_c3 > 10.) then
       write (reason,fmt='(a,1x,es12.5,a)')                                                 &
                     'Invalid Q10_C3, it must be between 1.0 and 10.  Yours is set to'      &
@@ -2192,7 +2192,7 @@ end do
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if
-   
+
    if (q10_c4 < 1.0 .or. q10_c4 > 10.) then
       write (reason,fmt='(a,1x,es12.5,a)')                                                 &
                     'Invalid Q10_C4, it must be between 1.0 and 10.  Yours is set to'      &
@@ -2270,10 +2270,10 @@ end do
       write (reason,fmt='(a,1x,i4,a)')                                                     &
                     'Invalid IANTH_DISTURB, it must be between 0 and 2. Yours is set to'   &
                    ,ianth_disturb,'...'
-      call opspec_fatal(reason,'opspec_misc')  
+      call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if
-   
+
    !---------------------------------------------------------------------------------------!
    !      The following settings matter only when ianth_disturb is 2.                      !
    !---------------------------------------------------------------------------------------!
@@ -2283,7 +2283,7 @@ end do
          write (reason,fmt='(a,1x,i4,a)')                                                  &
                        'Invalid SL_SCALE, it must be either 0 and 1. Yours is set to'      &
                       ,sl_scale,'...'
-         call opspec_fatal(reason,'opspec_misc')  
+         call opspec_fatal(reason,'opspec_misc')
          ifaterr = ifaterr +1
       end if
 
@@ -2291,7 +2291,7 @@ end do
          write (reason,fmt='(a,i4,2a,i4,a,1x,i4,a)')                                       &
                        'Invalid SL_YR_FIRST, it must be between IYEARA (',iyeara,') and '  &
                       ,'IYEARZ (',iyearz,'). Yours is set to',sl_yr_first,'...'
-         call opspec_fatal(reason,'opspec_misc')  
+         call opspec_fatal(reason,'opspec_misc')
          ifaterr = ifaterr +1
       end if
 
@@ -2299,7 +2299,7 @@ end do
          write (reason,fmt='(a,1x,i4,a)')                                                  &
                        'Invalid SL_NYRS, it must be between 1 and 2000. Yours is set to'   &
                       ,sl_nyrs,'...'
-         call opspec_fatal(reason,'opspec_misc')  
+         call opspec_fatal(reason,'opspec_misc')
          ifaterr = ifaterr +1
       end if
 
@@ -2319,7 +2319,7 @@ end do
             write (reason,fmt='(a,1x,i4,a,1x,i4,a)')                                       &
                 'Invalid SL_PFT, it must be between 1 and ',n_pft                          &
                ,'. One of yours is set to',sl_pft(ipft),'...'
-            call opspec_fatal(reason,'opspec_misc')  
+            call opspec_fatal(reason,'opspec_misc')
             ifaterr=ifaterr+1
          end if
       end do sl_pft_loop
@@ -2341,7 +2341,7 @@ end do
             write (reason,fmt='(2a,1x,es12.5,a)')                                          &
                 'Invalid SL_MINDBH_HARVEST, it must be non-negative.'                      &
                ,' One of yours is set to',sl_mindbh_harvest(ipft),'...'
-            call opspec_fatal(reason,'opspec_misc')  
+            call opspec_fatal(reason,'opspec_misc')
             ifaterr=ifaterr+1
          end if
       end do sl_mindbh_loop
@@ -2363,7 +2363,7 @@ end do
             write (reason,fmt='(2a,1x,es12.5,a)')                                          &
                 'Invalid SL_MINDBH_HARVEST, it must be between 0.0 and 1.0.'               &
                ,'. One of yours is set to',sl_prob_harvest(ipft),'...'
-            call opspec_fatal(reason,'opspec_misc')  
+            call opspec_fatal(reason,'opspec_misc')
             ifaterr=ifaterr+1
          end if
       end do sl_pharv_loop
@@ -2373,7 +2373,7 @@ end do
          write (reason,fmt='(2a,1x,es12.5,a)')                                             &
                        'Invalid SL_BIOMASS_HARVEST, it must be between 0. and 50.'         &
                       ,'  Yours is set to',sl_biomass_harvest,'...'
-         call opspec_fatal(reason,'opspec_misc')  
+         call opspec_fatal(reason,'opspec_misc')
          ifaterr = ifaterr +1
       end if
    end select
@@ -2387,7 +2387,7 @@ end do
          write (reason,fmt='(2a,1x,es12.5,a)')                                             &
                        'Invalid SL_SKID_REL_AREA, it must be between 0. and 5.'            &
                       ,'  Yours is set to',sl_skid_rel_area,'...'
-         call opspec_fatal(reason,'opspec_misc')  
+         call opspec_fatal(reason,'opspec_misc')
          ifaterr = ifaterr +1
       end if
 
@@ -2395,7 +2395,7 @@ end do
          write (reason,fmt='(2a,1x,es12.5,a)')                                             &
                        'Invalid SL_SKID_S_GTHARV, it must be between 0. and 1.'            &
                       ,'  Yours is set to',sl_skid_s_gtharv,'...'
-         call opspec_fatal(reason,'opspec_misc')  
+         call opspec_fatal(reason,'opspec_misc')
          ifaterr = ifaterr +1
       end if
 
@@ -2403,7 +2403,7 @@ end do
          write (reason,fmt='(2a,1x,es12.5,a)')                                             &
                        'Invalid SL_SKID_S_LTHARV, it must be between 0. and 1.'            &
                       ,'  Yours is set to',sl_skid_s_ltharv,'...'
-         call opspec_fatal(reason,'opspec_misc')  
+         call opspec_fatal(reason,'opspec_misc')
          ifaterr = ifaterr +1
       end if
 
@@ -2411,7 +2411,7 @@ end do
          write (reason,fmt='(2a,1x,es12.5,a)')                                             &
                        'Invalid SL_FELLING_S_LTHARV, it must be between 0. and 1.'            &
                       ,'  Yours is set to',sl_felling_s_ltharv,'...'
-         call opspec_fatal(reason,'opspec_misc')  
+         call opspec_fatal(reason,'opspec_misc')
          ifaterr = ifaterr +1
       end if
 
@@ -2419,7 +2419,7 @@ end do
          write (reason,fmt='(2a,1x,es12.5,a)')                                             &
                        'Invalid CL_FSEEDS_HARVEST, it must be between 0. and 1.'           &
                       ,'  Yours is set to',cl_fseeds_harvest,'...'
-         call opspec_fatal(reason,'opspec_misc')  
+         call opspec_fatal(reason,'opspec_misc')
          ifaterr = ifaterr +1
       end if
 
@@ -2427,7 +2427,7 @@ end do
          write (reason,fmt='(2a,1x,es12.5,a)')                                             &
                        'Invalid CL_FSTORAGE_HARVEST, it must be between 0. and 1.'         &
                       ,'  Yours is set to',cl_fstorage_harvest,'...'
-         call opspec_fatal(reason,'opspec_misc')  
+         call opspec_fatal(reason,'opspec_misc')
          ifaterr = ifaterr +1
       end if
 
@@ -2435,7 +2435,7 @@ end do
          write (reason,fmt='(2a,1x,es12.5,a)')                                             &
                        'Invalid CL_FLEAF_HARVEST, it must be between 0. and 1.'            &
                       ,'  Yours is set to',cl_fleaf_harvest,'...'
-         call opspec_fatal(reason,'opspec_misc')  
+         call opspec_fatal(reason,'opspec_misc')
          ifaterr = ifaterr +1
       end if
    end select
@@ -2447,19 +2447,19 @@ end do
    case default
       write (reason,fmt='(a,1x,i4,a)') &
         'Invalid ICANTURB, it must be between 0 and 4. Yours is set to',icanturb,'...'
-      call opspec_fatal(reason,'opspec_misc')  
+      call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end select
 
    if (isfclyrm < 0 .or. isfclyrm > 4) then
       write (reason,fmt='(a,1x,i4,a)') &
         'Invalid ISFCLYRM, it must be between 0 and 4. Yours is set to',isfclyrm,'...'
-      call opspec_fatal(reason,'opspec_misc')  
+      call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    else if (isfclyrm == 0 .and. ivegt_dynamics /= 0) then
       write (reason,fmt='(a)')                                                             &
             'ISFCLYRM can''t be set to 0 when vegetation dynamics is turned on...'
-      call opspec_fatal(reason,'opspec_misc')  
+      call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if
 
@@ -2467,17 +2467,17 @@ end do
       write (reason,fmt='(a,1x,i4,a)') &
         'Invalid IED_GRNDVAP, it must be between 0 and 5.  Yours is set to',ied_grndvap    &
        ,'...'
-      call opspec_fatal(reason,'opspec_misc')  
+      call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if
 
    if (ipercol < 0 .or. ipercol > 2) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
         'Invalid IPERCOL, it must be between 0 and 2. Yours is set to',ipercol,'...'
-      call opspec_fatal(reason,'opspec_misc')  
+      call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if
-   
+
    !---------------------------------------------------------------------------------------!
    !     Check whether the user is attempting to include invalid pfts.                     !
    !---------------------------------------------------------------------------------------!
@@ -2495,7 +2495,7 @@ end do
          write (reason,fmt='(a,1x,i4,a,1x,i4,a)') &
             'Invalid INCLUDE_THESE_PFT, it must be between 1 and ',n_pft, &
             '. One of yours is set to',include_these_pft(ipft),'...'
-         call opspec_fatal(reason,'opspec_misc')  
+         call opspec_fatal(reason,'opspec_misc')
          ifaterr=ifaterr+1
       end if
    end do pftloop
@@ -2518,7 +2518,7 @@ end do
          if (agri_stock       == include_these_pft(ipft)) agri_ok       = .true.
          if (plantation_stock == include_these_pft(ipft)) plantation_ok = .true.
       end do agriloop
-      
+
       if (.not. pasture_ok) then
          write(reason,fmt='(a,1x,i5,a)')                                                   &
              'Invalid PASTURE_STOCK (',pasture_stock                                       &
@@ -2526,14 +2526,14 @@ end do
          ifaterr = ifaterr +1
          call opspec_fatal(reason,'opspec_misc')
       end if
-      
+
       if (.not. agri_ok) then
          write(reason,fmt='(a,1x,i5,a)')                                                   &
             'Invalid AGRI_STOCK (',agri_stock,'). The pft must be in INCLUDE_THESE_PFT.'
          ifaterr = ifaterr +1
          call opspec_fatal(reason,'opspec_misc')
       end if
-      
+
       if (.not. plantation_ok) then
          write(reason,fmt='(a,1x,i5,a)')                                                   &
             'Invalid PLANTATION_STOCK (',plantation_stock,                                 &
@@ -2675,7 +2675,7 @@ end do
    end if
 
 
-    
+
    if (zrough <= 0.0) then
       write (reason,fmt='(a,1x,es14.7,a)')                                                 &
                     'Invalid ZROUGH, it must be positive.  Yours is set to',zrough,'...'
@@ -2704,7 +2704,7 @@ end do
          write (reason,fmt='(a,2x,a,1x,es14.7,a)')                                         &
              ' Invalid TIME2CANOPY, it can''t be >= 2. / TREEFALL_DISTURBANCE_RATE.'       &
             ,'Yours is set to',time2canopy,'...'
-         call opspec_fatal(reason,'opspec_misc')  
+         call opspec_fatal(reason,'opspec_misc')
          ifaterr = ifaterr +1
       end if
    elseif (treefall_disturbance_rate < 0.0) then
@@ -2716,36 +2716,36 @@ end do
       ifaterr = ifaterr +1
       !------------------------------------------------------------------------------------!
    end if
-    
-   
-    
+
+
+
    if (runoff_time < 0.0) then
       write (reason,fmt='(a,1x,es14.7,a)')                                                 &
             'Invalid RUNOFF_TIME, it can''t be negative. Yours is set to',runoff_time,'...'
-      call opspec_fatal(reason,'opspec_misc')  
+      call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if
-    
+
    if (ubmin < 0.0001 .or. ubmin > 2.0) then
       write (reason,fmt='(a,1x,es14.7,a)')                                                 &
             'Invalid UBMIN, it must be between 0.0001 and 2.0.  Yours is set to'           &
            ,ustmin,'...'
-      call opspec_fatal(reason,'opspec_misc')  
+      call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if
-    
+
    if (ustmin < 0.0001 .or. ustmin > 1.0) then
       write (reason,fmt='(a,1x,es14.7,a)')                                                 &
             'Invalid USTMIN, it must be between 0.0001 and 1.0. Yours is set to'           &
            ,ustmin,'...'
-      call opspec_fatal(reason,'opspec_misc')  
+      call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    elseif (ustmin > ubmin) then
       write (unit=*,fmt='(a,1x,es12.5)') ' UBMIN  = ',ubmin
       write (unit=*,fmt='(a,1x,es12.5)') ' UGBMIN = ',ugbmin
       write (unit=*,fmt='(a,1x,es12.5)') ' USTMIN = ',ustmin
       write (reason,fmt='(a)') 'Invalid USTMIN, it can''t be greater than UBMIN...'
-      call opspec_fatal(reason,'opspec_misc')  
+      call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if
 
@@ -2754,7 +2754,7 @@ end do
       write (unit=*,fmt='(a,1x,es12.5)') ' UGBMIN = ',ugbmin
       write (unit=*,fmt='(a,1x,es12.5)') ' USTMIN = ',ustmin
       write (reason,fmt='(a)') 'Invalid UGBMIN, it can''t be between USTMIN and UBMIN...'
-      call opspec_fatal(reason,'opspec_misc')  
+      call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if
 
@@ -2762,7 +2762,7 @@ end do
       write (reason,fmt='(a,1x,es14.7,a)')                                                 &
             'Invalid GAMM, it must be between 0.1 and 100.0. Yours is set to'              &
            ,gamm,'...'
-      call opspec_fatal(reason,'opspec_misc')  
+      call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if
 
@@ -2770,7 +2770,7 @@ end do
       write (reason,fmt='(a,1x,es14.7,a)')                                                 &
             'Invalid GAMH, it must be between 0.1 and 100.0. Yours is set to'              &
            ,gamh,'...'
-      call opspec_fatal(reason,'opspec_misc')  
+      call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if
 
@@ -2778,7 +2778,7 @@ end do
       write (reason,fmt='(a,1x,es14.7,a)')                                                 &
             'Invalid TPRANDTL, it must be between 0.01 and 100.0. Yours is set to'         &
            ,tprandtl,'...'
-      call opspec_fatal(reason,'opspec_misc')  
+      call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if
 
@@ -2786,7 +2786,7 @@ end do
       write (reason,fmt='(a,1x,es14.7,a)')                                                 &
             'Invalid RIBMAX, it must be between 0.01 and 1.0..  Yours is set to'           &
            ,ribmax,'...'
-      call opspec_fatal(reason,'opspec_misc')  
+      call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if
 
@@ -2794,7 +2794,7 @@ end do
       write (reason,fmt='(a,1x,es14.7,a)')                                                 &
             'Invalid LEAF_MAXWHC, it must be between 0.0 and 10..  Yours is set to'        &
            ,leaf_maxwhc,'...'
-      call opspec_fatal(reason,'opspec_misc')  
+      call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if
 
