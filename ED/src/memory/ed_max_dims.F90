@@ -59,9 +59,6 @@ module ed_max_dims
    integer, parameter :: maxdimp  = maxdim + 2
    integer, parameter :: nxyzpm   = nzpmax * nxpmax * nypmax
    integer, parameter :: maxmach  = 20
-   integer, parameter :: ed_nstyp = 17             ! total # of soil textural classes
-   integer, parameter :: ed_nscol = 21             ! total # of soil colour classes
-   integer, parameter :: ed_nvtyp = 21
 #else
    integer, parameter :: maxgrds = 10
    integer, parameter :: nxpmax  = 666
@@ -73,6 +70,9 @@ module ed_max_dims
    integer, parameter :: nxyzpm  = nzpmax * nxpmax * nypmax
    integer, parameter :: maxmach = 3000
 #endif
+   integer, parameter :: ed_nstyp = 17             ! total # of soil textural classes
+   integer, parameter :: ed_nscol = 21             ! total # of soil colour classes
+   integer, parameter :: ed_nvtyp = 21
    !---------------------------------------------------------------------------------------!
 
 
