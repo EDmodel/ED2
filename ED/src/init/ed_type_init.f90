@@ -138,7 +138,8 @@ module ed_type_init
             !    Space Science Open Archive.  doi:10.1002/essoar.10502287.1, in review for !
             !    J. Geophys. Res.-Biogeosci.                                               !
             !------------------------------------------------------------------------------!
-            cpatch%sla   (ico) = sla_s0(ipft) * cpatch%llspan(ico) ** sla_s1(ipft)
+            !cpatch%sla   (ico) = sla_s0(ipft) * cpatch%llspan(ico) ** sla_s1(ipft)
+            cpatch%sla   (ico) = sla_s0(ipft) * cpatch%leaf_turnover_rate(ico) ** sla_s1(ipft)
             cpatch%vm_bar(ico) = vm0_v0(ipft) * cpatch%sla   (ico) ** vm0_v1(ipft)
             !------------------------------------------------------------------------------!
          case default
@@ -1631,8 +1632,10 @@ module ed_type_init
                !    doi:10.1002/essoar.10502287.1, in review for                           !
                !    J. Geophys. Res.-Biogeosci.                                            !
                !---------------------------------------------------------------------------!
+               !cpoly%sla_toc   (ipft,:) = sla_s0(ipft)                                     &
+               !                         * cpoly%llspan_toc(ipft,:) ** sla_s1(ipft)
                cpoly%sla_toc   (ipft,:) = sla_s0(ipft)                                     &
-                                        * cpoly%llspan_toc(ipft,:) ** sla_s1(ipft)
+                                        * cpoly%leaf_turnover_rate(ipft,:) ** sla_s1(ipft)
                cpoly%vm_bar_toc(ipft,:) = vm0_v0(ipft)                                     &
                                         * cpoly%sla_toc   (ipft,:) ** vm0_v1(ipft)
                !---------------------------------------------------------------------------!
