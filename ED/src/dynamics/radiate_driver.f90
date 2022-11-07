@@ -999,7 +999,7 @@ module radiate_driver
                tmpvar8                      = radscr(ibuff)%par_v_diffuse_array(tuco_leaf) &
                                             * wleaf_vis   &
                                             / radscr(ibuff)%LAI_array(tuco_leaf)
-               csite%par_l_beam_max(ipa)    = sngloff(tmpvar8,tiny_offset)
+                csite%par_l_diffuse_max(ipa)    = sngloff(tmpvar8,tiny_offset)
             end if
             !------------------------------------------------------------------------------!
 

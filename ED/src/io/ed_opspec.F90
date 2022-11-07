@@ -1995,7 +1995,7 @@ end do
 
    if (hydraulic_mortality_scheme < 0 .or. hydraulic_mortality_scheme > 1) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
-                    'Invalid HYDAULIC_MORTALITY_SCHEME, it must be between 0 and 1. Yours is set to'   &
+                    'Invalid HYDRAULIC_MORTALITY_SCHEME, it must be between 0 and 1. Yours is set to'   &
                     ,hydraulic_mortality_scheme,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
