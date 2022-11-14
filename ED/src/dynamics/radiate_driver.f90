@@ -714,10 +714,14 @@ module radiate_driver
          !      Community Land Model (CLM). NCAR Technical Note NCAR/TN-478+STR.           !
          !                                                                                 !
          !---------------------------------------------------------------------------------!
-         albedo_sfcw_par = albedo_damp_par + csite%sfcwater_fracliq(ksn,ipa)               &
-                                           * ( snow_albedo_vis - albedo_damp_par )
-         albedo_sfcw_nir = albedo_damp_nir + csite%sfcwater_fracliq(ksn,ipa)               &
-                                           * ( snow_albedo_nir - albedo_damp_nir )
+         !albedo_sfcw_par = albedo_damp_par + csite%sfcwater_fracliq(ksn,ipa)               &!
+         !                                  * ( snow_albedo_vis - albedo_damp_par )         !
+          albedo_sfcw_par = snow_albedo_vis + csite%sfcwater_fracliq(ksn,ipa)               &
+                                           * (  albedo_damp_par - snow_albedo_vis )                                  
+        ! albedo_sfcw_nir = albedo_damp_nir + csite%sfcwater_fracliq(ksn,ipa)               &!
+         !                                  * ( snow_albedo_nir - albedo_damp_nir )          !
+          albedo_sfcw_nir = snow_albedo_nir + csite%sfcwater_fracliq(ksn,ipa)               &
+                                           * (  albedo_damp_nir - snow_albedo_nir )
          !---------------------------------------------------------------------------------!
 
 
