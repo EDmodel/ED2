@@ -154,7 +154,7 @@ comp.photo.tempfun <<- function(thispft,met,quantum.t=FALSE){
       ipsII.max = ( aparms$jm  * ( 2.0 * thispft$curvpar - 1.
                                  - 2.0 * sqrt(thispft$curvpar * (thispft$curvpar-1.0) ) ) )
    }else{
-      ipsII.max = discard
+      ipsII.max = huge.num
    }#end if (thispft$curvpar > 1.)
    ipsII = min(0.5 * thispft$phi.psII * met$par,ipsII.max)
    aterm  = thispft$curvpar
@@ -390,14 +390,14 @@ find.lint.co2.bounds <<- function(met,thispft,aparms){
          # make the other negative, which will make the guess discarded.                   #
          #---------------------------------------------------------------------------------#
          ciroot1      = - bquad / (2.0 * aquad)
-         ciroot2      = - discard
+         ciroot2      = - huge.num
       }else if (discr > 0.0){
          ciroot1 = (- bquad + sqrt(discr)) / (2.0 * aquad)
          ciroot2 = (- bquad - sqrt(discr)) / (2.0 * aquad)
       }else{
          #----- Discriminant is negative.  Impossible to solve. ---------------------------#
-         ciroot1      = - discard
-         ciroot2      = - discard
+         ciroot1      = - huge.num
+         ciroot2      = - huge.num
       }# end if
    }else{
       #------------------------------------------------------------------------------------#
@@ -405,7 +405,7 @@ find.lint.co2.bounds <<- function(met,thispft,aparms){
       # works for this case.                                                               #
       #------------------------------------------------------------------------------------#
       ciroot1      = - cquad / bquad
-      ciroot2      = - discard
+      ciroot2      = - huge.num
       #----- Not used, just for the debugging process. ------------------------------------#
       discr        = bquad * bquad
    }# end if
@@ -414,7 +414,7 @@ find.lint.co2.bounds <<- function(met,thispft,aparms){
    # the positive discard so this will never be chosen.                                    #
    #---------------------------------------------------------------------------------------#
    cigsw=max(ciroot1, ciroot2)
-   if (cigsw == -discard) cigsw = discard
+   if (cigsw == -huge.num) cigsw = huge.num
    #---------------------------------------------------------------------------------------#
 
 
@@ -446,14 +446,14 @@ find.lint.co2.bounds <<- function(met,thispft,aparms){
          # make the other negative, which will make the guess discarded.                   #
          #---------------------------------------------------------------------------------#
          ciroot1 = - bquad / (2.0 * aquad)
-         ciroot2 = -discard
+         ciroot2 = -huge.num
       }else if (discr > 0.0){
          ciroot1 = (- bquad + sqrt(discr)) / (2.0 * aquad)
          ciroot2 = (- bquad - sqrt(discr)) / (2.0 * aquad)
       }else{
          #----- Discriminant is negative.  Impossible to solve. ---------------------------#
-         ciroot1      = -discard
-         ciroot2      = -discard
+         ciroot1      = -huge.num
+         ciroot2      = -huge.num
       }#end if
    }else{
       #------------------------------------------------------------------------------------#
@@ -461,7 +461,7 @@ find.lint.co2.bounds <<- function(met,thispft,aparms){
       # that works for this case.                                                          #
       #------------------------------------------------------------------------------------#
       ciroot1 = - cquad / bquad
-      ciroot2 = -discard
+      ciroot2 = -huge.num
       #----- Not used, just for the debugging process. ------------------------------------#
       discr   = bquad * bquad
    }# end if
@@ -470,7 +470,7 @@ find.lint.co2.bounds <<- function(met,thispft,aparms){
    # the positive discard so this will never be chosen.                                    #
    #---------------------------------------------------------------------------------------#
    ciQ=max(ciroot1, ciroot2)
-   if (ciQ == -discard) ciQ = discard
+   if (ciQ == -huge.num) ciQ = huge.num
    #---------------------------------------------------------------------------------------#
 
 
@@ -959,7 +959,7 @@ solve.aofixed.case <<- function(met,thispft,aparms){
       if (aquad == 0.0){
          #----- Not really a quadratic equation. ------------------------------------------#
          gswroot1 = -cquad / bquad
-         gswroot2 = discard
+         gswroot2 = huge.num
       }else{
          #----- A quadratic equation, find the discriminant. ------------------------------#
          discr = bquad * bquad - 4.0 * aquad * cquad
@@ -967,7 +967,7 @@ solve.aofixed.case <<- function(met,thispft,aparms){
          if (discr == 0.0){
             #----- Double root. -----------------------------------------------------------#
             gswroot1 = - bquad / (2.0 * aquad)
-            gswroot2 = discard
+            gswroot2 = huge.num
          }else if (discr > 0.0){
             #----- Two distinct roots. ----------------------------------------------------#
             gswroot1 = (- bquad - sqrt(discr)) / (2.0 * aquad)

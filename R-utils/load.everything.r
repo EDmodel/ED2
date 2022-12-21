@@ -222,7 +222,6 @@ discreet.require <<- function(...){
 #------------------------------------------------------------------------------------------#
 loaded.package = list()
 loaded.package[["abind"       ]] = discreet.require(abind       )
-loaded.package[["agricolae"   ]] = discreet.require(agricolae   )
 loaded.package[["akima"       ]] = discreet.require(akima       )
 loaded.package[["beanplot"    ]] = discreet.require(beanplot    )
 loaded.package[["boot"        ]] = discreet.require(boot        )
@@ -236,15 +235,14 @@ loaded.package[["data.table"  ]] = discreet.require(data.table  )
 loaded.package[["devtools"    ]] = discreet.require(devtools    )
 loaded.package[["FAdist"      ]] = discreet.require(FAdist      )
 loaded.package[["fields"      ]] = discreet.require(fields      )
+loaded.package[["foto"        ]] = discreet.require(foto        )
 loaded.package[["gbm"         ]] = discreet.require(gbm         )
-loaded.package[["gdalUtils"   ]] = discreet.require(gdalUtils   )
-loaded.package[["geoR"        ]] = discreet.require(geoR        )
+#loaded.package[["geoR"        ]] = discreet.require(geoR        )
+loaded.package[["ggplot2"     ]] = discreet.require(ggplot2     )
 loaded.package[["gpclib"      ]] = discreet.require(gpclib      )
 loaded.package[["grDevices"   ]] = discreet.require(grDevices   )
 loaded.package[["gstat"       ]] = discreet.require(gstat       )
-loaded.package[["hdf5"        ]] = discreet.require(hdf5        )
 loaded.package[["Hmisc"       ]] = discreet.require(Hmisc       )
-loaded.package[["klaR"        ]] = discreet.require(klaR        )
 loaded.package[["kriging"     ]] = discreet.require(kriging     )
 loaded.package[["leaps"       ]] = discreet.require(leaps       )
 loaded.package[["maps"        ]] = discreet.require(maps        )
@@ -252,20 +250,25 @@ loaded.package[["mapdata"     ]] = discreet.require(mapdata     )
 loaded.package[["maptools"    ]] = discreet.require(maptools    )
 loaded.package[["MASS"        ]] = discreet.require(MASS        )
 loaded.package[["MCMCpack"    ]] = discreet.require(MCMCpack    )
+loaded.package[["nat.utils"   ]] = discreet.require(nat.utils   )
 loaded.package[["nlme"        ]] = discreet.require(nlme        )
 loaded.package[["numDeriv"    ]] = discreet.require(numDeriv    )
 loaded.package[["onls"        ]] = discreet.require(onls        )
 loaded.package[["PBSmapping"  ]] = discreet.require(PBSmapping  )
 loaded.package[["plotrix"     ]] = discreet.require(plotrix     )
 loaded.package[["pls"         ]] = discreet.require(pls         )
+loaded.package[["ppcor"       ]] = discreet.require(ppcor       )
 loaded.package[["proto"       ]] = discreet.require(proto       )
 loaded.package[["randomForest"]] = discreet.require(randomForest)
 loaded.package[["raster"      ]] = discreet.require(raster      )
+loaded.package[["reshape2"    ]] = discreet.require(reshape2    )
 loaded.package[["rgdal"       ]] = discreet.require(rgdal       )
 loaded.package[["rgeos"       ]] = discreet.require(rgeos       )
+loaded.package[["rhdf5"       ]] = discreet.require(rhdf5       )
 loaded.package[["rlas"        ]] = discreet.require(rlas        )
 loaded.package[["robustbase"  ]] = discreet.require(robustbase  )
 loaded.package[["rworldmap"   ]] = discreet.require(rworldmap   )
+loaded.package[["RColorBrewer"]] = discreet.require(RColorBrewer)
 loaded.package[["RSEIS"       ]] = discreet.require(RSEIS       )
 loaded.package[["R.utils"     ]] = discreet.require(R.utils     )
 loaded.package[["shapefiles"  ]] = discreet.require(shapefiles  )
@@ -275,10 +278,12 @@ loaded.package[["sn"          ]] = discreet.require(sn          )
 loaded.package[["sp"          ]] = discreet.require(sp          )
 loaded.package[["stats4"      ]] = discreet.require(stats4      )
 loaded.package[["vioplot"     ]] = discreet.require(vioplot     )
-loaded.package[["VoxR"        ]] = discreet.require(VoxR        )
+loaded.package[["viridis"     ]] = discreet.require(viridis     )
 loaded.package[["zoo"         ]] = discreet.require(zoo         )
 #---- Packages that must be loaded at the end. --------------------------------------------#
 loaded.package[["forecast"    ]] = discreet.require(forecast    )
+loaded.package[["klaR"        ]] = discreet.require(klaR        )
+loaded.package[["agricolae"   ]] = discreet.require(agricolae   )
 #------------------------------------------------------------------------------------------#
 
 
@@ -369,16 +374,6 @@ try(unlockBinding("theme",envir),silent=TRUE)
 
 
 #------------------------------------------------------------------------------------------#
-#  SHADY BUSINESS...  We must unlock %>% from package forecast and replace by our          #
-# function.                                                                                #
-#------------------------------------------------------------------------------------------#
-envir = as.environment("package:forecast")
-try(unlockBinding("%>%",envir),silent=TRUE)
-#------------------------------------------------------------------------------------------#
-
-
-
-#------------------------------------------------------------------------------------------#
 #     Organise the files so we load them in the right order.                               #
 #------------------------------------------------------------------------------------------#
 at.first      = c("colour.utils.r","rconstants.r","globdims.r","unitlist.r")
@@ -461,7 +456,9 @@ for (if90 in sequence(nall.f90)){
       dummy = if (file.exists(flib.so)){file.remove(flib.so)}else{character(0)}
       dummy = if (file.exists(flib.sl)){file.remove(flib.sl)}else{character(0)}
       dummy = if (file.exists(flib.o )){file.remove(flib.o )}else{character(0)}
-      dummy = rcmd(cmd="SHLIB",cmdargs=fnow,libpath=srcdir)
+      dummy = rcmd(cmd="SHLIB",cmdargs=fnow  )
+      dummy = rcmd(cmd="SHLIB",cmdargs=flib.o)
+      #------------------------------------------------------------------------------------#
    }#end if ("try-error" %in% is(dummy))
    #---------------------------------------------------------------------------------------#
 }#end for (if90 in sequence(nall.f90))

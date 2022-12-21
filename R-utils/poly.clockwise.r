@@ -19,11 +19,11 @@ poly.clockwise <<- function(x,y=NULL){
 
    #------ Make sure this is a closed path. -----------------------------------------------#
    nxy  = length(x)
-   if (! ( x[1] %==% x[nxy] && y[1] %==% y[nxy] ) ){
+   if (! ( x[1] %eq% x[nxy] && y[1] %eq% y[nxy] ) ){
       x   = c(x,x[1])
       y   = c(y,y[1])
       nxy = nxy + 1
-   }#end if (! ( x[1] %==% x[nxy] && y[1] %==% y[nxy] ) )
+   }#end if (! ( x[1] %eq% x[nxy] && y[1] %eq% y[nxy] ) )
    #---------------------------------------------------------------------------------------#
 
 

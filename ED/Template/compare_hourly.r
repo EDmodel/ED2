@@ -333,7 +333,7 @@ compvar[[ n]] = list( vnam         = "ustar"
                     , symbol       = "u^symbol(\"\\052\")"
                     , desc         = "Friction velocity"
                     , unit         = untab$mos
-                    , cscheme.mean = "panoply"
+                    , cscheme.mean = "irdbu"
                     , hue.low      = "blue"
                     , hue.high     = "orangered"
                     , col          = "#3B24B3"
@@ -347,7 +347,7 @@ compvar[[ n]] = list( vnam         = "cflxca"
                     , symbol       = "dot(C)[a*e]"
                     , desc         = "Carbon dioxide flux"
                     , unit         = untab$umolcom2os
-                    , cscheme.mean = "iclife"
+                    , cscheme.mean = "iprgn"
                     , hue.low      = "green"
                     , hue.high     = "purple"
                     , col          = "#AB8C3D"
@@ -361,7 +361,7 @@ compvar[[ n]] = list( vnam         = "cflxst"
                     , symbol       = "dot(C)[s*t*o*r]"
                     , desc         = "Carbon dioxide storage"
                     , unit         = untab$umolcom2os
-                    , cscheme.mean = "clife"
+                    , cscheme.mean = "prgn"
                     , hue.low      = "orangered"
                     , hue.high     = "blue"
                     , col          = "#7D6E93"
@@ -375,7 +375,7 @@ compvar[[ n]] = list( vnam         = "nee"
                     , symbol       = "N*E*E"
                     , desc         = "Net ecosystem exchange"
                     , unit         = untab$umolcom2os
-                    , cscheme.mean = "iclife"
+                    , cscheme.mean = "iprgn"
                     , hue.low      = "green"
                     , hue.high     = "purple"
                     , col          = "#A3CC52"
@@ -389,7 +389,7 @@ compvar[[ n]] = list( vnam         = "nep"
                     , symbol       = "N*E*P"
                     , desc         = "Net ecosystem productivity"
                     , unit         = untab$kgcom2oyr
-                    , cscheme.mean = "clife"
+                    , cscheme.mean = "prgn"
                     , hue.low      = "purple"
                     , hue.high     = "green"
                     , col          = "#A3CC52"
@@ -403,7 +403,7 @@ compvar[[ n]] = list( vnam         = "reco"
                     , symbol       = "dot(R)[E*c*o]"
                     , desc         = "Ecosystem respiration"
                     , unit         = untab$kgcom2oyr
-                    , cscheme.mean = "iclife"
+                    , cscheme.mean = "iprgn"
                     , hue.low      = "green"
                     , hue.high     = "purple"
                     , col          = "#AB8C3D"
@@ -417,7 +417,7 @@ compvar[[ n]] = list( vnam         = "gpp"
                     , symbol       = "G*P*P"
                     , desc         = "Gross primary productivity"
                     , unit         = untab$kgcom2oyr
-                    , cscheme.mean = "clife"
+                    , cscheme.mean = "prgn"
                     , hue.low      = "purple"
                     , hue.high     = "green"
                     , col          = "#306614"
@@ -431,7 +431,7 @@ compvar[[ n]] = list( vnam         = "parup"
                     , symbol       = "dot(Q)[P*A*R]^symbol(\"\\335\")"
                     , desc         = "Outgoing PAR"
                     , unit         = untab$umolom2os
-                    , cscheme.mean = "panoply"
+                    , cscheme.mean = "irdbu"
                     , hue.low      = "blue"
                     , hue.high     = "orangered"
                     , col          = "#143305"
@@ -445,7 +445,7 @@ compvar[[ n]] = list( vnam         = "rshortup"
                     , symbol       = "dot(Q)[S*W]^symbol(\"\\335\")"
                     , desc         = "Outgoing shortwave radiation"
                     , unit         = untab$wom2
-                    , cscheme.mean = "panoply"
+                    , cscheme.mean = "irdbu"
                     , hue.low      = "blue"
                     , hue.high     = "orangered"
                     , col          = "#2996CC"
@@ -459,7 +459,7 @@ compvar[[ n]] = list( vnam         = "rlongup"
                     , symbol       = "dot(Q)[L*W]^symbol(\"\\335\")"
                     , desc         = "Outgoing longwave radiation"
                     , unit         = untab$wom2
-                    , cscheme.mean = "panoply"
+                    , cscheme.mean = "irdbu"
                     , hue.low      = "blue"
                     , hue.high     = "orangered"
                     , col          = "#E65C17"
@@ -473,7 +473,7 @@ compvar[[ n]] = list( vnam         = "hflxca"
                     , symbol       = "dot(Q)[a*e]"
                     , desc         = "Sensible heat flux"
                     , unit         = untab$wom2
-                    , cscheme.mean = "panoply"
+                    , cscheme.mean = "irdbu"
                     , hue.low      = "blue"
                     , hue.high     = "orangered"
                     , col          = "#990F0F"
@@ -487,7 +487,7 @@ compvar[[ n]] = list( vnam         = "wflxca"
                     , symbol       = "dot(W)[a*e]"
                     , desc         = "Water vapour flux"
                     , unit         = untab$kgwom2oday
-                    , cscheme.mean = "ipanoply"
+                    , cscheme.mean = "rdbu"
                     , hue.low      = "orangered"
                     , hue.high     = "blue"
                     , col          = "#0A4766"
@@ -501,7 +501,7 @@ compvar[[ n]] = list( vnam         = "can.temp"
                     , symbol       = "T[a]"
                     , desc         = "CAS Temperature"
                     , unit         = untab$degC
-                    , cscheme.mean = "panoply"
+                    , cscheme.mean = "irdbu"
                     , hue.low      = "blue"
                     , hue.high     = "orangered"
                     , col          = "#4D0404"
@@ -515,7 +515,7 @@ compvar[[ n]] = list( vnam         = "can.shv"
                     , symbol       = "w[a]"
                     , desc         = "CAS specific humidity"
                     , unit         = untab$gwokg
-                    , cscheme.mean = "ipanoply"
+                    , cscheme.mean = "rdbu"
                     , hue.low      = "orangered"
                     , hue.high     = "blue"
                     , col          = "#160959"
@@ -529,7 +529,7 @@ compvar[[ n]] = list( vnam         = "can.co2"
                     , symbol       = "c[a]"
                     , desc         = "CAS CO2 mix. ratio"
                     , unit         = untab$umolcomol
-                    , cscheme.mean = "iclife"
+                    , cscheme.mean = "iprgn"
                     , hue.low      = "green"
                     , hue.high     = "purple"
                     , col          = "#4B6614"
@@ -543,7 +543,7 @@ compvar[[ n]] = list( vnam         = "soil.temp"
                     , symbol       = "T[s*o*i*l]"
                     , desc         = "Soil temperature"
                     , unit         = untab$degC
-                    , cscheme.mean = "panoply"
+                    , cscheme.mean = "irdbu"
                     , hue.low      = "blue"
                     , hue.high     = "orangered"
                     , col          = "#7D6E93"
@@ -557,7 +557,7 @@ compvar[[ n]] = list( vnam         = "soil.water"
                     , symbol       = "vartheta[s*o*i*l]"
                     , desc         = "Soil moisture"
                     , unit         = untab$m3wom3
-                    , cscheme.mean = "ipanoply"
+                    , cscheme.mean = "rdbu"
                     , hue.low      = "orangered"
                     , hue.high     = "blue"
                     , col          = "#00AAAF"
@@ -571,7 +571,7 @@ compvar[[ n]] = list( vnam         = "soil.wetness"
                     , symbol       = "hat(w)[s*o*i*l]"
                     , desc         = "Soil wetness"
                     , unit         = untab$pc
-                    , cscheme.mean = "ipanoply"
+                    , cscheme.mean = "rdbu"
                     , hue.low      = "orangered"
                     , hue.high     = "blue"
                     , col          = "#00F3FB"
@@ -595,7 +595,7 @@ control[[n]] = list( vnam         = "rshort"
                    , symbol       = "S*W^symbol(\"\\337\")"
                    , desc         = "Incoming shortwave radiation"
                    , unit         = untab$wom2
-                   , cscheme.mean = "ipanoply"
+                   , cscheme.mean = "rdbu"
                    , hue.low      = "orangered"
                    , hue.high     = "blue"
                    , col          = "#FF5700"
@@ -608,7 +608,7 @@ control[[n]] = list( vnam         = "par"
                    , symbol       = "P*A*R^symbol(\"\\337\")"
                    , desc         = "Incoming PAR"
                    , unit         = untab$umolom2os
-                   , cscheme.mean = "ipanoply"
+                   , cscheme.mean = "rdbu"
                    , hue.low      = "orangered"
                    , hue.high     = "blue"
                    , col          = "#0742C3"
@@ -621,7 +621,7 @@ control[[n]] = list( vnam         = "rlong"
                    , symbol       = "L*W^symbol(\"\\337\")"
                    , desc         = "Incoming longwave radiation"
                    , unit         = untab$wom2
-                   , cscheme.mean = "ipanoply"
+                   , cscheme.mean = "rdbu"
                    , hue.low      = "orangered"
                    , hue.high     = "blue"
                    , col          = "#A00014"
@@ -634,7 +634,7 @@ control[[n]] = list( vnam         = "atm.prss"
                    , symbol       = "p(e*f*t)"
                    , desc         = "Air pressure"
                    , unit         = untab$hpa
-                   , cscheme.mean = "ipanoply"
+                   , cscheme.mean = "rdbu"
                    , hue.low      = "orangered"
                    , hue.high     = "blue"
                    , col          = "#520485"
@@ -647,7 +647,7 @@ control[[n]] = list( vnam         = "atm.temp"
                    , symbol       = "T(e*f*t)"
                    , desc         = "Air temperature"
                    , unit         = untab$degC
-                   , cscheme.mean = "ipanoply"
+                   , cscheme.mean = "rdbu"
                    , hue.low      = "orangered"
                    , hue.high     = "blue"
                    , col          = "#FF5700"
@@ -660,7 +660,7 @@ control[[n]] = list( vnam         = "atm.shv"
                    , symbol       = "w(e*f*t)"
                    , desc         = "Air specific humidity"
                    , unit         = untab$gwokg
-                   , cscheme.mean = "ipanoply"
+                   , cscheme.mean = "rdbu"
                    , hue.low      = "orangered"
                    , hue.high     = "blue"
                    , col          = "#0742C3"
@@ -673,7 +673,7 @@ control[[n]] = list( vnam         = "atm.vels"
                    , symbol       = "u(e*f*t)"
                    , desc         = "Wind speed"
                    , unit         = untab$mos
-                   , cscheme.mean = "ipanoply"
+                   , cscheme.mean = "rdbu"
                    , hue.low      = "orangered"
                    , hue.high     = "blue"
                    , col          = "#520485"
@@ -686,7 +686,7 @@ control[[n]] = list( vnam         = "rain"
                    , symbol       = "dot(W)(e*f*t)"
                    , desc         = "Precipitation rate"
                    , unit         = untab$kgwom2oday
-                   , cscheme.mean = "ipanoply"
+                   , cscheme.mean = "rdbu"
                    , hue.low      = "orangered"
                    , hue.high    = "blue"
                    , col          = "#0742C3"
@@ -699,7 +699,7 @@ control[[n]] = list( vnam         = "atm.vpdef"
                    , symbol       = "e(e*f*t)"
                    , desc         = "Vapour pressure deficit"
                    , unit         = untab$hpa
-                   , cscheme.mean = "panoply"
+                   , cscheme.mean = "irdbu"
                    , hue.low      = "blue"
                    , hue.high     = "orangered"
                    , col          = "#FF5700"
@@ -1534,7 +1534,7 @@ for (p in loop.sites){
 
       #----- Create a quick filter for different u*. --------------------------------------#
       ustar.eco        = ifelse(obser$measured.ustar & measured.co2,obser$ustar,NA)
-      ust.measured.eco = outer(ustar.eco,obser$ust.filter,FUN='%>=%')
+      ust.measured.eco = outer(ustar.eco,obser$ust.filter,FUN='%ge%')
       #------------------------------------------------------------------------------------#
    }#end if
    #---------------------------------------------------------------------------------------#
@@ -8997,7 +8997,7 @@ if (plot.skill.taylor){
             #------------------------------------------------------------------------------#
             comp         = res[[iata]]$sim[[simul.key[1]]][[this.vnam]]
             sdev.obs.now = sqrt(comp$obs.moment[cc,d,nseason,2])
-            sel          = sel & sdev.obs.now %>% 0
+            sel          = sel & sdev.obs.now %gt% 0
             n.sel        = sum(sel)
             #------------------------------------------------------------------------------#
 
@@ -9537,7 +9537,7 @@ if (plot.skill.taylor){
                #----- Select fortnightly averages. ----------------------------------------#
                sel                = is.finite(obs[[this.fnmean]][,cc])
                sdev.obs.now       = sd(obs[[this.fnmean]][sel,cc],na.rm=TRUE)
-               sel                = sel & sdev.obs.now %>% 0.
+               sel                = sel & sdev.obs.now %gt% 0.
                this.obs           = obs[[this.fnmean]][sel,cc]
                this.mod           = mod[[this.fnmean]][sel,cc]
                percent.skill[p,d] = sum(sel)
@@ -9545,7 +9545,7 @@ if (plot.skill.taylor){
                #----- Select daily averages. ----------------------------------------------#
                sel                = is.finite(obs[[this.dmean]][,cc])
                sdev.obs.now       = sd(obs[[this.dmean]][sel,cc],na.rm=TRUE)
-               sel                = sel & sdev.obs.now %>% 0.
+               sel                = sel & sdev.obs.now %gt% 0.
                this.obs           = obs[[this.dmean]][sel,cc]
                this.mod           = mod[[this.dmean]][sel,cc]
                percent.skill[p,d] = sum(sel)
@@ -9558,7 +9558,7 @@ if (plot.skill.taylor){
                sel                = d.sel & s.sel & o.sel
                sel                = ifelse(is.na(sel),FALSE,sel)
                sdev.obs.now       = sd(obs[[this.vnam]][sel,cc],na.rm=TRUE)
-               sel                = sel & sdev.obs.now %>% 0.
+               sel                = sel & sdev.obs.now %gt% 0.
                this.obs           = obs[[this.vnam]][sel,cc]
                this.mod           = mod[[this.vnam]][sel,cc]
                if (sum(d.sel & s.sel) > 0){
@@ -9777,7 +9777,7 @@ if (plot.skill.taylor){
                for (p in sequence(nsites)){
                   iata      = sites$iata[p]
                   this.diel = diel.key[d]
-                  if (percent.skill[p,d] %>% 0){
+                  if (percent.skill[p,d] %gt% 0){
                      pair.now  = list.skill[[iata]][[this.diel]]
                   }else{
                      pair.now  = list(obs=c(NA,NA,NA),mod=c(NA,NA,NA))
@@ -10278,7 +10278,7 @@ if (plot.skill.taylor){
                sel                = ( is.finite(obs[[this.fnmean]][,cc])
                                     & this.vnam %in% v.inc )
                sdev.obs.now       = sd(obs[[this.fnmean]][sel,cc],na.rm=TRUE)
-               sel                = sel & sdev.obs.now %>% 0.
+               sel                = sel & sdev.obs.now %gt% 0.
                this.obs           = obs[[this.fnmean]][sel,cc]
                this.mod           = mod[[this.fnmean]][sel,cc]
                percent.skill[v,p] = sum(sel)
@@ -10287,7 +10287,7 @@ if (plot.skill.taylor){
                sel                = ( is.finite(obs[[this.dmean]][,cc])
                                     & this.vnam %in% v.inc )
                sdev.obs.now       = sd(obs[[this.dmean]][sel,cc],na.rm=TRUE)
-               sel                = sel & sdev.obs.now %>% 0.
+               sel                = sel & sdev.obs.now %gt% 0.
                this.obs           = obs[[this.dmean]][sel,cc]
                this.mod           = mod[[this.dmean]][sel,cc]
                percent.skill[v,p] = sum(sel)
@@ -10300,7 +10300,7 @@ if (plot.skill.taylor){
                sel                = d.sel & s.sel & o.sel
                sel                = ifelse(is.na(sel),FALSE,sel)
                sdev.obs.now       = sd(obs[[this.vnam]][sel,cc],na.rm=TRUE)
-               sel                = sel & sdev.obs.now %>% 0.
+               sel                = sel & sdev.obs.now %gt% 0.
                this.obs           = obs[[this.vnam]][sel,cc]
                this.mod           = mod[[this.vnam]][sel,cc]
                if (sum(d.sel & s.sel) > 0){
@@ -11048,7 +11048,7 @@ if (plot.soil.skill.taylor){
                   comp         = res[[iata]]$sim[[simul.key[1]]][[this.vnam]]
                   sdev.obs.now = sqrt(comp$obs.moment[cc,d,nseason,2])
                   sdev.mod.now = sqrt(comp$mod.moment[cc,d,nseason,2])
-                  sel          = sel & sdev.obs.now %>% 0
+                  sel          = sel & sdev.obs.now %gt% 0
                   n.sel        = sum(sel)
                   #------------------------------------------------------------------------#
 
@@ -12117,7 +12117,7 @@ if (make.summ.table){
 
 
             #------ Aggregate data to the total. ------------------------------------------#
-            if (df.now %>% 0 & o.sdev.now %>% 0){
+            if (df.now %gt% 0 & o.sdev.now %gt% 0){
                s.table$n      [v] = s.table$n      [v] + n.now
                s.table$df     [v] = s.table$df     [v] + df.now
                s.table$bias   [v] = s.table$bias   [v] + n.now  * bias.now
