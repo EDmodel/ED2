@@ -13089,17 +13089,20 @@ module ed_state_vars
    subroutine filltab_globtype(igr)
 
       use ed_var_tables, only : vtable_edio_r       & ! sub-routine
+                              , vtable_edio_i       & ! sub-routine
                               , vtable_edio_r_sca   & ! sub-rouitne
                               , vtable_edio_i_sca   ! ! sub-rouitne
       use soil_coms    , only : slz                 & ! intent(in)
-                              , slxclay             & ! intent(in)
-                              , slxsand             & ! intent(in)
-                              , slsoc               & ! intent(in)
-                              , slph                & ! intent(in)
-                              , slcec               & ! intent(in)
-                              , sldbd               & ! intent(in)
-                              , isoilflg            & ! intent(in)
+                              , slhydro_ref         & ! intent(in)
+                              , slxclay_ref         & ! intent(in)
+                              , slxsilt_ref         & ! intent(in)
+                              , slxsand_ref         & ! intent(in)
+                              , slsoc_ref           & ! intent(in)
+                              , slph_ref            & ! intent(in)
+                              , slcec_ref           & ! intent(in)
+                              , sldbd_ref           & ! intent(in)
                               , islcolflg           ! ! intent(in)
+      use ed_max_dims  , only : ed_nstyp            ! ! intent(in)
 
 
       implicit none
@@ -13189,14 +13192,6 @@ module ed_state_vars
                             ,'NDCYCLE :90:hist:anal:dail:mont:dcyc:year')
 
       nvar=nvar+1
-      call vtable_edio_i_sca(isoilflg(igr),nvar,igr,0,0                                    &
-                            ,var_len,var_len_global,max_ptrs                               &
-                            ,'ISOILFLG :90:hist:anal:dail:mont:dcyc:year')
-      call vtable_edio_i_sca(isoilflg(igr),nvar,igr,1,0                                    &
-                            ,var_len,var_len_global,max_ptrs                               &
-                            ,'ISOILFLG :90:hist:anal:dail:mont:dcyc:year')
-
-      nvar=nvar+1
       call vtable_edio_i_sca(islcolflg(igr),nvar,igr,0,0                                   &
                             ,var_len,var_len_global,max_ptrs                               &
                             ,'ISLCOLFLG :90:hist:anal:dail:mont:dcyc:year')
@@ -13204,53 +13199,76 @@ module ed_state_vars
                             ,var_len,var_len_global,max_ptrs                               &
                             ,'ISLCOLFLG :90:hist:anal:dail:mont:dcyc:year')
 
-      nvar=nvar+1
-      call vtable_edio_r_sca(slxsand,nvar,igr,0,0                                          &
-                            ,var_len,var_len_global,max_ptrs                               &
-                            ,'SLXSAND :90:hist:anal:dail:mont:dcyc:year')
-      call vtable_edio_r_sca(slxsand,nvar,igr,1,0                                          &
-                            ,var_len,var_len_global,max_ptrs                               &
-                            ,'SLXSAND :90:hist:anal:dail:mont:dcyc:year')
+
+      !------------------------------------------------------------------------------------!
+      !    1-D variables, soil types.                                                      !
+      !------------------------------------------------------------------------------------!
+      var_len        = ed_nstyp
+      var_len_global = ed_nstyp
 
       nvar=nvar+1
-      call vtable_edio_r_sca(slxclay,nvar,igr,0,0                                          &
-                            ,var_len,var_len_global,max_ptrs                               &
-                            ,'SLXCLAY :90:hist:anal:dail:mont:dcyc:year')
-      call vtable_edio_r_sca(slxclay,nvar,igr,1,0                                          &
-                            ,var_len,var_len_global,max_ptrs                               &
-                            ,'SLXCLAY :90:hist:anal:dail:mont:dcyc:year')
+      call vtable_edio_i(ed_nstyp,slhydro_ref,nvar,igr,0,0                                 &
+                        ,var_len,var_len_global,max_ptrs                                   &
+                        ,'SLHYDRO_REF :980:hist:anal:dail:mont:dcyc:year')
+      call vtable_edio_i(ed_nstyp,slhydro_ref,nvar,igr,1,0                                 &
+                        ,var_len,var_len_global,max_ptrs                                   &
+                        ,'SLHYDRO_REF :980:hist:anal:dail:mont:dcyc:year')
 
       nvar=nvar+1
-      call vtable_edio_r_sca(slsoc,nvar,igr,0,0                                            &
-                            ,var_len,var_len_global,max_ptrs                               &
-                            ,'SLSOC   :90:hist:anal:dail:mont:dcyc:year')
-      call vtable_edio_r_sca(slsoc,nvar,igr,1,0                                            &
-                            ,var_len,var_len_global,max_ptrs                               &
-                            ,'SLSOC   :90:hist:anal:dail:mont:dcyc:year')
+      call vtable_edio_r(ed_nstyp,slxsand_ref,nvar,igr,0,0                                 &
+                        ,var_len,var_len_global,max_ptrs                                   &
+                        ,'SLXSAND_REF :98:hist:anal:dail:mont:dcyc:year')
+      call vtable_edio_r(ed_nstyp,slxsand_ref,nvar,igr,1,0                                 &
+                        ,var_len,var_len_global,max_ptrs                                   &
+                        ,'SLXSAND_REF :98:hist:anal:dail:mont:dcyc:year')
 
       nvar=nvar+1
-      call vtable_edio_r_sca(slph,nvar,igr,0,0                                             &
-                            ,var_len,var_len_global,max_ptrs                               &
-                            ,'SLPH    :90:hist:anal:dail:mont:dcyc:year')
-      call vtable_edio_r_sca(slph,nvar,igr,1,0                                             &
-                            ,var_len,var_len_global,max_ptrs                               &
-                            ,'SLPH    :90:hist:anal:dail:mont:dcyc:year')
+      call vtable_edio_r(ed_nstyp,slxsilt_ref,nvar,igr,0,0                                 &
+                        ,var_len,var_len_global,max_ptrs                                   &
+                        ,'SLXSILT_REF :98:hist:anal:dail:mont:dcyc:year')
+      call vtable_edio_r(ed_nstyp,slxsilt_ref,nvar,igr,1,0                                 &
+                        ,var_len,var_len_global,max_ptrs                                   &
+                        ,'SLXSILT_REF :98:hist:anal:dail:mont:dcyc:year')
 
       nvar=nvar+1
-      call vtable_edio_r_sca(slcec,nvar,igr,0,0                                            &
-                            ,var_len,var_len_global,max_ptrs                               &
-                            ,'SLCEC   :90:hist:anal:dail:mont:dcyc:year')
-      call vtable_edio_r_sca(slcec,nvar,igr,1,0                                            &
-                            ,var_len,var_len_global,max_ptrs                               &
-                            ,'SLCEC   :90:hist:anal:dail:mont:dcyc:year')
+      call vtable_edio_r(ed_nstyp,slxclay_ref,nvar,igr,0,0                                 &
+                        ,var_len,var_len_global,max_ptrs                                   &
+                        ,'SLXCLAY_REF :98:hist:anal:dail:mont:dcyc:year')
+      call vtable_edio_r(ed_nstyp,slxclay_ref,nvar,igr,1,0                                 &
+                        ,var_len,var_len_global,max_ptrs                                   &
+                        ,'SLXCLAY_REF :98:hist:anal:dail:mont:dcyc:year')
 
       nvar=nvar+1
-      call vtable_edio_r_sca(sldbd,nvar,igr,0,0                                            &
-                            ,var_len,var_len_global,max_ptrs                               &
-                            ,'SLDBD   :90:hist:anal:dail:mont:dcyc:year')
-      call vtable_edio_r_sca(sldbd,nvar,igr,1,0                                            &
-                            ,var_len,var_len_global,max_ptrs                               &
-                            ,'SLDBD   :90:hist:anal:dail:mont:dcyc:year')
+      call vtable_edio_r(ed_nstyp,slsoc_ref,nvar,igr,0,0                                   &
+                        ,var_len,var_len_global,max_ptrs                                   &
+                        ,'SLSOC_REF   :98:hist:anal:dail:mont:dcyc:year')
+      call vtable_edio_r(ed_nstyp,slsoc_ref,nvar,igr,1,0                                   &
+                        ,var_len,var_len_global,max_ptrs                                   &
+                        ,'SLSOC_REF   :98:hist:anal:dail:mont:dcyc:year')
+
+      nvar=nvar+1
+      call vtable_edio_r(ed_nstyp,slph_ref,nvar,igr,0,0                                    &
+                        ,var_len,var_len_global,max_ptrs                                   &
+                        ,'SLPH_REF    :98:hist:anal:dail:mont:dcyc:year')
+      call vtable_edio_r(ed_nstyp,slph_ref,nvar,igr,1,0                                    &
+                        ,var_len,var_len_global,max_ptrs                                   &
+                        ,'SLPH_REF    :98:hist:anal:dail:mont:dcyc:year')
+
+      nvar=nvar+1
+      call vtable_edio_r(ed_nstyp,slcec_ref,nvar,igr,0,0                                   &
+                        ,var_len,var_len_global,max_ptrs                                   &
+                        ,'SLCEC_REF   :98:hist:anal:dail:mont:dcyc:year')
+      call vtable_edio_r(ed_nstyp,slcec_ref,nvar,igr,1,0                                   &
+                        ,var_len,var_len_global,max_ptrs                                   &
+                        ,'SLCEC_REF   :98:hist:anal:dail:mont:dcyc:year')
+
+      nvar=nvar+1
+      call vtable_edio_r(ed_nstyp,sldbd_ref,nvar,igr,0,0                                   &
+                        ,var_len,var_len_global,max_ptrs                                   &
+                        ,'SLDBD_REF   :98:hist:anal:dail:mont:dcyc:year')
+      call vtable_edio_r(ed_nstyp,sldbd_ref,nvar,igr,1,0                                   &
+                        ,var_len,var_len_global,max_ptrs                                   &
+                        ,'SLDBD_REF   :98:hist:anal:dail:mont:dcyc:year')
 
 
       !------------------------------------------------------------------------------------!
@@ -13262,10 +13280,10 @@ module ed_state_vars
 
 
       nvar=nvar+1
-      call vtable_edio_r(nzg,slz,nvar,igr,0,0                                              &
+      call vtable_edio_r(nzg,slz(1:nzg),nvar,igr,0,0                                       &
                         ,var_len,var_len_global,max_ptrs                                   &
                         ,'SLZ :92:hist:anal:dail:mont:dcyc:year')
-      call vtable_edio_r(nzg,slz,nvar,igr,1,0                                              &
+      call vtable_edio_r(nzg,slz(1:nzg),nvar,igr,1,0                                       &
                         ,var_len,var_len_global,max_ptrs                                   &
                         ,'SLZ :92:hist:anal:dail:mont:dcyc:year')
       !------------------------------------------------------------------------------------!

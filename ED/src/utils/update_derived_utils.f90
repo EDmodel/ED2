@@ -794,7 +794,7 @@ module update_derived_utils
    !=======================================================================================!
    !      This subroutine will take care of some diagnostic thermodynamic properties.      !
    !---------------------------------------------------------------------------------------!
-   subroutine update_patch_thermo_props(csite,ipaa,ipaz,mzg,mzs,ntext_soil)
+   subroutine update_patch_thermo_props(csite,ipaa,ipaz,mzg,mzs,lsl,ntext_soil)
      
       use ed_state_vars, only : sitetype         ! ! structure
       use therm_lib    , only : idealdenssh      & ! function
@@ -815,6 +815,7 @@ module update_derived_utils
       integer                       , intent(in) :: ipaz
       integer                       , intent(in) :: mzg
       integer                       , intent(in) :: mzs
+      integer                       , intent(in) :: lsl
       integer       , dimension(mzg), intent(in) :: ntext_soil
       !----- Local variables. -------------------------------------------------------------!
       integer                                    :: ipa
@@ -841,7 +842,7 @@ module update_derived_utils
 
 
          !----- Update soil temperature and liquid water fraction. ------------------------!
-         do k = 1, mzg
+         do k = lsl, mzg
             nsoil    = ntext_soil(k)
             soilhcap = soil(nsoil)%slcpd
             call uextcm2tl(csite%soil_energy(k,ipa),csite%soil_water(k,ipa)*wdns,soilhcap  &
@@ -890,7 +891,7 @@ module update_derived_utils
    !      This subroutine will update the fast mean properties, similarly to the routine   !
    ! above.                                                                                !
    !---------------------------------------------------------------------------------------!
-   subroutine update_patch_thermo_fmean(csite,ipaa,ipaz,mzg,ntext_soil)
+   subroutine update_patch_thermo_fmean(csite,ipaa,ipaz,mzg,lsl,ntext_soil)
      
       use ed_state_vars, only : sitetype           ! ! structure
       use therm_lib    , only : idealdenssh        & ! function
@@ -911,6 +912,7 @@ module update_derived_utils
       integer                       , intent(in) :: ipaa
       integer                       , intent(in) :: ipaz
       integer                       , intent(in) :: mzg
+      integer                       , intent(in) :: lsl
       integer       , dimension(mzg), intent(in) :: ntext_soil
       !----- Local variables. -------------------------------------------------------------!
       integer                                    :: ipa
@@ -937,7 +939,7 @@ module update_derived_utils
 
 
          !----- Update soil temperature and liquid water fraction. ------------------------!
-         do k = 1, mzg
+         do k = lsl, mzg
             nsoil    = ntext_soil(k)
             soilhcap = soil(nsoil)%slcpd
             call uextcm2tl( csite%fmean_soil_energy(k,ipa)                                 &

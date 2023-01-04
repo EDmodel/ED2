@@ -24,9 +24,9 @@ subdirs="ED BRAMS Ramspost R-utils"
 #------ Editor to use (I've only tested with nedit, use others at your own risk). ---------#
 editor="nedit"
 #------ Two paths with EDBRAMS (full path). -----------------------------------------------#
-ours="${HOME}/EDBRAMS"
-theirs="${HOME}/MainLine/EDBRAMS"
-ournew=true
+ours="${HOME}/Models/EDBRAMS"
+theirs="${HOME}/Downloads/MLO-EDBRAMS"
+ournew=false
 #------------------------------------------------------------------------------------------#
 
 

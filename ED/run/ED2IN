@@ -412,7 +412,7 @@ $ED_NL
    !        /mypath/P1000-S-1687-01-01-000000-g01.h5:                                      !
    !        SFILIN = '/mypath/P'                                                           !
    !                                                                                       !
-   !    6 - Initialize with ED-2 style files without multiple sites, exactly like option   !
+   !    6.  Initialize with ED-2 style files without multiple sites, similar to option     !
    !        2, except that the PFT types are preserved.                                    !
    !                                                                                       !
    !    7.  Initialize from a list of both POI and gridded ED2.1 state files, organized    !
@@ -420,6 +420,10 @@ $ED_NL
    !        takes the soil texture and soil moisture information from the initializing     !
    !        ED2.1 state file.  It allows for different layering, and assigns via nearest   !
    !        neighbor.                                                                      !
+   !                                                                                       !
+   !    8.  Initialise ED-2.2 style files with multiple sites that may vary in soil depth, !
+   !        texture, and other properties (e.g., colour, pH, cation exchange capacity) but !
+   !        without forcing TOPMODEL.                                                      !
    !---------------------------------------------------------------------------------------!
    NL%IED_INIT_MODE   = 6
    !---------------------------------------------------------------------------------------!
@@ -728,14 +732,17 @@ $ED_NL
    !---------------------------------------------------------------------------------------!
    ! ISOILBC -- This controls the soil moisture boundary condition at the bottom.  Choose  !
    !            the option according to the site characteristics.                          !
-   !            0.  Flat bedrock.  Flux from the bottom of the bottommost layer is zero.   !
-   !            1.  Gravitational flow (free drainage).  The flux from the bottom of the   !
+   !            -1. Hybrid. If the depth to bedrock is shorter than the deepest layer, use !
+   !                flat bedrock, otherwise assume free drainage. This option is more      !
+   !                relevant when initialising ED2 with multiple sites per polygon.        !
+   !             0. Flat bedrock.  Flux from the bottom of the bottommost layer is zero.   !
+   !             1. Gravitational flow (free drainage).  The flux from the bottom of the   !
    !                bottommost layer is due to gradient of height only.                    !
-   !            2.  Lateral drainage.  Similar to free drainage, but the gradient is       !
+   !             2. Lateral drainage.  Similar to free drainage, but the gradient is       !
    !                reduced by the slope not being completely vertical.  The reduction is  !
    !                controlled by variable SLDRAIN.  In the future options 0, 1, and 2 may !
    !                be combined into a single option.                                      !
-   !            3.  Aquifer.  Soil moisture of the ficticious layer beneath the bottom is  !
+   !             3. Aquifer.  Soil moisture of the ficticious layer beneath the bottom is  !
    !                always at saturation.                                                  !
    !---------------------------------------------------------------------------------------!
    NL%ISOILBC        = 1

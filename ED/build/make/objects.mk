@@ -51,6 +51,7 @@ OBJ_MODEL =                        \
 	ed_print.o                 \
 	ed_read_ed10_20_history.o  \
 	ed_read_ed21_history.o     \
+	ed_read_ed22_initial.o     \
 	ed_state_vars.o            \
 	ed_therm_lib.o             \
 	ed_type_init.o             \

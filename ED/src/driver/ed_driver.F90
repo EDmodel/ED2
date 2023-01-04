@@ -21,8 +21,13 @@ subroutine ed_driver()
    use ed_state_vars        , only : allocate_edglobals            & ! sub-routine
                                    , filltab_alltypes              & ! sub-routine
                                    , edgrid_g                      ! ! intent(inout)
-   use ed_misc_coms         , only : runtype                       & ! intent(in)
-                                   , iooutput                      ! ! intent(in)
+   use ed_misc_coms         , only : dtlsm                         & ! intent(in)
+                                   , runtype                       & ! intent(in)
+                                   , current_time                  & ! intent(in)
+                                   , isoutput                      & ! intent(in)
+                                   , iooutput                      & ! intent(in)
+                                   , fmtrest                       & ! intent(in)
+                                   , restore_file                  ! ! intent(in)
    use soil_coms            , only : alloc_soilgrid                ! ! sub-routine
    use ed_node_coms         , only : mynum                         & ! intent(in)
                                    , nnodetot                      & ! intent(in)
@@ -36,6 +41,7 @@ subroutine ed_driver()
    use hrzshade_utils       , only : init_cci_variables            ! ! subroutine
    use canopy_radiation_coms, only : ihrzrad                       ! ! intent(in)
    use random_utils         , only : init_random_seed              ! ! subroutine
+   use budget_utils         , only : ed_init_budget                ! ! subroutine
    implicit none
    !----- Included variables. -------------------------------------------------------------!
 #if defined(RAMS_MPI)
@@ -157,14 +163,6 @@ subroutine ed_driver()
    !---------------------------------------------------------------------------------------!
 
 
-   !---------------------------------------------------------------------------------------!
-   !      Allocate soil grid arrays.                                                       !
-   !---------------------------------------------------------------------------------------!
-   if (mynum == nnodetot) write (unit=*,fmt='(a)') ' [+] Alloc_Soilgrid...'
-   call alloc_soilgrid()
-   !---------------------------------------------------------------------------------------!
-
-
 
    !---------------------------------------------------------------------------------------!
    !      Set some polygon-level basic information, such as lon/lat/soil texture.          !
@@ -176,16 +174,14 @@ subroutine ed_driver()
 
 
    !---------------------------------------------------------------------------------------!
-   !      Initialize inherent soil and vegetation properties.                              !
+   !      Decide whether to initialise ED2 or resume from history files.  Note that the    !
+   ! order of operations will depend upon the run type.  If we resume from HISTORY, we     !
+   ! must read the history first then allocate soil data (as they will be read from the    !
+   ! history file itself).  Otherwise, we allocate and initialise soils, then read/assign  !
+   ! the initial conditions.                                                               !
    !---------------------------------------------------------------------------------------!
-   if (mynum == nnodetot) write (unit=*,fmt='(a)') ' [+] Sfcdata_ED...'
-   call sfcdata_ed()
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !---------------------------------------------------------------------------------------!
-   if (trim(runtype) == 'HISTORY' ) then
+   select case (trim(runtype))
+   case ('HISTORY')
       !------------------------------------------------------------------------------------!
       !      Initialize the model state as a replicate image of a previous  state.         !
       !------------------------------------------------------------------------------------!
@@ -210,7 +206,27 @@ subroutine ed_driver()
       if (nnodetot /= 1 ) call MPI_Barrier(MPI_COMM_WORLD,ierr)
 #endif
       !------------------------------------------------------------------------------------!
-   else
+
+
+   case default
+      !------------------------------------------------------------------------------------!
+      !      Allocate soil grid arrays.                                                    !
+      !------------------------------------------------------------------------------------!
+      if (mynum == nnodetot) write (unit=*,fmt='(a)') ' [+] Alloc_Soilgrid...'
+      call alloc_soilgrid()
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !      Initialise variables that are related to soil layers.                         !
+      !------------------------------------------------------------------------------------!
+      if (mynum == nnodetot) write (unit=*,fmt='(a)') ' [+] Sfcdata_ED...'
+      call sfcdata_ed()
+      !------------------------------------------------------------------------------------!
+
+
+
 
       !------------------------------------------------------------------------------------!
       !      Initialize state properties of polygons/sites/patches/cohorts.                !
@@ -218,7 +234,8 @@ subroutine ed_driver()
       if (mynum == nnodetot) write (unit=*,fmt='(a)') ' [+] Load_Ecosystem_State...'
       call load_ecosystem_state()
       !------------------------------------------------------------------------------------!
-   end if
+   end select
+   !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
    !      In case the runs is going to produce detailed output, we eliminate all patches   !
@@ -291,27 +308,29 @@ subroutine ed_driver()
 
 
    !---------------------------------------------------------------------------------------!
-   !      Initialise some derived variables.  Skip this in case the simulation is resuming !
+   !    Bypass the initialisation of derived variables and phenology when initialising ED2 !
    ! from HISTORY.                                                                         !
    !---------------------------------------------------------------------------------------!
-   if (trim(runtype) /= 'HISTORY' ) then
+   select case (trim(runtype))
+   case ('HISTORY')
+      !---- Do nothing. -------------------------------------------------------------------!
+      continue
+      !------------------------------------------------------------------------------------!
+   case default
+      !---- Initialise some derived variables. --------------------------------------------!
       do ifm=1,ngrids
          call update_derived_props(edgrid_g(ifm))
       end do
-   end if
-   !---------------------------------------------------------------------------------------!
+      !------------------------------------------------------------------------------------!
 
 
 
-   !---------------------------------------------------------------------------------------!
-   !      Initialise drought phenology.  This should be done after the soil moisture has   !
-   ! been set up.                                                                          !
-   !---------------------------------------------------------------------------------------!
-   if (runtype /= 'HISTORY') then
+      !---- Initialise drought phenology. -------------------------------------------------!
       do ifm=1,ngrids
          call first_phenology(edgrid_g(ifm))
       end do
-   end if
+      !------------------------------------------------------------------------------------!
+   end select
    !---------------------------------------------------------------------------------------!
 
 
@@ -359,26 +378,86 @@ subroutine ed_driver()
 
 
    !---------------------------------------------------------------------------------------!
-   !      Get the CPU time and print the banner.                                           !
-   !---------------------------------------------------------------------------------------!
-   call timing(1,t1)
-   w2 = walltime(wtime_start)
-   if (mynum == nnodetot) then
-      write(c0,'(f12.2)') t1
-      write(c1,'(f12.2)') w2-w1
-      write(unit=*,fmt='(/,a,/)') ' === Finish initialization; CPU(sec)='//                &
-                                  trim(adjustl(c0))//'; Wall(sec)='//trim(adjustl(c1))//   &
-                                  '; Time integration starts (ed_master) ==='
-   end if
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !---------------------------------------------------------------------------------------!
-   ! STEP 14. Run the model or skip if it is a zero time run.                              !
+   ! STEP 14. Run the model or skip if it is a zero time run.  In case this is a zero time !
+   !          run, write the history file and the flag for restoring the run (this can     !
+   !          be useful for model initialisation with large number of patches in the input !
+   !          file.  In this case, one may need to request substantially more memory for   !
+   !          initialisation (but a single CPU as initialisation does not benefit from     !
+   !          shared-memory parallel processing), then runs can be re-submitted with less  !
+   !          memory demand but more CPUs, hence reducing impacts on fairshare scores.     !
    !---------------------------------------------------------------------------------------!
    if (time < timmax) then
+      !------------------------------------------------------------------------------------!
+      !      Get the CPU time and print the banner.                                        !
+      !------------------------------------------------------------------------------------!
+      call timing(1,t1)
+      w2 = walltime(wtime_start)
+      if (mynum == nnodetot) then
+         write(c0,'(f12.2)') t1
+         write(c1,'(f12.2)') w2-w1
+         write(unit=*,fmt='(/,a,/)') ' === Finish initialization; CPU(sec)='//             &
+                                   trim(adjustl(c0))//'; Wall(sec)='//trim(adjustl(c1))//  &
+                                   '; Time integration starts (ed_model) ==='
+      end if
+      !------------------------------------------------------------------------------------!
+
+
+
+      !----- Call the time step driver. ---------------------------------------------------!
       call ed_model()
+      !------------------------------------------------------------------------------------!
+   else if ((timmax < dtlsm) .and. (isoutput /= 0)) then
+      !----- Write the zero-time output only if the run type is 'INITIAL'. ----------------!
+      select case (trim(runtype))
+      case ('INITIAL')
+
+         !---------------------------------------------------------------------------------!
+         !     We must reset all budget fluxes and set all budget stocks before writing    !
+         ! the history file.  This is needed because when we resume ED2 runs from history  !
+         ! files, all budget variables are read from history instead of being initialised. !
+         !---------------------------------------------------------------------------------!
+         if (mynum == nnodetot) write(unit=*,fmt='(a)') ' [+] ED_Init_Budget.'
+         do ifm=1,ngrids
+            call ed_init_budget(edgrid_g(ifm),.true.)
+          end do
+         !---------------------------------------------------------------------------------!
+
+
+         !----- Write the output file. ----------------------------------------------------!
+         call h5_output('HIST')
+         !---------------------------------------------------------------------------------!
+
+
+         !---------------------------------------------------------------------------------!
+         !     Write a file with the current history time.                                 !
+         !---------------------------------------------------------------------------------!
+         if (mynum == nnodetot) then
+            open (unit=18,file=trim(restore_file),form='formatted',status='replace'        &
+                 ,action='write')
+            write(unit=18,fmt=fmtrest) current_time%year,current_time%month                &
+                                      ,current_time%date,current_time%hour                 &
+                                      ,current_time%min
+            close(unit=18,status='keep')
+         end if
+         !------------------------------------------------------------------------------------!
+      end select
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !      Get the CPU time and print the banner.                                        !
+      !------------------------------------------------------------------------------------!
+      call timing(1,t1)
+      w2 = walltime(wtime_start)
+      if (mynum == nnodetot) then
+         write(c0,'(f12.2)') t1
+         write(c1,'(f12.2)') w2-w1
+         write(unit=*,fmt='(/,a,/)') ' === Finish initialization; CPU(sec)='//             &
+                                   trim(adjustl(c0))//'; Wall(sec)='//trim(adjustl(c1))//  &
+                                   ' ==='
+      end if
+      !------------------------------------------------------------------------------------!
    end if
    !---------------------------------------------------------------------------------------!
 
@@ -544,6 +623,9 @@ subroutine exterminate_patches_except(keeppa)
                              , patchtype          ! ! structure
    use grid_coms      , only : ngrids             ! ! intent(in)
    use fuse_fiss_utils, only : terminate_patches  ! ! sub-routine
+
+   implicit none
+
    !----- Arguments -----------------------------------------------------------------------!
    integer                        , intent(in)  :: keeppa
    !----- Local variables -----------------------------------------------------------------!
