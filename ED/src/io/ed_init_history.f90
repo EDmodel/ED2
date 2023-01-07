@@ -1004,6 +1004,8 @@ module ed_init_history
                         ,'DMEAN_SFCW_TEMP_PY        ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cgrid%dmean_sfcw_fliq      (ipy:ipy)                           &
                         ,'DMEAN_SFCW_FLIQ_PY        ',dsetrank,iparallel,.false.,foundvar)
+         call hdf_getslab_r(cgrid%dmean_snowfac        (ipy:ipy)                           &
+                        ,'DMEAN_SNOWFAC_PY          ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cgrid%dmean_rshort_gnd     (ipy:ipy)                           &
                         ,'DMEAN_RSHORT_GND_PY       ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cgrid%dmean_par_gnd        (ipy:ipy)                           &
@@ -1432,6 +1434,8 @@ module ed_init_history
                         ,'MMEAN_SFCW_TEMP_PY        ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cgrid%mmean_sfcw_fliq      (ipy:ipy)                           &
                         ,'MMEAN_SFCW_FLIQ_PY        ',dsetrank,iparallel,.false.,foundvar)
+         call hdf_getslab_r(cgrid%mmean_snowfac        (ipy:ipy)                           &
+                        ,'MMEAN_SNOWFAC_PY          ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cgrid%mmean_rshort_gnd     (ipy:ipy)                           &
                         ,'MMEAN_RSHORT_GND_PY       ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cgrid%mmean_par_gnd        (ipy:ipy)                           &
@@ -2055,6 +2059,8 @@ module ed_init_history
                         ,'QMEAN_SFCW_TEMP_PY       ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cgrid%qmean_sfcw_fliq      (:,ipy)                             &
                         ,'QMEAN_SFCW_FLIQ_PY       ',dsetrank,iparallel,.false.,foundvar)
+         call hdf_getslab_r(cgrid%qmean_snowfac        (:,ipy)                             &
+                        ,'QMEAN_SNOWFAC_PY         ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cgrid%qmean_rshort_gnd     (:,ipy)                             &
                         ,'QMEAN_RSHORT_GND_PY      ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cgrid%qmean_par_gnd        (:,ipy)                             &
@@ -3257,8 +3263,8 @@ module ed_init_history
       memoffs (2) = 0_8
       call hdf_getslab_r(cpoly%lambda_fire                                                 &
                         ,'LAMBDA_FIRE ',dsetrank,iparallel,.true.,foundvar)
-      call hdf_getslab_r(cpoly%avg_monthly_pcpg                                            &
-                        ,'AVG_MONTHLY_PCPG ',dsetrank,iparallel,.true.,foundvar)
+      call hdf_getslab_r(cpoly%avg_monthly_accp                                            &
+                        ,'AVG_MONTHLY_ACCP ',dsetrank,iparallel,.true.,foundvar)
       call hdf_getslab_r(cpoly%crop_yield                                                  &
                         ,'CROP_YIELD_SI ',dsetrank,iparallel,.true.,foundvar)
       !------------------------------------------------------------------------------------!
@@ -4069,6 +4075,8 @@ module ed_init_history
                         ,'DMEAN_SFCW_TEMP_PA        ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(csite%dmean_sfcw_fliq                                          &
                         ,'DMEAN_SFCW_FLIQ_PA        ',dsetrank,iparallel,.false.,foundvar)
+         call hdf_getslab_r(csite%dmean_snowfac                                            &
+                        ,'DMEAN_SNOWFAC_PA          ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(csite%dmean_rshort_gnd                                         &
                         ,'DMEAN_RSHORT_GND_PA       ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(csite%dmean_par_gnd                                            &
@@ -4238,6 +4246,8 @@ module ed_init_history
                         ,'MMEAN_SFCW_TEMP_PA        ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(csite%mmean_sfcw_fliq                                          &
                         ,'MMEAN_SFCW_FLIQ_PA        ',dsetrank,iparallel,.false.,foundvar)
+         call hdf_getslab_r(csite%mmean_snowfac                                            &
+                        ,'MMEAN_SNOWFAC_PA          ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(csite%mmean_rshort_gnd                                         &
                         ,'MMEAN_RSHORT_GND_PA       ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(csite%mmean_par_gnd                                            &
@@ -4443,6 +4453,8 @@ module ed_init_history
                         ,'QMEAN_SFCW_TEMP_PA       ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(csite%qmean_sfcw_fliq                                          &
                         ,'QMEAN_SFCW_FLIQ_PA       ',dsetrank,iparallel,.false.,foundvar)
+         call hdf_getslab_r(csite%qmean_snowfac                                            &
+                        ,'QMEAN_SNOWFAC_PA         ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(csite%qmean_rshort_gnd                                         &
                         ,'QMEAN_RSHORT_GND_PA      ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(csite%qmean_par_gnd                                            &

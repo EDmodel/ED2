@@ -247,9 +247,6 @@ module farq_katul
 
       !update photosynthetic parameters with water stress
       select case (h2o_plant_lim)
-      case (0,1,2,3)
-          ! use fsw to account for water stress in photosyn_driv
-          water_stress_factor = 1.
       case (4)
           ! leaf water potential will influence stomata optimization 
           ! at two different scales
@@ -268,6 +265,9 @@ module farq_katul
                                         1. / (1. +      &
                                 0.1 * (leaf_psi / leaf_psi_tlp(ipft)) ** 6.0)))
           lambda8 = lambda8 * dble(exp(stoma_beta(ipft) * dmax_leaf_psi))
+      case default
+          ! use fsw to account for water stress in photosyn_driv
+          water_stress_factor = 1.
       end select
          
       !thispft(ib)%vm0  = thispft(ib)%vm0 * dble(water_stress_factor)
@@ -409,9 +409,6 @@ module farq_katul
         real(kind=8)                :: test_dcidg
         real(kind=8)                :: test_dfcdg
         real(kind=8)                :: test_dfedg
-        real(kind=8)                :: test_fc_light
-        real(kind=8)                :: test_fc_rubp
-        real(kind=8)                :: test_fc_3rd
         real(kind=8)                :: opt_ci_light
         real(kind=8)                :: opt_ci_rubp
         real(kind=8)                :: opt_ci_3rd
@@ -852,16 +849,6 @@ module farq_katul
         real(kind=8)                :: a,b,c        !! Coefficients of the quadratic equation to solve ci
         real(kind=8)                :: rad          !! sqrt(b2-4ac)
         real(kind=8)                :: dbdg,dcdg    !! derivatives of b,c wrt. gsc
-        real(kind=8)                :: ci_rubp      !! ci for rubp-limited scenario
-        real(kind=8)                :: dcidg_rubp   !! derivative of ci wrt. gsc for rubp-limited scenario
-        real(kind=8)                :: dfcdg_rubp   !! derivative of fc wrt. gsc for rubp-limited scenario
-        real(kind=8)                :: ci_light     !! ci for light-limited scenario
-        real(kind=8)                :: dcidg_light  !! derivative of ci wrt. gsc for light-limited scenario
-        real(kind=8)                :: dfcdg_light  !! derivative of fc wrt. gsc for light-limited scenario
-        real(kind=8)                :: ci_3rd       !! ci for TPU/CO2-limited scenario
-        real(kind=8)                :: dcidg_3rd    !! derivative of ci wrt. gsc for TPU/CO2-limited scenario
-        real(kind=8)                :: dfcdg_3rd    !! derivative of fc wrt. gsc for TPU/CO2-limited scenario
-
         !------------------------------------------------------------------------------------!
 
 

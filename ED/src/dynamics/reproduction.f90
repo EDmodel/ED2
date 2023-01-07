@@ -179,6 +179,7 @@ module reproduction
 
          !----- The big loops start here. -------------------------------------------------!
          polyloop: do ipy = 1,cgrid%npolygons
+            cpoly => cgrid%polygon(ipy)
 
             !------------------------------------------------------------------------------!
             !     Check whether this is late spring/early summer.  This is needed for      !
@@ -187,8 +188,8 @@ module reproduction
             !------------------------------------------------------------------------------!
             late_spring = (cgrid%lat(ipy) >= 0.0 .and. month == 6) .or.                    &
                           (cgrid%lat(ipy) < 0.0 .and. month == 12)
+            !------------------------------------------------------------------------------!
 
-            cpoly => cgrid%polygon(ipy)
             siteloop_sort: do isi = 1,cpoly%nsites
                csite => cpoly%site(isi)
 
@@ -1286,8 +1287,8 @@ module reproduction
                   ! of them will land again in this patch, and we correct for this further !
                   ! down.                                                                  !
                   !------------------------------------------------------------------------!
-                  csite%cbudget_seedrain(donpa) = csite%cbudget_seedrain(donpa)            &
-                                                - bseed_maygo * frqsumi
+                  donsite%cbudget_seedrain(donpa) = donsite%cbudget_seedrain(donpa)        &
+                                                  - bseed_maygo * frqsumi
                   !------------------------------------------------------------------------!
 
 
@@ -1314,7 +1315,7 @@ module reproduction
                   ! (4) RPY = DPA * AD * AR           (1->3)                               !
                   ! (5) RPA = DPA * AD                (4->2, regardless of the patch)      !
                   !------------------------------------------------------------------------!
-                  bseed_xpatch = bseed_maygo * csite%area(donpa) * cpoly%area(donsi)
+                  bseed_xpatch = bseed_maygo * donsite%area(donpa) * cpoly%area(donsi)
                   !------------------------------------------------------------------------!
 
 
@@ -1343,8 +1344,8 @@ module reproduction
                         ! subtracted all the non-local dispersal outside the receptor site !
                         ! loop.                                                            !
                         !------------------------------------------------------------------!
-                        csite%cbudget_seedrain(recpa) = csite%cbudget_seedrain(recpa)      &
-                                                      + bseed_xpatch * frqsumi
+                        recsite%cbudget_seedrain(recpa) = recsite%cbudget_seedrain(recpa)  &
+                                                        + bseed_xpatch * frqsumi
                         !------------------------------------------------------------------!
 
 
