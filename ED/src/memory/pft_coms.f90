@@ -532,11 +532,11 @@ module pft_coms
    ! Plant hydrodynamics -- see "initialize_pft_hydro_params".                             !
    !---------------------------------------------------------------------------------------!
    real, dimension(n_pft) :: leaf_water_cap
-   !< Leaf hydaulic capacitance [kg H2O/kg biomass/m ]. This variable is assumed as
+   !< Leaf hydraulic capacitance [kg H2O/kg biomass/m ]. This variable is assumed as
    !< constants for now
 
    real, dimension(n_pft) :: wood_water_cap
-   !< Wood hydaulic capacitance [kg H2O/kg biomass/m ]. This variable is assumed as
+   !< Wood hydraulic capacitance [kg H2O/kg biomass/m ]. This variable is assumed as
    !< constants for now
 
    real, dimension(n_pft) :: leaf_water_sat
