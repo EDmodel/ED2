@@ -41,16 +41,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        name:
-          - gnu
-          - intel
         include:
           - name: gnu
-            IMAGE: ed
             LATEST: "NO"
             PLATFORM: "linux/amd64,linux/arm64"
           - name: gnu
-            IMAGE: ed
             LATEST: "YES"
             PLATFORM: "linux/amd64"
 
