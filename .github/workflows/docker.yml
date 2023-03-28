@@ -31,12 +31,28 @@ on:
 env:
   MAIN_REPO: EDmodel/ED2
   DOCKERHUB_ORG: edmodel
-  # no linux/arm64 (mac) missing hdf5 libraries.
-  PLATFORM: "linux/amd64"
 
 jobs:
   docker:
     runs-on: ubuntu-latest
+    permissions:
+        packages: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        name:
+        - gnu
+        - intel
+      include:
+      - name: gnu
+        IMAGE: ed
+        LATEST: false
+        PLATFORM: "linux/amd64,linux/arm64"
+      - name: gnu
+        IMAGE: ed
+        LATEST: true
+        PLATFORM: "linux/amd64"
 
     steps:
       - uses: actions/checkout@v2
@@ -138,7 +154,7 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           push: true
-          platforms: ${{ env.PLATFORM }}
+          platforms: ${{ matrix.PLATFORM }}
           cache-from: type=gha
           cache-to: type=gha
           tags: ${{ env.IMAGES }}
