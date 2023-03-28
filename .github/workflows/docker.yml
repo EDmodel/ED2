@@ -158,7 +158,7 @@ jobs:
         with:
           push: true
           platforms: ${{ matrix.PLATFORM }}
-          file: Dockerfile.${{ matrix.}}
+          file: Dockerfile.${{ matrix.name }}
           cache-from: type=gha
           cache-to: type=gha
           tags: ${{ env.IMAGES }}
