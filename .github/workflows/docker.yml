@@ -34,7 +34,7 @@ env:
 
 jobs:
   docker:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     permissions:
         packages: write
 
@@ -42,17 +42,17 @@ jobs:
       fail-fast: false
       matrix:
         name:
-        - gnu
-        - intel
-      include:
-      - name: gnu
-        IMAGE: ed
-        LATEST: false
-        PLATFORM: "linux/amd64,linux/arm64"
-      - name: gnu
-        IMAGE: ed
-        LATEST: true
-        PLATFORM: "linux/amd64"
+          - gnu
+          - intel
+        include:
+          - name: gnu
+            IMAGE: ed
+            LATEST: false
+            PLATFORM: "linux/amd64,linux/arm64"
+          - name: gnu
+            IMAGE: ed
+            LATEST: true
+            PLATFORM: "linux/amd64"
 
     steps:
       - uses: actions/checkout@v2
