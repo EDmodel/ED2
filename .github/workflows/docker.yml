@@ -47,15 +47,15 @@ jobs:
         include:
           - name: gnu
             IMAGE: ed
-            LATEST: false
+            LATEST: "NO"
             PLATFORM: "linux/amd64,linux/arm64"
           - name: gnu
             IMAGE: ed
-            LATEST: true
+            LATEST: "YES"
             PLATFORM: "linux/amd64"
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       # calculate some variables that are used later
       - name: version information
@@ -72,10 +72,13 @@ jobs:
           # calculate the version and all tags
           if [ "$BRANCH" == "main" -o "$BRANCH" == "master" ]; then
             VERSION="latest"
-            tags="latest"
+            tags="${{ maatrix.name }}"
+            if [ "${{ matrix.LATEST }}" == "YES" ]; then
+              tags="${tags} latest"
+            fi
           else
-            VERSION="$BRANCH"
-            tags="$BRANCH"
+            VERSION="${{ matrix.name }}-$BRANCH"
+            tags="${{ matrix.name }}-$BRANCH"
           fi
 
           # should we push to dockerhub, and is there a README
@@ -151,10 +154,11 @@ jobs:
 
       # build the docker images
       - name: Build and push docker
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v4
         with:
           push: true
           platforms: ${{ matrix.PLATFORM }}
+          file: Dockerfile.${{ matrix.}}
           cache-from: type=gha
           cache-to: type=gha
           tags: ${{ env.IMAGES }}
