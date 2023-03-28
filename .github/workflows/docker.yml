@@ -72,7 +72,7 @@ jobs:
           # calculate the version and all tags
           if [ "$BRANCH" == "main" -o "$BRANCH" == "master" ]; then
             VERSION="latest"
-            tags="${{ maatrix.name }}"
+            tags="${{ matrix.name }}"
             if [ "${{ matrix.LATEST }}" == "YES" ]; then
               tags="${tags} latest"
             fi
