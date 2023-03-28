@@ -43,10 +43,8 @@ jobs:
       matrix:
         include:
           - name: gnu
-            LATEST: "NO"
             PLATFORM: "linux/amd64,linux/arm64"
-          - name: gnu
-            LATEST: "YES"
+          - name: intel
             PLATFORM: "linux/amd64"
 
     steps:
@@ -68,7 +66,7 @@ jobs:
           if [ "$BRANCH" == "main" -o "$BRANCH" == "master" ]; then
             VERSION="latest"
             tags="${{ matrix.name }}"
-            if [ "${{ matrix.LATEST }}" == "YES" ]; then
+            if [ "${{ matrix.name }}" == "intel" ]; then
               tags="${tags} latest"
             fi
           else
