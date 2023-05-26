@@ -91,11 +91,14 @@ jobs:
           REPO="${REPO,,}"
           IMAGE="${{ github.event.repository.name }}"
           IMAGE="${IMAGE,,}"
+          DEV_IMAGES=""
           IMAGES=""
           for tag in ${tags}; do
             if [ "$DOCKERHUB_PUSH" == "true" ]; then
+              DEV_IMAGES="${IMAGES}${{ env.DOCKERHUB_ORG }}/${IMAGE}-dev:${tag},"
               IMAGES="${IMAGES}${{ env.DOCKERHUB_ORG }}/${IMAGE}:${tag},"
             fi
+            DEV_IMAGES="${IMAGES}ghcr.io/${REPO}/${IMAGE}-dev:${tag},"
             IMAGES="${IMAGES}ghcr.io/${REPO}/${IMAGE}:${tag},"
           done
           IMAGES="${IMAGES%,*}"
@@ -111,6 +114,7 @@ jobs:
           echo "VERSION=${VERSION}" >> $GITHUB_ENV
           echo "DOCKERHUB_README=${DOCKERHUB_README}" >> $GITHUB_ENV
           echo "DOCKERHUB_PUSH=${DOCKERHUB_PUSH}" >> $GITHUB_ENV
+          echo "DEV_IMAGES=${DEV_IMAGES}" >> $GITHUB_ENV
           echo "IMAGES=${IMAGES}" >> $GITHUB_ENV
 
 
@@ -145,6 +149,23 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      # build the dev docker images
+      - name: Build and push docker
+        uses: docker/build-push-action@v4
+        with:
+          push: true
+          platforms: ${{ matrix.PLATFORM }}
+          file: Dockerfile.${{ matrix.name }}
+          target: build
+          cache-from: type=gha,scope=ed-${{ matrix.name }}-build
+          cache-to: type=gha,scope=ed-${{ matrix.name }}-build,mode=max
+          tags: ${{ env.DEV_IMAGES }}
+          build-args: |
+            BRANCH: ${{ env.BRANCH }}
+            VERSION=${{ env.VERSION }}
+            BUILDNUMBER=${{ github.run_number }}
+            GITSHA1=${{ github.sha  }}
+
       # build the docker images
       - name: Build and push docker
         uses: docker/build-push-action@v4
@@ -152,8 +173,8 @@ jobs:
           push: true
           platforms: ${{ matrix.PLATFORM }}
           file: Dockerfile.${{ matrix.name }}
-          cache-from: type=gha
-          cache-to: type=gha
+          cache-from: type=gha,scope=ed-${{ matrix.name }}-build
+          cache-to: type=gha,scope=ed-${{ matrix.name }}-build,mode=max
           tags: ${{ env.IMAGES }}
           build-args: |
             BRANCH: ${{ env.BRANCH }}
