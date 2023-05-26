@@ -95,10 +95,10 @@ jobs:
           IMAGES=""
           for tag in ${tags}; do
             if [ "$DOCKERHUB_PUSH" == "true" ]; then
-              DEV_IMAGES="${IMAGES}${{ env.DOCKERHUB_ORG }}/${IMAGE}-dev:${tag},"
+              DEV_IMAGES="${DEV_IMAGES}${{ env.DOCKERHUB_ORG }}/${IMAGE}-dev:${tag},"
               IMAGES="${IMAGES}${{ env.DOCKERHUB_ORG }}/${IMAGE}:${tag},"
             fi
-            DEV_IMAGES="${IMAGES}ghcr.io/${REPO}/${IMAGE}-dev:${tag},"
+            DEV_IMAGES="${DEV_IMAGES}ghcr.io/${REPO}/${IMAGE}-dev:${tag},"
             IMAGES="${IMAGES}ghcr.io/${REPO}/${IMAGE}:${tag},"
           done
           IMAGES="${IMAGES%,*}"
