@@ -691,36 +691,52 @@ subroutine read_ed21_history_file
                            !---------------------------------------------------------------!
                            !     Initialise size and structural pools.                     !
                            !---------------------------------------------------------------!
-                           if ((iallom == 3 .or. iallom == 4)) then
+                           select case (iallom)
+                           case (3,4,5)
                               !----- New allometry, initialise with DBH. ------------------!
                               cpatch%hite(ico)   = dbh2h (ipft,cpatch%dbh  (ico))
                               bdeadx             = size2bd(cpatch%dbh(ico)                 &
                                                           ,cpatch%hite(ico),ipft)
                               cpatch%bdeada(ico) =        agf_bs(ipft)  * bdeadx
                               cpatch%bdeadb(ico) = (1.0 - agf_bs(ipft)) * bdeadx
-                           elseif ( igrass == 1 .and. is_grass(ipft)                       &
-                                                .and. cpatch%bdeada(ico) > 0.0 ) then
-                              !-- if the initial file was running with igrass = 0, bdead   !
-                              ! should be nonzero.  If the new run has igrass = 1, bdead   !
-                              ! is set to zero and the mass is discarded                   !
-                              cpatch%hite  (ico) = dbh2h (ipft,cpatch%dbh  (ico))
-                              cpatch%bdeada(ico) = 0.0
-                              cpatch%bdeadb(ico) = 0.0
+                           case default
+                              if ( igrass == 1 .and. is_grass(ipft)                        &
+                                               .and. cpatch%bdeada(ico) > 0.0 ) then
+                                 !---------------------------------------------------------!
+                                 !    If the initial file was running with igrass = 0,     !
+                                 ! bdead should be nonzero.  If the new run has            !
+                                 ! igrass = 1, bdead is set to zero and the mass is        !
+                                 ! discarded.  This does not violate carbon conservation   !
+                                 ! because this is the initial state of a new run.         !
+                                 !---------------------------------------------------------!
+                                 cpatch%hite  (ico) = dbh2h (ipft,cpatch%dbh  (ico))
+                                 cpatch%bdeada(ico) = 0.0
+                                 cpatch%bdeadb(ico) = 0.0
+                                 !---------------------------------------------------------!
 
-                           else if (bdeadx > 0.0 .and. igrass == 0) then
-                              ! grasses have bdead in both input and current run (igrass=0)
-                              cpatch%dbh(ico)   = bd2dbh(ipft,cpatch%bdeada(ico)           &
-                                                             ,cpatch%bdeadb(ico) )
-                              cpatch%hite(ico)  = dbh2h (ipft,cpatch%dbh  (ico) )
-                           else
-                              ! it is either a new grass (igrass=1) in the initial file,   !
-                              ! or the value for bdead is missing from the files           !
-                              cpatch%hite(ico)   = dbh2h (ipft,cpatch%dbh  (ico))
-                              bdeadx             = size2bd(cpatch%dbh(ico)                 &
-                                                          ,cpatch%hite(ico),ipft)
-                              cpatch%bdeada(ico) =        agf_bs(ipft)  * bdeadx
-                              cpatch%bdeadb(ico) = (1.0 - agf_bs(ipft)) * bdeadx
-                           end if
+                              else if (bdeadx > 0.0 .and. igrass == 0) then
+                                 !---------------------------------------------------------!
+                                 !   Grasses have bdead in both input and current run      !
+                                 ! (igrass=0).                                             !
+                                 !---------------------------------------------------------!
+                                 cpatch%dbh(ico)   = bd2dbh(ipft,cpatch%bdeada(ico)        &
+                                                                ,cpatch%bdeadb(ico) )
+                                 cpatch%hite(ico)  = dbh2h (ipft,cpatch%dbh  (ico) )
+                                 !---------------------------------------------------------!
+                              else
+                                 !---------------------------------------------------------!
+                                 !    It is either a new grass (igrass=1) in the initial   !
+                                 ! file, or the value for bdead is missing from the files. !
+                                 !---------------------------------------------------------!
+                                 cpatch%hite(ico)   = dbh2h (ipft,cpatch%dbh  (ico))
+                                 bdeadx             = size2bd(cpatch%dbh(ico)              &
+                                                             ,cpatch%hite(ico),ipft)
+                                 cpatch%bdeada(ico) =        agf_bs(ipft)  * bdeadx
+                                 cpatch%bdeadb(ico) = (1.0 - agf_bs(ipft)) * bdeadx
+                                 !---------------------------------------------------------!
+                              end if
+                              !------------------------------------------------------------!
+                           end select
                            !---------------------------------------------------------------!
 
 
@@ -2082,36 +2098,52 @@ subroutine read_ed21_history_unstruct
                            !---------------------------------------------------------------!
                            !     Initialise size and structural pools.                     !
                            !---------------------------------------------------------------!
-                           if (iallom == 3 .or. iallom == 4) then
+                           select case (iallom)
+                           case (3,4,5)
                               !----- New allometry, initialise with DBH. ------------------!
                               cpatch%hite(ico)   = dbh2h (ipft,cpatch%dbh  (ico))
                               bdeadx             = size2bd(cpatch%dbh(ico)                 &
                                                           ,cpatch%hite(ico),ipft)
                               cpatch%bdeada(ico) =        agf_bs(ipft)  * bdeadx
                               cpatch%bdeadb(ico) = (1.0 - agf_bs(ipft)) * bdeadx
-                           elseif ( igrass == 1 .and. is_grass(ipft)                       &
-                                                .and. cpatch%bdeada(ico) > 0.0 ) then
-                              !-- if the initial file was running with igrass = 0, bdead   !
-                              ! should be nonzero.  If the new run has igrass = 1, bdead   !
-                              ! is set to zero and the mass is discarded                   !
-                              cpatch%hite  (ico) = dbh2h (ipft,cpatch%dbh  (ico))
-                              cpatch%bdeada(ico) = 0.0
-                              cpatch%bdeadb(ico) = 0.0
+                           case default
+                              if ( igrass == 1 .and. is_grass(ipft)                        &
+                                               .and. cpatch%bdeada(ico) > 0.0 ) then
+                                 !---------------------------------------------------------!
+                                 !    If the initial file was running with igrass = 0,     !
+                                 ! bdead should be nonzero.  If the new run has            !
+                                 ! igrass = 1, bdead is set to zero and the mass is        !
+                                 ! discarded.  This does not violate carbon conservation   !
+                                 ! because this is the initial state of a new run.         !
+                                 !---------------------------------------------------------!
+                                 cpatch%hite  (ico) = dbh2h (ipft,cpatch%dbh  (ico))
+                                 cpatch%bdeada(ico) = 0.0
+                                 cpatch%bdeadb(ico) = 0.0
+                                 !---------------------------------------------------------!
 
-                           else if (bdeadx > 0.0 .and. igrass == 0) then
-                              ! grasses have bdead in both input and current run (igrass=0)
-                              cpatch%dbh(ico)   = bd2dbh(ipft,cpatch%bdeada(ico)           &
-                                                             ,cpatch%bdeadb(ico) )
-                              cpatch%hite(ico)  = dbh2h (ipft,cpatch%dbh  (ico) )
-                           else
-                              ! it is either a new grass (igrass=1) in the initial file,   !
-                              ! or the value for bdead is missing from the files           !
-                              cpatch%hite(ico)   = dbh2h (ipft,cpatch%dbh  (ico))
-                              bdeadx             = size2bd(cpatch%dbh(ico)                 &
-                                                          ,cpatch%hite(ico),ipft)
-                              cpatch%bdeada(ico) =        agf_bs(ipft)  * bdeadx
-                              cpatch%bdeadb(ico) = (1.0 - agf_bs(ipft)) * bdeadx
-                           end if
+                              else if (bdeadx > 0.0 .and. igrass == 0) then
+                                 !---------------------------------------------------------!
+                                 !   Grasses have bdead in both input and current run      !
+                                 ! (igrass=0).                                             !
+                                 !---------------------------------------------------------!
+                                 cpatch%dbh(ico)   = bd2dbh(ipft,cpatch%bdeada(ico)        &
+                                                                ,cpatch%bdeadb(ico) )
+                                 cpatch%hite(ico)  = dbh2h (ipft,cpatch%dbh  (ico) )
+                                 !---------------------------------------------------------!
+                              else
+                                 !---------------------------------------------------------!
+                                 !    It is either a new grass (igrass=1) in the initial   !
+                                 ! file, or the value for bdead is missing from the files. !
+                                 !---------------------------------------------------------!
+                                 cpatch%hite(ico)   = dbh2h (ipft,cpatch%dbh  (ico))
+                                 bdeadx             = size2bd(cpatch%dbh(ico)              &
+                                                             ,cpatch%hite(ico),ipft)
+                                 cpatch%bdeada(ico) =        agf_bs(ipft)  * bdeadx
+                                 cpatch%bdeadb(ico) = (1.0 - agf_bs(ipft)) * bdeadx
+                                 !---------------------------------------------------------!
+                              end if
+                              !------------------------------------------------------------!
+                           end select
                            !---------------------------------------------------------------!
 
 
@@ -3456,36 +3488,52 @@ subroutine read_ed21_polyclone
                            !---------------------------------------------------------------!
                            !     Initialise size and structural pools.                     !
                            !---------------------------------------------------------------!
-                           if (iallom == 3 .or. iallom == 4) then
+                           select case (iallom)
+                           case (3,4,5)
                               !----- New allometry, initialise with DBH. ------------------!
                               cpatch%hite(ico)   = dbh2h (ipft,cpatch%dbh  (ico))
                               bdeadx             = size2bd(cpatch%dbh(ico)                 &
                                                           ,cpatch%hite(ico),ipft)
                               cpatch%bdeada(ico) =        agf_bs(ipft)  * bdeadx
                               cpatch%bdeadb(ico) = (1.0 - agf_bs(ipft)) * bdeadx
-                           elseif ( igrass == 1 .and. is_grass(ipft)                       &
-                                                .and. cpatch%bdeada(ico) > 0.0 ) then
-                              !-- if the initial file was running with igrass = 0, bdead   !
-                              ! should be nonzero.  If the new run has igrass = 1, bdead   !
-                              ! is set to zero and the mass is discarded                   !
-                              cpatch%hite  (ico) = dbh2h (ipft,cpatch%dbh  (ico))
-                              cpatch%bdeada(ico) = 0.0
-                              cpatch%bdeadb(ico) = 0.0
+                           case default
+                              if ( igrass == 1 .and. is_grass(ipft)                        &
+                                               .and. cpatch%bdeada(ico) > 0.0 ) then
+                                 !---------------------------------------------------------!
+                                 !    If the initial file was running with igrass = 0,     !
+                                 ! bdead should be nonzero.  If the new run has            !
+                                 ! igrass = 1, bdead is set to zero and the mass is        !
+                                 ! discarded.  This does not violate carbon conservation   !
+                                 ! because this is the initial state of a new run.         !
+                                 !---------------------------------------------------------!
+                                 cpatch%hite  (ico) = dbh2h (ipft,cpatch%dbh  (ico))
+                                 cpatch%bdeada(ico) = 0.0
+                                 cpatch%bdeadb(ico) = 0.0
+                                 !---------------------------------------------------------!
 
-                           else if (bdeadx > 0.0 .and. igrass == 0) then
-                              ! grasses have bdead in both input and current run (igrass=0)
-                              cpatch%dbh(ico)   = bd2dbh(ipft,cpatch%bdeada(ico)           &
-                                                             ,cpatch%bdeadb(ico) )
-                              cpatch%hite(ico)  = dbh2h (ipft,cpatch%dbh  (ico) )
-                           else
-                              ! it is either a new grass (igrass=1) in the initial file,   !
-                              ! or the value for bdead is missing from the files           !
-                              cpatch%hite(ico)   = dbh2h (ipft,cpatch%dbh  (ico))
-                              bdeadx             = size2bd(cpatch%dbh(ico)                 &
-                                                          ,cpatch%hite(ico),ipft)
-                              cpatch%bdeada(ico) =        agf_bs(ipft)  * bdeadx
-                              cpatch%bdeadb(ico) = (1.0 - agf_bs(ipft)) * bdeadx
-                           end if
+                              else if (bdeadx > 0.0 .and. igrass == 0) then
+                                 !---------------------------------------------------------!
+                                 !   Grasses have bdead in both input and current run      !
+                                 ! (igrass=0).                                             !
+                                 !---------------------------------------------------------!
+                                 cpatch%dbh(ico)   = bd2dbh(ipft,cpatch%bdeada(ico)        &
+                                                                ,cpatch%bdeadb(ico) )
+                                 cpatch%hite(ico)  = dbh2h (ipft,cpatch%dbh  (ico) )
+                                 !---------------------------------------------------------!
+                              else
+                                 !---------------------------------------------------------!
+                                 !    It is either a new grass (igrass=1) in the initial   !
+                                 ! file, or the value for bdead is missing from the files. !
+                                 !---------------------------------------------------------!
+                                 cpatch%hite(ico)   = dbh2h (ipft,cpatch%dbh  (ico))
+                                 bdeadx             = size2bd(cpatch%dbh(ico)              &
+                                                             ,cpatch%hite(ico),ipft)
+                                 cpatch%bdeada(ico) =        agf_bs(ipft)  * bdeadx
+                                 cpatch%bdeadb(ico) = (1.0 - agf_bs(ipft)) * bdeadx
+                                 !---------------------------------------------------------!
+                              end if
+                              !------------------------------------------------------------!
+                           end select
                            !---------------------------------------------------------------!
 
 

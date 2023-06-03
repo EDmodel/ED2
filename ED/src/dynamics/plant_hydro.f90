@@ -340,15 +340,15 @@ module plant_hydro
                ! and psi_closed.                                                           !
                !---------------------------------------------------------------------------!
                call calc_plant_water_flux(                            &
-                        dtlsm                                         &!input
-                       ,sap_area,cpatch%nplant(ico),ipft              &!input
-                       ,cpatch%is_small(ico),cpatch%krdepth(ico)      &!input
-                       ,cpatch%bleaf(ico),bsap,cpatch%broot(ico)      &!input
-                       ,cpatch%hite(ico),transp                       &!input
-                       ,cpatch%leaf_psi(ico),cpatch%wood_psi(ico)     &!input
-                       ,soil_psi,soil_cond,ipa,ico                    &!input
-                       ,cpatch%wflux_wl(ico),cpatch%wflux_gw(ico)     &!output
-                       ,cpatch%wflux_gw_layer(:,ico))                 !!output
+                        dtlsm                                            & ! input
+                       ,sap_area,cpatch%nplant(ico),ipft                 & ! input
+                       ,cpatch%is_small(ico),cpatch%krdepth(ico)         & ! input
+                       ,cpatch%bleaf(ico),bsap,cpatch%broot(ico)         & ! input
+                       ,cpatch%hite(ico),cpatch%root_frac(:,ico)         & ! input
+                       ,transp,cpatch%leaf_psi(ico),cpatch%wood_psi(ico) & ! input
+                       ,soil_psi,soil_cond,ipa,ico                       & ! input
+                       ,cpatch%wflux_wl(ico),cpatch%wflux_gw(ico)        & ! output
+                       ,cpatch%wflux_gw_layer(:,ico))                    ! ! output
                !---------------------------------------------------------------------------!
             else
                !----- Neither leaves nor wood are resolvable.  Assume zero flow. ----------!
@@ -450,13 +450,12 @@ module plant_hydro
    !---------------------------------------------------------------------------------------!
    subroutine calc_plant_water_flux(dt                                  & !timestep
                ,sap_area,nplant,ipft,is_small,krdepth                   & !plant input
-               ,bleaf,bsap,broot,hite                                   & !plant input
+               ,bleaf,bsap,broot,hite ,root_frac                        & !plant input
                ,transp,leaf_psi,wood_psi                                & !plant input
                ,soil_psi,soil_cond                                      & !soil  input
                ,ipa,ico                                                 & !debug input
                ,wflux_wl,wflux_gw,wflux_gw_layer)                       ! !flux  output
-      use soil_coms       , only : slz8                 & ! intent(in)
-                                 , dslz8                ! ! intent(in)
+      use soil_coms       , only : dslz8                ! ! intent(in)
       use grid_coms       , only : nzg                  ! ! intent(in)
       use consts_coms     , only : pi18                 & ! intent(in)
                                  , lnexp_min8           ! ! intent(in)
@@ -470,7 +469,6 @@ module plant_hydro
                                  , wood_Kmax            & ! intent(in)
                                  , wood_Kexp            & ! intent(in)
                                  , vessel_curl_factor   & ! intent(in)
-                                 , root_beta            & ! intent(in)
                                  , SRA                  & ! intent(in)
                                  , C2B                  ! ! intent(in)
       use ed_misc_coms    , only : current_time         ! ! intent(in)
@@ -486,6 +484,7 @@ module plant_hydro
       real   ,                 intent(in)  :: bsap           !sapwood biomass     [ kgC/pl]
       real   ,                 intent(in)  :: broot          !fine root biomass   [ kgC/pl]
       real   ,                 intent(in)  :: hite           !plant height        [      m]
+      real   , dimension(nzg), intent(in)  :: root_frac      !Root fraction       [      m]
       real   ,                 intent(in)  :: transp         !transpiration       [   kg/s]
       real   ,                 intent(in)  :: leaf_psi       !leaf water pot.     [      m]
       real   ,                 intent(in)  :: wood_psi       !wood water pot.     [      m]
@@ -517,12 +516,12 @@ module plant_hydro
       real(kind=8)                 :: wood_psi_min_d
       real(kind=8)                 :: leaf_psi_lwr_d
       real(kind=8)                 :: wood_psi_lwr_d
-      real(kind=8)                 :: root_beta_d
       real(kind=8)                 :: SRA_d
       real(kind=8)                 :: wood_psi50_d
       real(kind=8)                 :: wood_Kexp_d
       real(kind=8)                 :: wood_Kmax_d
       real(kind=8)                 :: vessel_curl_factor_d
+      real(kind=8)                 :: root_frac_d          !fraction of roots
       !----- Auxiliary variables. ---------------------------------------------------------!
       real(kind=8)                          :: exp_term             !exponent term
       real(kind=8)                          :: ap                   ![s-1]
@@ -532,7 +531,6 @@ module plant_hydro
       real(kind=8)                          :: c_leaf               !leaf water capacitance
       real(kind=8)                          :: c_stem               !stem water capacitance
       real(kind=8)                          :: RAI                  !root area index
-      real(kind=8)                          :: root_frac            !fraction of roots
       real(kind=8)                          :: proj_leaf_psi        !projected leaf water pot.
       real(kind=8)                          :: proj_wood_psi        !projected wood water pot. 
       real(kind=8)                          :: gw_cond              !g->w water conductivity
@@ -540,8 +538,6 @@ module plant_hydro
       real(kind=8)                          :: org_leaf_psi         !used for small tree
       real(kind=8)                          :: weighted_soil_psi
       real(kind=8)                          :: weighted_gw_cond
-      real(kind=8)                          :: above_layer_depth
-      real(kind=8)                          :: current_layer_depth
       real(kind=8)                          :: total_water_supply
       real(kind=8)      , dimension(nzg)    :: layer_water_supply
       !----- Counters. --------------------------------------------------------------------!
@@ -570,14 +566,13 @@ module plant_hydro
       bleaf_d              = dble(bleaf                   )
       bsap_d               = dble(bsap                    )
       broot_d              = dble(broot                   )
-      nplant_d             = dble(nplant                   )
+      nplant_d             = dble(nplant                  )
       hite_d               = dble(hite                    )
       transp_d             = dble(transp                  )
       leaf_psi_d           = dble(leaf_psi                )
       wood_psi_d           = dble(wood_psi                )
       soil_psi_d           = dble(soil_psi                )
       soil_cond_d          = dble(soil_cond               )
-      root_beta_d          = dble(root_beta         (ipft))
       SRA_d                = dble(SRA               (ipft))
       !----- Minimum threshold depends on whether the plant is small or large. ------------!
       if (is_small) then
@@ -795,26 +790,16 @@ module plant_hydro
 
       !----- Loop over all soil layers to get the aggregated water conductance. -----------!
       do k = krdepth,nzg
-         !---------------------------------------------------------------------------------!
-         !   Define layer edges 
-         !
-         !---------------------------------------------------------------------------------!
-         current_layer_depth = -slz8(k)
-         above_layer_depth   = -slz8(k+1)
-         !---------------------------------------------------------------------------------!
 
-
-
-         !----- Calculate the root fraction of this layer. --------------------------------!
-         root_frac = ( root_beta_d ** (above_layer_depth   / (-slz8(krdepth)))             &
-                     - root_beta_d ** (current_layer_depth / (-slz8(krdepth))) )
+         !----- Retrieve the root fraction of this layer. ---------------------------------!
+         root_frac_d = dble(root_frac(k))
          !---------------------------------------------------------------------------------!
 
 
          !---------------------------------------------------------------------------------!
          !  Calculate RAI in each layer.                                                   !
          !---------------------------------------------------------------------------------!
-         RAI = broot_d * SRA_d * root_frac * nplant_d  ! m2/m2
+         RAI = broot_d * SRA_d * root_frac_d * nplant_d  ! m2/m2
          !---------------------------------------------------------------------------------!
 
          !---------------------------------------------------------------------------------!
@@ -979,7 +964,6 @@ module plant_hydro
 
          write (unit=*,fmt='(a)'  ) ' '
          write (unit=*,fmt=efmt   ) ' + LEAF_PSI_MIN      =',leaf_psi_min (ipft)
-         write (unit=*,fmt=efmt   ) ' + WOOD_PSI_MIN      =',wood_psi_min (ipft)
          write (unit=*,fmt=efmt   ) ' + SMALL_PSI_MIN     =',small_psi_min(ipft)
 
          write (unit=*,fmt='(a)'  ) ' '
