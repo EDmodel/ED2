@@ -3723,7 +3723,7 @@ subroutine init_pft_alloc_params()
    !    Minimum and maximum height allowed for each cohort.                                !
    !---------------------------------------------------------------------------------------!
    select case (iallom)
-   case (3,4)
+   case (3,4,5)
       !------------------------------------------------------------------------------------!
       !    This value corresponds to the 99% quantile of all trees measured by the         !
       ! Sustainable Landscapes.                                                            !
