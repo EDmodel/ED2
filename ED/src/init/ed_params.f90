@@ -3016,13 +3016,13 @@ subroutine init_pft_alloc_params()
    real, dimension(3)    , parameter :: nleaf       = (/ 0.0192512, 0.9749494, 2.5858509 /)
    real, dimension(2)    , parameter :: ncrown_area = (/ 0.1184295, 1.0521197            /)
    !---------------------------------------------------------------------------------------!
-   !   Coefficients for leaf and structural biomass (iallom = 3).  For adult individuals,  !
-   ! we use the pantropical allometric equation from C14 that estimates AGB and the leaf   !
-   ! biomass from an allometric equation derived from F15 data (tropical forest, wild      !
-   ! flowering trees only), and the size- and site-dependent stratified sampling and       !
-   ! aggregation (J17).  Total individual leaf area was fitted, so to get biomass we must  !
-   ! divide by SLA.  The C2B term is added here but is removed when the coefficients are   !
-   ! set.                                                                                  !
+   !   Coefficients for leaf and structural biomass (iallom = 3 or 5).  For adult          !
+   ! individuals, we use the pantropical allometric equation from C14 that estimates AGB   !
+   ! and the leaf biomass from an allometric equation derived from F15 data (tropical      !
+   ! forest, wild flowering trees only), and the size- and site-dependent stratified       !
+   ! sampling and aggregation (J17).  Total individual leaf area was fitted, so to get     !
+   ! biomass we must divide by SLA.  The C2B term is added here but is removed when the    !
+   ! coefficients are set.                                                                 !
    !                                                                                       !
    !  References:                                                                          !
    !                                                                                       !
@@ -3033,7 +3033,7 @@ subroutine init_pft_alloc_params()
    !                                                                                       !
    !   Falster DS, Duursma RA, Ishihara MI, Barneche DR, FitzJohn RG, Vahammar A, Aiba M,  !
    !      Ando M, Anten N, Aspinwall MJ. 2015. BAAD: a biomass and allometry database for  !
-   !      woody plants. Ecology, 96 (5):1445-1445. doi:10.1890/14-1889.1 (F16).            !
+   !      woody plants. Ecology, 96 (5):1445-1445. doi:10.1890/14-1889.1 (F15).            !
    !                                                                                       !
    !   Jucker T, Caspersen J, Chave J, Antin C, Barbier N, Bongers F, Dalponte M,          !
    !      van Ewijk KY, Forrester DI, Haeni M et al. 2017. Allometric equations for        !
@@ -3315,9 +3315,10 @@ subroutine init_pft_alloc_params()
 
    !---------------------------------------------------------------------------------------!
    !   KIM: ED1/ED2 codes and Moorcroft et al. had the incorrect ratio.                    !
-   !   MLO: The ratio is corrected only for tropical PFTs using iallom=3.  To extend this  !
-   !        fix to other PFTs, one must refit parameters for other tissues (e.g. bdead),   !
-   !        so the total AGB is consistent with the original allometric equation for AGB.  !
+   !   MLO: The ratio is corrected only for tropical PFTs using iallom = 3 or 5.  To       !
+   !        extend this fix to other PFTs, one must refit parameters for other tissues     !
+   !        (e.g. bdead), so the total AGB is consistent with the original allometric      !
+   !        equation for AGB.                                                              !
    !                                                                                       !
    !        For the PFTs that were updated, we combine the pipe model with the data from   !
    !        CA08 and shape parameter from F16 to derive the ratio.                         !
@@ -3506,8 +3507,8 @@ subroutine init_pft_alloc_params()
 
    !---------------------------------------------------------------------------------------!
    !     Set bark thickness and carbon allocation to bark.  This is currently done only    !
-   ! for tropical trees when IALLOM=3, because all biomass pools must be corrected to      !
-   ! ensure that total aboveground biomass is consistent with the allometric equations.    !
+   ! for tropical trees when IALLOM = 3 or 5, because all biomass pools must be corrected  !
+   ! to ensure that total aboveground biomass is consistent with the allometric equations. !
    ! This may and should be changed in the future.                                         !
    !                                                                                       !
    ! References:                                                                           !
@@ -3636,13 +3637,13 @@ subroutine init_pft_alloc_params()
             !------------------------------------------------------------------------------!
             !     Allometric equation based on the fitted curve using the Sustainable      !
             ! Landscapes data set (L16) and the size- and site-dependent stratified        !
-            ! sampling and aggregation (J17).  This relationship is fitted using           !
-            ! Standardised Major Axis (SMA) so the same parameters can be used for         !
-            ! y=f(x) and x=f(y).  This is particularly useful when initialising the model  !
-            ! with airborne lidar data.  Because it would be extremely cumbersome to       !
-            ! derive a SMA-based regression based on Weibull function, we use a log-linear !
-            ! relationship.  The maximum height is based on the 99% quantile of all trees  !
-            ! measured by the SL team.                                                     !
+            ! sampling and aggregation (J17), as described in (L20).  This relationship is !
+            ! fitted using Standardised Major Axis (SMA) so the same parameters can be     !
+            ! used for y=f(x) and x=f(y).  This is particularly useful when initialising   !
+            ! the model with airborne lidar data (L20).  Because it would be extremely     !
+            ! cumbersome to derive a SMA-based regression based on Weibull function, we    !
+            ! use a log-linear relationship.  The maximum height is based on the 99%       !
+            ! quantile of all trees measured by the SL team.                               !
             !                                                                              !
             ! References:                                                                  !
             !                                                                              !
@@ -3656,6 +3657,11 @@ subroutine init_pft_alloc_params()
             !    biomass variability across intact and degraded forests in the Brazilian   !
             !    Amazon.  Global Biogeochem. Cycles, 30(11):1639-1660.                     !
             !    doi:10.1002/2016GB005465 (L16).                                           !
+            !                                                                              !
+            ! Longo M, Saatchi SS, Keller M, Bowman KW, Ferraz A, Moorcroft PR, Morton D,  !
+            !    Bonal D, Brando P, Burban B et al. 2020. Impacts of degradation on water, !
+            !    energy, and carbon cycling of the Amazon tropical forests. J. Geophys.    !
+            !    Res.-Biogeosci., 125: e2020JG005677. doi:10.1029/2020JG005677 (L20).      !
             !------------------------------------------------------------------------------!
             b1Ht   (ipft) = 1.139963
             b2Ht   (ipft) = 0.564899
@@ -3823,8 +3829,10 @@ subroutine init_pft_alloc_params()
             !     Allometry using the Sustainable Landscapes data.                         !
             !------------------------------------------------------------------------------!
             !                                                                              !
-            !    Longo, M. et al.  Carbon Debt and Recovery time of degraded forests in    !
-            !       the Amazon. Environ. Res. Lett., in prep.                              !
+            ! Longo M, Saatchi SS, Keller M, Bowman KW, Ferraz A, Moorcroft PR, Morton D,  !
+            !    Bonal D, Brando P, Burban B et al. 2020. Impacts of degradation on water, !
+            !    energy, and carbon cycling of the Amazon tropical forests. J. Geophys.    !
+            !    Res.-Biogeosci., 125: e2020JG005677. doi:10.1029/2020JG005677 (L20).      !
             !                                                                              !
             !    Equation was derived from forest inventory measurements carried out at    !
             ! multiple locations in the Brazilian Amazon, and fitted using a               !
@@ -3867,11 +3875,13 @@ subroutine init_pft_alloc_params()
    ! Poorter L., L. Bongers, F. Bongers, 2006: Architecture of 54 moist-forest tree        !
    !     species: traits, trade-offs, and functional groups. Ecology, 87, 1289-1301.       !
    !                                                                                       !
-   !    For iallom = 3, we use the allometric equation based on the Sustainable Landscapes !
-   ! data set.                                                                             !
+   !    For iallom = 3 or 5, we use the allometric equation based on the Sustainable       !
+   ! Landscapes data set.                                                                  !
    !                                                                                       !
-   !    Longo, M. et al. Carbon Debt and Recovery time of degraded forests in the Amazon,  !
-   !       in prep.                                                                        !
+   ! Longo M, Saatchi SS, Keller M, Bowman KW, Ferraz A, Moorcroft PR, Morton D, Bonal D,  !
+   !    Brando P, Burban B et al. 2020. Impacts of degradation on water, energy, and       !
+   !    carbon cycling of the Amazon tropical forests. J. Geophys. Res.-Biogeosci., 125:   !
+   !    e2020JG005677. doi:10.1029/2020JG005677 (L20).                                     !
    !                                                                                       !
    !    Equation was derived from forest inventory measurements carried out at multiple    !
    ! locations in the Brazilian Amazon, and fitted using a heteroscedastic least           !
@@ -3919,9 +3929,9 @@ subroutine init_pft_alloc_params()
    !     Parameters for DBH -> Bleaf allometry.                                            !
    !                                                                                       !
    !   IALLOM = 0,1,2  --  Bleaf = b1Bl * DBH^b2Bl                                         !
-   !   IALLOM = 3      --  Bleaf = b1Bl * (DBH*DBH*Height)^b2Bl                            !
-   !   IALLOM = 4      --  leaf_A= b1Bl * (DBH*DBH*Height)^b2Bl                            !
-   !                       b1Bl is a fucntion of wood density                              !
+   !   IALLOM = 3,4,5  --  leaf_A= b1Bl * (DBH*DBH*Height)^b2Bl                            !
+   !                       b1Bl is a function of wood density (IALLOM=4 only).             !
+   !                       For IALLOM=3,4,5, leaf biomass will depend on SLA.              !
    !                                                                                       !
    !   The coefficients and thresholds depend on the PFT and allometric equations.  In     !
    ! addition to the coefficients, we define the dbh point that defines adult cohorts as   !
@@ -3963,22 +3973,27 @@ subroutine init_pft_alloc_params()
             !------------------------------------------------------------------------------!
         case (3,5) 
             !------------------------------------------------------------------------------!
-            !    Allometry based on the BAAD data based (F15).  We only used leaves from   !
-            ! wild tropical, flowering trees, and applied a stratified sample by DBH class !
-            ! and location and cross-validation, following (J17).                          !
+            !    Allometry based on the BAAD data based (F15) and described in (L20).  We  !
+            ! only used leaves from wild tropical, flowering trees, and applied a          !
+            ! stratified sample by DBH class and location and cross-validation, following  !
+            ! (J17).                                                                       !
             !                                                                              !
             ! References:                                                                  !
+            !                                                                              !
+            ! Falster DS, Duursma RA, Ishihara MI, Barneche DR, FitzJohn RG, Vahammar A,   !
+            !    Aiba M, Ando M, Anten N, Aspinwall MJ. 2015. BAAD: a biomass and          !
+            !    allometry database for woody plants. Ecology, 96 (5):1445-1445.           !
+            !    doi:10.1890/14-1889.1 (F15).                                              !
             !                                                                              !
             ! Jucker T, Caspersen J, Chave J, Antin C, Barbier N, Bongers F, Dalponte M,   !
             !    van Ewijk KY, Forrester DI, Haeni M et al. 2017. Allometric equations for !
             !    integrating remote sensing imagery into forest monitoring programmes.     !
             !    Glob. Change Biol., 23(1):177-190. doi:10.1111/gcb.13388 (J17).           !
             !                                                                              !
-            ! Longo M, Keller M, dos-Santos MN, Leitold V, Pinage ER, Baccini A,           !
-            !    Saatchi S, Nogueira EM, Batistella M , Morton DC. 2016. Aboveground       !
-            !    biomass variability across intact and degraded forests in the Brazilian   !
-            !    Amazon.  Global Biogeochem. Cycles, 30(11):1639-1660.                     !
-            !    doi:10.1002/2016GB005465 (L16).                                           !
+            ! Longo M, Saatchi SS, Keller M, Bowman KW, Ferraz A, Moorcroft PR, Morton D,  !
+            !    Bonal D, Brando P, Burban B et al. 2020. Impacts of degradation on water, !
+            !    energy, and carbon cycling of the Amazon tropical forests. J. Geophys.    !
+            !    Res.-Biogeosci., 125: e2020JG005677. doi:10.1029/2020JG005677 (L20).      !
             !------------------------------------------------------------------------------!
             b1Bl(ipft) = c14f15_bl_xx(1)
             b2Bl(ipft) = c14f15_bl_xx(2)
@@ -3987,7 +4002,12 @@ subroutine init_pft_alloc_params()
             !------------------------------------------------------------------------------!
             !    Allometry based on the BAAD data based (F15).  We only used leaves from   !
             ! wild tropical, note that b1Bl has the unit of m2 leaf under this scenario    !
-            ! and will be converted to leaf carbon using SLA in size2bl
+            ! and will be converted to leaf carbon using SLA in size2bl.                   !
+            !                                                                              !
+            ! Falster DS, Duursma RA, Ishihara MI, Barneche DR, FitzJohn RG, Vahammar A,   !
+            !    Aiba M, Ando M, Anten N, Aspinwall MJ. 2015. BAAD: a biomass and          !
+            !    allometry database for woody plants. Ecology, 96 (5):1445-1445.           !
+            !    doi:10.1890/14-1889.1 (F15).                                              !
             !------------------------------------------------------------------------------!
             b1Bl(ipft) = exp( c14f15_la_wd(1) + c14f15_la_wd(2) * log(rho(ipft)))
             b2Bl(ipft) = c14f15_la_wd(3)
@@ -4040,7 +4060,7 @@ subroutine init_pft_alloc_params()
    !   Bdead = {                                                                           !
    !           { b1Bs_large * DBH^b2Bl_large  , if dbh > dbh_crit                          !
    !                                                                                       !
-   !   IALLOM = 3, 4                                                                       !
+   !   IALLOM = 3, 4, 5                                                                    !
    !                                                                                       !
    !   Bdead = b1Bs_small * (DBH^2 * Height) ^ b2Bs_small                                  !
    !                                                                                       !
@@ -4244,7 +4264,7 @@ subroutine init_pft_alloc_params()
    !    WAI parameters, the choice depends on IALLOM.                                      !
    !---------------------------------------------------------------------------------------!
    select case (iallom)
-   case (3,4)
+   case (3,4,5)
       !------------------------------------------------------------------------------------!
       !    WAI is defined as a fraction of (potential) LAI.   This is just a refit of      !
       ! allometry 2 but using DBH*DBH*Height as predictor for consistency.                 !
@@ -4429,11 +4449,6 @@ subroutine init_pft_alloc_params()
    !    Hydrological niche segregation defines forest structure and drought tolerance      !
    !    strategies in a seasonal Amazonian forest. J. Ecol., in press.                     !
    !    doi:10.1111/1365-2745.13022 (B18).                                                 !
-   !                                                                                       !
-   ! Longo M, Keller M, dos-Santos MN, Leitold V, Pinage ER, Baccini A, Saatchi S,         !
-   !    Nogueira EM, Batistella M , Morton DC. 2016. Aboveground biomass variability       !
-   !    across intact and degraded forests in the Brazilian Amazon.  Global Biogeochem.    !
-   !    Cycles, 30(11):1639-1660. doi:10.1002/2016GB005465 (L16).                          !
    !---------------------------------------------------------------------------------------!
    d18O_ref(:) = -5.356
    b1d18O  (:) = 0.0516
@@ -4722,12 +4737,35 @@ subroutine init_pft_photo_params()
    !---------------------------------------------------------------------------------------!
    select case (iphysiol)
    case (0,2)
-      !----- Default parameters (Moorcroft et al. 2001; Longo 2014). ----------------------!
+      !------------------------------------------------------------------------------------!
+      !  Default parameters (M01/M09/L19).                                                 !
+      !                                                                                    !
+      ! Longo M, Knox RG, Medvigy DM, Levine NM, Dietze MC, Kim Y, Swann ALS, Zhang K,     !
+      !    Rollinson CR, Bras RL et al. 2019. The biophysics, ecology, and biogeochemistry !
+      !    of functionally diverse, vertically and horizontally heterogeneous ecosystems:  !
+      !    the Ecosystem Demography model, version 2.2 -- part 1: Model description.       !
+      !    Geosci. Model Dev., 12: 4309-4346. doi:10.5194/gmd-12-4309-2019 (L19).          !
+      !                                                                                    !
+      ! Medvigy DM, Wofsy SC, Munger JW, Hollinger DY , Moorcroft PR. 2009. Mechanistic    !
+      !    scaling of ecosystem function and dynamics in space and time: Ecosystem         !
+      !    demography model version 2. J. Geophys. Res.-Biogeosci., 114: G01002.           !
+      !    doi:10.1029/2008JG000812 (M09).                                                 !
+      !                                                                                    !
+      ! Moorcroft PR, Hurtt GC , Pacala SW. 2001. A method for scaling vegetation          !
+      !    dynamics: The Ecosystem Demography model (ED). Ecol. Monogr., 71: 557-586.      !
+      !    doi:10.1890/0012- 9615(2001)071[0557:AMFSVD]2.0.CO;2 (M01).                     !
+      !------------------------------------------------------------------------------------!
       vm_hor(:) = 3000.
       vm_q10(:) = merge(q10_c4,q10_c3,photosyn_pathway(:) == 4)
       !------------------------------------------------------------------------------------!
    case (1,3)
-      !----- Use values from von Caemmerer (2000). ----------------------------------------!
+      !------------------------------------------------------------------------------------!
+      !  Use values from vC00.                                                             !
+      !                                                                                    !
+      ! von Caemmerer S. 2000. Biochemical models of leaf photosynthesis. No. 2 in         !
+      !    Techniques in Plant Sciences. CSIRO Publishing, Collingwood, VIC, Australia.    !
+      !    doi:10.1006/anbo.2000.1296 (vC00).                                              !
+      !------------------------------------------------------------------------------------!
       vm_hor(:) = 58520. * tphysref / (rmol * (t00+25.))
       vm_q10(:) = 2.21
       !------------------------------------------------------------------------------------!
@@ -8568,7 +8606,7 @@ subroutine init_derived_params_after_xml()
 
    !---------------------------------------------------------------------------------------!
    !      Hgt_max of temperate trees cannot exceed b1Ht, and cannot exceed hgt_ref for     !
-   ! tropical trees (IALLOM=2 or IALLOM=3).                                                !
+   ! tropical trees (IALLOM = 2).                                                          !
    !---------------------------------------------------------------------------------------!
    select case (iallom)
    case (2)
