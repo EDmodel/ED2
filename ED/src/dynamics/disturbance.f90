@@ -1563,7 +1563,7 @@ module disturbance
                !---------------------------------------------------------------------------!
             case default
                !------ Read anthropogenic disturbance from external data set. -------------!
-               if (clutime%landuse(12) < 0 .or. clutime%landuse(14) < 0) then
+               if (clutime%landuse(12) < 0. .or. clutime%landuse(14) < 0.) then
                   find_target                         = .true.
                   cpoly%primary_harvest_target  (isi) = 0.
                   cpoly%secondary_harvest_target(isi) = 0.

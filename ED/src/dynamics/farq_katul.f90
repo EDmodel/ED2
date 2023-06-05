@@ -848,7 +848,8 @@ module farq_katul
         real(kind=8)                :: k1,k2        !! Variable used in photosynthesis equation
         real(kind=8)                :: a,b,c        !! Coefficients of the quadratic equation to solve ci
         real(kind=8)                :: rad          !! sqrt(b2-4ac)
-        real(kind=8)                :: dbdg,dcdg    !! derivatives of b,c wrt. gsc
+        real(kind=8)                :: dbdg         !! derivatives of b wrt. gsc
+        real(kind=8)                :: dcdg         !! derivatives of c wrt. gsc
         !------------------------------------------------------------------------------------!
 
 
