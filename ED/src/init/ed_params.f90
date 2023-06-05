@@ -2483,6 +2483,7 @@ subroutine init_phen_coms
    use phenology_coms, only : thetacrit                & ! intent(in)
                             , retained_carbon_fraction & ! intent(out)
                             , root_phen_factor         & ! intent(out)
+                            , f_psi_xdry               & ! intent(out)
                             , elongf_min               & ! intent(out)
                             , elongf_flush             & ! intent(out)
                             , spot_phen                & ! intent(out)
@@ -2532,6 +2533,14 @@ subroutine init_phen_coms
    ! root_phen_factor < 0.  Non-sensical, currently assume the same as 0.                  !
    !---------------------------------------------------------------------------------------!
    root_phen_factor = 2.0
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Threshold for shedding all leaves when leaf water potential is very low. .       !
+   !---------------------------------------------------------------------------------------!
+   f_psi_xdry               = 0.95
    !---------------------------------------------------------------------------------------!
 
 
@@ -6536,6 +6545,12 @@ subroutine init_pft_phen_params()
             !------------------------------------------------------------------------------!
             phenology(ipft) = 5
             !------------------------------------------------------------------------------!
+         case (5)
+            !------------------------------------------------------------------------------!
+            !   Combined light and plant-hydraulics driven drought phenology.              !
+            !------------------------------------------------------------------------------!
+            phenology(ipft) = 6
+            !------------------------------------------------------------------------------!
          end select
          !---------------------------------------------------------------------------------!
       end if
@@ -8484,7 +8499,7 @@ subroutine init_derived_params_after_xml()
    ! both in case this simulation is not using light-controlled phenology.                 !
    !---------------------------------------------------------------------------------------!
    select case (iphen_scheme)
-   case (3)
+   case (3,5)
       !------------------------------------------------------------------------------------!
       !    Light phenology is enabled.                                                     !
       !------------------------------------------------------------------------------------!

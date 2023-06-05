@@ -46,31 +46,58 @@ module phenology_driv
             do ipa = 1,csite%npatches
                csite%avg_daily_temp(ipa) = csite%avg_daily_temp(ipa) * tfact
             end do
-            
+
             select case (iphen_scheme)
             case (-1,0,2)
                !---------------------------------------------------------------------------!
-               !     Default predictive scheme (Botta et al.) or the modified drought      !
-               ! deciduous phenology for broadleaf PFTs.                                   !
+               !     Default predictive scheme (B00) or the modified drought deciduous     !
+               ! phenology for broadleaf PFTs (L19).                                       !
+               !                                                                           !
+               ! Botta A, Viovy N, Ciais P, Friedlingstein P , Monfray P. 2000. A global   !
+               !    prognostic scheme of leaf onset using satellite data. Glob. Change     !
+               !    Biol., 6: 709-725. doi:10.1046/j.1365-2486.2000.00362.x (2000).        !
+               !                                                                           !
+               ! Longo M, Knox RG, Medvigy DM, Levine NM, Dietze MC, Kim Y, Swann ALS,     !
+               !    Zhang K, Rollinson CR, Bras RL et al. 2019. The biophysics, ecology,   !
+               !    and biogeochemistry of functionally diverse, vertically and            !
+               !    horizontally heterogeneous ecosystems: the Ecosystem Demography model, !
+               !    version 2.2 -- part 1: Model description. Geosci. Model Dev., 12:      !
+               !    4309-4346. doi:10.5194/gmd-12-4309-2019 (L19).
                !---------------------------------------------------------------------------!
                call update_thermal_sums(month, cpoly, isi, cgrid%lat(ipy))
                call update_phenology(doy,cpoly,isi,cgrid%lat(ipy),veget_dyn_on)
-               
+               !---------------------------------------------------------------------------!
+
             case (1)
-               !----- Use prescribed phenology. -------------------------------------------!
+               !---------------------------------------------------------------------------!
+               !     Use prescribed phenology (M09).                                       !
+               !                                                                           !
+               ! Medvigy DM, Wofsy SC, Munger JW, Hollinger DY , Moorcroft PR. 2009.       !
+               !    Mechanistic scaling of ecosystem function and dynamics in space and    !
+               !    time: Ecosystem demography model version 2. J. Geophys.                !
+               !    Res.-Biogeosci., 114: G01002. doi:10.1029/2008JG000812 (M09).          !
+               !---------------------------------------------------------------------------!
                call prescribed_leaf_state(cgrid%lat(ipy), current_time%month               &
                                          ,current_time%year, doy                           &
                                          ,cpoly%green_leaf_factor(:,isi)                   &
                                          ,cpoly%leaf_aging_factor(:,isi)                   &
                                          ,cpoly%phen_pars(isi) ) 
                call update_phenology(doy,cpoly,isi,cgrid%lat(ipy),veget_dyn_on)
-
+               !---------------------------------------------------------------------------!
 
             case (3,4)
-               !----- Light-controlled predictive phenology scheme. -----------------------!
+               !---------------------------------------------------------------------------!
+               !     Light-controlled predictive phenology scheme (K12).                   !
+               !                                                                           !
+               ! Kim Y, Knox RG, Longo M, Medvigy D, Hutyra LR, Pyle EH, Wofsy SC,         !
+               !    Bras RL, Moorcroft PR. 2012. Seasonal carbon dynamics and water fluxes !
+               !    in an Amazon rainforest. Glob. Change Biol., 18: 1322-1334.            !
+               !    doi:10.1111/j.1365-2486.2011.02629.x (K12).                            !
+               !---------------------------------------------------------------------------!
                call update_thermal_sums(month, cpoly, isi, cgrid%lat(ipy))
                call update_turnover(cpoly,isi)
                call update_phenology(doy,cpoly,isi,cgrid%lat(ipy),veget_dyn_on)
+               !---------------------------------------------------------------------------!
             end select
          end do
       end do
@@ -95,6 +122,7 @@ module phenology_driv
       use pft_coms       , only : phenology                & ! intent(in)
                                 , c2n_leaf                 & ! intent(in)
                                 , q                        & ! intent(in)
+                                , leaf_psi_min             & ! intent(in)
                                 , leaf_psi_tlp             & ! intent(in)
                                 , high_psi_threshold       & ! intent(in)
                                 , low_psi_threshold        & ! intent(in)
@@ -108,7 +136,8 @@ module phenology_driv
                                 , root_phen_factor         & ! intent(in)
                                 , iphen_scheme             & ! intent(in)
                                 , elongf_min               & ! intent(in)
-                                , elongf_flush             ! ! intent(in)
+                                , elongf_flush             & ! intent(in)
+                                , f_psi_xdry               ! ! intent(in)
       use consts_coms    , only : t3ple                    & ! intent(in)
                                 , cice                     & ! intent(in)
                                 , cliq                     & ! intent(in)
@@ -628,7 +657,7 @@ module phenology_driv
                   !------------------------------------------------------------------------!
                end if
                !---------------------------------------------------------------------------!
-            case (5) 
+            case (5,6) 
                !---------------------------------------------------------------------------!
                !    Drought deciduous driven by plant hydrodynamics.  We track the number  !
                ! of consecutive wet days and dry days.  We then modify the phenology       !
@@ -664,7 +693,15 @@ module phenology_driv
 
 
                !----- Modify elongf and phenology_status whenever necessary. --------------!
-               if (cpatch%low_leaf_psi_days(ico) >= low_psi_threshold(ipft)) then
+               if (      cpatch%leaf_psi(ico) < ( f_psi_xdry * leaf_psi_min(ipft) )        &
+                   .and. cpatch%wood_psi(ico) < leaf_psi_tlp(ipft)                  ) then
+                  !------------------------------------------------------------------------!
+                  !    Extremely dry conditions: leaf_psi is too low and even wood_psi is  !
+                  ! below leaf_tlp. Shed all leaves.                                       !
+                  !------------------------------------------------------------------------!
+                  elongf_try = 0.0
+                  !------------------------------------------------------------------------!
+               else if (cpatch%low_leaf_psi_days(ico) >= low_psi_threshold(ipft)) then
                   !----- Too many dry days, decrease elongation factor. -------------------!
                   elongf_try = max(0., cpatch%elongf(ico) - leaf_shed_rate(ipft))
                   !------------------------------------------------------------------------!
@@ -924,12 +961,16 @@ module phenology_driv
                !      Adjust root biomass in case phenology is 5 (drought-deciduous driven !
                ! by hydrodynamics).                                                        !
                !---------------------------------------------------------------------------!
-               if (phenology(ipft) == 5 .and. root_phen_factor > 0.) then
-                  cpatch%broot(ico) = q(ipft) * (elongf_try + root_phen_factor - 1.)       &
-                                    * size2bl(cpatch%dbh(ico),cpatch%hite(ico)             &
-                                             ,cpatch%sla(ico),ipft)                        &
-                                    / root_phen_factor
-               end if
+               select case (phenology(ipft))
+               case (5,6)
+                  if (root_phen_factor > 0.) then
+                     cpatch%broot(ico) = q(ipft) * (elongf_try + root_phen_factor - 1.)    &
+                                       * size2bl(cpatch%dbh(ico),cpatch%hite(ico)          &
+                                                ,cpatch%sla(ico),ipft)                     &
+                                       / root_phen_factor
+                  end if
+                  !------------------------------------------------------------------------!
+               end select
                !---------------------------------------------------------------------------!
             end if
             !------------------------------------------------------------------------------!
