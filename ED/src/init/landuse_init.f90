@@ -860,6 +860,11 @@ module landuse_init
                   !------------------------------------------------------------------------!
 
 
+                  !----- Define the degree of damage relative to felling. -----------------!
+                  cpoly%skid_rel_area(isi) = cpoly%skid_rel_area(1)
+                  !------------------------------------------------------------------------!
+
+
                   !----- PFT-dependent harvest characteristics. ---------------------------!
                   cpoly%mindbh_harvest  (:,isi) = cpoly%mindbh_harvest  (:,1)
                   cpoly%prob_harvest    (:,isi) = cpoly%prob_harvest    (:,1)
