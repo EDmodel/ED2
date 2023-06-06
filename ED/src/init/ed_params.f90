@@ -5342,10 +5342,6 @@ subroutine init_pft_mort_params()
                              , fire_s_max                 & ! intent(out)
                              , fire_s_inter               & ! intent(out)
                              , fire_s_slope               & ! intent(out)
-                             , felling_s_ltharv           & ! intent(out)
-                             , felling_s_gtharv           & ! intent(out)
-                             , skid_s_ltharv              & ! intent(out)
-                             , skid_s_gtharv              & ! intent(out)
                              , plant_min_temp             & ! intent(out)
                              , frost_mort                 ! ! intent(out)
    use consts_coms ,    only : t00                        & ! intent(in)
@@ -5356,9 +5352,6 @@ subroutine init_pft_mort_params()
                              , economics_scheme           ! ! intent(in)
    use disturb_coms,    only : include_fire               & ! intent(in)
                              , time2canopy                & ! intent(in)
-                             , sl_skid_s_gtharv           & ! intent(in)
-                             , sl_skid_s_ltharv           & ! intent(in)
-                             , sl_felling_s_ltharv        & ! intent(in)
                              , treefall_disturbance_rate  ! ! intent(in)
    use physiology_coms, only : carbon_mortality_scheme    & ! intent(in)
                              , hydraulic_mortality_scheme ! ! intent(in)
@@ -5732,18 +5725,6 @@ subroutine init_pft_mort_params()
       treefall_s_ltht(:) = merge(0.25,0.10,is_grass(:))
       !------------------------------------------------------------------------------------!
    end select
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !---------------------------------------------------------------------------------------!
-   !      Felling survivorship fraction, and survivorship to collateral damage due to      !
-   ! logging.                                                                              !
-   !---------------------------------------------------------------------------------------!
-   felling_s_gtharv(:) = merge(0.70,0.00               ,is_grass(:))
-   felling_s_ltharv(:) = merge(0.70,sl_felling_s_ltharv,is_grass(:))
-   skid_s_gtharv   (:) = merge(1.00,sl_skid_s_gtharv   ,is_grass(:))
-   skid_s_ltharv   (:) = merge(1.00,sl_skid_s_ltharv   ,is_grass(:))
    !---------------------------------------------------------------------------------------!
 
 
@@ -8153,10 +8134,6 @@ subroutine init_derived_params_after_xml()
                                    , mort3                     & ! intent(in)
                                    , seedling_mortality        & ! intent(in)
                                    , treefall_s_ltht           & ! intent(in)
-                                   , felling_s_gtharv          & ! intent(in)
-                                   , felling_s_ltharv          & ! intent(in)
-                                   , skid_s_gtharv             & ! intent(in)
-                                   , skid_s_ltharv             & ! intent(in)
                                    , fire_s_min                & ! intent(in)
                                    , fire_s_max                & ! intent(in)
                                    , fire_s_inter              & ! intent(in)
@@ -9708,7 +9685,7 @@ subroutine init_derived_params_after_xml()
    !----- Print trait coefficients. -------------------------------------------------------!
    if (print_zero_table) then
       open (unit=19,file=trim(strat_file),status='replace',action='write')
-      write(unit=19,fmt='(102(1x,a))') '          PFT','     TROPICAL','        GRASS'      &
+      write(unit=19,fmt='( 98(1x,a))') '          PFT','     TROPICAL','        GRASS'     &
                                       ,'      CONIFER','     SAVANNAH','        LIANA'     &
                                       ,'       R_BANG','          RHO','          SLA'     &
                                       ,'          SRA','    ROOT_BETA','          VM0'     &
@@ -9716,8 +9693,7 @@ subroutine init_derived_params_after_xml()
                                       ,'     ROOT_TOR','     BARK_TOR','  STORAGE_TOR'     &
                                       ,' FLABILE_LEAF',' FLABILE_STEM','        MORT0'     &
                                       ,'        MORT1','        MORT2','        MORT3'     &
-                                      ,'    SEED_MORT',' TFALL_S_GTHT','  FELL_S_GTHV'     &
-                                      ,'  FELL_S_LTHV','  SKID_S_GTHV','  SKID_S_LTHV'     &
+                                      ,'    SEED_MORT',' TFALL_S_GTHT'                     &
                                       ,'   FIRE_S_MIN','   FIRE_S_MAX',' FIRE_S_INTER'     &
                                       ,' FIRE_S_SLOPE','     ST_FRACT','      R_FRACT'     &
                                       ,'       R_CV50','  NONLOC_DISP','    SEED_RAIN'     &
@@ -9744,7 +9720,7 @@ subroutine init_derived_params_after_xml()
                                       ,'  STOMA_PSI_C',' HIGH_PSI_THR','  LOW_PSI_THR'
 
       do ipft=1,n_pft
-         write (unit=19,fmt='(9x,i5,6(13x,l1),93(1x,f13.6),2(1x,i13))')                    &
+         write (unit=19,fmt='(9x,i5,6(13x,l1),89(1x,f13.6),2(1x,i13))')                    &
                         ipft,is_tropical(ipft),is_grass(ipft),is_conifer(ipft)             &
                        ,is_savannah(ipft),is_liana(ipft),r_bang(ipft),rho(ipft),SLA(ipft)  &
                        ,SRA(ipft),root_beta(ipft),Vm0(ipft),dark_respiration_factor(ipft)  &
@@ -9753,8 +9729,7 @@ subroutine init_derived_params_after_xml()
                        ,storage_turnover_rate(ipft),f_labile_leaf(ipft)                    &
                        ,f_labile_stem(ipft),mort0(ipft),mort1(ipft),mort2(ipft)            &
                        ,mort3(ipft),seedling_mortality(ipft),treefall_s_ltht(ipft)         &
-                       ,felling_s_gtharv(ipft),felling_s_ltharv(ipft),skid_s_gtharv(ipft)  &
-                       ,skid_s_ltharv(ipft),fire_s_min(ipft),fire_s_max(ipft)              &
+                       ,fire_s_min(ipft),fire_s_max(ipft)                                  &
                        ,fire_s_inter(ipft),fire_s_slope(ipft),st_fract(ipft),r_fract(ipft) &
                        ,r_cv50(ipft),nonlocal_dispersal(ipft),seed_rain(ipft)              &
                        ,effarea_heat,effarea_evap,effarea_transp(ipft)                     &

@@ -224,6 +224,7 @@ module ename_coms
       real                  , dimension(n_pft)          :: sl_mindbh_harvest
       real                                              :: sl_biomass_harvest
       real                                              :: sl_skid_rel_area
+      real                                              :: sl_skid_dbh_thresh
       real                                              :: sl_skid_s_gtharv
       real                                              :: sl_skid_s_ltharv
       real                                              :: sl_felling_s_ltharv
@@ -528,6 +529,7 @@ module ename_coms
       enl%sl_mindbh_harvest         = (/(undef_real   ,i=1,n_pft)/) 
       enl%sl_biomass_harvest        = undef_real
       enl%sl_skid_rel_area          = undef_real
+      enl%sl_skid_dbh_thresh        = undef_real
       enl%sl_skid_s_gtharv          = undef_real
       enl%sl_skid_s_ltharv          = undef_real
       enl%sl_felling_s_ltharv       = undef_real

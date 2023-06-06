@@ -140,6 +140,7 @@ module disturb_coms
    ! The following variables are used when IANTH_DISTURB is 1 or 2.                        !
    !                                                                                       !
    ! SL_SKID_REL_AREA    -- area damaged by skid trails (relative to felled area).         !
+   ! SL_SKID_DBH_THRESH  -- DBH threshold for damage caused in skid trails.                !
    ! SL_SKID_S_GTHARV    -- survivorship of trees with DBH > MINDBH in skid trails.        !
    ! SL_SKID_S_LTHARV    -- survivorship of trees with DBH < MINDBH in skid trails.        !
    ! SL_FELLING_S_LTHARV -- survivorship of trees with DBH < MINDBH in felling gaps.       !
@@ -158,6 +159,7 @@ module disturb_coms
    real(kind=4), dimension(n_pft) :: sl_mindbh_harvest
    real(kind=4)                   :: sl_biomass_harvest
    real(kind=4)                   :: sl_skid_rel_area
+   real(kind=4)                   :: sl_skid_dbh_thresh
    real(kind=4)                   :: sl_skid_s_gtharv
    real(kind=4)                   :: sl_skid_s_ltharv
    real(kind=4)                   :: sl_felling_s_ltharv
