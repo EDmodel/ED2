@@ -48,26 +48,6 @@ module phenology_driv
             end do
 
             select case (iphen_scheme)
-            case (-1,0,2)
-               !---------------------------------------------------------------------------!
-               !     Default predictive scheme (B00) or the modified drought deciduous     !
-               ! phenology for broadleaf PFTs (L19).                                       !
-               !                                                                           !
-               ! Botta A, Viovy N, Ciais P, Friedlingstein P , Monfray P. 2000. A global   !
-               !    prognostic scheme of leaf onset using satellite data. Glob. Change     !
-               !    Biol., 6: 709-725. doi:10.1046/j.1365-2486.2000.00362.x (2000).        !
-               !                                                                           !
-               ! Longo M, Knox RG, Medvigy DM, Levine NM, Dietze MC, Kim Y, Swann ALS,     !
-               !    Zhang K, Rollinson CR, Bras RL et al. 2019. The biophysics, ecology,   !
-               !    and biogeochemistry of functionally diverse, vertically and            !
-               !    horizontally heterogeneous ecosystems: the Ecosystem Demography model, !
-               !    version 2.2 -- part 1: Model description. Geosci. Model Dev., 12:      !
-               !    4309-4346. doi:10.5194/gmd-12-4309-2019 (L19).
-               !---------------------------------------------------------------------------!
-               call update_thermal_sums(month, cpoly, isi, cgrid%lat(ipy))
-               call update_phenology(doy,cpoly,isi,cgrid%lat(ipy),veget_dyn_on)
-               !---------------------------------------------------------------------------!
-
             case (1)
                !---------------------------------------------------------------------------!
                !     Use prescribed phenology (M09).                                       !
@@ -85,14 +65,27 @@ module phenology_driv
                call update_phenology(doy,cpoly,isi,cgrid%lat(ipy),veget_dyn_on)
                !---------------------------------------------------------------------------!
 
-            case (3,4)
+            case default
                !---------------------------------------------------------------------------!
-               !     Light-controlled predictive phenology scheme (K12).                   !
+               !     Default predictive scheme (B00), the modified drought deciduous       !
+               ! phenology for broadleaf PFTs (L19), or the light-controlled predictive    !
+               ! phenology scheme (K12).                                                   !
+               !                                                                           !
+               ! Botta A, Viovy N, Ciais P, Friedlingstein P , Monfray P. 2000. A global   !
+               !    prognostic scheme of leaf onset using satellite data. Glob. Change     !
+               !    Biol., 6: 709-725. doi:10.1046/j.1365-2486.2000.00362.x (2000).        !
                !                                                                           !
                ! Kim Y, Knox RG, Longo M, Medvigy D, Hutyra LR, Pyle EH, Wofsy SC,         !
                !    Bras RL, Moorcroft PR. 2012. Seasonal carbon dynamics and water fluxes !
                !    in an Amazon rainforest. Glob. Change Biol., 18: 1322-1334.            !
                !    doi:10.1111/j.1365-2486.2011.02629.x (K12).                            !
+               !                                                                           !
+               ! Longo M, Knox RG, Medvigy DM, Levine NM, Dietze MC, Kim Y, Swann ALS,     !
+               !    Zhang K, Rollinson CR, Bras RL et al. 2019. The biophysics, ecology,   !
+               !    and biogeochemistry of functionally diverse, vertically and            !
+               !    horizontally heterogeneous ecosystems: the Ecosystem Demography model, !
+               !    version 2.2 -- part 1: Model description. Geosci. Model Dev., 12:      !
+               !    4309-4346. doi:10.5194/gmd-12-4309-2019 (L19).
                !---------------------------------------------------------------------------!
                call update_thermal_sums(month, cpoly, isi, cgrid%lat(ipy))
                call update_turnover(cpoly,isi)
@@ -300,7 +293,7 @@ module phenology_driv
 
             !------------------------------------------------------------------------------!
             !     Here we decide what to do depending on the phenology habit. There are    !
-            ! five different types:                                                        !
+            ! different types:                                                             !
             ! 0. Evergreen         - neither cold nor drought makes these plants to drop   !
             !                        their leaves;                                         !
             ! 1. Drought deciduous - these plants will drop all leaves when drought        !
@@ -314,6 +307,13 @@ module phenology_driv
             ! 4. Drought deciduous - similar to one, but the threshold is compared against !
             !                        a 10-day running average rather than the instant-     !
             !                        aneous value.                                         !
+            ! 5. Hydro-deciduous   - similar to four, but the thresholds are based on      !
+            !                        leaf water potential instead (and thus it requires    !
+            !                        plant hydrodynamics).                                 !
+            ! 6. Light phenology                                                           !
+            !    + Hydro-deciduous - similar to three, but the thresholds are based on     !
+            !                        leaf water potential instead (and thus it requires    !
+            !                        plant hydrodynamics).                                 !
             !------------------------------------------------------------------------------!
             select case (phenology(ipft))
             case (0)
@@ -958,8 +958,8 @@ module phenology_driv
 
 
                !---------------------------------------------------------------------------!
-               !      Adjust root biomass in case phenology is 5 (drought-deciduous driven !
-               ! by hydrodynamics).                                                        !
+               !      Adjust root biomass in case phenology is 5 or 6 (drought-deciduous   !
+               ! driven by hydrodynamics).                                                 !
                !---------------------------------------------------------------------------!
                select case (phenology(ipft))
                case (5,6)
