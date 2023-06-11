@@ -409,9 +409,6 @@ module farq_katul
         real(kind=8)                :: test_dcidg
         real(kind=8)                :: test_dfcdg
         real(kind=8)                :: test_dfedg
-        real(kind=8)                :: test_fc_light
-        real(kind=8)                :: test_fc_rubp
-        real(kind=8)                :: test_fc_3rd
         real(kind=8)                :: opt_ci_light
         real(kind=8)                :: opt_ci_rubp
         real(kind=8)                :: opt_ci_3rd
@@ -852,15 +849,6 @@ module farq_katul
         real(kind=8)                :: a,b,c        !! Coefficients of the quadratic equation to solve ci
         real(kind=8)                :: rad          !! sqrt(b2-4ac)
         real(kind=8)                :: dbdg,dcdg    !! derivatives of b,c wrt. gsc
-        real(kind=8)                :: ci_rubp      !! ci for rubp-limited scenario
-        real(kind=8)                :: dcidg_rubp   !! derivative of ci wrt. gsc for rubp-limited scenario
-        real(kind=8)                :: dfcdg_rubp   !! derivative of fc wrt. gsc for rubp-limited scenario
-        real(kind=8)                :: ci_light     !! ci for light-limited scenario
-        real(kind=8)                :: dcidg_light  !! derivative of ci wrt. gsc for light-limited scenario
-        real(kind=8)                :: dfcdg_light  !! derivative of fc wrt. gsc for light-limited scenario
-        real(kind=8)                :: ci_3rd       !! ci for TPU/CO2-limited scenario
-        real(kind=8)                :: dcidg_3rd    !! derivative of ci wrt. gsc for TPU/CO2-limited scenario
-        real(kind=8)                :: dfcdg_3rd    !! derivative of fc wrt. gsc for TPU/CO2-limited scenario
 
         !------------------------------------------------------------------------------------!
 
