@@ -588,11 +588,17 @@ module ed_met_driver
                call shdf5_open_f(trim(infile),'R')
             else
                write (unit=*,fmt='(a)'       )  '------------------------------'
-               write (unit=*,fmt='(a,1x,i12)')  ' - METCYC1  =',metcyc1
-               write (unit=*,fmt='(a,1x,i12)')  ' - METCYCF  =',metcycf
-               write (unit=*,fmt='(a,1x,i12)')  ' - IYEAR    =',iyear
-               write (unit=*,fmt='(a,1x,i12)')  ' - YEAR_CYC =',year_cyc
-               write (unit=*,fmt='(a,1x,i12)')  ' - YEAR_USE =',year_use
+               write (unit=*,fmt='(a,1x,a)'  )  ' - MET_VARS    =',trim(met_vars(iformat,1))
+               write (unit=*,fmt='(a,1x,l1)' )  ' - CYCLE_CO2   =',.not. not_cycle_co2
+               write (unit=*,fmt='(a,1x,i12)')  ' - METCYC1     =',metcyc1
+               write (unit=*,fmt='(a,1x,i12)')  ' - METCYCF     =',metcycf
+               write (unit=*,fmt='(a,1x,i12)')  ' - NCYC        =',ncyc
+               write (unit=*,fmt='(a,1x,i12)')  ' - NYEARS      =',nyears
+               write (unit=*,fmt='(a,1x,i12)')  ' - IYEAR       =',iyear
+               write (unit=*,fmt='(a,1x,i12)')  ' - MONTH_CURR  =',current_time%month
+               write (unit=*,fmt='(a,1x,i12)')  ' - YEAR_CURR   =',current_time%year
+               write (unit=*,fmt='(a,1x,i12)')  ' - YEAR_CYC    =',year_cyc
+               write (unit=*,fmt='(a,1x,i12)')  ' - YEAR_USE    =',year_use
                write (unit=*,fmt='(a)'       )  '------------------------------'
                call fatal_error('Cannot open met driver input file '//trim(infile)//'!'    &
                                ,'read_met_drivers_init','ed_met_driver.f90')
@@ -656,8 +662,7 @@ module ed_met_driver
                !      Make sure that the special CO2 file exists.  If not, then use the    !
                ! default met cycle years.                                                  !
                !---------------------------------------------------------------------------!
-               write(infile,fmt='(a,i4.4,a,a)') trim(met_names(iformat)),y2                &
-                                               ,mname(current_time%month),'.h5'
+               write(infile,fmt='(a,i4.4,a,a)') trim(met_names(iformat)),y2,mname(m2),'.h5'
                inquire(file=trim(infile),exist=exans)
                if (exans) then
                   !----- Allow CO2 outside met cycle. -------------------------------------!
@@ -681,6 +686,22 @@ module ed_met_driver
             if (exans) then
                call shdf5_open_f(trim(infile),'R')
             else
+               write (unit=*,fmt='(a)'       )  '------------------------------'
+               write (unit=*,fmt='(a,1x,a)'  )  ' - MET_VARS    =',trim(met_vars(iformat,1))
+               write (unit=*,fmt='(a,1x,l1)' )  ' - CYCLE_CO2   =',.not. not_cycle_co2
+               write (unit=*,fmt='(a,1x,i12)')  ' - METCYC1     =',metcyc1
+               write (unit=*,fmt='(a,1x,i12)')  ' - METCYCF     =',metcycf
+               write (unit=*,fmt='(a,1x,i12)')  ' - NCYC        =',ncyc
+               write (unit=*,fmt='(a,1x,i12)')  ' - NYEARS      =',nyears
+               write (unit=*,fmt='(a,1x,i12)')  ' - IYEAR       =',iyear
+               write (unit=*,fmt='(a,1x,i12)')  ' - MONTH_CURR  =',current_time%month
+               write (unit=*,fmt='(a,1x,i12)')  ' - YEAR_CURR   =',current_time%year
+               write (unit=*,fmt='(a,1x,i12)')  ' - YEAR_CYC    =',year_cyc
+               write (unit=*,fmt='(a,1x,i12)')  ' - YEAR_USE    =',year_use
+               write (unit=*,fmt='(a,1x,i12)')  ' - MONTH_CYC_2 =',m2
+               write (unit=*,fmt='(a,1x,i12)')  ' - YEAR_CYC_2  =',year_cyc_2
+               write (unit=*,fmt='(a,1x,i12)')  ' - YEAR_USE_2  =',year_use_2
+               write (unit=*,fmt='(a)'       )  '------------------------------'
                call fatal_error('Cannot open met driver input file '//trim(infile)//'!'    &
                                ,'read_met_drivers_init','ed_met_driver.f90')
             end if
