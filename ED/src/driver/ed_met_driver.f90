@@ -854,8 +854,6 @@ module ed_met_driver
                write (unit=*,fmt='(a,1x,i12)')  ' - METCYC1     =',metcyc1
                write (unit=*,fmt='(a,1x,i12)')  ' - METCYCF     =',metcycf
                write (unit=*,fmt='(a,1x,i12)')  ' - NCYC        =',ncyc
-               write (unit=*,fmt='(a,1x,i12)')  ' - NYEARS      =',nyears
-               write (unit=*,fmt='(a,1x,i12)')  ' - IYEAR       =',iyear
                write (unit=*,fmt='(a,1x,i12)')  ' - MONTH_CURR  =',current_time%month
                write (unit=*,fmt='(a,1x,i12)')  ' - YEAR_CURR   =',current_time%year
                write (unit=*,fmt='(a,1x,i12)')  ' - YEAR_CYC    =',year_cyc
@@ -965,8 +963,6 @@ module ed_met_driver
                write (unit=*,fmt='(a,1x,i12)')  ' - METCYC1     =',metcyc1
                write (unit=*,fmt='(a,1x,i12)')  ' - METCYCF     =',metcycf
                write (unit=*,fmt='(a,1x,i12)')  ' - NCYC        =',ncyc
-               write (unit=*,fmt='(a,1x,i12)')  ' - NYEARS      =',nyears
-               write (unit=*,fmt='(a,1x,i12)')  ' - IYEAR       =',iyear
                write (unit=*,fmt='(a,1x,i12)')  ' - MONTH_CURR  =',current_time%month
                write (unit=*,fmt='(a,1x,i12)')  ' - YEAR_CURR   =',current_time%year
                write (unit=*,fmt='(a,1x,i12)')  ' - YEAR_CYC    =',year_cyc
