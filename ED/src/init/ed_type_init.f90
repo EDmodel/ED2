@@ -1526,6 +1526,7 @@ module ed_type_init
                                , writing_eorq       & ! intent(in)
                                , writing_dcyc       & ! intent(in)
                                , economics_scheme   ! ! intent(in)
+      use consts_coms   , only : huge_num           ! ! intent(in)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       type(polygontype), target     :: cpoly
@@ -1678,7 +1679,7 @@ module ed_type_init
       !      Initialise the minimum monthly temperature with a very large value, this is   !
       ! going to be reduced as the canopy temperature is updated.                          !
       !------------------------------------------------------------------------------------!
-      cpoly%min_monthly_temp(:) = huge(1.)
+      cpoly%min_monthly_temp(:) = huge_num
       !------------------------------------------------------------------------------------!
 
 
