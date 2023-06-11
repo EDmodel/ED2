@@ -28,7 +28,7 @@ subroutine ed_driver()
                                    , nnodetot                      & ! intent(in)
                                    , sendnum                       ! ! intent(in)
 #if defined(RAMS_MPI)
-   use mpi ! MPI commons
+   use mpi
    use ed_node_coms         , only : recvnum                       ! ! intent(in)
 #endif
    use detailed_coms        , only : idetailed                     & ! intent(in)
