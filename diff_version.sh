@@ -24,9 +24,11 @@ subdirs="ED BRAMS Ramspost R-utils"
 #------ Editor to use (I've only tested with nedit, use others at your own risk). ---------#
 editor="nedit"
 #------ Two paths with EDBRAMS (full path). -----------------------------------------------#
-ours="${HOME}/Models/EDBRAMS"
+ours="${HOME}/Downloads/MLN-EDBRAMS"
 theirs="${HOME}/Downloads/MLO-EDBRAMS"
 ournew=false
+#------ Working path when implementing a partial merge (otherwise, leave it blank). -------#
+work="${HOME}/Models/EDBRAMS"
 #------------------------------------------------------------------------------------------#
 
 
@@ -36,8 +38,8 @@ ournew=false
 #      Extensions.  Decide how much to check.                                              #
 #------------------------------------------------------------------------------------------#
 case "${comptype}" in
-partial) exts=".c .f90 .F90" ;;
-*)       exts=".c .f90 .F90 .r .txt" ;;
+partial) exts=".c .F90 .f90" ;;
+*)       exts=".c .F90 .f90 .r .txt" ;;
 esac
 #------------------------------------------------------------------------------------------#
 
@@ -45,7 +47,24 @@ esac
 #------------------------------------------------------------------------------------------#
 #      Remove any comparison file that may exist.                                          #
 #------------------------------------------------------------------------------------------#
-/bin/rm -f notthesame.*
+/bin/rm -f notthesame.* \~notthesame.*
+#------------------------------------------------------------------------------------------#
+
+
+#------------------------------------------------------------------------------------------#
+#    Add settings for partial merge (if sought).                                           #
+#------------------------------------------------------------------------------------------#
+if [[ "${work}" == "" ]]
+then
+   #---- Disable work version (preferred method, much less messy). ------------------------#
+   load_work=false
+   work=${theirs}
+   #---------------------------------------------------------------------------------------#
+else
+   #---- Enable work version (more prone to complications, be careful). -------------------#
+   load_work=true
+   #---------------------------------------------------------------------------------------#
+fi
 #------------------------------------------------------------------------------------------#
 
 
@@ -60,11 +79,11 @@ do
    #---------------------------------------------------------------------------------------#
    for ext in ${exts}
    do
-     if [ ${subdir} == "R-utils" ] && [ ${ext} == ".txt" ]
+     if [[ ${subdir} == "R-utils" ]] && [[ ${ext} == ".txt" ]]
      then
         srcours="${ours}/${subdir}/samap"
         srctheirs="${theirs}/${subdir}/samap"
-     elif [ ${subdir} == "R-utils" ]
+     elif [[ ${subdir} == "R-utils" ]]
      then
         srcours="${ours}/${subdir}"
         srctheirs="${theirs}/${subdir}"
@@ -82,12 +101,14 @@ do
      for fileours in ${lookuptable}
      do
        file=$(basename ${fileours})
-       newpath=$(dirname ${fileours} | sed s@${ours}@${theirs}@g)
+       theirpath=$(dirname ${fileours} | sed s@${ours}@${theirs}@g)
+       workpath=$(dirname ${fileours} | sed s@${ours}@${work}@g)
        case "${myos}" in
        Darwin|Cygwin)
           #---- Case-insensitive file system. ---------------------------------------------#
-          filetheirs="${newpath}/${file}"
-          alt=""
+          filetheirs="${theirpath}/${file}"
+          filework="${workpath}/${file}"
+          theirs_alt=""
           ;;
           #--------------------------------------------------------------------------------#
        *)
@@ -95,64 +116,154 @@ do
           case "${ext}" in
           ".f90")
              alt_file=$(echo ${file} | sed s@"\\.f90"@".F90"@g)
-             if [ -s "${newpath}/${alt_file}" ]
+             if [[ -s "${theirpath}/${alt_file}" ]]
              then
-                filetheirs="${newpath}/${alt_file}"
-                alt=".F90"
+                filetheirs="${theirpath}/${alt_file}"
+                theirs_alt=".F90"
              else
-                filetheirs="${newpath}/${file}"
-                alt=""
+                filetheirs="${theirpath}/${file}"
+                theirs_alt=""
              fi
              ;;
           ".F90")
              alt_file=$(echo ${file} | sed s@"\\.F90"@".f90"@g)
-             if [ -s "${newpath}/${alt_file}" ]
+             if [[ -s "${theirpath}/${alt_file}" ]]
              then
-                filetheirs="${newpath}/${alt_file}"
-                alt=".f90"
+                filetheirs="${theirpath}/${alt_file}"
+                theirs_alt=".f90"
              else
-                filetheirs="${newpath}/${file}"
-                alt=""
+                filetheirs="${theirpath}/${file}"
+                theirs_alt=""
              fi
              ;;
           *)
-             filetheirs="${newpath}/${file}"
-             alt=""
+             filetheirs="${theirpath}/${file}"
+             theirs_alt=""
              ;;
           esac
-          ;;
           #--------------------------------------------------------------------------------#
+
+
+          #----- Probably Linux or Unix, assume case-sensitive file system. ---------------#
+          case "${ext}" in
+          ".f90")
+             alt_file=$(echo ${file} | sed s@"\\.f90"@".F90"@g)
+             if [[ -s "${workpath}/${alt_file}" ]]
+             then
+                filework="${workpath}/${alt_file}"
+                work_alt=".F90"
+             else
+                filework="${workpath}/${file}"
+                work_alt=""
+             fi
+             ;;
+          ".F90")
+             alt_file=$(echo ${file} | sed s@"\\.F90"@".f90"@g)
+             if [[ -s "${workpath}/${alt_file}" ]]
+             then
+                filework="${workpath}/${alt_file}"
+                work_alt=".f90"
+             else
+                filework="${workpath}/${file}"
+                work_alt=""
+             fi
+             ;;
+          *)
+             filework="${workpath}/${file}"
+             work_alt=""
+             ;;
+          esac
+          #--------------------------------------------------------------------------------#
+
+          ;;
        esac
-       filetheirs="${newpath}/${file}"
-       if [ -s ${filetheirs} ] 
+
+
+       #-----------------------------------------------------------------------------------#
+       #    If we are doing partial merge, we must check the existence three-way,          #
+       # otherwise we compare just the "ours" and "theirs".                                #
+       #-----------------------------------------------------------------------------------#
+       if [[ -s ${filetheirs} ]]
        then
-         ldif=$(diff -ibB <(grep -vE "^\s*!" ${fileours}) <(grep -vE "^\s*!" ${filetheirs}) | wc -l)
-         if [ ${ldif} -gt 0 ]
-         then
-            woroot=$(echo ${fileours} | sed s@"${srcours}/"@""@g)
-            case "${alt}" in
-            .f90|.F90)
-               echo "${woroot} has changed.  New extension is ${alt}."
-               ;;
-            *)
-               echo "${woroot} has changed."
-               ;;
-            esac
-            if ${ournew}
-            then
-               diff -uibB <(grep -vE "^\s*!" ${filetheirs}) <(grep -vE "^\s*!" ${fileours})\
-                  > notthesame${ext}
-            else
-               diff -uibB <(grep -vE "^\s*!" ${fileours}) <(grep -vE "^\s*!" ${filetheirs})\
-                  > notthesame${ext}
-            fi
-            ${editor} ${fileours} ${filetheirs} notthesame${ext} 1> /dev/null 2> /dev/null
-            /bin/rm -f notthesame${ext}
-         fi
+          #---- Check for extension change. -----------------------------------------------#
+          woroot=$(echo ${fileours} | sed s@"${srcours}/"@""@g)
+          case "${theirs_alt}" in
+          .f90|.F90)
+             if ${ournew}
+             then
+                ext_mess="Old extension was ${theirs_alt}."
+             else
+                ext_mess="New extension is ${theirs_alt}."
+             fi
+             ;;
+          *)
+             ext_mess=""
+             ;;
+          esac
+          #--------------------------------------------------------------------------------#
+
+
+
+          #--------------------------------------------------------------------------------#
+          #     Check for changes (ignoring spaces and commented lines).                   #
+          #--------------------------------------------------------------------------------#
+          ldif=$(diff -ibB <(grep -vE "^\s*!" ${fileours}) <(grep -vE "^\s*!" ${filetheirs}) | wc -l)
+          if [[ ${ldif} -gt 0 ]]
+          then
+             change=true
+             if [[ "${ext_mess}" == "" ]]
+             then
+                echo "File ${woroot}.  Code has changed."
+             else
+                echo "File ${woroot}.  Code has changed.  ${ext_mess}"
+             fi
+          elif [[ "${ext_mess}" == "" ]]
+          then
+             change=false
+          else
+             change=false
+             echo "File ${woroot}.  ${ext_mess}"
+          fi
+          #--------------------------------------------------------------------------------#
+
+
+          #--------------------------------------------------------------------------------#
+          #    If files have changes, report differences.                                  #
+          #--------------------------------------------------------------------------------#
+          if ${change}
+          then
+             #----- Write differences to a temporary file. --------------------------------#
+             if ${ournew}
+             then
+                diff -uibB <(grep -vE "^\s*!" ${filetheirs})                               \
+                           <(grep -vE "^\s*!" ${fileours}) > notthesame${ext}
+             else
+                diff -uibB <(grep -vE "^\s*!" ${fileours})                                 \
+                           <(grep -vE "^\s*!" ${filetheirs}) > notthesame${ext}
+             fi
+             #-----------------------------------------------------------------------------#
+
+
+             #----- Open editor with all files needed. ------------------------------------#
+             if ${load_work} && [[ -s ${filework} ]]
+             then
+                ${editor} ${filework} ${filetheirs} notthesame${ext}                       \
+                   1> /dev/null 2> /dev/null
+                /bin/rm -f notthesame${ext}
+             elif ${load_work}
+             then
+                ${editor} ${filetheirs} notthesame${ext} 1> /dev/null 2> /dev/null
+                echo " ---> Working file is missing!"
+             else
+                ${editor} ${fileours} ${filetheirs} notthesame${ext}                       \
+                   1> /dev/null 2> /dev/null
+             fi
+             #-----------------------------------------------------------------------------#
+          fi
        else
-           woroot=$(echo ${fileours} | sed s@"${srcours}/"@""@g)
-           echo "${woroot} is exclusive to ${ours} version."
-       fi #if [ -s ${filetheirs} ]
+          woroot=$(echo ${fileours} | sed s@"${srcours}/"@""@g)
+          echo "${woroot} is exclusive to ${ours} version."
+       fi #if [[ -s ${filetheirs} ]]
      done #for fileours in ${lookuptable}
      #-------------------------------------------------------------------------------------#
 
@@ -165,13 +276,13 @@ do
      for filetheirs in ${lookuptable}
      do
        file=$(basename ${filetheirs})
-       newpath=$(dirname ${filetheirs} | sed s@${theirs}@${ours}@g)
-       fileours="${newpath}/${file}"
-       if [ ! -s ${fileours} ] 
+       ourpath=$(dirname ${filetheirs} | sed s@${theirs}@${ours}@g)
+       fileours="${ourpath}/${file}"
+       if [[ ! -s ${fileours} ]] 
        then
            woroot=$(echo ${filetheirs} | sed s@"${srctheirs}/"@""@g)
            echo "${woroot} is exclusive to ${theirs} version."
-       fi #if [ -s ${filetheirs} ]
+       fi #if [[ -s ${filetheirs} ]]
      done #for fileours in ${lookuptable}
      #-------------------------------------------------------------------------------------#
    done #for ext in ${exts}
