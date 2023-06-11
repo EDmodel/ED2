@@ -12833,7 +12833,7 @@ module ed_state_vars
       !----- Local variables (MPI variables). ---------------------------------------------!
 #if defined(RAMS_MPI)
       integer                                                  :: ierr
-      integer                                                  :: ping
+      integer          , dimension(1)                          :: ping
       integer                                                  :: uniqueid
       integer          , dimension(MPI_STATUS_SIZE)            :: status
 #endif
