@@ -632,8 +632,8 @@ module ed_met_driver
             m2 = current_time%month + 1
             select case (m2)
             case (13)
-               m2 = 1
-               y2 = current_time%year + 1
+               m2         = 1
+               y2         = current_time%year + 1
                year_cyc_2 = y2
                
                !----- If we are now after the last year... --------------------------------!
@@ -643,7 +643,7 @@ module ed_met_driver
                !---------------------------------------------------------------------------!
 
                !----- If we are now before the first year... ------------------------------!
-               do while(year_use_2 < metcyc1)
+               do while(year_cyc_2 < metcyc1)
                   year_cyc_2 = year_cyc_2 + ncyc
                end do
                !---------------------------------------------------------------------------!
@@ -787,7 +787,7 @@ module ed_met_driver
 
       !----- If we need to recycle over years, find the appropriate year to apply. --------!
       year_cyc = current_time%year
-      ncyc = metcycf - metcyc1 + 1
+      ncyc     = metcycf - metcyc1 + 1
 
       !----- If we are after the last year... ---------------------------------------------!
       do while(year_cyc > metcycf)
@@ -848,6 +848,19 @@ module ed_met_driver
             if(exans)then
                call shdf5_open_f(trim(infile),'R')
             else
+               write (unit=*,fmt='(a)'       )  '------------------------------'
+               write (unit=*,fmt='(a,1x,a)'  )  ' - MET_VARS    =',trim(met_vars(iformat,1))
+               write (unit=*,fmt='(a,1x,l1)' )  ' - CYCLE_CO2   =',.not. not_cycle_co2
+               write (unit=*,fmt='(a,1x,i12)')  ' - METCYC1     =',metcyc1
+               write (unit=*,fmt='(a,1x,i12)')  ' - METCYCF     =',metcycf
+               write (unit=*,fmt='(a,1x,i12)')  ' - NCYC        =',ncyc
+               write (unit=*,fmt='(a,1x,i12)')  ' - NYEARS      =',nyears
+               write (unit=*,fmt='(a,1x,i12)')  ' - IYEAR       =',iyear
+               write (unit=*,fmt='(a,1x,i12)')  ' - MONTH_CURR  =',current_time%month
+               write (unit=*,fmt='(a,1x,i12)')  ' - YEAR_CURR   =',current_time%year
+               write (unit=*,fmt='(a,1x,i12)')  ' - YEAR_CYC    =',year_cyc
+               write (unit=*,fmt='(a,1x,i12)')  ' - YEAR_USE    =',year_use
+               write (unit=*,fmt='(a)'       )  '------------------------------'
                call fatal_error('Cannot open met driver input file '//trim(infile)//'!'    &
                                ,'read_met_drivers','ed_met_driver.f90')
             end if
@@ -901,7 +914,7 @@ module ed_met_driver
                !---------------------------------------------------------------------------!
 
                !----- If we are now before the first year... ------------------------------!
-               do while(year_use_2 < metcyc1)
+               do while(year_cyc_2 < metcyc1)
                   year_cyc_2 = year_cyc_2 + ncyc
                end do
                !---------------------------------------------------------------------------!
@@ -946,6 +959,22 @@ module ed_met_driver
             if (exans) then
                call shdf5_open_f(trim(infile),'R')
             else
+               write (unit=*,fmt='(a)'       )  '------------------------------'
+               write (unit=*,fmt='(a,1x,a)'  )  ' - MET_VARS    =',trim(met_vars(iformat,1))
+               write (unit=*,fmt='(a,1x,l1)' )  ' - CYCLE_CO2   =',.not. not_cycle_co2
+               write (unit=*,fmt='(a,1x,i12)')  ' - METCYC1     =',metcyc1
+               write (unit=*,fmt='(a,1x,i12)')  ' - METCYCF     =',metcycf
+               write (unit=*,fmt='(a,1x,i12)')  ' - NCYC        =',ncyc
+               write (unit=*,fmt='(a,1x,i12)')  ' - NYEARS      =',nyears
+               write (unit=*,fmt='(a,1x,i12)')  ' - IYEAR       =',iyear
+               write (unit=*,fmt='(a,1x,i12)')  ' - MONTH_CURR  =',current_time%month
+               write (unit=*,fmt='(a,1x,i12)')  ' - YEAR_CURR   =',current_time%year
+               write (unit=*,fmt='(a,1x,i12)')  ' - YEAR_CYC    =',year_cyc
+               write (unit=*,fmt='(a,1x,i12)')  ' - YEAR_USE    =',year_use
+               write (unit=*,fmt='(a,1x,i12)')  ' - MONTH_CYC_2 =',m2
+               write (unit=*,fmt='(a,1x,i12)')  ' - YEAR_CYC_2  =',year_cyc_2
+               write (unit=*,fmt='(a,1x,i12)')  ' - YEAR_USE_2  =',year_use_2
+               write (unit=*,fmt='(a)'       )  '------------------------------'
                call fatal_error ('Cannot open met driver input file '//trim(infile)//'!'   &
                                 ,'read_met_drivers','ed_met_driver.f90')
             end if
