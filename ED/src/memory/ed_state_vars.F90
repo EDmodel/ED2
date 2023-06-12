@@ -32597,7 +32597,7 @@ module ed_state_vars
                            ,'MMEAN_NPPLEAF_CO           :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Net primary productivity - Leaf'               &
-                           ,'[  kgC/m2/yr]','(icohort)'            )
+                           ,'[  kgC/pl/yr]','(icohort)'            )
       end if
       if (associated(cpatch%mmean_nppfroot        )) then
          nvar = nvar+1
@@ -32606,7 +32606,7 @@ module ed_state_vars
                            ,'MMEAN_NPPFROOT_CO          :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Net primary productivity - Fine root'          &
-                           ,'[  kgC/m2/yr]','(icohort)'            )
+                           ,'[  kgC/pl/yr]','(icohort)'            )
       end if
       if (associated(cpatch%mmean_nppsapwood      )) then
          nvar = nvar+1
@@ -32615,7 +32615,7 @@ module ed_state_vars
                            ,'MMEAN_NPPSAPWOOD_CO        :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Net primary productivity - Sap wood'           &
-                           ,'[  kgC/m2/yr]','(icohort)'            )
+                           ,'[  kgC/pl/yr]','(icohort)'            )
       end if
       if (associated(cpatch%mmean_nppbark         )) then
          nvar = nvar+1
@@ -32624,7 +32624,7 @@ module ed_state_vars
                            ,'MMEAN_NPPBARK_CO           :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Net primary productivity - Bark'               &
-                           ,'[  kgC/m2/yr]','(icohort)'            )
+                           ,'[  kgC/pl/yr]','(icohort)'            )
       end if
       if (associated(cpatch%mmean_nppcroot        )) then
          nvar = nvar+1
@@ -32633,7 +32633,7 @@ module ed_state_vars
                            ,'MMEAN_NPPCROOT_CO          :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Net primary productivity - Coarse root'        &
-                           ,'[  kgC/m2/yr]','(icohort)'            )
+                           ,'[  kgC/pl/yr]','(icohort)'            )
       end if
       if (associated(cpatch%mmean_nppseeds        )) then
          nvar = nvar+1
@@ -32642,7 +32642,7 @@ module ed_state_vars
                            ,'MMEAN_NPPSEEDS_CO          :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Net primary productivity - seeds'              &
-                           ,'[  kgC/m2/yr]','(icohort)'            )
+                           ,'[  kgC/pl/yr]','(icohort)'            )
       end if
       if (associated(cpatch%mmean_nppwood         )) then
          nvar = nvar+1
@@ -32651,7 +32651,7 @@ module ed_state_vars
                            ,'MMEAN_NPPWOOD_CO           :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Net primary productivity - heart wood'         &
-                           ,'[  kgC/m2/yr]','(icohort)'            )
+                           ,'[  kgC/pl/yr]','(icohort)'            )
       end if
       if (associated(cpatch%mmean_nppdaily        )) then
          nvar = nvar+1
@@ -32660,7 +32660,7 @@ module ed_state_vars
                            ,'MMEAN_NPPDAILY_CO          :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Net primary productivity - total'              &
-                           ,'[  kgC/m2/yr]','(icohort)'            )
+                           ,'[  kgC/pl/yr]','(icohort)'            )
       end if
 
       if (associated(cpatch%mmean_dmax_leaf_psi        )) then
