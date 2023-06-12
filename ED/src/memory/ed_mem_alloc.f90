@@ -72,15 +72,15 @@ module ed_mem_alloc
          call ed_nullify_work(work_e(ng))
          call ed_alloc_work(work_e(ng),nmxp(ng),nmyp(ng),maxsite)
       end do
-      
+
    !---------------------------------------------------------------------------------------!
    !   Allocate the top most hierachical memory structures for the ED2 LSM. We changed the !
    ! the way the standalone deals with different regions ans sites of interest. Now it     !
-   ! allocates each region and each poi in a different grid. This is done to ease the way  !
-   ! the parallel code is implemented, to take full advantage of MPI. By doing this, we    !
-   ! can split the polygons among the different nodes for the regional run, and split the  !
-   ! patches and cohorts in different nodes in the POI grids --- the latter is yet to be   !
-   ! implemented.                                                                          !
+   ! allocates each region and each point in a different grid. This is done to ease the    !
+   ! way the parallel code is implemented, to take full advantage of MPI. By doing this,   !
+   ! we can split the polygons among the different nodes for the regional run, and split   !
+   ! the patches and cohorts in different nodes in the POI grids --- the latter is yet to  !
+   ! be implemented.                                                                       !
    !---------------------------------------------------------------------------------------!
       write (unit=*,fmt='(a,i5,a)') ' + Polygon array allocation, node ',mynum,';'
 
@@ -90,7 +90,7 @@ module ed_mem_alloc
          call allocate_edtype(edgrid_g(ng),gdpy(mynum,ng))
       end do
 
-      write (unit=*,fmt='(a,i5,a)') ' + Memory successfully allocated on none ',mynum,';'
+      write (unit=*,fmt='(a,i5,a)') ' + Memory successfully allocated on node ',mynum,';'
       return
    end subroutine ed_memory_allocation
    !---------------------------------------------------------------------------------------!
