@@ -19,7 +19,8 @@ module ed_type_init
    !---------------------------------------------------------------------------------------!
    subroutine init_ed_cohort_vars(cpatch,ico, lsl,mzg,ntext_soil)
       use ed_state_vars  , only : patchtype          ! ! structure
-      use allometry      , only : size2krdepth       ! ! function
+      use allometry      , only : size2krdepth       & ! function
+                                , distrib_root       ! ! sub-routine
       use pft_coms       , only : phenology          & ! intent(in)
                                 , cuticular_cond     & ! intent(in)
                                 , leaf_turnover_rate & ! intent(in)
@@ -198,6 +199,12 @@ module ed_type_init
       !------------------------------------------------------------------------------------!
       cpatch%krdepth(ico) = size2krdepth(cpatch%hite(ico),cpatch%dbh(ico),ipft,lsl)
       kroot               = cpatch%krdepth(ico)
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------ Find the root distribution. -------------------------------------------------!
+      call distrib_root(kroot,ipft,cpatch%root_frac(:,ico))
       !------------------------------------------------------------------------------------!
 
 

@@ -142,10 +142,8 @@ module allometry
                              , b1Bs_large  & ! intent(in)
                              , b2Bs_large  & ! intent(in)
                              , is_grass    & ! intent(in)
-                             , is_tropical & ! intent(in)
-                             , is_liana    ! ! intent(in)
-      use ed_misc_coms, only : igrass      & ! intent(in)
-                             , iallom      ! ! intent(in)
+                             , ddh_allom   ! ! intent(in)
+      use ed_misc_coms, only : igrass      ! ! intent(in)
       implicit none
 
       !----- Arguments --------------------------------------------------------------------!
@@ -164,8 +162,7 @@ module allometry
          size2bd = 0.0
       else
          !----- Depending on the allometry, size means DBH or DBH^2 * Height. -------------!
-         if ( (iallom == 3 .or. iallom == 4)                            &
-              .and. is_tropical(ipft) .and. (.not. is_liana(ipft))) then
+         if (ddh_allom(ipft)) then
             size = dbh * dbh * hite
          else
             size = dbh
@@ -305,10 +302,9 @@ module allometry
                               , b2Bl           & ! intent(in)
                               , is_liana       & ! intent(in)
                               , is_grass       & ! intent(in)
-                              , is_tropical    & ! intent(in)
+                              , ddh_allom      & ! intent(in)
                               , liana_dbh_crit ! ! intent(in)
-      use ed_misc_coms , only : igrass         & ! intent(in)
-                              , iallom         ! ! intent(in)
+      use ed_misc_coms , only : igrass         ! ! intent(in)
       use ed_state_vars, only : patchtype      ! ! structure
       implicit none
 
@@ -341,8 +337,7 @@ module allometry
       !     Find leaf biomass depending on the allometry.  The new allometry uses dbh and  !
       ! height, whereas the old allometry uses dbh only.                                   !
       !------------------------------------------------------------------------------------!
-      if ((iallom == 3 .or. iallom == 4)                                                  &
-          .and. is_tropical(ipft) .and. (.not. is_liana(ipft))) then
+      if (ddh_allom(ipft)) then
          size = mdbh * mdbh * hite
       else 
          size = mdbh
@@ -352,10 +347,10 @@ module allometry
 
 
       !------------------------------------------------------------------------------------!
-      !      For iallom == 4 (tropical trees), b1Bl and b2Bl represents leaf area based    !
-      ! allometry, we need to convert it to biomass using cohort-level SLA.                !
+      !      Currently, b1Bl/b2Bl are parameters for individual leaf area (as opposed to   !
+      ! individual leaf biomass) when using the D*D*H-based allometry.                     !
       !------------------------------------------------------------------------------------!
-      if (iallom == 4 .and. is_tropical(ipft) .and. (.not. is_liana(ipft))) then
+      if (ddh_allom(ipft)) then
          !----- Use specific form (notice that C2B was cancelled out. ---------------------!
          size2bl = b1Bl(ipft) / sla_in * size ** b2Bl(ipft)
          !---------------------------------------------------------------------------------!
@@ -452,10 +447,10 @@ module allometry
    ! DBH has no real meaning for grasses with the new allometry.                           !
    !---------------------------------------------------------------------------------------!
    real function bl2dbh(bleaf,sla_in,ipft)
-      use pft_coms    , only : dbh_crit    & ! intent(in)
+      use pft_coms    , only : ddh_allom   & ! intent(in)
+                             , dbh_crit    & ! intent(in)
                              , l1DBH       & ! intent(in)
                              , l2DBH       ! ! intent(in)
-      use ed_misc_coms, only : iallom      ! ! intent(in)
       implicit none
 
       !----- Arguments --------------------------------------------------------------------!
@@ -468,17 +463,15 @@ module allometry
 
 
       !------------------------------------------------------------------------------------!
-      !      The inverse function works for both DBH- and DBH^2*Hgt-based allometric       !
-      ! equations, because l1DBH and l2DBH already account for the different allometric    !
-      ! functions. However, for leaf-area-based allometry (IALLOM = 4), we need to multiply!
-      ! bleaf with sla_in to get leaf area because l1DBH and l2DBH are based on leaf area  !
+      !     The functional for is similar, but when using the D*D*H-allometry, we must     !
+      ! multiply leaf biomass with SLA, because b1Bl and b2Bl are coefficients for leaf    !
+      ! area, instead of leaf biomass.                                                     !
       !------------------------------------------------------------------------------------!
-      select case (iallom)
-      case (4)
+      if (ddh_allom(ipft)) then
         mdbh = l1DBH(ipft) * (bleaf * sla_in) ** l2DBH(ipft)
-      case default
+      else
         mdbh = l1DBH(ipft) * bleaf ** l2DBH(ipft)
-    end select
+      end if
       !------------------------------------------------------------------------------------!
 
 
@@ -539,7 +532,7 @@ module allometry
                               , hgt_max        & ! intent(in)
                               , is_grass       & ! intent(in)
                               , is_liana       & ! intent(in)
-                              , is_tropical    & ! intent(in)
+                              , ddh_allom      & ! intent(in)
                               , b1Ca           & ! intent(in)
                               , b2Ca           & ! intent(in)
                               , liana_dbh_crit ! ! intent(in)
@@ -608,8 +601,7 @@ module allometry
 
 
          !----- Find the nominal crown area. ----------------------------------------------!
-         if ( (iallom == 3 .or. iallom == 4)                            &
-             .and. is_tropical(ipft) .and. (.not. is_liana(ipft))) then
+         if (ddh_allom(ipft)) then
             size = mdbh * mdbh * hite
          else
             size = mdbh
@@ -889,13 +881,6 @@ module allometry
             !------------------------------------------------------------------------------!
             size     = dbh * dbh * hite
             !------------------------------------------------------------------------------!
-         case (1,2,4)
-            !------------------------------------------------------------------------------!
-            !    This is just a test allometry, that imposes root depth to be 0.5 m for    !
-            ! plants that are 0.15-m tall, and 5.0 m for plants that are 35-m tall.        !
-            !------------------------------------------------------------------------------!
-            size     = hite
-            !------------------------------------------------------------------------------!
          case (3)
             !------------------------------------------------------------------------------!
             !    Test allometry, similar to 2, but based on D*D*H.  The curve loosely fits !
@@ -919,6 +904,12 @@ module allometry
             else
                size   = hite
             end if
+            !------------------------------------------------------------------------------!
+         case default
+            !------------------------------------------------------------------------------!
+            !    Size is always height, regardless of the PFT.                             !
+            !------------------------------------------------------------------------------!
+            size     = hite
             !------------------------------------------------------------------------------!
          end select
          !---------------------------------------------------------------------------------!
@@ -1401,14 +1392,13 @@ module allometry
       use ed_state_vars, only : patchtype       ! ! Structure
       use pft_coms     , only : dbh_crit        & ! intent(in)
                               , is_liana        & ! intent(in)
-                              , is_tropical     & ! intent(in)
                               , is_grass        & ! intent(in)
+                              , ddh_allom       & ! intent(in)
                               , b1WAI           & ! intent(in)
                               , b2WAI           & ! intent(in)
                               , liana_dbh_crit  ! ! intent(in)
       use rk4_coms     , only : ibranch_thermo  ! ! intent(in)
-      use ed_misc_coms , only : igrass          & ! intent(in)
-                              , iallom          ! ! intent(in)
+      use ed_misc_coms , only : igrass          ! ! intent(in)
       implicit none
 
       !----- Arguments --------------------------------------------------------------------!
@@ -1422,7 +1412,9 @@ module allometry
       !------------------------------------------------------------------------------------!
 
 
+      !----- Useful aliases. --------------------------------------------------------------!
       ipft   = cpatch%pft(ico)
+      !------------------------------------------------------------------------------------!
 
 
       !------------------------------------------------------------------------------------!
@@ -1466,8 +1458,7 @@ module allometry
 
 
          !-----Find WAI. ------------------------------------------------------------------!
-         if ( (iallom == 3 .or. iallom == 4)                            &
-              .and. is_tropical(ipft) .and. (.not. is_liana(ipft))) then
+         if (ddh_allom(ipft)) then
             size = mdbh * mdbh * cpatch%hite(ico)
          else
             size = mdbh
@@ -1479,6 +1470,87 @@ module allometry
 
       return
    end subroutine area_indices
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !      This function defines the vertical root distribution.                            !
+   !---------------------------------------------------------------------------------------!
+   subroutine distrib_root(kroot,ipft,root_frac)
+      use grid_coms      , only : nzg                  ! ! intent(in)
+      use soil_coms      , only : slz                  ! ! intent(in)
+      use pft_coms       , only : root_beta            ! ! intent(in)
+      use physiology_coms, only : plant_hydro_scheme   ! ! intent(in)
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      integer                  , intent(in)  :: kroot
+      integer                  , intent(in)  :: ipft
+      real   , dimension(nzg)  , intent(out) :: root_frac
+      !----- Local variables. -------------------------------------------------------------!
+      integer                                :: k
+      real                                   :: slzboti
+      real                                   :: sbetai
+      real   , dimension(nzg+1)              :: root_cumul
+      !------------------------------------------------------------------------------------!
+
+
+
+      !----- Useful short names. ----------------------------------------------------------!
+      slzboti = 1. / slz(kroot)
+      sbetai  = 1. / (1. - root_beta(ipft))
+      !------------------------------------------------------------------------------------!
+
+
+
+      !----- Initialise the fractions. ----------------------------------------------------!
+      root_cumul(:)     = 1.
+      root_frac (:)     = 0.
+      root_cumul(nzg+1) = 0.
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !     Decide how to split root fraction.  Currently this is bound to plant hydro-    !
+      ! dynamics, but in the future we could make this a flag on its own, for testing      !
+      ! different hypotheses.                                                              !
+      !------------------------------------------------------------------------------------!
+      select case (plant_hydro_scheme)
+      case (0)
+         !---------------------------------------------------------------------------------!
+         !      Default ED-2.  Roots evenly distributed across depth.  Currently this is   !
+         ! a diagnostic variable and not used anywhere in the code.                        !
+         !---------------------------------------------------------------------------------!
+         do k=kroot+1,nzg
+            root_cumul(k) = slz(k) * slzboti
+         end do
+         !---------------------------------------------------------------------------------!
+      case default
+         !------ Plant hydrodynamics, assume a power decay. -------------------------------!
+         do k=kroot+1,nzg
+            root_cumul(k) = sbetai * ( 1. - root_beta(ipft) ** (slz(k) * slzboti) )
+         end do
+         !---------------------------------------------------------------------------------!
+      end select
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !    The rooting fraction is the difference in cumulative rooting density.           !
+      !------------------------------------------------------------------------------------!
+      do k=kroot,nzg
+         root_frac(k) = root_cumul(k) - root_cumul(k+1)
+      end do
+      !------------------------------------------------------------------------------------!
+
+
+      return
+   end subroutine distrib_root
    !=======================================================================================!
    !=======================================================================================!
 end module allometry

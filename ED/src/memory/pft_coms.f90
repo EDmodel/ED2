@@ -250,6 +250,9 @@ module pft_coms
 
    !----- Specifies photosynthetic pathway.  3 corresponds to C3, 4 corresponds to C4. ----!
    integer, dimension(n_pft) :: photosyn_pathway
+
+   !----- Flag to identify whether or not to use allometric equations based on D*D*H. -----!
+   logical, dimension(n_pft) :: ddh_allom
    !=======================================================================================!
    !=======================================================================================!
 
