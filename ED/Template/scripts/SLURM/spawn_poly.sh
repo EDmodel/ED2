@@ -10,23 +10,23 @@ here=$(pwd)
 moi=$(whoami)
 #----- Description of this simulation, used to create unique job names. -------------------#
 desc=$(basename ${here})
+#----- Source path for ED code and executable. --------------------------------------------#
+srcpath="${HOME}/EDBRAMS/ED"
 #----- Original and scratch main data paths. ----------------------------------------------#
 ordinateur=$(hostname -s)
-case ${ordinateur} in
-  sdumont*)                        export d_path="${SCRATCH}/Data"                 ;;
-  rclogin*|holy*|moorcroft*|rcnx*) export d_path="${HOME}/data"                    ;;
-  *)  echo " Invalid computer ${ordinateur}.  Check script header."; exit          ;;
-esac
+d_path="${HOME}/data"
 #----- Path where biomass initialisation files are: ---------------------------------------#
 bioinit="${d_path}/ed2_data/site_bio_data"
 alsinit="${d_path}/ed2_data/lidar_spline_bio_data"
 intinit="${d_path}/ed2_data/lidar_intensity_bio_data"
 lutinit="${d_path}/ed2_data/lidar_lookup_bio_data"
+ebainit="${d_path}/ed2_data/lidar_eba_bio_data"
 biotype=0      # 0 -- "default" setting (isizepft controls default/nounder)
                # 1 -- isizepft controls number of PFTs, whereas iage controls patches.
                # 2 -- airborne lidar initialisation using return counts ("default"). 
                # 3 -- airborne lidar initialisation using intensity counts.
                # 4 -- airborne lidar/inventory hybrid initialisation ("lookup table"). 
+               # 5 -- airborne lidar (EBA Transects).
                # For lidar initialisation (2-4), isizepft is the disturbance history key.
 #----- Path and file prefix for init_mode = 5. --------------------------------------------#
 restart="${d_path}/ed2_data/restarts_XXX"
@@ -38,7 +38,7 @@ shefhead='SHEF_NCEP_DRIVER_DS314'
 metmaindef="${d_path}/ed2_data"
 packdatasrc="${d_path}/to_scratch"
 #----- Path with land use scenarios. ------------------------------------------------------#
-lumain="${d_path}/ed2_data/land_use"
+lumain="${d_path}/ed2_data/lcluc_scenarios"
 #----- Path with other input data bases (soil texture, DGD, land mask, etc). --------------#
 inpmain="${d_path}/ed2_data"
 #----- Should the met driver be copied to local scratch disks? ----------------------------#
@@ -59,19 +59,20 @@ dateh="01"    # Day
 timeh="0000"  # Hour
 #----- Default tolerance. -----------------------------------------------------------------#
 toldef="0.01"
-#----- Executable names. ------------------------------------------------------------------#
-execname="ed_2.2-opt"             # Normal executable, for most queues
 #----- Initialisation scripts. ------------------------------------------------------------#
 initrc="${HOME}/.bashrc"          # Initialisation script for most nodes
 #----- Initialisation scripts. ------------------------------------------------------------#
 optsrc="-n"                   # Option for .bashrc (for special submission settings)
                               #   In case none is needed, leave it blank ("").
 #----- Submit job automatically? (It may become false if something prevents submission). --#
-submit=false
+submit=false      # This checks whether to submit runs or not.
+on_the_fly=false  # In case submit=true and this is the CANNON cluster, on_the_fly allows
+                  #   directories are jobs to be submitted as the directories are ready.
+#----- Executable names. ------------------------------------------------------------------#
+execname="ed_2.2-opt"            # Normal executable, for most queues
+checkexec=true                   # Check executable
 #----- Settings for this group of polygons. -----------------------------------------------#
 global_queue="shared,huce_intel" # Queue
-sim_memory=0                     # Memory per simulation. Zero uses queue's default
-n_cpt=12                         # Number of cpus per task (Zero uses queue's maximum)
 partial=false                    # Partial submission (false will ignore polya and npartial
                                  #    and send all polygons.
 polya=21                         # First polygon to submit
@@ -79,7 +80,20 @@ npartial=300                     # Maximum number of polygons to include in this
                                  #    (actual number will be adjusted for total number of 
                                  #     polygons if needed be).
 dttask=2                         # Time to wait between task submission
-runtime="00:00:00"               # Requested runtime.  Zero uses the queue's maximum.
+init_only=false                  # Run model initialisation only?
+                                 #    This can be useful when the initialisation step
+                                 #    demands much more memory than the time steps (e.g.,
+                                 #    when using lidar data to initialisate the model).
+if ${init_only}
+then
+   sim_memory=64000              # Memory per simulation. Zero uses queue's default
+   n_cpt=1                       # Number of cpus per task (Zero uses queue's maximum)
+   runtime="01-00:00:00"         # Requested runtime.  Zero uses the queue's maximum.
+else
+   sim_memory=3072               # Memory per simulation. Zero uses queue's default
+   n_cpt=12                      # Number of cpus per task (Zero uses queue's maximum)
+   runtime="07-00:00:00"         # Requested runtime.  Zero uses the queue's maximum.
+fi
 #------------------------------------------------------------------------------------------#
 
 #==========================================================================================#
@@ -123,6 +137,64 @@ squeue="squeue --noheader -u ${moi}"
 #------------------------------------------------------------------------------------------#
 
 
+#----- Find out which platform we are using. ----------------------------------------------#
+host=$(hostname -s)
+case "${host}" in
+rclogin*|holy*|moorcroft*|rcnx*)
+   #----- Cluster is CANNON (formerly known as ODYSSEY). ----------------------------------#
+   cluster="CANNON"
+   #---------------------------------------------------------------------------------------#
+   ;;
+sdumont*)
+   #----- Cluster is SDUMONT. Ironically perhaps, we cannot submit jobs on the fly. -------#
+   cluster="SDUMONT"
+   on_the_fly=false
+   #---------------------------------------------------------------------------------------#
+   ;;
+*)
+   echo -n "Failed guessing cluster from node name.  Please type the name:   "
+   read cluster
+   cluster=$(echo ${cluster} | tr '[:lower:]' '[:upper:]')
+   case "${cluster}" in
+   CANNON|CANNO|CANN|CAN|CA|C)
+      #----- Set cluster to CANNON. -------------------------------------------------------#
+      cluster="CANNON"
+      #------------------------------------------------------------------------------------#
+      ;;
+   ODYSSEY|ODYSSE|ODYSS|ODYS|ODY|OD|O)
+      #----- Set cluster to CANNON. -------------------------------------------------------#
+      cluster="CANNON"
+      echo " - Odyssey is now known as Cannon.  Using Cannon settings."
+      #------------------------------------------------------------------------------------#
+      ;;
+   SDUMONT|SDUMON|SDUMO|SDUM|SDU|SD|S)
+      #----- Cluster is SDUMONT. Ironically perhaps, we cannot submit jobs on the fly. ----#
+      cluster="SDUMONT"
+      on_the_fly=false
+      #------------------------------------------------------------------------------------#
+      ;;
+   *)
+      #----- Unknown cluster. -------------------------------------------------------------#
+      echo " Cluster ${cluster} is not recognised.  Pick either CANNON or SDUMONT."
+      echo "    (or edit the script to add the new cluster)."
+      exit 92
+      #------------------------------------------------------------------------------------#
+      ;;
+   esac
+   ;;
+esac
+#------------------------------------------------------------------------------------------#
+
+#------------------------------------------------------------------------------------------#
+#     Do not let on_the_fly if submit is false.                                            #
+#------------------------------------------------------------------------------------------#
+if ! ${submit}
+then
+   on_the_fly=false
+fi
+#------------------------------------------------------------------------------------------#
+
+
 #----- Set the main path for the site, pseudo past and Sheffield met drivers. -------------#
 if ${copy2scratch}
 then
@@ -136,13 +208,13 @@ fi
 
 #----- Determine the number of polygons to run. -------------------------------------------#
 let npolys=$(wc -l ${joborder} | awk '{print $1 }')-3
-if [ ${npolys} -lt 100 ]
+if [[ ${npolys} -lt 100 ]]
 then
    ndig=2
-elif [ ${npolys} -lt 1000 ]
+elif [[ ${npolys} -lt 1000 ]]
 then
    ndig=3
-elif [ ${npolys} -lt 10000 ]
+elif [[ ${npolys} -lt 10000 ]]
 then
    ndig=4
 else
@@ -186,67 +258,41 @@ done
 # script.                                                                                  #
 #------------------------------------------------------------------------------------------#
 exec_full="${here}/executable/${execname}"
-if [ ! -s ${exec_full} ]
+exec_src="${srcpath}/build/${execname}"
+if [[ ! -s ${exec_full} ]]
 then
    echo "Executable file : ${exec_full} is not in the executable directory"
    echo "Copy the executable to the file before running this script!"
    exit 99
+elif ${checkexec}
+then
+   #----- Check whether the executable is up to date. -------------------------------------#
+   idiff=$(diff ${exec_full} ${exec_src} 2> /dev/null | wc -l)
+   if [[ ${idiff} -gt 0 ]]
+   then
+      #----- Executable is not up to date, warn user and offer to update it. --------------#
+      echo "Executable ${exec_full} is not the same as the most recently compiled file."
+      echo "Most recent: ${exec_src}."
+      echo "Do you want to update the executable? [y/N]"
+      read update
+      update=$(echo ${update} | tr '[:upper:]' '[:lower:]')
+      case "${update}" in
+         y*) rsync - Putv ${exec_src} ${exec_full} ;;
+      esac
+      #------------------------------------------------------------------------------------#
+   fi
+   #---------------------------------------------------------------------------------------#
 fi
 #------------------------------------------------------------------------------------------#
 
 
 
 #------------------------------------------------------------------------------------------#
-#     Configurations depend on the global_queue.                                           #
+#     Configurations depend on the global_queue and cluster.                               #
 #------------------------------------------------------------------------------------------#
-case ${ordinateur} in
-rclogin*|holy*|moorcroft*|rcnx*)
-   #----- Odyssey queues. -----------------------------------------------------------------#
-   case ${global_queue} in
-   "serial_requeue")
-      n_nodes_max=900
-      n_cpt_max=12
-      n_cpn=24
-      runtime_max="7-00:00:00"
-      node_memory=126820
-      ;;
-   "shared,huce_intel"|"huce_intel,shared")
-      n_nodes_max=276
-      n_cpt_max=12
-      n_cpn=24
-      runtime_max="7-00:00:00"
-      node_memory=126820
-      ;;
-   "shared")
-      n_nodes_max=456
-      n_cpt_max=24
-      n_cpn=48
-      runtime_max="7-00:00:00"
-      node_memory=192892
-      ;;
-   "huce_intel")
-      n_nodes_max=276
-      n_cpt_max=12
-      n_cpn=24
-      runtime_max="14-00:00:00"
-      node_memory=126820
-      ;;
-   "unrestricted")
-      n_nodes_max=8
-      n_cpt_max=24
-      n_cpn=48
-      runtime_max="infinite"
-      node_memory=262499
-      ;;
-   *)
-      echo "Global queue ${global_queue} is not recognised!"
-      exit
-      ;;
-   esac
-   #---------------------------------------------------------------------------------------#
-   ;;
-sdumont*)
-   #----- SantosDumont. -------------------------------------------------------------------#
+case "${cluster}" in
+SDUMONT)
+   #----- Set parameters according to partitions. -----------------------------------------#
    case ${global_queue} in
    cpu_long|nvidia_long)
       n_nodes_max=10
@@ -290,15 +336,78 @@ sdumont*)
    esac
    #---------------------------------------------------------------------------------------#
    ;;
-*)
-   #----- Computer is not listed.  Crash. -------------------------------------------------#
-   echo " Invalid computer ${ordinateur}.  Check queue settings in the script."
-   exit 31
+CANNON)
+   #----- Set parameters according to partitions. -----------------------------------------#
+   case ${global_queue} in
+   "commons")
+      n_nodes_max=5
+      n_cpt_max=18
+      n_cpn=32
+      runtime_max="14-00:00:00"
+      node_memory=244660
+      ;;
+   "huce_cascade")
+      n_nodes_max=30
+      n_cpt_max=48
+      n_cpn=24
+      runtime_max="14-00:00:00"
+      node_memory=183240
+      ;;
+   "huce_intel")
+      n_nodes_max=150
+      n_cpt_max=12
+      n_cpn=24
+      runtime_max="14-00:00:00"
+      node_memory=122090
+      ;;
+   "serial_requeue")
+      n_nodes_max=900
+      n_cpt_max=24
+      n_cpn=48
+      runtime_max="7-00:00:00"
+      node_memory=30362
+      ;;
+   "shared,huce_intel"|"huce_intel,shared")
+      n_nodes_max=150
+      n_cpt_max=12
+      n_cpn=24
+      runtime_max="7-00:00:00"
+      node_memory=122090
+      ;;
+   "shared")
+      n_nodes_max=220
+      n_cpt_max=24
+      n_cpn=48
+      runtime_max="7-00:00:00"
+      node_memory=183240
+      ;;
+   "test")
+      n_nodes_max=9
+      n_cpt_max=24
+      n_cpn=48
+      runtime_max="08:00:00"
+      node_memory=183240
+      ;;
+   "unrestricted")
+      n_nodes_max=4
+      n_cpt_max=24
+      n_cpn=48
+      runtime_max="infinite"
+      node_memory=183240
+      ;;
+   *)
+      echo "Global queue ${global_queue} is not recognised!"
+      exit
+      ;;
+   esac
    #---------------------------------------------------------------------------------------#
    ;;
 esac
 #------------------------------------------------------------------------------------------#
-if [ ${n_cpt} -gt ${n_cpt_max} ]
+
+
+#----- Check that the resources requested are reasonable. ---------------------------------#
+if [[ ${n_cpt} -gt ${n_cpt_max} ]]
 then
    echo " Too many CPUs per task requested:"
    echo " Queue                   = ${global_queue}"
@@ -435,36 +544,31 @@ esac
 #------------------------------------------------------------------------------------------#
 #   Make sure memory does not exceed maximum amount that can be requested.                 #
 #------------------------------------------------------------------------------------------#
-if [ ${sim_memory} -eq 0 ]
+if [[ ${sim_memory} -eq 0 ]]
 then
    let sim_memory=${node_memory}/${n_cpn}
    let node_memory=${n_cpn}*${sim_memory}
-elif [ ${sim_memory} -gt ${node_memory} ]
+elif [[ ${sim_memory} -gt ${node_memory} ]]
 then 
    echo "Simulation memory ${sim_memory} cannot exceed node memory ${node_memory}!"
    exit 99
-else
-   #------ Set memory and number of CPUs per task. ----------------------------------------#
-   let n_cpn_try=${node_memory}/${sim_memory}
-   if [ ${n_cpn_try} -le ${n_cpn} ]
-   then
-      n_cpn=${n_cpn_try}
-      let sim_memory=${node_memory}/${n_cpn}
-   else
-      let node_memory=${n_cpn}*${sim_memory}
-   fi
-   #---------------------------------------------------------------------------------------#
 fi
+#------------------------------------------------------------------------------------------#
+
+
+#----- Limit the memory per CPU based on the simulation memory. ---------------------------#
+let cpu_memory=${sim_memory}/${n_cpt}
 #------------------------------------------------------------------------------------------#
 
 
 
 #---- Partial or complete. ----------------------------------------------------------------#
+
 if ${partial}
 then
    let ff=${polya}-1
    let polyz=${ff}+${npartial}
-   if [ ${polyz} -gt ${npolys} ]
+   if [[ ${polyz} -gt ${npolys} ]]
    then
       polyz=${npolys}
    fi
@@ -491,19 +595,20 @@ let ntasks=1+${polyz}-${polya}
 echo "------------------------------------------------"
 echo "  Submission summary: "
 echo ""
-echo "  Memory per cpu:      ${sim_memory}"
+echo "  Memory per task:     ${sim_memory}"
+echo "  Memory per cpu:      ${cpu_memory}"
 echo "  CPUs per node:       ${n_cpn}"
 echo "  CPUs per task:       ${n_cpt}"
-echo "  Queue:               ${global_queue}"
+echo "  Partition:           ${global_queue}"
 echo "  Run time:            ${runtime}"
 echo "  First polygon:       ${polya}"
 echo "  Last polygon:        ${polyz}"
 echo "  Potl. task count:    ${ntasks}"
-echo "  Job Name:            ${jobname}"
 echo "  Total polygon count: ${npolys}"
 echo " "
 echo " Partial submission:   ${partial}"
 echo " Automatic submission: ${submit}"
+echo " Script:               $(basename ${sbatch})"
 echo "------------------------------------------------"
 echo ""
 echo -n " Waiting five seconds before proceeding... "
@@ -514,88 +619,132 @@ echo "Done!"
 
 
 #------------------------------------------------------------------------------------------#
-#   Check whether there is already a job submitted that looks like this one.               #
+#    Initialise executable.  This depends on the cluster because in some of them it is     #
+# better to submit a single multi-task job, whereas in others it makes more sense to       #
+# submit individual jobs.                                                                  #
 #------------------------------------------------------------------------------------------#
-queued=$(${squeue} -o "${outform}" | grep ${jobname} | wc -l)
-if [ ${queued} -gt 0 ]
-then
-   echo "There is already a job called \"${jobname}\" running."
-   echo "New submissions must have different names: be creative!"
-   exit 99
-fi
-#------------------------------------------------------------------------------------------#
+case "${cluster}" in
+SDUMONT)
+   #---------------------------------------------------------------------------------------#
+   #   Check whether there is already a job submitted that looks like this one.            #
+   #---------------------------------------------------------------------------------------#
+   queued=$(${squeue} -o "${outform}" | grep ${jobname} | wc -l)
+   if [[ ${queued} -gt 0 ]]
+   then
+      echo "There is already a job called \"${jobname}\" running."
+      echo "New submissions must have different names: be creative!"
+      exit 99
+   fi
+   #---------------------------------------------------------------------------------------#
 
 
 
-#------------------------------------------------------------------------------------------#
-#    Initialise executable.                                                                #
-#------------------------------------------------------------------------------------------#
-rm -f ${sbatch}
-touch ${sbatch}
-chmod u+x ${sbatch}
-echo "#!/bin/bash" >> ${sbatch}
-echo "#SBATCH --ntasks=myntasks               # Number of tasks"               >> ${sbatch}
-echo "#SBATCH --cpus-per-task=${n_cpt}        # Number of CPUs per task"       >> ${sbatch}
-echo "#SBATCH --partition=${global_queue}     # Queue that will run job"       >> ${sbatch}
-echo "#SBATCH --job-name=${jobname}           # Job name"                      >> ${sbatch}
-echo "#SBATCH --mem-per-cpu=${sim_memory}     # Memory per CPU"                >> ${sbatch}
-echo "#SBATCH --time=${runtime}               # Time for job"                  >> ${sbatch}
-echo "#SBATCH --output=${obatch}              # Standard output path"          >> ${sbatch}
-echo "#SBATCH --error=${ebatch}               # Standard error path"           >> ${sbatch}
-echo ""                                                                        >> ${sbatch}
-echo "#--- Initial settings."                                                  >> ${sbatch}
-echo "here=\"${here}\"                            # Main path"                 >> ${sbatch}
-echo "exec=\"${exec_full}\"                       # Executable"                >> ${sbatch}
-echo ""                                                                        >> ${sbatch}
-echo "#--- Print information about this job."                                  >> ${sbatch}
-echo "echo \"\""                                                               >> ${sbatch}
-echo "echo \"\""                                                               >> ${sbatch}
-echo "echo \"----- Summary of current job ---------------------------------\"" >> ${sbatch}
-echo "echo \" CPUs per task:   \${SLURM_CPUS_PER_TASK}\""                      >> ${sbatch}
-echo "echo \" Job:             \${SLURM_JOB_NAME} (\${SLURM_JOB_ID})\""        >> ${sbatch}
-echo "echo \" Queue:           \${SLURM_JOB_PARTITION}\""                      >> ${sbatch}
-echo "echo \" Number of nodes: \${SLURM_NNODES}\""                             >> ${sbatch}
-echo "echo \" Number of tasks: \${SLURM_NTASKS}\""                             >> ${sbatch}
-echo "echo \" Memory per CPU:  \${SLURM_MEM_PER_CPU}\""                        >> ${sbatch}
-echo "echo \" Memory per node: \${SLURM_MEM_PER_NODE}\""                       >> ${sbatch}
-echo "echo \" Node list:       \${SLURM_JOB_NODELIST}\""                       >> ${sbatch}
-echo "echo \" Time limit:      \${SLURM_TIMELIMIT}\""                          >> ${sbatch}
-echo "echo \" Std. Output:     \${SLURM_STDOUTMODE}\""                         >> ${sbatch}
-echo "echo \" Std. Error:      \${SLURM_STDERRMODE}\""                         >> ${sbatch}
-echo "echo \"--------------------------------------------------------------\"" >> ${sbatch}
-echo "echo \"\""                                                               >> ${sbatch}
-echo "echo \"\""                                                               >> ${sbatch}
-echo ""                                                                        >> ${sbatch}
-echo "echo \"----- Global settings for this array of simulations ----------\"" >> ${sbatch}
-echo "echo \" Main path:       \${here}\""                                     >> ${sbatch}
-echo "echo \" Executable:      \${exec}\""                                     >> ${sbatch}
-echo "echo \"--------------------------------------------------------------\"" >> ${sbatch}
-echo "echo \"\""                                                               >> ${sbatch}
-echo "echo \"\""                                                               >> ${sbatch}
-echo ""                                                                        >> ${sbatch}
-echo ""                                                                        >> ${sbatch}
-echo "#--- Define home in case home is not set"                                >> ${sbatch}
-echo "if [[ \"x\${HOME}\" == \"x\" ]]"                                         >> ${sbatch}
-echo "then"                                                                    >> ${sbatch}
-echo "   export HOME=\$(echo ~)"                                               >> ${sbatch}
-echo "fi"                                                                      >> ${sbatch}
-echo ""                                                                        >> ${sbatch}
-echo "#--- Load modules and settings."                                         >> ${sbatch}
-echo ". \${HOME}/.bashrc ${optsrc}"                                            >> ${sbatch}
-echo ""                                                                        >> ${sbatch}
-echo "#--- Get plenty of memory."                                              >> ${sbatch}
-echo "ulimit -s unlimited"                                                     >> ${sbatch}
-echo "ulimit -u unlimited"                                                     >> ${sbatch}
-echo ""                                                                        >> ${sbatch}
-echo "#--- Set OpenMP parameters"                                              >> ${sbatch}
-echo "if [ \"\${SLURM_CPUS_PER_TASK}\" == \"\" ]"                              >> ${sbatch}
-echo "then"                                                                    >> ${sbatch}
-echo "   export OMP_NUM_THREADS=1"                                             >> ${sbatch}
-echo "else"                                                                    >> ${sbatch}
-echo "   export OMP_NUM_THREADS=\${SLURM_CPUS_PER_TASK}"                       >> ${sbatch}
-echo "fi"                                                                      >> ${sbatch}
-echo ""                                                                        >> ${sbatch}
-echo "#----- Task list."                                                       >> ${sbatch}
+   #----- Initialise script to submit a single multi-task job. ----------------------------#
+   rm -f ${sbatch}
+   touch ${sbatch}
+   chmod u+x ${sbatch}
+   echo "#!/bin/bash" >> ${sbatch}
+   echo "#SBATCH --ntasks=myntasks               # Number of tasks"            >> ${sbatch}
+   echo "#SBATCH --cpus-per-task=${n_cpt}        # Number of CPUs per task"    >> ${sbatch}
+   echo "#SBATCH --cores-per-socket=${n_cpt}     # Min. # of cores per socket" >> ${sbatch}
+   echo "#SBATCH --partition=${global_queue}     # Queue that will run job"    >> ${sbatch}
+   echo "#SBATCH --job-name=${jobname}           # Job name"                   >> ${sbatch}
+   echo "#SBATCH --mem-per-cpu=${cpu_memory}     # Memory per CPU"             >> ${sbatch}
+   echo "#SBATCH --time=${runtime}               # Time for job"               >> ${sbatch}
+   echo "#SBATCH --output=${obatch}              # Standard output path"       >> ${sbatch}
+   echo "#SBATCH --error=${ebatch}               # Standard error path"        >> ${sbatch}
+   echo ""                                                                     >> ${sbatch}
+   echo "#--- Initial settings."                                               >> ${sbatch}
+   echo "here=\"${here}\"                            # Main path"              >> ${sbatch}
+   echo "exec=\"${exec_full}\"                       # Executable"             >> ${sbatch}
+   echo ""                                                                     >> ${sbatch}
+   echo "#--- Print information about this job."                               >> ${sbatch}
+   echo "echo \"\""                                                            >> ${sbatch}
+   echo "echo \"\""                                                            >> ${sbatch}
+   echo "echo \"----- Summary of current job ------------------------------\"" >> ${sbatch}
+   echo "echo \" CPUs per task:   \${SLURM_CPUS_PER_TASK}\""                   >> ${sbatch}
+   echo "echo \" Job:             \${SLURM_JOB_NAME} (\${SLURM_JOB_ID})\""     >> ${sbatch}
+   echo "echo \" Queue:           \${SLURM_JOB_PARTITION}\""                   >> ${sbatch}
+   echo "echo \" Number of nodes: \${SLURM_NNODES}\""                          >> ${sbatch}
+   echo "echo \" Number of tasks: \${SLURM_NTASKS}\""                          >> ${sbatch}
+   echo "echo \" Memory per CPU:  \${SLURM_MEM_PER_CPU}\""                     >> ${sbatch}
+   echo "echo \" Memory per node: \${SLURM_MEM_PER_NODE}\""                    >> ${sbatch}
+   echo "echo \" Node list:       \${SLURM_JOB_NODELIST}\""                    >> ${sbatch}
+   echo "echo \" Time limit:      \${SLURM_TIMELIMIT}\""                       >> ${sbatch}
+   echo "echo \" Std. Output:     \${SLURM_STDOUTMODE}\""                      >> ${sbatch}
+   echo "echo \" Std. Error:      \${SLURM_STDERRMODE}\""                      >> ${sbatch}
+   echo "echo \"-----------------------------------------------------------\"" >> ${sbatch}
+   echo "echo \"\""                                                            >> ${sbatch}
+   echo "echo \"\""                                                            >> ${sbatch}
+   echo ""                                                                     >> ${sbatch}
+   echo "echo \"----- Global settings for this array of simulations -------\"" >> ${sbatch}
+   echo "echo \" Main path:       \${here}\""                                  >> ${sbatch}
+   echo "echo \" Executable:      \${exec}\""                                  >> ${sbatch}
+   echo "echo \"-----------------------------------------------------------\"" >> ${sbatch}
+   echo "echo \"\""                                                            >> ${sbatch}
+   echo "echo \"\""                                                            >> ${sbatch}
+   echo ""                                                                     >> ${sbatch}
+   echo ""                                                                     >> ${sbatch}
+   echo "#--- Define home in case home is not set"                             >> ${sbatch}
+   echo "if [[ \"x\${HOME}\" == \"x\" ]]"                                      >> ${sbatch}
+   echo "then"                                                                 >> ${sbatch}
+   echo "   export HOME=\$(echo ~)"                                            >> ${sbatch}
+   echo "fi"                                                                   >> ${sbatch}
+   echo ""                                                                     >> ${sbatch}
+   echo "#--- Load modules and settings."                                      >> ${sbatch}
+   echo ". \${HOME}/.bashrc ${optsrc}"                                         >> ${sbatch}
+   echo ""                                                                     >> ${sbatch}
+   echo "#--- Get plenty of memory."                                           >> ${sbatch}
+   echo "ulimit -s unlimited"                                                  >> ${sbatch}
+   echo "ulimit -u unlimited"                                                  >> ${sbatch}
+   echo ""                                                                     >> ${sbatch}
+   echo "#--- Set OpenMP parameters"                                           >> ${sbatch}
+   echo "if [ \"\${SLURM_CPUS_PER_TASK}\" == \"\" ]"                           >> ${sbatch}
+   echo "then"                                                                 >> ${sbatch}
+   echo "   export OMP_NUM_THREADS=1"                                          >> ${sbatch}
+   echo "else"                                                                 >> ${sbatch}
+   echo "   export OMP_NUM_THREADS=\${SLURM_CPUS_PER_TASK}"                    >> ${sbatch}
+   echo "fi"                                                                   >> ${sbatch}
+   echo ""                                                                     >> ${sbatch}
+   echo "#----- Task list."                                                    >> ${sbatch}
+   #---------------------------------------------------------------------------------------#
+   ;;
+CANNON)
+   #----- Initialise script to submit multiple single-task jobs. --------------------------#
+   rm -f ${sbatch}
+   touch ${sbatch}
+   chmod u+x ${sbatch}
+   echo "#!/bin/bash" >> ${sbatch}
+   echo ""                                                                     >> ${sbatch}
+   echo "#--- Initial settings."                                               >> ${sbatch}
+   echo "here=\"${here}\"                            # Main path"              >> ${sbatch}
+   echo "exec=\"${exec_full}\"                       # Executable"             >> ${sbatch}
+   echo ""                                                                     >> ${sbatch}
+   echo "echo \"----- Global settings for this array of simulations -------\"" >> ${sbatch}
+   echo "echo \" Main path:       \${here}\""                                  >> ${sbatch}
+   echo "echo \" Executable:      \${exec}\""                                  >> ${sbatch}
+   echo "echo \"-----------------------------------------------------------\"" >> ${sbatch}
+   echo "echo \"\""                                                            >> ${sbatch}
+   echo "echo \"\""                                                            >> ${sbatch}
+   echo ""                                                                     >> ${sbatch}
+   echo ""                                                                     >> ${sbatch}
+   echo "#--- Define home in case home is not set"                             >> ${sbatch}
+   echo "if [[ \"x\${HOME}\" == \"x\" ]]"                                      >> ${sbatch}
+   echo "then"                                                                 >> ${sbatch}
+   echo "   export HOME=\$(echo ~)"                                            >> ${sbatch}
+   echo "fi"                                                                   >> ${sbatch}
+   echo ""                                                                     >> ${sbatch}
+   echo "#--- Load modules and settings."                                      >> ${sbatch}
+   echo ". \${HOME}/.bashrc ${optsrc}"                                         >> ${sbatch}
+   echo ""                                                                     >> ${sbatch}
+   echo "#--- Get plenty of memory."                                           >> ${sbatch}
+   echo "ulimit -s unlimited"                                                  >> ${sbatch}
+   echo "ulimit -u unlimited"                                                  >> ${sbatch}
+   echo ""                                                                     >> ${sbatch}
+   echo "#----- Job list."                                                     >> ${sbatch}
+   #---------------------------------------------------------------------------------------#
+   ;;
+esac
 #------------------------------------------------------------------------------------------#
 
 
@@ -604,7 +753,7 @@ echo "#----- Task list."                                                       >
 #     Loop over all polygons.                                                              #
 #------------------------------------------------------------------------------------------#
 n_submit=0
-while [ ${ff} -lt ${polyz} ]
+while [[ ${ff} -lt ${polyz} ]]
 do
    let ff=${ff}+1
    let line=${ff}+3
@@ -613,13 +762,13 @@ do
    #---------------------------------------------------------------------------------------#
    #    Format count.                                                                      #
    #---------------------------------------------------------------------------------------#
-   if   [ ${npolys} -lt 100   ]
+   if   [[ ${npolys} -lt 100   ]]
    then
       ffout=$(printf '%2.2i' ${ff})
-   elif [ ${npolys} -lt 1000  ]
+   elif [[ ${npolys} -lt 1000  ]]
    then
       ffout=$(printf '%3.3i' ${ff})
-   elif [ ${npolys} -lt 10000 ]
+   elif [[ ${npolys} -lt 10000 ]]
    then
       ffout=$(printf '%4.4i' ${ff})
    else
@@ -635,129 +784,177 @@ do
    # latitude.                                                                             #
    #---------------------------------------------------------------------------------------#
    oi=$(head -${line} ${joborder} | tail -1)
-   polyname=$(echo ${oi}     | awk '{print $1  }')
-   polyiata=$(echo ${oi}     | awk '{print $2  }')
-   polylon=$(echo ${oi}      | awk '{print $3  }')
-   polylat=$(echo ${oi}      | awk '{print $4  }')
-   yeara=$(echo ${oi}        | awk '{print $5  }')
-   montha=$(echo ${oi}       | awk '{print $6  }')
-   datea=$(echo ${oi}        | awk '{print $7  }')
-   timea=$(echo ${oi}        | awk '{print $8  }')
-   yearz=$(echo ${oi}        | awk '{print $9  }')
-   monthz=$(echo ${oi}       | awk '{print $10 }')
-   datez=$(echo ${oi}        | awk '{print $11 }')
-   timez=$(echo ${oi}        | awk '{print $12 }')
-   initmode=$(echo ${oi}     | awk '{print $13 }')
-   iscenario=$(echo ${oi}    | awk '{print $14 }')
-   isizepft=$(echo ${oi}     | awk '{print $15 }')
-   iage=$(echo ${oi}         | awk '{print $16 }')
-   imaxcohort=$(echo ${oi}   | awk '{print $17 }')
-   polyisoil=$(echo ${oi}    | awk '{print $18 }')
-   polyntext=$(echo ${oi}    | awk '{print $19 }')
-   polysand=$(echo ${oi}     | awk '{print $20 }')
-   polyclay=$(echo ${oi}     | awk '{print $21 }')
-   polyslsoc=$(echo ${oi}    | awk '{print $22 }')
-   polyslph=$(echo ${oi}     | awk '{print $23 }')
-   polyslcec=$(echo ${oi}    | awk '{print $24 }')
-   polysldbd=$(echo ${oi}    | awk '{print $25 }')
-   polydepth=$(echo ${oi}    | awk '{print $26 }')
-   polyslhydro=$(echo ${oi}  | awk '{print $27 }')
-   polysoilbc=$(echo ${oi}   | awk '{print $28 }')
-   polysldrain=$(echo ${oi}  | awk '{print $29 }')
-   polycol=$(echo ${oi}      | awk '{print $30 }')
-   slzres=$(echo ${oi}       | awk '{print $31 }')
-   queue=$(echo ${oi}        | awk '{print $32 }')
-   metdriver=$(echo ${oi}    | awk '{print $33 }')
-   dtlsm=$(echo ${oi}        | awk '{print $34 }')
-   monyrstep=$(echo ${oi}    | awk '{print $35 }')
-   iphysiol=$(echo ${oi}     | awk '{print $36 }')
-   vmfactc3=$(echo ${oi}     | awk '{print $37 }')
-   vmfactc4=$(echo ${oi}     | awk '{print $38 }')
-   mphototrc3=$(echo ${oi}   | awk '{print $39 }')
-   mphototec3=$(echo ${oi}   | awk '{print $40 }')
-   mphotoc4=$(echo ${oi}     | awk '{print $41 }')
-   bphotoblc3=$(echo ${oi}   | awk '{print $42 }')
-   bphotonlc3=$(echo ${oi}   | awk '{print $43 }')
-   bphotoc4=$(echo ${oi}     | awk '{print $44 }')
-   kwgrass=$(echo ${oi}      | awk '{print $45 }')
-   kwtree=$(echo ${oi}       | awk '{print $46 }')
-   gammac3=$(echo ${oi}      | awk '{print $47 }')
-   gammac4=$(echo ${oi}      | awk '{print $48 }')
-   d0grass=$(echo ${oi}      | awk '{print $49 }')
-   d0tree=$(echo ${oi}       | awk '{print $50 }')
-   alphac3=$(echo ${oi}      | awk '{print $51 }')
-   alphac4=$(echo ${oi}      | awk '{print $52 }')
-   klowco2=$(echo ${oi}      | awk '{print $53 }')
-   decomp=$(echo ${oi}       | awk '{print $54 }')
-   rrffact=$(echo ${oi}      | awk '{print $55 }')
-   growthresp=$(echo ${oi}   | awk '{print $56 }')
-   lwidthgrass=$(echo ${oi}  | awk '{print $57 }')
-   lwidthbltree=$(echo ${oi} | awk '{print $58 }')
-   lwidthnltree=$(echo ${oi} | awk '{print $59 }')
-   q10c3=$(echo ${oi}        | awk '{print $60 }')
-   q10c4=$(echo ${oi}        | awk '{print $61 }')
-   h2olimit=$(echo ${oi}     | awk '{print $62 }')
-   imortscheme=$(echo ${oi}  | awk '{print $63 }')
-   ddmortconst=$(echo ${oi}  | awk '{print $64 }')
-   cbrscheme=$(echo ${oi}    | awk '{print $65 }')
-   isfclyrm=$(echo ${oi}     | awk '{print $66 }')
-   icanturb=$(echo ${oi}     | awk '{print $67 }')
-   ubmin=$(echo ${oi}        | awk '{print $68 }')
-   ugbmin=$(echo ${oi}       | awk '{print $69 }')
-   ustmin=$(echo ${oi}       | awk '{print $70 }')
-   gamm=$(echo ${oi}         | awk '{print $71 }')
-   gamh=$(echo ${oi}         | awk '{print $72 }')
-   tprandtl=$(echo ${oi}     | awk '{print $73 }')
-   ribmax=$(echo ${oi}       | awk '{print $74 }')
-   atmco2=$(echo ${oi}       | awk '{print $75 }')
-   thcrit=$(echo ${oi}       | awk '{print $76 }')
-   smfire=$(echo ${oi}       | awk '{print $77 }')
-   ifire=$(echo ${oi}        | awk '{print $78 }')
-   fireparm=$(echo ${oi}     | awk '{print $79 }')
-   ipercol=$(echo ${oi}      | awk '{print $80 }')
-   runoff=$(echo ${oi}       | awk '{print $81 }')
-   imetrad=$(echo ${oi}      | awk '{print $82 }')
-   ibranch=$(echo ${oi}      | awk '{print $83 }')
-   icanrad=$(echo ${oi}      | awk '{print $84 }')
-   ihrzrad=$(echo ${oi}      | awk '{print $85 }')
-   crown=$(echo   ${oi}      | awk '{print $86 }')
-   ltransvis=$(echo ${oi}    | awk '{print $87 }')
-   lreflectvis=$(echo ${oi}  | awk '{print $88 }')
-   ltransnir=$(echo ${oi}    | awk '{print $89 }')
-   lreflectnir=$(echo ${oi}  | awk '{print $90 }')
-   orienttree=$(echo ${oi}   | awk '{print $91 }')
-   orientgrass=$(echo ${oi}  | awk '{print $92 }')
-   clumptree=$(echo ${oi}    | awk '{print $93 }')
-   clumpgrass=$(echo ${oi}   | awk '{print $94 }')
-   igoutput=$(echo ${oi}     | awk '{print $95 }')
-   ivegtdyn=$(echo ${oi}     | awk '{print $96 }')
-   ihydro=$(echo ${oi}       | awk '{print $97 }')
-   istemresp=$(echo ${oi}    | awk '{print $98 }')
-   istomata=$(echo ${oi}     | awk '{print $99 }')
-   iplastic=$(echo ${oi}     | awk '{print $100}')
-   icarbonmort=$(echo ${oi}  | awk '{print $101}')
-   ihydromort=$(echo ${oi}   | awk '{print $102}')
-   igndvap=$(echo ${oi}      | awk '{print $103}')
-   iphen=$(echo ${oi}        | awk '{print $104}')
-   iallom=$(echo ${oi}       | awk '{print $105}')
-   ieconomics=$(echo ${oi}   | awk '{print $106}')
-   igrass=$(echo ${oi}       | awk '{print $107}')
-   ibigleaf=$(echo ${oi}     | awk '{print $108}')
-   integscheme=$(echo ${oi}  | awk '{print $109}')
-   nsubeuler=$(echo ${oi}    | awk '{print $110}')
-   irepro=$(echo ${oi}       | awk '{print $111}')
-   treefall=$(echo ${oi}     | awk '{print $112}')
-   ianthdisturb=$(echo ${oi} | awk '{print $113}')
-   ianthdataset=$(echo ${oi} | awk '{print $114}')
-   slscale=$(echo ${oi}      | awk '{print $115}')
-   slyrfirst=$(echo ${oi}    | awk '{print $116}')
-   slnyrs=$(echo ${oi}       | awk '{print $117}')
-   bioharv=$(echo ${oi}      | awk '{print $118}')
-   skidarea=$(echo ${oi}     | awk '{print $119}')
-   skidsmall=$(echo ${oi}    | awk '{print $120}')
-   skidlarge=$(echo ${oi}    | awk '{print $121}')
-   fellingsmall=$(echo ${oi} | awk '{print $122}')
+   polyname=$(echo ${oi}      | awk '{print $1  }')
+   polyiata=$(echo ${oi}      | awk '{print $2  }')
+   polylon=$(echo ${oi}       | awk '{print $3  }')
+   polylat=$(echo ${oi}       | awk '{print $4  }')
+   yeara=$(echo ${oi}         | awk '{print $5  }')
+   montha=$(echo ${oi}        | awk '{print $6  }')
+   datea=$(echo ${oi}         | awk '{print $7  }')
+   timea=$(echo ${oi}         | awk '{print $8  }')
+   yearz=$(echo ${oi}         | awk '{print $9  }')
+   monthz=$(echo ${oi}        | awk '{print $10 }')
+   datez=$(echo ${oi}         | awk '{print $11 }')
+   timez=$(echo ${oi}         | awk '{print $12 }')
+   initmode=$(echo ${oi}      | awk '{print $13 }')
+   iscenario=$(echo ${oi}     | awk '{print $14 }')
+   isizepft=$(echo ${oi}      | awk '{print $15 }')
+   iage=$(echo ${oi}          | awk '{print $16 }')
+   imaxcohort=$(echo ${oi}    | awk '{print $17 }')
+   polyisoil=$(echo ${oi}     | awk '{print $18 }')
+   polyntext=$(echo ${oi}     | awk '{print $19 }')
+   polysand=$(echo ${oi}      | awk '{print $20 }')
+   polyclay=$(echo ${oi}      | awk '{print $21 }')
+   polyslsoc=$(echo ${oi}     | awk '{print $22 }')
+   polyslph=$(echo ${oi}      | awk '{print $23 }')
+   polyslcec=$(echo ${oi}     | awk '{print $24 }')
+   polysldbd=$(echo ${oi}     | awk '{print $25 }')
+   polydepth=$(echo ${oi}     | awk '{print $26 }')
+   polyslhydro=$(echo ${oi}   | awk '{print $27 }')
+   polysoilbc=$(echo ${oi}    | awk '{print $28 }')
+   polysldrain=$(echo ${oi}   | awk '{print $29 }')
+   polycol=$(echo ${oi}       | awk '{print $30 }')
+   slzres=$(echo ${oi}        | awk '{print $31 }')
+   queue=$(echo ${oi}         | awk '{print $32 }')
+   metdriver=$(echo ${oi}     | awk '{print $33 }')
+   dtlsm=$(echo ${oi}         | awk '{print $34 }')
+   monyrstep=$(echo ${oi}     | awk '{print $35 }')
+   iphysiol=$(echo ${oi}      | awk '{print $36 }')
+   vmfactc3=$(echo ${oi}      | awk '{print $37 }')
+   vmfactc4=$(echo ${oi}      | awk '{print $38 }')
+   mphototrc3=$(echo ${oi}    | awk '{print $39 }')
+   mphototec3=$(echo ${oi}    | awk '{print $40 }')
+   mphotoc4=$(echo ${oi}      | awk '{print $41 }')
+   bphotoblc3=$(echo ${oi}    | awk '{print $42 }')
+   bphotonlc3=$(echo ${oi}    | awk '{print $43 }')
+   bphotoc4=$(echo ${oi}      | awk '{print $44 }')
+   kwgrass=$(echo ${oi}       | awk '{print $45 }')
+   kwtree=$(echo ${oi}        | awk '{print $46 }')
+   gammac3=$(echo ${oi}       | awk '{print $47 }')
+   gammac4=$(echo ${oi}       | awk '{print $48 }')
+   d0grass=$(echo ${oi}       | awk '{print $49 }')
+   d0tree=$(echo ${oi}        | awk '{print $50 }')
+   alphac3=$(echo ${oi}       | awk '{print $51 }')
+   alphac4=$(echo ${oi}       | awk '{print $52 }')
+   klowco2=$(echo ${oi}       | awk '{print $53 }')
+   decomp=$(echo ${oi}        | awk '{print $54 }')
+   rrffact=$(echo ${oi}       | awk '{print $55 }')
+   growthresp=$(echo ${oi}    | awk '{print $56 }')
+   lwidthgrass=$(echo ${oi}   | awk '{print $57 }')
+   lwidthbltree=$(echo ${oi}  | awk '{print $58 }')
+   lwidthnltree=$(echo ${oi}  | awk '{print $59 }')
+   q10c3=$(echo ${oi}         | awk '{print $60 }')
+   q10c4=$(echo ${oi}         | awk '{print $61 }')
+   h2olimit=$(echo ${oi}      | awk '{print $62 }')
+   imortscheme=$(echo ${oi}   | awk '{print $63 }')
+   ddmortconst=$(echo ${oi}   | awk '{print $64 }')
+   cbrscheme=$(echo ${oi}     | awk '{print $65 }')
+   isfclyrm=$(echo ${oi}      | awk '{print $66 }')
+   icanturb=$(echo ${oi}      | awk '{print $67 }')
+   ubmin=$(echo ${oi}         | awk '{print $68 }')
+   ugbmin=$(echo ${oi}        | awk '{print $69 }')
+   ustmin=$(echo ${oi}        | awk '{print $70 }')
+   gamm=$(echo ${oi}          | awk '{print $71 }')
+   gamh=$(echo ${oi}          | awk '{print $72 }')
+   tprandtl=$(echo ${oi}      | awk '{print $73 }')
+   ribmax=$(echo ${oi}        | awk '{print $74 }')
+   atmco2=$(echo ${oi}        | awk '{print $75 }')
+   thcrit=$(echo ${oi}        | awk '{print $76 }')
+   smfire=$(echo ${oi}        | awk '{print $77 }')
+   ifire=$(echo ${oi}         | awk '{print $78 }')
+   fireparm=$(echo ${oi}      | awk '{print $79 }')
+   ipercol=$(echo ${oi}       | awk '{print $80 }')
+   runoff=$(echo ${oi}        | awk '{print $81 }')
+   imetrad=$(echo ${oi}       | awk '{print $82 }')
+   ibranch=$(echo ${oi}       | awk '{print $83 }')
+   icanrad=$(echo ${oi}       | awk '{print $84 }')
+   ihrzrad=$(echo ${oi}       | awk '{print $85 }')
+   crown=$(echo   ${oi}       | awk '{print $86 }')
+   ltransvis=$(echo ${oi}     | awk '{print $87 }')
+   lreflectvis=$(echo ${oi}   | awk '{print $88 }')
+   ltransnir=$(echo ${oi}     | awk '{print $89 }')
+   lreflectnir=$(echo ${oi}   | awk '{print $90 }')
+   orienttree=$(echo ${oi}    | awk '{print $91 }')
+   orientgrass=$(echo ${oi}   | awk '{print $92 }')
+   clumptree=$(echo ${oi}     | awk '{print $93 }')
+   clumpgrass=$(echo ${oi}    | awk '{print $94 }')
+   igoutput=$(echo ${oi}      | awk '{print $95 }')
+   ivegtdyn=$(echo ${oi}      | awk '{print $96 }')
+   ihydro=$(echo ${oi}        | awk '{print $97 }')
+   istemresp=$(echo ${oi}     | awk '{print $98 }')
+   istomata=$(echo ${oi}      | awk '{print $99 }')
+   iplastic=$(echo ${oi}      | awk '{print $100}')
+   icarbonmort=$(echo ${oi}   | awk '{print $101}')
+   ihydromort=$(echo ${oi}    | awk '{print $102}')
+   igndvap=$(echo ${oi}       | awk '{print $103}')
+   iphen=$(echo ${oi}         | awk '{print $104}')
+   iallom=$(echo ${oi}        | awk '{print $105}')
+   ieconomics=$(echo ${oi}    | awk '{print $106}')
+   igrass=$(echo ${oi}        | awk '{print $107}')
+   ibigleaf=$(echo ${oi}      | awk '{print $108}')
+   integscheme=$(echo ${oi}   | awk '{print $109}')
+   nsubeuler=$(echo ${oi}     | awk '{print $110}')
+   irepro=$(echo ${oi}        | awk '{print $111}')
+   treefall=$(echo ${oi}      | awk '{print $112}')
+   ianthdisturb=$(echo ${oi}  | awk '{print $113}')
+   ianthdataset=$(echo ${oi}  | awk '{print $114}')
+   slscale=$(echo ${oi}       | awk '{print $115}')
+   slyrfirst=$(echo ${oi}     | awk '{print $116}')
+   slnyrs=$(echo ${oi}        | awk '{print $117}')
+   bioharv=$(echo ${oi}       | awk '{print $118}')
+   skidarea=$(echo ${oi}      | awk '{print $119}')
+   skiddbhthresh=$(echo ${oi} | awk '{print $120}')
+   skidsmall=$(echo ${oi}     | awk '{print $121}')
+   skidlarge=$(echo ${oi}     | awk '{print $122}')
+   fellingsmall=$(echo ${oi}  | awk '{print $123}')
    #---------------------------------------------------------------------------------------#
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #      In case this is an "init_only" run, impose final time to be the initial time.    #
+   #---------------------------------------------------------------------------------------#
+   if ${init_only}
+   then
+      yearz=${yeara}
+      monthz=${montha}
+      datez=${datea}
+      timez=${timea}
+   fi
+   #---------------------------------------------------------------------------------------#
+
+
+   #---------------------------------------------------------------------------------------#
+   #    Task name.  This depends on the type of submission (just to avoid clutter).        #
+   #---------------------------------------------------------------------------------------#
+   case "${cluster}" in
+   SDUMONT) 
+      #----- Task name is bound to the global jobname, no need to add prefix. -------------#
+      taskname="${polyname}"
+      #------------------------------------------------------------------------------------#
+      ;;
+   CANNON )
+      #----- Add prefix to the task name, which will name this job. -----------------------#
+      taskname="${desc}-${polyname}"
+      #------------------------------------------------------------------------------------#
+
+
+      #------------------------------------------------------------------------------------#
+      #   Check whether there is already a job submitted that looks like this one.         #
+      #------------------------------------------------------------------------------------#
+      queued=$(${squeue} -o "${outform}" | grep ${taskname} | wc -l)
+      if [[ ${queued} -gt 0 ]]
+      then
+         echo "There is already a job called \"${taskname}\" running."
+         echo "New submissions must have different names: be creative!"
+         exit 99
+      fi
+      #------------------------------------------------------------------------------------#
+      ;;
+   esac
+   #---------------------------------------------------------------------------------------#
+
+
 
 
 
@@ -767,10 +964,10 @@ do
    let elapseda=12*${yeara}+${montha}
    let elapsedz=12*${yearz}+${monthz}
    let nmonths=${elapsedz}-${elapseda}
-   if [ ${nmonths} -ge 240 ]
+   if [[ ${nmonths} -ge 240 ]]
    then
       iunitstate=3
-   elif [ ${nmonths} -ge 3 ]
+   elif [[ ${nmonths} -ge 3 ]]
    then
       iunitstate=2
    else
@@ -780,7 +977,7 @@ do
 
 
    #----- Check whether the directories exist or not, and stop the script if they do. -----#
-   if [ -s ${here}/${polyname} ]
+   if [[ -s ${here}/${polyname} ]]
    then
       echo -n "${ffout} ${polyname}: updating files..."
       
@@ -804,7 +1001,7 @@ do
    #---------------------------------------------------------------------------------------#
    #   Make sure that we have a reasonable tolerance.                                      #
    #---------------------------------------------------------------------------------------#
-   if [ "x${oldtol}" == "xmytoler" -o "x${oldtol}" == "x" ]
+   if [[ "x${oldtol}" == "xmytoler" ]] || [[ "x${oldtol}" == "x" ]]
    then
       toler=${toldef}
    else
@@ -822,28 +1019,28 @@ do
    # we simply copy the template, and assume initial run.  Otherwise, we must find out     #
    # where the simulation was when it stopped.                                             #
    #---------------------------------------------------------------------------------------#
-   if [ -s  ${here}/${polyname} ]
+   if [[ -s  ${here}/${polyname} ]]
    then
 
       #------------------------------------------------------------------------------------#
       #      This step is necessary because we may have killed the run while it was        #
       # writing, and as a result, the file may be corrupt.                                 #
       #------------------------------------------------------------------------------------#
-      nhdf5=$(ls -1 ${here}/${polyname}/histo/* 2> /dev/null | wc -l)
-      if [ ${nhdf5} -gt 0 ]
+      nhdf5=$(ls -1 ${here}/${polyname}/histo/*.h5 2> /dev/null | wc -l)
+      if [[ ${nhdf5} -gt 0 ]]
       then
          h5fine=0
 
-         while [ ${h5fine} -eq 0 ]
+         while [[ ${h5fine} -eq 0 ]]
          do
-            lasthdf5=$(ls -1 ${here}/${polyname}/histo/* | tail -1)
+            lasthdf5=$(ls -1 ${here}/${polyname}/histo/*.h5 | tail -1)
             h5dump -H ${lasthdf5} 1> /dev/null 2> ${here}/badfile.txt
 
-            if [ -s ${here}/badfile.txt ]
+            if [[ -s ${here}/badfile.txt ]]
             then
                /bin/rm -fv ${lasthdf5}
-               nhdf5=$(ls -1 ${here}/${polyname}/histo/* 2> /dev/null | wc -l)
-               if [ ${nhdf5} -eq 0 ]
+               nhdf5=$(ls -1 ${here}/${polyname}/histo/*.h5 2> /dev/null | wc -l)
+               if [[ ${nhdf5} -eq 0 ]]
                then
                   h5fine=1
                fi
@@ -883,7 +1080,7 @@ do
    sed -i~ s@thisnyearmin@10000@g             ${whichrun}
    sed -i~ s@thisststcrit@0.0@g               ${whichrun}
    R CMD BATCH --no-save --no-restore ${whichrun} ${outwhich}
-   while [ ! -s ${here}/${polyname}/statusrun.txt ]
+   while [[ ! -s ${here}/${polyname}/statusrun.txt ]]
    do
       sleep 0.2
    done
@@ -895,13 +1092,42 @@ do
    #---------------------------------------------------------------------------------------#
 
 
+   #---------------------------------------------------------------------------------------#
+   #      Run the small R script to generate specific observation times.                   #
+   #---------------------------------------------------------------------------------------#
+   /bin/rm -f ${here}/${polyname}/gen_obstimes.r
+   /bin/cp -f ${here}/Template/gen_obstimes.r ${here}/${polyname}/gen_obstimes.r
+   obstimes="${here}/${polyname}/gen_obstimes.r"
+   outtimes="${here}/${polyname}/out_obstimes.txt"
+   sed -i~ s@thispoly@${polyname}@g           ${obstimes}
+   sed -i~ s@thisqueue@${queue}@g             ${obstimes}
+   sed -i~ s@pathhere@${here}@g               ${obstimes}
+   sed -i~ s@paththere@${here}@g              ${obstimes}
+   sed -i~ s@thisyeara@${yeara}@g             ${obstimes}
+   sed -i~ s@thismontha@${montha}@g           ${obstimes}
+   sed -i~ s@thisdatea@${datea}@g             ${obstimes}
+   sed -i~ s@thistimea@${timea}@g             ${obstimes}
+   sed -i~ s@thisyearz@${yearz}@g             ${obstimes}
+   sed -i~ s@thismonthz@${monthz}@g           ${obstimes}
+   sed -i~ s@thisdatez@${datez}@g             ${obstimes}
+   sed -i~ s@thistimez@${timez}@g             ${obstimes}
+   sed -i~ s@thislon@${polylon}@g             ${obstimes}
+   sed -i~ s@thislat@${polylat}@g             ${obstimes}
+   R CMD BATCH --no-save --no-restore ${obstimes} ${outtimes}
+   while [[ ! -s ${here}/${polyname}/${polyname}_obstimes.txt ]]
+   do
+      sleep 0.2
+   done
+   #---------------------------------------------------------------------------------------#
+
+
 
    #---------------------------------------------------------------------------------------#
    #    To ensure simulations can be requeued, we no longer set RUNTYPE to INITIAL or      #
    # HISTORY (except when we should force history).  Instead, we select RESTORE and let    #
    # the model decide between initial or history.                                          #
    #---------------------------------------------------------------------------------------#
-   if [ "${runt}" == "INITIAL" ] || [ "${runt}" == "HISTORY" ]
+   if [[ "${runt}" == "INITIAL" ]] || [[ "${runt}" == "HISTORY" ]]
    then
       runt="RESTORE"
    fi
@@ -1139,6 +1365,16 @@ do
    case ${iscenario} in
    default)
       case ${metdriver} in
+      ERA5_CHIRPS)
+         #----- ERA5 (CHIRPS precipitation, Brazilian Amazon only). -----------------------#
+         scentype="ERA5"
+         iscenario="ERA5_SOUTHAM_CHIRPS"
+         ;;
+      ERA5_CHIRPS)
+         #----- ERA-Interim (CHIRPS precipitation). ---------------------------------------#
+         scentype="ERA_Interim"
+         iscenario="ERAINT_SOUTHAM_CHIRPS"
+         ;;
       ERAINT_CHIRPS)
          #----- ERA-Interim (CHIRPS precipitation). ---------------------------------------#
          scentype="ERA_Interim"
@@ -1188,6 +1424,11 @@ do
          #----- Sheffield. ----------------------------------------------------------------#
          scentype="sheffield"
          iscenario="sheffield"
+         ;;
+      WFDE5_CHIRPS)
+         #----- WFDEI (CHIRPS Precipitation). ---------------------------------------------#
+         scentype="WFDE5"
+         iscenario="WFDE5_SOUTHAM_CHIRPS"
          ;;
       WFDEI_CHIRPS)
          #----- WFDEI (CHIRPS Precipitation). ---------------------------------------------#
@@ -1275,6 +1516,12 @@ do
       metdriverdb="${fullscen}/Caxiuana/Caxiuana_HEADER"
       metcyc1=1999
       metcycf=2003
+      imetavg=1
+      ;;
+   ERA5_CHIRPS)
+      metdriverdb="${fullscen}/${iscenario}_HEADER"
+      metcyc1=1981
+      metcycf=2019
       imetavg=1
       ;;
    ERAINT_CHIRPS)
@@ -1427,6 +1674,12 @@ do
       metcycf=2010
       imetavg=1
       ;;
+   WFDE5_CHIRPS)
+      metdriverdb="${fullscen}/${iscenario}_HEADER"
+      metcyc1=1981
+      metcycf=2018
+      imetavg=2
+      ;;
    WFDEI_CHIRPS)
       metdriverdb="${fullscen}/${iscenario}_HEADER"
       metcyc1=1981
@@ -1464,7 +1717,7 @@ do
    #     Correct years so it is not tower-based or Sheffield.                              #
    #---------------------------------------------------------------------------------------#
    case ${iscenario} in
-   default|eft|shr|sheffield|WFDEI*|ERAINT*|MERRA2*|PGMF3*)
+   default|eft|shr|ERA5*|ERAINT*|MERRA2*|PGMF3*|Sheffield|WFDE5*|WFDEI*)
       echo "Nothing" > /dev/null
       ;;
    *)
@@ -1521,6 +1774,12 @@ do
          ;;
       esac
       ;;
+   sa2-ril)
+      ludatabase="${lumain}/SimAmazonia2/ril/sa2_ril_"
+      ;;
+   sa2-cvl)
+      ludatabase="${lumain}/SimAmazonia2/cvl/sa2_cvl_"
+      ;;
    lurcp26)
       ludatabase="${lumain}/luh-1.1+rcp26_image/luh-1.1+rcp26_image-"
       ;;
@@ -1538,7 +1797,7 @@ do
       #     Stop the script if anthropogenic dataset is invalid and this is a simulation   #
       # with anthropogenic disturbance.                                                    #
       #------------------------------------------------------------------------------------#
-      if [ ${ianthdisturb} -eq 1 ]
+      if [[ ${ianthdisturb} -eq 1 ]]
       then
          echo " Polygon:       ${polyname}"
          echo " IATA:          ${polyiata}"
@@ -1558,13 +1817,13 @@ do
    #     Define whether we use the met cycle to define the first and last year, or the     #
    # default year.                                                                         #
    #---------------------------------------------------------------------------------------#
-   if [ ${yeara} -eq 0 ]
+   if [[ ${yeara} -eq 0 ]]
    then
       thisyeara=${metcyc1}
    else
       thisyeara=${yeara}
    fi
-   if [ ${yearz} -eq 0 ]
+   if [[ ${yearz} -eq 0 ]]
    then
       thisyearz=${metcycf}
    else
@@ -1641,8 +1900,8 @@ do
          ;;
       E)
          polynzg=16
-         polyslz1="-4.500,-4.032,-3.584,-3.159,-2.757,-2.377,-2.021,-1.689,-1.382,-1.101,"
-         polyslz2="-0.846,-0.620,-0.424,-0.260,-0.130,-0.040"
+         polyslz1="-5.000,-4.468,-3.963,-3.483,-3.030,-2.604,-2.205,-1.836,-1.495,-1.185,"
+         polyslz2="-0.906,-0.660,-0.447,-0.271,-0.134,-0.040"
          polyslm1=" 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000,"
          polyslm2=" 1.000, 1.000, 1.000, 1.000, 1.000, 1.000"
          polyslt1=" 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000,"
@@ -1677,8 +1936,26 @@ do
          ;;
       I)
          polynzg=16
+         polyslz1="-9.000,-7.934,-6.934,-5.999,-5.131,-4.329,-3.593,-2.925,-2.324,-1.790,"
+         polyslz2="-1.325,-0.928,-0.600,-0.342,-0.155,-0.040"
+         polyslm1=" 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000,"
+         polyslm2=" 1.000, 1.000, 1.000, 1.000, 1.000, 1.000"
+         polyslt1=" 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000,"
+         polyslt2=" 0.000, 0.000, 0.000, 0.000, 0.000, 0.000"
+         ;;
+      J)
+         polynzg=16
          polyslz1="-10.50,-9.223,-8.029,-6.919,-5.891,-4.946,-4.084,-3.305,-2.609,-1.995,"
          polyslz2="-1.464,-1.015,-0.648,-0.364,-0.161,-0.040"
+         polyslm1=" 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000,"
+         polyslm2=" 1.000, 1.000, 1.000, 1.000, 1.000, 1.000"
+         polyslt1=" 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000,"
+         polyslt2=" 0.000, 0.000, 0.000, 0.000, 0.000, 0.000"
+         ;;
+      K)
+         polynzg=16
+         polyslz1="-12.00,-10.51,-9.118,-7.828,-6.640,-5.552,-4.563,-3.674,-2.883,-2.191"
+         polyslz2="-1.595,-1.096,-0.693,-0.383,-0.166,-0.040"
          polyslm1=" 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000,"
          polyslm2=" 1.000, 1.000, 1.000, 1.000, 1.000, 1.000"
          polyslt1=" 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000,"
@@ -1783,8 +2060,8 @@ do
          ;;
       E)
          polynzg=16
-         polyslz1="-4.500,-3.967,-3.467,-3.000,-2.565,-2.164,-1.797,-1.462,-1.162,-0.895,"
-         polyslz2="-0.662,-0.464,-0.300,-0.171,-0.077,-0.020"
+         polyslz1="-5.000,-4.397,-3.833,-3.307,-2.819,-2.371,-1.961,-1.590,-1.257,-0.964,"
+         polyslz2="-0.709,-0.493,-0.316,-0.178,-0.080,-0.020"
          polyslm1=" 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000,"
          polyslm2=" 1.000, 1.000, 1.000, 1.000, 1.000, 1.000"
          polyslt1=" 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000,"
@@ -1819,8 +2096,26 @@ do
          ;;
       I)
          polynzg=16
+         polyslz1="-9.000,-7.807,-6.706,-5.696,-4.775,-3.942,-3.195,-2.533,-1,954,-1.456,"
+         polyslz2="-1.037,-0.694,-0.424,-0.225,-0.092,-0.020"
+         polyslm1=" 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000,"
+         polyslm2=" 1.000, 1.000, 1.000, 1.000, 1.000, 1.000"
+         polyslt1=" 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000,"
+         polyslt2=" 0.000, 0.000, 0.000, 0.000, 0.000, 0.000"
+         ;;
+      J)
+         polynzg=16
          polyslz1="-10.50,-9.076,-7.766,-6.569,-5.482,-4.504,-3.631,-2.862,-2.194,-1.622,"
          polyslz2="-1.145,-0.759,-0.458,-0.239,-0.096,-0.020"
+         polyslm1=" 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000,"
+         polyslm2=" 1.000, 1.000, 1.000, 1.000, 1.000, 1.000"
+         polyslt1=" 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000,"
+         polyslt2=" 0.000, 0.000, 0.000, 0.000, 0.000, 0.000"
+         ;;
+      K)
+         polynzg=16
+         polyslz1="-12.00,-10.34,-8.818,-7.432,-6.179,-5.055,-4.057,-3.182,-2.425,-1.782"
+         polyslz2="-1.248,-0.820,-0.490,-0.252,-0.099,-0.020"
          polyslm1=" 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000,"
          polyslm2=" 1.000, 1.000, 1.000, 1.000, 1.000, 1.000"
          polyslt1=" 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000,"
@@ -2072,7 +2367,7 @@ do
 
 
    #----- Check whether to use SFILIN as restart or history. ------------------------------#
-   if [ ${runt} == "RESTORE" ] && [ ${forcehisto} -eq 1 ]
+   if [[ ${runt} == "RESTORE" ]] && [[ ${forcehisto} -eq 1 ]]
    then
       runt="HISTORY"
       year=${yearh}
@@ -2080,141 +2375,192 @@ do
       date=${dateh}
       time=${timeh}
       thissfilin=${fullygrown}
-   elif [ ${runt} == "RESTORE" ] && [ ${initmode} -eq 5 ]
+   elif [[ ${runt} == "RESTORE" ]]
    then
-      if [ ! -s ${restart} ]
-      then
-         echo " Directory restart does not exist!"
-         echo " Change the variable restart at the beginning of the script"
-         exit 44
-      else
-         runt="RESTORE"
-         thissfilin=${restart}
-      fi
-   elif [ ${runt} == "RESTORE" ] && [ ${initmode} -eq 6 ]
-   then
-      thissfilin=${fullygrown}
+      case ${initmode} in
+      5|7)
+         #---------------------------------------------------------------------------------#
+         #     Initialise ED2 with hdf5 files, which should be in directory restart.       #
+         #---------------------------------------------------------------------------------#
+         if [[ ! -s ${restart} ]]
+         then
+            echo " Directory restart does not exist!"
+            echo " Change the variable restart at the beginning of the script"
+            exit 44
+         else
+            runt="RESTORE"
+            thissfilin=${restart}
+         fi
+         #---------------------------------------------------------------------------------#
+         ;;
 
-
-
-      #------------------------------------------------------------------------------------#
-      #    Find the biometric files.  This has been checked in spawn_poly.sh so they are   #
-      # correct.  Add a dummy name in case this is not supposed to be a biomass            #
-      # initialisation run.                                                                #
-      #------------------------------------------------------------------------------------#
-      case ${biotype} in
-      0)
-         #----- isizepft controls everything, and iage is ignored. ------------------------#
-         case ${isizepft} in
+      1|2|3|6|8)
+         #---------------------------------------------------------------------------------#
+         #    Find the biometric files.  This has been checked in spawn_poly.sh so they    #
+         # are correct.  Add a dummy name in case this is not supposed to be a biomass     #
+         # initialisation run.                                                             #
+         #---------------------------------------------------------------------------------#
+         case ${biotype} in
          0)
-            #----- Frankeinstein's under storey. ------------------------------------------#
-            thissfilin="${bioinit}/${polyiata}_default."
+            #----- isizepft controls everything, and iage is ignored. ---------------------#
+            case ${isizepft} in
+            0)
+               #----- Frankeinstein's under storey. ---------------------------------------#
+               thissfilin="${bioinit}/${polyiata}_default."
+               ;;
+            1)
+               #----- No under storey. ----------------------------------------------------#
+               thissfilin="${bioinit}/${polyiata}_nounder."
+               ;;
+            2)
+               #----- ALS initialisation. -------------------------------------------------#
+               thissfilin="${bioinit}/${polyiata}_alsinit."
+               ;;
+            *)
+               #----- Invalid option. Stop the script. ------------------------------------#
+               echo " Polygon:  ${polyname}"
+               echo " IATA:     ${polyiata}"
+               echo " ISIZEPFT: ${isizepft}"
+               echo " INITMODE: ${initmode}"
+               echo "This IATA cannot be initialised with these ISIZEPFT and INITMODE!"
+               exit 57
+               ;;
+            esac
+            #------------------------------------------------------------------------------#
             ;;
+
          1)
-            #----- No under storey. -------------------------------------------------------#
-            thissfilin="${bioinit}/${polyiata}_nounder."
+            #------------------------------------------------------------------------------#
+            #    'isizepft' controls how many PFTs to use.                                 #
+            #------------------------------------------------------------------------------#
+            case ${isizepft} in 
+            0|5)
+               pftname="pft05"
+               ;;
+            2)
+               pftname="pft02"
+               ;;
+            esac
+            #------------------------------------------------------------------------------#
+
+            #------------------------------------------------------------------------------#
+            #     'iage' controls how many patches to use.                                 #
+            #------------------------------------------------------------------------------#
+            case ${iage} in
+            1)
+               agename="age01"
+               ;;
+            *)
+               agename="age00"
+               ;;
+            esac
+            #------------------------------------------------------------------------------#
+
+
+
+
+            #------------------------------------------------------------------------------#
+            #      Check whether the site has the PFT and age structure.                   #
+            #------------------------------------------------------------------------------#
+            case ${polyiata} in
+            hvd|s77|fns|cau|and|par|tap|dcm)
+               thissfilin="${bioinit}/${polyiata}_default."
+               ;;
+            cax|s67|s83|m34|gyf|pdg|rja|pnz|ban)
+               thissfilin="${bioinit}/${polyiata}_${pftname}+${agename}."
+               ;;
+            *)
+               echo " Polygon:  ${polyname}"
+               echo " IATA:     ${polyiata}"
+               echo " IAGE:     ${iage}"
+               echo " ISIZEPFT: ${isizepft}"
+               echo " INITMODE: ${initmode}"
+               echo "This IATA cannot be initiealised with these settings!"
+               exit 59
+               ;;
+            esac
+            #------------------------------------------------------------------------------#
             ;;
          2)
-            #----- ALS initialisation. ----------------------------------------------------#
-            thissfilin="${bioinit}/${polyiata}_alsinit."
+            #------------------------------------------------------------------------------#
+            #     ALS initialisation. ISIZEPFT has disturbance history information.        #
+            #------------------------------------------------------------------------------#
+            case ${polyiata} in
+            l[0-5][0-3])
+               thissfilin="${alsinit}/${polyiata}."
+               ;;
+            *)
+               thissfilin="${alsinit}/${polyiata}_${isizepft}."
+               ;;
+            esac
+            #------------------------------------------------------------------------------#
             ;;
-         *)
-            #----- Invalid option. Stop the script. ---------------------------------------#
-            echo " Polygon:  ${polyname}"
-            echo " IATA:     ${polyiata}"
-            echo " ISIZEPFT: ${isizepft}"
-            echo "This IATA cannot be used by biomass initialisation with this ISIZEPFT!"
-            exit 57
+         3)
+            #------------------------------------------------------------------------------#
+            #     ALS initialisation using intensity. ISIZEPFT has disturbance history     #
+            # information.                                                                 #
+            #------------------------------------------------------------------------------#
+            thissfilin="${intinit}/${polyiata}_${isizepft}."
+            #------------------------------------------------------------------------------#
             ;;
-         esac
-         #---------------------------------------------------------------------------------#
-         ;;
-
-      1)
-         #---------------------------------------------------------------------------------#
-         #    'isizepft' controls how many PFTs to use.                                    #
-         #---------------------------------------------------------------------------------#
-         case ${isizepft} in 
-         0|5)
-            pftname="pft05"
+         4)
+            #------------------------------------------------------------------------------#
+            #     ALS initialisation using the lookup table. ISIZEPFT has disturbance      #
+            # history information.                                                         #
+            #------------------------------------------------------------------------------#
+            thissfilin="${lutinit}/${polyiata}_${isizepft}."
+            #------------------------------------------------------------------------------#
             ;;
-         2)
-            pftname="pft02"
-            ;;
-         esac
-         #---------------------------------------------------------------------------------#
-
-         #---------------------------------------------------------------------------------#
-         #     'iage' controls how many patches to use.                                    #
-         #---------------------------------------------------------------------------------#
-         case ${iage} in
-         1)
-            agename="age01"
-            ;;
-         *)
-            agename="age00"
-            ;;
-         esac
-         #---------------------------------------------------------------------------------#
-
-
-
-
-         #---------------------------------------------------------------------------------#
-         #      Check whether the site has the PFT and age structure.                      #
-         #---------------------------------------------------------------------------------#
-         case ${polyiata} in
-         hvd|s77|fns|cau|and|par|tap|dcm)
-            thissfilin="${bioinit}/${polyiata}_default."
-            ;;
-         cax|s67|s83|m34|gyf|pdg|rja|pnz|ban)
-            thissfilin="${bioinit}/${polyiata}_${pftname}+${agename}."
-            ;;
-         *)
-            echo " Polygon:  ${polyname}"
-            echo " IATA:     ${polyiata}"
-            echo " IAGE:     ${iage}"
-            echo " ISIZEPFT: ${isizepft}"
-            echo "This IATA cannot be used by biomass initialisation with this ISIZEPFT!"
-            exit 59
-            ;;
-         esac
-         #---------------------------------------------------------------------------------#
-         ;;
-      2)
-         #---------------------------------------------------------------------------------#
-         #     ALS initialisation. ISIZEPFT has disturbance history information.           #
-         #---------------------------------------------------------------------------------#
-         case ${polyiata} in
-         l[0-5][0-3])
-            thissfilin="${alsinit}/${polyiata}."
-            ;;
-         *)
-            thissfilin="${alsinit}/${polyiata}_${isizepft}."
+         5)
+            #----- isizepft controls actual or majestic initialisation. -------------------#
+            case ${isizepft} in
+            0)
+               #----- Actual sampling. ----------------------------------------------------#
+               thissfilin="${ebainit}/eba_actual_default."
+               #---------------------------------------------------------------------------#
+               ;;
+            1)
+               #----- Majestic sampling. --------------------------------------------------#
+               thissfilin="${ebainit}/eba_majestic_default."
+               #---------------------------------------------------------------------------#
+               ;;
+            2)
+               #----- Actual sampling + land use (pasture/cropland/plantation). -----------#
+               thissfilin="${ebainit}/eba_luactual_default."
+               #---------------------------------------------------------------------------#
+               ;;
+            3)
+               #----- Majestic sampling + land use (pasture/cropland/plantation). ---------#
+               thissfilin="${ebainit}/eba_lumajestic_default."
+               #---------------------------------------------------------------------------#
+               ;;
+            *)
+               #----- Invalid option. Stop the script. ------------------------------------#
+               echo " Polygon:  ${polyname}"
+               echo " IATA:     ${polyiata}"
+               echo " ISIZEPFT: ${isizepft}"
+               echo " INITMODE: ${initmode}"
+               echo "This IATA cannot be initiealised with these settings!"
+               exit 57
+               ;;
+            esac
+            #------------------------------------------------------------------------------#
             ;;
          esac
          #---------------------------------------------------------------------------------#
          ;;
-      3)
-         #---------------------------------------------------------------------------------#
-         #     ALS initialisation using intensity. ISIZEPFT has disturbance history        #
-         # information.                                                                    #
-         #---------------------------------------------------------------------------------#
-         thissfilin="${intinit}/${polyiata}_${isizepft}."
+      *)
+         #----- No initial file needed; set the history file. -----------------------------#
+         thissfilin=${here}/${polyname}/histo/${polyname}
          #---------------------------------------------------------------------------------#
          ;;
-      4)
          #---------------------------------------------------------------------------------#
-         #     ALS initialisation using the lookup table. ISIZEPFT has disturbance history #
-         # information.                                                                    #
-         #---------------------------------------------------------------------------------#
-         thissfilin="${lutinit}/${polyiata}_${isizepft}."
-         #---------------------------------------------------------------------------------#
-         ;;
       esac
       #------------------------------------------------------------------------------------#
    else
+      #----- Set the history file. --------------------------------------------------------#
       thissfilin=${here}/${polyname}/histo/${polyname}
+      #------------------------------------------------------------------------------------#
    fi
    #---------------------------------------------------------------------------------------#
 
@@ -2381,6 +2727,7 @@ do
    sed -i~ s@mydbhharv@${dbhharv}@g              ${ED2IN}
    sed -i~ s@mybioharv@${bioharv}@g              ${ED2IN}
    sed -i~ s@myskidarea@${skidarea}@g            ${ED2IN}
+   sed -i~ s@myskiddbhthresh@${skiddbhthresh}@g  ${ED2IN}
    sed -i~ s@myskidsmall@${skidsmall}@g          ${ED2IN}
    sed -i~ s@myskidlarge@${skidlarge}@g          ${ED2IN}
    sed -i~ s@myfellingsmall@${fellingsmall}@g    ${ED2IN}
@@ -2426,11 +2773,137 @@ do
       exec_sub=${exec_full}
       ;;
    esac
+   #---------------------------------------------------------------------------------------#
 
-   #----- Change the callserial.sh file. --------------------------------------------------#
+
+
+   #----- Script names. -------------------------------------------------------------------#
+   tempserial="${here}/Template/callserial.sh"
    callserial="${here}/${polyname}/callserial.sh"
-   rm -f ${callserial}
-   cp -f ${here}/Template/callserial.sh ${callserial}
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #    Set script callserial.sh.  Depending on the settings (single multi-task jobs or    #
+   # multiple single-task jobs), we must update the header.                                #
+   #---------------------------------------------------------------------------------------#
+   case "${cluster}" in
+   SDUMONT)
+      #------------------------------------------------------------------------------------#
+      #       Single multi task job, callserial.sh doesn't need header updates.            #
+      #------------------------------------------------------------------------------------#
+      /bin/rm -f ${callserial}
+      /bin/cp -f ${tempserial} ${callserial}
+      #------------------------------------------------------------------------------------#
+      ;;
+   CANNON)
+      #------------------------------------------------------------------------------------#
+      #       Update header with sbatch instructions for multiple single task jobs.        #
+      #------------------------------------------------------------------------------------#
+
+      #----- Output files. ----------------------------------------------------------------#
+      obatch="${here}/${polyname}/serial_slm.out"
+      ebatch="${here}/${polyname}/serial_slm.err"
+      #------------------------------------------------------------------------------------#
+
+      #----- Initialise the callserial.sh file. -------------------------------------------#
+      rm -f     ${callserial}
+      touch     ${callserial}
+      chmod u+x ${callserial}
+      echo "#!/bin/bash" >> ${callserial}
+      echo "#SBATCH --ntasks=1                  # Number of tasks"         >> ${callserial}
+      echo "#SBATCH --cpus-per-task=${n_cpt}    # Number of CPUs per task" >> ${callserial}
+      echo "#SBATCH --cores-per-socket=${n_cpt} # Min. # of cores/socket"  >> ${callserial}
+      echo "#SBATCH --partition=${global_queue} # Queue that will run job" >> ${callserial}
+      echo "#SBATCH --job-name=${taskname}      # Job name"                >> ${callserial}
+      echo "#SBATCH --mem-per-cpu=${cpu_memory} # Memory per CPU"          >> ${callserial}
+      echo "#SBATCH --time=${runtime}           # Time for job"            >> ${callserial}
+      echo "#SBATCH --output=${obatch}          # Standard output path"    >> ${callserial}
+      echo "#SBATCH --error=${ebatch}           # Standard error path"     >> ${callserial}
+      echo "#SBATCH --chdir=${here}/${polyname} # Main directory"          >> ${callserial}
+      echo ""                                                              >> ${callserial}
+      echo "#--- Initial settings."                                        >> ${callserial}
+      echo "here=\"${here}\"                    # Main path"               >> ${callserial}
+      echo "exec=\"${exec_full}\"               # Executable"              >> ${callserial}
+      echo ""                                                              >> ${callserial}
+      echo "#--- Print information about this job."                        >> ${callserial}
+      echo "echo \"\""                                                     >> ${callserial}
+      echo "echo \"\""                                                     >> ${callserial}
+      echo "echo \"----- Summary of current job -----------------------\"" >> ${callserial}
+      echo "echo \" CPUs per task:   \${SLURM_CPUS_PER_TASK}\""            >> ${callserial}
+      echo "echo \" Job name:        \${SLURM_JOB_NAME}\""                 >> ${callserial}
+      echo "echo \" Job ID:          \${SLURM_JOB_ID}\""                   >> ${callserial}
+      echo "echo \" Partition:       \${SLURM_JOB_PARTITION}\""            >> ${callserial}
+      echo "echo \" Number of nodes: \${SLURM_NNODES}\""                   >> ${callserial}
+      echo "echo \" Number of tasks: \${SLURM_NTASKS}\""                   >> ${callserial}
+      echo "echo \" Memory per CPU:  \${SLURM_MEM_PER_CPU}\""              >> ${callserial}
+      echo "echo \" Memory per node: \${SLURM_MEM_PER_NODE}\""             >> ${callserial}
+      echo "echo \" Node list:       \${SLURM_JOB_NODELIST}\""             >> ${callserial}
+      echo "echo \" Time limit:      \${SLURM_TIMELIMIT}\""                >> ${callserial}
+      echo "echo \" Std. Output:     \${SLURM_STDOUTMODE}\""               >> ${callserial}
+      echo "echo \" Std. Error:      \${SLURM_STDERRMODE}\""               >> ${callserial}
+      echo "echo \"----------------------------------------------------\"" >> ${callserial}
+      echo "echo \"\""                                                     >> ${callserial}
+      echo "echo \"\""                                                     >> ${callserial}
+      echo ""                                                              >> ${callserial}
+      echo "echo \"----- Global settings for this simulation. ---\""       >> ${callserial}
+      echo "echo \" Main path:       \${here}\""                           >> ${callserial}
+      echo "echo \" Executable:      \${exec}\""                           >> ${callserial}
+      echo "echo \"----------------------------------------------------\"" >> ${callserial}
+      echo "echo \"\""                                                     >> ${callserial}
+      echo "echo \"\""                                                     >> ${callserial}
+      echo ""                                                              >> ${callserial}
+      echo ""                                                              >> ${callserial}
+      echo "#--- Define home in case home is not set"                      >> ${callserial}
+      echo "if [[ \"x\${HOME}\" == \"x\" ]]"                               >> ${callserial}
+      echo "then"                                                          >> ${callserial}
+      echo "   export HOME=\$(echo ~)"                                     >> ${callserial}
+      echo "fi"                                                            >> ${callserial}
+      echo ""                                                              >> ${callserial}
+      echo "#--- Load modules and settings."                               >> ${callserial}
+      echo ". \${HOME}/.bashrc ${optsrc}"                                  >> ${callserial}
+      echo ""                                                              >> ${callserial}
+      echo "#--- Get plenty of memory."                                    >> ${callserial}
+      echo "ulimit -s unlimited"                                           >> ${callserial}
+      echo "ulimit -u unlimited"                                           >> ${callserial}
+      echo ""                                                              >> ${callserial}
+      echo "#--- Set OpenMP parameters"                                    >> ${callserial}
+      echo "if [[ \"\${SLURM_CPUS_PER_TASK}\" == \"\" ]]"                  >> ${callserial}
+      echo "then"                                                          >> ${callserial}
+      echo "   export OMP_NUM_THREADS=1"                                   >> ${callserial}
+      echo "else"                                                          >> ${callserial}
+      echo "   export OMP_NUM_THREADS=\${SLURM_CPUS_PER_TASK}"             >> ${callserial}
+      echo "fi"                                                            >> ${callserial}
+      echo ""                                                              >> ${callserial}
+      #------------------------------------------------------------------------------------#
+
+
+
+      #----- Append the template callserial.sh, skipping the first line. ------------------#
+      tail -n +2 ${tempserial} >> ${callserial}
+      #------------------------------------------------------------------------------------#
+
+
+      #----- Make sure the script waits until all tasks are completed... ------------------#
+      echo ""                                                              >> ${callserial}
+      echo ""                                                              >> ${callserial}
+      echo "#----- Ensure that jobs complete before terminating script."   >> ${callserial}
+      echo "wait"                                                          >> ${callserial}
+      echo ""                                                              >> ${callserial}
+      echo "#----- Report efficiency of this job."                         >> ${callserial}
+      echo "seff \${SLURM_JOBID}"                                          >> ${callserial}
+      echo ""                                                              >> ${callserial}
+      #------------------------------------------------------------------------------------#
+
+
+      #------------------------------------------------------------------------------------#
+      ;;
+   esac
+   #---------------------------------------------------------------------------------------#
+
+
+   #----- Substitute placeholders with specific data. -------------------------------------#
    sed -i s@thisroot@${here}@g          ${callserial}
    sed -i s@thispoly@${polyname}@g      ${callserial}
    sed -i s@myname@${moi}@g             ${callserial}
@@ -2459,9 +2932,16 @@ do
    "EXTINCT")
       echo "Polygon population has gone extinct.  No need to re-submit it."
       ;;
-   "CRASHED"|"METMISS"|"SIGSEGV"|"BAD_MET"|"STOPPED")
-      echo "Polygon has serious errors.  Script will not submit any job this time."
-      submit=false
+   "CRASHED"|"HYDFAIL"|"METMISS"|"SIGSEGV"|"BAD_MET"|"STOPPED")
+      #----- Decide whether to skip this job submission or every job submission. ----------#
+      if ${on_the_fly}
+      then
+         echo "Polygon has serious errors.  Script will not submit this job."
+      else
+         echo "Polygon has serious errors.  Script will not submit any job this time."
+         submit=false
+      fi
+      #------------------------------------------------------------------------------------#
       ;;
 
    "RESTORE"|"HISTORY")
@@ -2471,25 +2951,79 @@ do
       #------------------------------------------------------------------------------------#
       echo "  Polygon scheduled for submission."
       let n_submit=${n_submit}+1
-      let dtwait=${dtwait}+2
       #------------------------------------------------------------------------------------#
 
 
-      #----- Append job to submission list. -----------------------------------------------#
-      srun="srun --nodes=1 --ntasks=1 --cpu_bind=cores"
-      srun="${srun} --cpus-per-task=\${SLURM_CPUS_PER_TASK}"
-      srun="${srun} --mem-per-cpu=\${SLURM_MEM_PER_CPU}"
-      srun="${srun} --job-name=${polyname}"
-      srun="${srun} --chdir=\${here}/${polyname}"
-      srun="${srun} --output=\${here}/${polyname}/serial_slm.out"
-      srun="${srun} --error=\${here}/${polyname}/serial_slm.err"
-      echo "${srun} \${here}/${polyname}/callserial.sh &" >> ${sbatch}
-      echo "sleep ${dttask}" >> ${sbatch}
+      #------------------------------------------------------------------------------------#
+      #    Set command to the main script. Again, this depends on the type of job          #
+      # submission.                                                                        #
+      #------------------------------------------------------------------------------------#
+      case "${cluster}" in
+      SDUMONT)
+         #---------------------------------------------------------------------------------#
+         #     Append task in the single multi-task job script.                            #
+         #---------------------------------------------------------------------------------#
+         srun="srun --nodes=1 --ntasks=1 --cpu_bind=cores"
+         srun="${srun} --cpus-per-task=\${SLURM_CPUS_PER_TASK}"
+         srun="${srun} --mem-per-cpu=\${SLURM_MEM_PER_CPU}"
+         srun="${srun} --job-name=${polyname}"
+         srun="${srun} --chdir=\${here}/${polyname}"
+         srun="${srun} --output=\${here}/${polyname}/serial_slm.out"
+         srun="${srun} --error=\${here}/${polyname}/serial_slm.err"
+         echo "${srun} \${here}/${polyname}/callserial.sh &" >> ${sbatch}
+         echo "sleep ${dttask}" >> ${sbatch}
+         #---------------------------------------------------------------------------------#
+         ;;
+      CANNON)
+         #---------------------------------------------------------------------------------#
+         #      Make sure we don't exceed the maximum number of jobs.                      #
+         #---------------------------------------------------------------------------------#
+         if [[ ${n_submit} -gt ${n_tasks_max} ]] && ${on_the_fly}
+         then
+            echo " Number of jobs to submit: ${n_submit}"
+            echo " Maximum number of tasks in queue ${global_queue}: ${n_tasks_max}"
+            echo " Reduce the number of simulations or try another queue..."
+            echo " Appending remaining jobs to $(basename ${sbatch}) for later submission."
+            on_the_fly=false
+         fi
+         #---------------------------------------------------------------------------------#
+
+
+         #---------------------------------------------------------------------------------#
+         #       If on the fly, submit the job now.  Otherwise, append job to sbatch.      #
+         #---------------------------------------------------------------------------------#
+         if ${on_the_fly}
+         then
+            #----- Submit job on the fly. -------------------------------------------------#
+            sbatch ${callserial}
+            #------------------------------------------------------------------------------#
+         else
+            #------------------------------------------------------------------------------#
+            #     Append submission to the script to submit the multiple single-task jobs. #
+            #------------------------------------------------------------------------------#
+            echo "echo \" + ${ffout}/${ntasks}. Submit job: ${polyname}.\""    >> ${sbatch}
+            echo "sbatch ${callserial}"                                        >> ${sbatch}
+            echo "sleep  ${dttask}"                                            >> ${sbatch}
+            #------------------------------------------------------------------------------#
+         fi
+         #---------------------------------------------------------------------------------#
+
+         ;;
+      esac
       #------------------------------------------------------------------------------------#
       ;;
    *)
-      echo "Unknown polygon state (${runt})! Script will not submit any job this time."
-      submit=false
+      #------------------------------------------------------------------------------------#
+      #    Unknown state, either skip this job submission, or every job submission.        #
+      #------------------------------------------------------------------------------------#
+      if ${on_the_fly}
+      then
+         echo "Unknown polygon state (${runt})! Script will not submit this job."
+      else
+         echo "Unknown polygon state (${runt})! Script will not submit any job this time."
+         submit=false
+      fi
+      #------------------------------------------------------------------------------------#
       ;;
    esac
    #---------------------------------------------------------------------------------------#
@@ -2497,41 +3031,86 @@ done
 #------------------------------------------------------------------------------------------#
 
 
+#------------------------------------------------------------------------------------------#
+#     Update the main submission script to reflect the correct number of tasks (done only  #
+# when running a single multi-task job).                                                   #
+#------------------------------------------------------------------------------------------#
+case "${cluster}" in
+SDUMONT)
+   #----- Update the number of tasks in batch script. -------------------------------------#
+   sed -i~ s@myntasks@${n_submit}@g ${sbatch}
+   #---------------------------------------------------------------------------------------#
+   ;;
+esac
+#------------------------------------------------------------------------------------------#
+
+
+
 
 #------------------------------------------------------------------------------------------#
 #      Make sure job list doesn't request too many nodes.                                  #
 #------------------------------------------------------------------------------------------#
-if [ ${n_submit} -gt ${n_tasks_max} ]
+if ! ${on_the_fly}
 then
-   echo " Number of jobs to submit: ${n_submit}"
-   echo " Maximum number of tasks in queue ${global_queue}: ${n_tasks_max}"
-   echo " Reduce the number of simulations or try another queue..."
-   exit 99
-else
-   #----- Update the number of tasks in batch script. -------------------------------------#
-   sed -i~ s@myntasks@${n_submit}@g ${sbatch}
+   if [[ ${n_submit} -gt ${n_tasks_max} ]]
+   then
+      echo " Number of jobs to submit: ${n_submit}"
+      echo " Maximum number of tasks in queue ${global_queue}: ${n_tasks_max}"
+      echo " Reduce the number of simulations or try another queue..."
+      exit 99
+   elif ${submit}
+   then
+      echo " Submitting jobs."
+      #------- How we submit depends on the cluster. --------------------------------------#
+      case "${cluster}" in
+      SDUMONT)
+         #---------------------------------------------------------------------------------#
+         #     Single multi-task job.  Submit the main script using sbatch.                #
+         #---------------------------------------------------------------------------------#
+         sbatch ${sbatch}
+         #---------------------------------------------------------------------------------#
+         ;;
+      CANNON)
+         #---------------------------------------------------------------------------------#
+         #     Multiple single-task jobs.  Run the script, the sbatch commands are in      #
+         # there.                                                                          #
+         #---------------------------------------------------------------------------------#
+         ${sbatch}
+         #---------------------------------------------------------------------------------#
+         ;;
+      esac
+      #------------------------------------------------------------------------------------#
+   else
+      #------- Provide instructions to the user for a later submission. -------------------#
+      case "${cluster}" in
+      SDUMONT)
+         #----- Instruct the user to use sbatch. ------------------------------------------#
+         echo "-------------------------------------------------------------------------"
+         echo " To submit the simulations, you must use sbatch. "
+         echo " Copy and paste the following command in the terminal. "
+         echo " "
+         echo "       sbatch ${sbatch}"
+         echo " "
+         #---------------------------------------------------------------------------------#
+         ;;
+      CANNON)
+         #----- Instruct the user NOT to use sbatch. --------------------------------------#
+         echo "-------------------------------------------------------------------------"
+         echo " WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! "
+         echo " WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! "
+         echo " WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! "
+         echo " WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! "
+         echo "-------------------------------------------------------------------------"
+         echo " Do NOT use sbatch ${sbatch}."
+         echo " Instead, call the following script directly in your terminal."
+         echo " "
+         echo "       ${sbatch}"
+         echo " "
+         #---------------------------------------------------------------------------------#
+         ;;
+      esac
+      #------------------------------------------------------------------------------------#
+   fi
    #---------------------------------------------------------------------------------------#
-fi
-#------------------------------------------------------------------------------------------#
-
-
-#----- Make sure the script waits until all tasks are completed... ------------------------#
-echo ""                                                                        >> ${sbatch}
-echo ""                                                                        >> ${sbatch}
-echo "#----- Make sure that jobs complete before terminating script"           >> ${sbatch}
-echo "wait"                                                                    >> ${sbatch}
-echo ""                                                                        >> ${sbatch}
-echo "#----- Report efficiency of this job"                                    >> ${sbatch}
-echo "seff \${SLURM_JOBID}"                                                    >> ${sbatch}
-echo ""                                                                        >> ${sbatch}
-#------------------------------------------------------------------------------------------#
-
-
-#------------------------------------------------------------------------------------------#
-#    In case all looks good, go for it!                                                    #
-#------------------------------------------------------------------------------------------#
-if ${submit}
-then
-   sbatch ${sbatch} 
 fi
 #------------------------------------------------------------------------------------------#

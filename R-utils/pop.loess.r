@@ -16,7 +16,7 @@ pop.loess <<- function(p,z=seq_along(p),pfill=1e-6,zinf=1.25*max(z),...){
    #---------------------------------------------------------------------------------------#
 
    #----- For the prediction step, we only keep entries with actual population. -----------#
-   keep = p %>% 0
+   keep = p %gt% 0
    #---------------------------------------------------------------------------------------#
 
 

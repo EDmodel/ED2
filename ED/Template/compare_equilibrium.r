@@ -306,7 +306,7 @@ n             = n + 1
 compvar[[ n]] = list( vnam         = "agb"
                     , desc         = "Above-ground biomass"
                     , unit         = untab$kgcom2
-                    , cscheme.mean = "clife"
+                    , cscheme.mean = "prgn"
                     , hue.low      = "purple"
                     , hue.high     = "green"
                     , szpftvar     = TRUE
@@ -320,7 +320,7 @@ n             = n + 1
 compvar[[ n]] = list( vnam         = "bsa"
                     , desc         = "Basal area"
                     , unit         = untab$m2om2
-                    , cscheme.mean = "clife"
+                    , cscheme.mean = "prgn"
                     , hue.low      = "purple"
                     , hue.high     = "green"
                     , szpftvar     = TRUE
@@ -334,7 +334,7 @@ n             = n + 1
 compvar[[ n]] = list( vnam         = "lai"
                     , desc         = "Leaf area index"
                     , unit         = untab$m2lom2
-                    , cscheme.mean = "clife"
+                    , cscheme.mean = "prgn"
                     , hue.low      = "purple"
                     , hue.high     = "green"
                     , szpftvar     = TRUE
@@ -348,7 +348,7 @@ n             = n + 1
 compvar[[ n]] = list( vnam         = "tai"
                     , desc         = "Tree area index"
                     , unit         = untab$m2lom2
-                    , cscheme.mean = "clife"
+                    , cscheme.mean = "prgn"
                     , hue.low      = "purple"
                     , hue.high     = "green"
                     , szpftvar     = TRUE
@@ -610,8 +610,8 @@ for (p in sequence(nsites)){
          #---------------------------------------------------------------------------------#
          #      Eliminate cohorts that are too small for AGB and basal area estimates.     #
          #---------------------------------------------------------------------------------#
-         agbco = ifelse(dbhco %>=% this$dbh.min, agbco, 0.)
-         bsaco = ifelse(dbhco %>=% this$dbh.min, bsaco, 0.)
+         agbco = ifelse(dbhco %ge% this$dbh.min, agbco, 0.)
+         bsaco = ifelse(dbhco %ge% this$dbh.min, bsaco, 0.)
          #---------------------------------------------------------------------------------#
 
 

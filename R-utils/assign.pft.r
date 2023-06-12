@@ -333,7 +333,7 @@ assign.pft <<- function(datum,path=srcdir,approach=c("rho","cluster"),verbose=FA
 
 #==========================================================================================#
 #==========================================================================================#
-#    This function finds the most similar group to the data in 
+#    This function finds the most similar group to the data input.
 #------------------------------------------------------------------------------------------#
 which.pft <<- function(datum,medoid,trait,wcluster){
 

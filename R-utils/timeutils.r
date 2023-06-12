@@ -323,12 +323,12 @@ alltimes <<- function(datin,lon,lat,ed21=TRUE,zeronight=FALSE,meanval=FALSE,imet
    zenith            = ed.zen   (when=datout$when,lon=lon,lat=lat,ed21=ed21
                                 ,zeronight=zeronight,meanval=meanval,imetavg=imetavg
                                 ,nmean=nmean,...)
-   datout$cosz       =   zenith$cosz
-   datout$zen        =   zenith$zen
-   datout$sunhgt     =   zenith$hgt
-   datout$nighttime  =   zenith$night
-   datout$daytime    =   zenith$day
-   datout$twilight   = (! zenith$night) & (! zenith$day)
+   datout$cosz       = zenith$cosz
+   datout$zen        = zenith$zen
+   datout$sunhgt     = zenith$hgt
+   datout$nighttime  = zenith$night
+   datout$daytime    = zenith$day
+   datout$twilight   = zenith$twilight
    datout$diel       = as.integer(! datout$nighttime) + as.integer(datout$daytime)
    datout$highsun    = zenith$cosz >= cosz.highsun
    datout$riseset    = zenith$cosz >= cosz.twilight & zenith$cosz < cosz.highsun

@@ -36,7 +36,7 @@ pretty.xylim <<- function(u,fracexp=0.00,is.log=FALSE){
 
    #----- Select the data that we consider for the range. ---------------------------------#
    vec.u  = c(u)
-   if (is.log) vec.u[! (vec.u %>% 0)] = NA
+   if (is.log) vec.u[! (vec.u %gt% 0)] = NA
    ulimit  = range(vec.u,finite=TRUE)
    #---------------------------------------------------------------------------------------#
 

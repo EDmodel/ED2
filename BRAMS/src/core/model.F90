@@ -265,6 +265,9 @@ subroutine par_model(master_num)
        ptimes            ! INTENT(IN)
 
   use dtset, only: dtset_new ! subroutine
+#if defined(RAMS_MPI)
+  use mpi
+#endif
 
   implicit none
   !   +------------------------------------------------------------------
@@ -284,9 +287,6 @@ subroutine par_model(master_num)
 
   !MLO
   integer :: ierr, master_num
-#if defined(RAMS_MPI)
-  include 'mpif.h'
-#endif
 
   !ALF
   real :: dxtmax_local(maxgrds)

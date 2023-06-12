@@ -10,6 +10,8 @@ here=$(pwd)
 moi=$(whoami)
 #----- Description of this simulation, used to create unique job names. -------------------#
 desc=$(basename ${here})
+#----- Source path for ED code and executable. --------------------------------------------#
+srcpath="${HOME}/EDBRAMS/ED"
 #----- Select main file system path. ------------------------------------------------------#
 ordinateur=$(hostname -s)
 case ${ordinateur} in
@@ -23,11 +25,13 @@ bioinit="${fs0}/Data/ed2_data/site_bio_data"
 alsinit="${fs0}/Data/ed2_data/lidar_spline_bio_data"
 intinit="${fs0}/Data/ed2_data/lidar_intensity_bio_data"
 lutinit="${fs0}/Data/ed2_data/lidar_lookup_bio_data"
+ebainit="${d_path}/ed2_data/lidar_eba_bio_data"
 biotype=0      # 0 -- "default" setting (isizepft controls default/nounder)
                # 1 -- isizepft controls number of PFTs, whereas iage controls patches.
                # 2 -- airborne lidar initialisation using return counts ("default"). 
                # 3 -- airborne lidar initialisation using intensity counts.
                # 4 -- airborne lidar/inventory hybrid initialisation ("lookup table"). 
+               # 5 -- airborne lidar (EBA Transects).
                # For lidar initialisation (2-4), isizepft is the disturbance history key.
 #----- Path and file prefix for init_mode = 5. --------------------------------------------#
 restart="${fs0}/Data/ed2_data/restarts_XXX"
@@ -39,7 +43,7 @@ shefhead='SHEF_NCEP_DRIVER_DS314'
 metmaindef="${fs0}/Data/ed2_data"
 packdatasrc="${fs0}/Data/2scratch"
 #----- Path with land use scenarios. ------------------------------------------------------#
-lumain="${fs0}/Data/lu_scenarios"
+lumain="${fs0}/Data/ed2_data/lcluc_scenarios"
 #----- Path with other input data bases (soil texture, DGD, land mask, etc). --------------#
 inpmain="${fs0}/Data/ed2_data"
 #----- If submit is "n", we create paths but skip submission. -----------------------------#
@@ -62,13 +66,24 @@ dateh="01"    # Day
 timeh="0000"  # Hour
 #----- Default tolerance. -----------------------------------------------------------------#
 toldef="0.01"
-#----- Executable names. ------------------------------------------------------------------#
-execname="ed_2.2-opt"             # Normal executable, for most queues
 #----- Initialisation scripts. ------------------------------------------------------------#
-initrc="${HOME}/.bashrc"          # Initialisation script for most nodes
+initrc="${HOME}/.bashrc"         # Initialisation script for most nodes
+#----- Executable names. ------------------------------------------------------------------#
+execname="ed_2.2-opt"            # Normal executable, for most queues
+checkexec=true                   # Check executable
 #----- Settings for this group of polygons. -----------------------------------------------#
-global_queue="verylongq"      # Queue
-n_cpt=8                       # Number of cpus per task (it will be limited by maximum)
+init_only=true                   # Run model initialisation only?
+                                 #    This can be useful when the initialisation step
+                                 #    demands much more memory than the time steps (e.g.,
+                                 #    when using lidar data to initialisate the model).
+if ${init_only}
+then
+   global_queue="shortq"         # Queue
+   n_cpt=1                       # Number of cpus per task (it will be limited by maximum)
+else
+   global_queue="verylongq"      # Queue
+   n_cpt=8                       # Number of cpus per task (it will be limited by maximum)
+fi
 #------------------------------------------------------------------------------------------#
 #==========================================================================================#
 #==========================================================================================#
@@ -138,11 +153,30 @@ echo "Number of polygons: ${npolys}..."
 # script.                                                                                  #
 #------------------------------------------------------------------------------------------#
 exec_full="${here}/executable/${execname}"
-if [ ! -s ${exec_full} ]
+exec_src="${srcpath}/build/${execname}"
+if [[ ! -s ${exec_full} ]]
 then
    echo "Executable file : ${exec_full} is not in the executable directory"
    echo "Copy the executable to the file before running this script!"
    exit 99
+elif ${checkexec}
+then
+   #----- Check whether the executable is up to date. -------------------------------------#
+   idiff=$(diff ${exec_full} ${exec_src} 2> /dev/null | wc -l)
+   if [[ ${idiff} -gt 0 ]]
+   then
+      #----- Executable is not up to date, warn user and offer to update it. --------------#
+      echo "Executable ${exec_full} is not the same as the most recently compiled file."
+      echo "Most recent: ${exec_src}."
+      echo "Do you want to update the executable? [y/N]"
+      read update
+      update=$(echo ${update} | tr '[:upper:]' '[:lower:]')
+      case "${update}" in
+         y*) rsync - Putv ${exec_src} ${exec_full} ;;
+      esac
+      #------------------------------------------------------------------------------------#
+   fi
+   #---------------------------------------------------------------------------------------#
 fi
 #------------------------------------------------------------------------------------------#
 
@@ -238,7 +272,6 @@ echo "  Memory per cpu:      ${sim_memory}"
 echo "  CPUs per node:       ${n_cpn}"
 echo "  CPUs per task:       ${n_cpt}"
 echo "  Queue:               ${global_queue}"
-echo "  Job Name:            ${jobname}"
 echo "  Total polygon count: ${npolys}"
 echo " "
 echo "------------------------------------------------"
@@ -267,128 +300,143 @@ do
    # latitude.                                                                             #
    #---------------------------------------------------------------------------------------#
    oi=$(head -${line} ${joborder} | tail -1)
-   polyname=$(echo ${oi}     | awk '{print $1  }')
-   polyiata=$(echo ${oi}     | awk '{print $2  }')
-   polylon=$(echo ${oi}      | awk '{print $3  }')
-   polylat=$(echo ${oi}      | awk '{print $4  }')
-   yeara=$(echo ${oi}        | awk '{print $5  }')
-   montha=$(echo ${oi}       | awk '{print $6  }')
-   datea=$(echo ${oi}        | awk '{print $7  }')
-   timea=$(echo ${oi}        | awk '{print $8  }')
-   yearz=$(echo ${oi}        | awk '{print $9  }')
-   monthz=$(echo ${oi}       | awk '{print $10 }')
-   datez=$(echo ${oi}        | awk '{print $11 }')
-   timez=$(echo ${oi}        | awk '{print $12 }')
-   initmode=$(echo ${oi}     | awk '{print $13 }')
-   iscenario=$(echo ${oi}    | awk '{print $14 }')
-   isizepft=$(echo ${oi}     | awk '{print $15 }')
-   iage=$(echo ${oi}         | awk '{print $16 }')
-   imaxcohort=$(echo ${oi}   | awk '{print $17 }')
-   polyisoil=$(echo ${oi}    | awk '{print $18 }')
-   polyntext=$(echo ${oi}    | awk '{print $19 }')
-   polysand=$(echo ${oi}     | awk '{print $20 }')
-   polyclay=$(echo ${oi}     | awk '{print $21 }')
-   polyslsoc=$(echo ${oi}    | awk '{print $22 }')
-   polyslph=$(echo ${oi}     | awk '{print $23 }')
-   polyslcec=$(echo ${oi}    | awk '{print $24 }')
-   polysldbd=$(echo ${oi}    | awk '{print $25 }')
-   polydepth=$(echo ${oi}    | awk '{print $26 }')
-   polyslhydro=$(echo ${oi}  | awk '{print $27 }')
-   polysoilbc=$(echo ${oi}   | awk '{print $28 }')
-   polysldrain=$(echo ${oi}  | awk '{print $29 }')
-   polycol=$(echo ${oi}      | awk '{print $30 }')
-   slzres=$(echo ${oi}       | awk '{print $31 }')
-   queue=$(echo ${oi}        | awk '{print $32 }')
-   metdriver=$(echo ${oi}    | awk '{print $33 }')
-   dtlsm=$(echo ${oi}        | awk '{print $34 }')
-   monyrstep=$(echo ${oi}    | awk '{print $35 }')
-   iphysiol=$(echo ${oi}     | awk '{print $36 }')
-   vmfactc3=$(echo ${oi}     | awk '{print $37 }')
-   vmfactc4=$(echo ${oi}     | awk '{print $38 }')
-   mphototrc3=$(echo ${oi}   | awk '{print $39 }')
-   mphototec3=$(echo ${oi}   | awk '{print $40 }')
-   mphotoc4=$(echo ${oi}     | awk '{print $41 }')
-   bphotoblc3=$(echo ${oi}   | awk '{print $42 }')
-   bphotonlc3=$(echo ${oi}   | awk '{print $43 }')
-   bphotoc4=$(echo ${oi}     | awk '{print $44 }')
-   kwgrass=$(echo ${oi}      | awk '{print $45 }')
-   kwtree=$(echo ${oi}       | awk '{print $46 }')
-   gammac3=$(echo ${oi}      | awk '{print $47 }')
-   gammac4=$(echo ${oi}      | awk '{print $48 }')
-   d0grass=$(echo ${oi}      | awk '{print $49 }')
-   d0tree=$(echo ${oi}       | awk '{print $50 }')
-   alphac3=$(echo ${oi}      | awk '{print $51 }')
-   alphac4=$(echo ${oi}      | awk '{print $52 }')
-   klowco2=$(echo ${oi}      | awk '{print $53 }')
-   decomp=$(echo ${oi}       | awk '{print $54 }')
-   rrffact=$(echo ${oi}      | awk '{print $55 }')
-   growthresp=$(echo ${oi}   | awk '{print $56 }')
-   lwidthgrass=$(echo ${oi}  | awk '{print $57 }')
-   lwidthbltree=$(echo ${oi} | awk '{print $58 }')
-   lwidthnltree=$(echo ${oi} | awk '{print $59 }')
-   q10c3=$(echo ${oi}        | awk '{print $60 }')
-   q10c4=$(echo ${oi}        | awk '{print $61 }')
-   h2olimit=$(echo ${oi}     | awk '{print $62 }')
-   imortscheme=$(echo ${oi}  | awk '{print $63 }')
-   ddmortconst=$(echo ${oi}  | awk '{print $64 }')
-   cbrscheme=$(echo ${oi}    | awk '{print $65 }')
-   isfclyrm=$(echo ${oi}     | awk '{print $66 }')
-   icanturb=$(echo ${oi}     | awk '{print $67 }')
-   ubmin=$(echo ${oi}        | awk '{print $68 }')
-   ugbmin=$(echo ${oi}       | awk '{print $69 }')
-   ustmin=$(echo ${oi}       | awk '{print $70 }')
-   gamm=$(echo ${oi}         | awk '{print $71 }')
-   gamh=$(echo ${oi}         | awk '{print $72 }')
-   tprandtl=$(echo ${oi}     | awk '{print $73 }')
-   ribmax=$(echo ${oi}       | awk '{print $74 }')
-   atmco2=$(echo ${oi}       | awk '{print $75 }')
-   thcrit=$(echo ${oi}       | awk '{print $76 }')
-   smfire=$(echo ${oi}       | awk '{print $77 }')
-   ifire=$(echo ${oi}        | awk '{print $78 }')
-   fireparm=$(echo ${oi}     | awk '{print $79 }')
-   ipercol=$(echo ${oi}      | awk '{print $80 }')
-   runoff=$(echo ${oi}       | awk '{print $81 }')
-   imetrad=$(echo ${oi}      | awk '{print $82 }')
-   ibranch=$(echo ${oi}      | awk '{print $83 }')
-   icanrad=$(echo ${oi}      | awk '{print $84 }')
-   ihrzrad=$(echo ${oi}      | awk '{print $85 }')
-   crown=$(echo   ${oi}      | awk '{print $86 }')
-   ltransvis=$(echo ${oi}    | awk '{print $87 }')
-   lreflectvis=$(echo ${oi}  | awk '{print $88 }')
-   ltransnir=$(echo ${oi}    | awk '{print $89 }')
-   lreflectnir=$(echo ${oi}  | awk '{print $90 }')
-   orienttree=$(echo ${oi}   | awk '{print $91 }')
-   orientgrass=$(echo ${oi}  | awk '{print $92 }')
-   clumptree=$(echo ${oi}    | awk '{print $93 }')
-   clumpgrass=$(echo ${oi}   | awk '{print $94 }')
-   igoutput=$(echo ${oi}     | awk '{print $95 }')
-   ivegtdyn=$(echo ${oi}     | awk '{print $96 }')
-   ihydro=$(echo ${oi}       | awk '{print $97 }')
-   istemresp=$(echo ${oi}    | awk '{print $98 }')
-   istomata=$(echo ${oi}     | awk '{print $99 }')
-   iplastic=$(echo ${oi}     | awk '{print $100}')
-   icarbonmort=$(echo ${oi}  | awk '{print $101}')
-   ihydromort=$(echo ${oi}   | awk '{print $102}')
-   igndvap=$(echo ${oi}      | awk '{print $103}')
-   iphen=$(echo ${oi}        | awk '{print $104}')
-   iallom=$(echo ${oi}       | awk '{print $105}')
-   ieconomics=$(echo ${oi}   | awk '{print $106}')
-   igrass=$(echo ${oi}       | awk '{print $107}')
-   ibigleaf=$(echo ${oi}     | awk '{print $108}')
-   integscheme=$(echo ${oi}  | awk '{print $109}')
-   nsubeuler=$(echo ${oi}    | awk '{print $110}')
-   irepro=$(echo ${oi}       | awk '{print $111}')
-   treefall=$(echo ${oi}     | awk '{print $112}')
-   ianthdisturb=$(echo ${oi} | awk '{print $113}')
-   ianthdataset=$(echo ${oi} | awk '{print $114}')
-   slscale=$(echo ${oi}      | awk '{print $115}')
-   slyrfirst=$(echo ${oi}    | awk '{print $116}')
-   slnyrs=$(echo ${oi}       | awk '{print $117}')
-   bioharv=$(echo ${oi}      | awk '{print $118}')
-   skidarea=$(echo ${oi}     | awk '{print $119}')
-   skidsmall=$(echo ${oi}    | awk '{print $120}')
-   skidlarge=$(echo ${oi}    | awk '{print $121}')
-   fellingsmall=$(echo ${oi} | awk '{print $122}')
+   polyname=$(echo ${oi}      | awk '{print $1  }')
+   polyiata=$(echo ${oi}      | awk '{print $2  }')
+   polylon=$(echo ${oi}       | awk '{print $3  }')
+   polylat=$(echo ${oi}       | awk '{print $4  }')
+   yeara=$(echo ${oi}         | awk '{print $5  }')
+   montha=$(echo ${oi}        | awk '{print $6  }')
+   datea=$(echo ${oi}         | awk '{print $7  }')
+   timea=$(echo ${oi}         | awk '{print $8  }')
+   yearz=$(echo ${oi}         | awk '{print $9  }')
+   monthz=$(echo ${oi}        | awk '{print $10 }')
+   datez=$(echo ${oi}         | awk '{print $11 }')
+   timez=$(echo ${oi}         | awk '{print $12 }')
+   initmode=$(echo ${oi}      | awk '{print $13 }')
+   iscenario=$(echo ${oi}     | awk '{print $14 }')
+   isizepft=$(echo ${oi}      | awk '{print $15 }')
+   iage=$(echo ${oi}          | awk '{print $16 }')
+   imaxcohort=$(echo ${oi}    | awk '{print $17 }')
+   polyisoil=$(echo ${oi}     | awk '{print $18 }')
+   polyntext=$(echo ${oi}     | awk '{print $19 }')
+   polysand=$(echo ${oi}      | awk '{print $20 }')
+   polyclay=$(echo ${oi}      | awk '{print $21 }')
+   polyslsoc=$(echo ${oi}     | awk '{print $22 }')
+   polyslph=$(echo ${oi}      | awk '{print $23 }')
+   polyslcec=$(echo ${oi}     | awk '{print $24 }')
+   polysldbd=$(echo ${oi}     | awk '{print $25 }')
+   polydepth=$(echo ${oi}     | awk '{print $26 }')
+   polyslhydro=$(echo ${oi}   | awk '{print $27 }')
+   polysoilbc=$(echo ${oi}    | awk '{print $28 }')
+   polysldrain=$(echo ${oi}   | awk '{print $29 }')
+   polycol=$(echo ${oi}       | awk '{print $30 }')
+   slzres=$(echo ${oi}        | awk '{print $31 }')
+   queue=$(echo ${oi}         | awk '{print $32 }')
+   metdriver=$(echo ${oi}     | awk '{print $33 }')
+   dtlsm=$(echo ${oi}         | awk '{print $34 }')
+   monyrstep=$(echo ${oi}     | awk '{print $35 }')
+   iphysiol=$(echo ${oi}      | awk '{print $36 }')
+   vmfactc3=$(echo ${oi}      | awk '{print $37 }')
+   vmfactc4=$(echo ${oi}      | awk '{print $38 }')
+   mphototrc3=$(echo ${oi}    | awk '{print $39 }')
+   mphototec3=$(echo ${oi}    | awk '{print $40 }')
+   mphotoc4=$(echo ${oi}      | awk '{print $41 }')
+   bphotoblc3=$(echo ${oi}    | awk '{print $42 }')
+   bphotonlc3=$(echo ${oi}    | awk '{print $43 }')
+   bphotoc4=$(echo ${oi}      | awk '{print $44 }')
+   kwgrass=$(echo ${oi}       | awk '{print $45 }')
+   kwtree=$(echo ${oi}        | awk '{print $46 }')
+   gammac3=$(echo ${oi}       | awk '{print $47 }')
+   gammac4=$(echo ${oi}       | awk '{print $48 }')
+   d0grass=$(echo ${oi}       | awk '{print $49 }')
+   d0tree=$(echo ${oi}        | awk '{print $50 }')
+   alphac3=$(echo ${oi}       | awk '{print $51 }')
+   alphac4=$(echo ${oi}       | awk '{print $52 }')
+   klowco2=$(echo ${oi}       | awk '{print $53 }')
+   decomp=$(echo ${oi}        | awk '{print $54 }')
+   rrffact=$(echo ${oi}       | awk '{print $55 }')
+   growthresp=$(echo ${oi}    | awk '{print $56 }')
+   lwidthgrass=$(echo ${oi}   | awk '{print $57 }')
+   lwidthbltree=$(echo ${oi}  | awk '{print $58 }')
+   lwidthnltree=$(echo ${oi}  | awk '{print $59 }')
+   q10c3=$(echo ${oi}         | awk '{print $60 }')
+   q10c4=$(echo ${oi}         | awk '{print $61 }')
+   h2olimit=$(echo ${oi}      | awk '{print $62 }')
+   imortscheme=$(echo ${oi}   | awk '{print $63 }')
+   ddmortconst=$(echo ${oi}   | awk '{print $64 }')
+   cbrscheme=$(echo ${oi}     | awk '{print $65 }')
+   isfclyrm=$(echo ${oi}      | awk '{print $66 }')
+   icanturb=$(echo ${oi}      | awk '{print $67 }')
+   ubmin=$(echo ${oi}         | awk '{print $68 }')
+   ugbmin=$(echo ${oi}        | awk '{print $69 }')
+   ustmin=$(echo ${oi}        | awk '{print $70 }')
+   gamm=$(echo ${oi}          | awk '{print $71 }')
+   gamh=$(echo ${oi}          | awk '{print $72 }')
+   tprandtl=$(echo ${oi}      | awk '{print $73 }')
+   ribmax=$(echo ${oi}        | awk '{print $74 }')
+   atmco2=$(echo ${oi}        | awk '{print $75 }')
+   thcrit=$(echo ${oi}        | awk '{print $76 }')
+   smfire=$(echo ${oi}        | awk '{print $77 }')
+   ifire=$(echo ${oi}         | awk '{print $78 }')
+   fireparm=$(echo ${oi}      | awk '{print $79 }')
+   ipercol=$(echo ${oi}       | awk '{print $80 }')
+   runoff=$(echo ${oi}        | awk '{print $81 }')
+   imetrad=$(echo ${oi}       | awk '{print $82 }')
+   ibranch=$(echo ${oi}       | awk '{print $83 }')
+   icanrad=$(echo ${oi}       | awk '{print $84 }')
+   ihrzrad=$(echo ${oi}       | awk '{print $85 }')
+   crown=$(echo   ${oi}       | awk '{print $86 }')
+   ltransvis=$(echo ${oi}     | awk '{print $87 }')
+   lreflectvis=$(echo ${oi}   | awk '{print $88 }')
+   ltransnir=$(echo ${oi}     | awk '{print $89 }')
+   lreflectnir=$(echo ${oi}   | awk '{print $90 }')
+   orienttree=$(echo ${oi}    | awk '{print $91 }')
+   orientgrass=$(echo ${oi}   | awk '{print $92 }')
+   clumptree=$(echo ${oi}     | awk '{print $93 }')
+   clumpgrass=$(echo ${oi}    | awk '{print $94 }')
+   igoutput=$(echo ${oi}      | awk '{print $95 }')
+   ivegtdyn=$(echo ${oi}      | awk '{print $96 }')
+   ihydro=$(echo ${oi}        | awk '{print $97 }')
+   istemresp=$(echo ${oi}     | awk '{print $98 }')
+   istomata=$(echo ${oi}      | awk '{print $99 }')
+   iplastic=$(echo ${oi}      | awk '{print $100}')
+   icarbonmort=$(echo ${oi}   | awk '{print $101}')
+   ihydromort=$(echo ${oi}    | awk '{print $102}')
+   igndvap=$(echo ${oi}       | awk '{print $103}')
+   iphen=$(echo ${oi}         | awk '{print $104}')
+   iallom=$(echo ${oi}        | awk '{print $105}')
+   ieconomics=$(echo ${oi}    | awk '{print $106}')
+   igrass=$(echo ${oi}        | awk '{print $107}')
+   ibigleaf=$(echo ${oi}      | awk '{print $108}')
+   integscheme=$(echo ${oi}   | awk '{print $109}')
+   nsubeuler=$(echo ${oi}     | awk '{print $110}')
+   irepro=$(echo ${oi}        | awk '{print $111}')
+   treefall=$(echo ${oi}      | awk '{print $112}')
+   ianthdisturb=$(echo ${oi}  | awk '{print $113}')
+   ianthdataset=$(echo ${oi}  | awk '{print $114}')
+   slscale=$(echo ${oi}       | awk '{print $115}')
+   slyrfirst=$(echo ${oi}     | awk '{print $116}')
+   slnyrs=$(echo ${oi}        | awk '{print $117}')
+   bioharv=$(echo ${oi}       | awk '{print $118}')
+   skidarea=$(echo ${oi}      | awk '{print $119}')
+   skiddbhthresh=$(echo ${oi} | awk '{print $120}')
+   skidsmall=$(echo ${oi}     | awk '{print $121}')
+   skidlarge=$(echo ${oi}     | awk '{print $122}')
+   fellingsmall=$(echo ${oi}  | awk '{print $123}')
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #      In case this is an "init_only" run, impose final time to be the initial time.    #
+   #---------------------------------------------------------------------------------------#
+   if ${init_only}
+   then
+      yearz=${yeara}
+      monthz=${montha}
+      datez=${datea}
+      timez=${timea}
+   fi
    #---------------------------------------------------------------------------------------#
 
 
@@ -465,20 +513,20 @@ do
       #      This step is necessary because we may have killed the run while it was        #
       # writing, and as a result, the file may be corrupt.                                 #
       #------------------------------------------------------------------------------------#
-      nhdf5=$(ls -1 ${here}/${polyname}/histo/* 2> /dev/null | wc -l)
+      nhdf5=$(ls -1 ${here}/${polyname}/histo/*.h5 2> /dev/null | wc -l)
       if [ ${nhdf5} -gt 0 ]
       then
          h5fine=0
 
          while [ ${h5fine} -eq 0 ]
          do
-            lasthdf5=$(ls -1 ${here}/${polyname}/histo/* | tail -1)
+            lasthdf5=$(ls -1 ${here}/${polyname}/histo/*.h5 | tail -1)
             h5dump -H ${lasthdf5} 1> /dev/null 2> ${here}/badfile.txt
 
             if [ -s ${here}/badfile.txt ]
             then
                /bin/rm -fv ${lasthdf5}
-               nhdf5=$(ls -1 ${here}/${polyname}/histo/* 2> /dev/null | wc -l)
+               nhdf5=$(ls -1 ${here}/${polyname}/histo/*.h5 2> /dev/null | wc -l)
                if [ ${nhdf5} -eq 0 ]
                then
                   h5fine=1
@@ -528,6 +576,35 @@ do
    date=$(cat ${here}/${polyname}/statusrun.txt  | awk '{print $4}')
    time=$(cat ${here}/${polyname}/statusrun.txt  | awk '{print $5}')
    runt=$(cat ${here}/${polyname}/statusrun.txt  | awk '{print $6}')
+   #---------------------------------------------------------------------------------------#
+
+
+   #---------------------------------------------------------------------------------------#
+   #      Run the small R script to generate specific observation times.                   #
+   #---------------------------------------------------------------------------------------#
+   /bin/rm -f ${here}/${polyname}/gen_obstimes.r
+   /bin/cp -f ${here}/Template/gen_obstimes.r ${here}/${polyname}/gen_obstimes.r
+   obstimes="${here}/${polyname}/gen_obstimes.r"
+   outtimes="${here}/${polyname}/out_obstimes.txt"
+   sed -i~ s@thispoly@${polyname}@g           ${obstimes}
+   sed -i~ s@thisqueue@${queue}@g             ${obstimes}
+   sed -i~ s@pathhere@${here}@g               ${obstimes}
+   sed -i~ s@paththere@${here}@g              ${obstimes}
+   sed -i~ s@thisyeara@${yeara}@g             ${obstimes}
+   sed -i~ s@thismontha@${montha}@g           ${obstimes}
+   sed -i~ s@thisdatea@${datea}@g             ${obstimes}
+   sed -i~ s@thistimea@${timea}@g             ${obstimes}
+   sed -i~ s@thisyearz@${yearz}@g             ${obstimes}
+   sed -i~ s@thismonthz@${monthz}@g           ${obstimes}
+   sed -i~ s@thisdatez@${datez}@g             ${obstimes}
+   sed -i~ s@thistimez@${timez}@g             ${obstimes}
+   sed -i~ s@thislon@${polylon}@g             ${obstimes}
+   sed -i~ s@thislat@${polylat}@g             ${obstimes}
+   R CMD BATCH --no-save --no-restore ${obstimes} ${outtimes}
+   while [[ ! -s ${here}/${polyname}/${polyname}_obstimes.txt ]]
+   do
+      sleep 0.2
+   done
    #---------------------------------------------------------------------------------------#
 
 
@@ -773,6 +850,11 @@ do
    case ${iscenario} in
    default)
       case ${metdriver} in
+      ERA5_CHIRPS)
+         #----- ERA5 (CHIRPS precipitation, Brazilian Amazon only). -----------------------#
+         scentype="ERA5"
+         iscenario="ERA5_SOUTHAM_CHIRPS"
+         ;;
       ERAINT_CHIRPS)
          #----- ERA-Interim (CHIRPS precipitation). ---------------------------------------#
          scentype="ERA_Interim"
@@ -822,6 +904,11 @@ do
          #----- Sheffield. ----------------------------------------------------------------#
          scentype="sheffield"
          iscenario="sheffield"
+         ;;
+      WFDE5_CHIRPS)
+         #----- WFDEI (CHIRPS Precipitation). ---------------------------------------------#
+         scentype="WFDE5"
+         iscenario="WFDE5_SOUTHAM_CHIRPS"
          ;;
       WFDEI_CHIRPS)
          #----- WFDEI (CHIRPS Precipitation). ---------------------------------------------#
@@ -909,6 +996,12 @@ do
       metdriverdb="${fullscen}/Caxiuana/Caxiuana_HEADER"
       metcyc1=1999
       metcycf=2003
+      imetavg=1
+      ;;
+   ERA5_CHIRPS)
+      metdriverdb="${fullscen}/${iscenario}_HEADER"
+      metcyc1=1981
+      metcycf=2019
       imetavg=1
       ;;
    ERAINT_CHIRPS)
@@ -1061,6 +1154,12 @@ do
       metcycf=2010
       imetavg=1
       ;;
+   WFDE5_CHIRPS)
+      metdriverdb="${fullscen}/${iscenario}_HEADER"
+      metcyc1=1981
+      metcycf=2018
+      imetavg=2
+      ;;
    WFDEI_CHIRPS)
       metdriverdb="${fullscen}/${iscenario}_HEADER"
       metcyc1=1981
@@ -1098,7 +1197,7 @@ do
    #     Correct years so it is not tower-based or Sheffield.                              #
    #---------------------------------------------------------------------------------------#
    case ${iscenario} in
-   default|eft|shr|sheffield|WFDEI*|ERAINT*|MERRA2*|PGMF3*)
+   default|eft|shr|ERA5*|ERAINT*|MERRA2*|PGMF3*|Sheffield|WFDE5*|WFDEI*)
       echo "Nothing" > /dev/null
       ;;
    *)
@@ -1154,6 +1253,12 @@ do
          ludatabase="${lumain}/glu-3.3.1+sa2.bau/glu-3.3.1+sa2.bau-"
          ;;
       esac
+      ;;
+   sa2-ril)
+      ludatabase="${lumain}/SimAmazonia2/ril/sa2_ril_"
+      ;;
+   sa2-cvl)
+      ludatabase="${lumain}/SimAmazonia2/cvl/sa2_cvl_"
       ;;
    lurcp26)
       ludatabase="${lumain}/luh-1.1+rcp26_image/luh-1.1+rcp26_image-"
@@ -1274,8 +1379,8 @@ do
          ;;
       E)
          polynzg=16
-         polyslz1="-4.500,-4.032,-3.584,-3.159,-2.757,-2.377,-2.021,-1.689,-1.382,-1.101,"
-         polyslz2="-0.846,-0.620,-0.424,-0.260,-0.130,-0.040"
+         polyslz1="-5.000,-4.468,-3.963,-3.483,-3.030,-2.604,-2.205,-1.836,-1.495,-1.185,"
+         polyslz2="-0.906,-0.660,-0.447,-0.271,-0.134,-0.040"
          polyslm1=" 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000,"
          polyslm2=" 1.000, 1.000, 1.000, 1.000, 1.000, 1.000"
          polyslt1=" 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000,"
@@ -1310,8 +1415,26 @@ do
          ;;
       I)
          polynzg=16
+         polyslz1="-9.000,-7.934,-6.934,-5.999,-5.131,-4.329,-3.593,-2.925,-2.324,-1.790,"
+         polyslz2="-1.325,-0.928,-0.600,-0.342,-0.155,-0.040"
+         polyslm1=" 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000,"
+         polyslm2=" 1.000, 1.000, 1.000, 1.000, 1.000, 1.000"
+         polyslt1=" 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000,"
+         polyslt2=" 0.000, 0.000, 0.000, 0.000, 0.000, 0.000"
+         ;;
+      J)
+         polynzg=16
          polyslz1="-10.50,-9.223,-8.029,-6.919,-5.891,-4.946,-4.084,-3.305,-2.609,-1.995,"
          polyslz2="-1.464,-1.015,-0.648,-0.364,-0.161,-0.040"
+         polyslm1=" 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000,"
+         polyslm2=" 1.000, 1.000, 1.000, 1.000, 1.000, 1.000"
+         polyslt1=" 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000,"
+         polyslt2=" 0.000, 0.000, 0.000, 0.000, 0.000, 0.000"
+         ;;
+      K)
+         polynzg=16
+         polyslz1="-12.00,-10.51,-9.118,-7.828,-6.640,-5.552,-4.563,-3.674,-2.883,-2.191"
+         polyslz2="-1.595,-1.096,-0.693,-0.383,-0.166,-0.040"
          polyslm1=" 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000,"
          polyslm2=" 1.000, 1.000, 1.000, 1.000, 1.000, 1.000"
          polyslt1=" 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000,"
@@ -1416,8 +1539,8 @@ do
          ;;
       E)
          polynzg=16
-         polyslz1="-4.500,-3.967,-3.467,-3.000,-2.565,-2.164,-1.797,-1.462,-1.162,-0.895,"
-         polyslz2="-0.662,-0.464,-0.300,-0.171,-0.077,-0.020"
+         polyslz1="-5.000,-4.397,-3.833,-3.307,-2.819,-2.371,-1.961,-1.590,-1.257,-0.964,"
+         polyslz2="-0.709,-0.493,-0.316,-0.178,-0.080,-0.020"
          polyslm1=" 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000,"
          polyslm2=" 1.000, 1.000, 1.000, 1.000, 1.000, 1.000"
          polyslt1=" 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000,"
@@ -1451,6 +1574,15 @@ do
          polyslt2=" 0.000, 0.000, 0.000, 0.000, 0.000, 0.000"
          ;;
       I)
+         polynzg=16
+         polyslz1="-9.000,-7.807,-6.706,-5.696,-4.775,-3.942,-3.195,-2.533,-1,954,-1.456,"
+         polyslz2="-1.037,-0.694,-0.424,-0.225,-0.092,-0.020"
+         polyslm1=" 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000,"
+         polyslm2=" 1.000, 1.000, 1.000, 1.000, 1.000, 1.000"
+         polyslt1=" 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000,"
+         polyslt2=" 0.000, 0.000, 0.000, 0.000, 0.000, 0.000"
+         ;;
+      J)
          polynzg=16
          polyslz1="-10.50,-9.076,-7.766,-6.569,-5.482,-4.504,-3.631,-2.862,-2.194,-1.622,"
          polyslz2="-1.145,-0.759,-0.458,-0.239,-0.096,-0.020"
@@ -1705,7 +1837,7 @@ do
 
 
    #----- Check whether to use SFILIN as restart or history. ------------------------------#
-   if [ ${runt} == "RESTORE" ] && [ ${forcehisto} -eq 1 ]
+   if [[ ${runt} == "RESTORE" ]] && [[ ${forcehisto} -eq 1 ]]
    then
       runt="HISTORY"
       year=${yearh}
@@ -1713,125 +1845,192 @@ do
       date=${dateh}
       time=${timeh}
       thissfilin=${fullygrown}
-   elif [ ${runt} == "RESTORE" ] && [ ${initmode} -eq 5 ]
+   elif [[ ${runt} == "RESTORE" ]]
    then
-      if [ ! -s ${restart} ]
-      then
-         echo " Directory restart does not exist!"
-         echo " Change the variable restart at the beginning of the script"
-         exit 44
-      else
-         runt="RESTORE"
-         thissfilin=${restart}
-      fi
-   elif [ ${runt} == "RESTORE" ] && [ ${initmode} -eq 6 ]
-   then
-      thissfilin=${fullygrown}
+      case ${initmode} in
+      5|7)
+         #---------------------------------------------------------------------------------#
+         #     Initialise ED2 with hdf5 files, which should be in directory restart.       #
+         #---------------------------------------------------------------------------------#
+         if [[ ! -s ${restart} ]]
+         then
+            echo " Directory restart does not exist!"
+            echo " Change the variable restart at the beginning of the script"
+            exit 44
+         else
+            runt="RESTORE"
+            thissfilin=${restart}
+         fi
+         #---------------------------------------------------------------------------------#
+         ;;
 
-
-
-      #------------------------------------------------------------------------------------#
-      #    Find the biometric files.  This has been checked in spawn_poly.sh so they are   #
-      # correct.  Add a dummy name in case this is not supposed to be a biomass            #
-      # initialisation run.                                                                #
-      #------------------------------------------------------------------------------------#
-      case ${biotype} in
-      0)
-         #----- isizepft controls everything, and iage is ignored. ------------------------#
-         case ${isizepft} in
+      1|2|3|6|8)
+         #---------------------------------------------------------------------------------#
+         #    Find the biometric files.  This has been checked in spawn_poly.sh so they    #
+         # are correct.  Add a dummy name in case this is not supposed to be a biomass     #
+         # initialisation run.                                                             #
+         #---------------------------------------------------------------------------------#
+         case ${biotype} in
          0)
-            #----- Frankeinstein's under storey. ------------------------------------------#
-            thissfilin="${bioinit}/${polyiata}_default."
+            #----- isizepft controls everything, and iage is ignored. ---------------------#
+            case ${isizepft} in
+            0)
+               #----- Frankeinstein's under storey. ---------------------------------------#
+               thissfilin="${bioinit}/${polyiata}_default."
+               ;;
+            1)
+               #----- No under storey. ----------------------------------------------------#
+               thissfilin="${bioinit}/${polyiata}_nounder."
+               ;;
+            2)
+               #----- ALS initialisation. -------------------------------------------------#
+               thissfilin="${bioinit}/${polyiata}_alsinit."
+               ;;
+            *)
+               #----- Invalid option. Stop the script. ------------------------------------#
+               echo " Polygon:  ${polyname}"
+               echo " IATA:     ${polyiata}"
+               echo " ISIZEPFT: ${isizepft}"
+               echo " INITMODE: ${initmode}"
+               echo "This IATA cannot be initialised with these ISIZEPFT and INITMODE!"
+               exit 57
+               ;;
+            esac
+            #------------------------------------------------------------------------------#
             ;;
+
          1)
-            #----- No under storey. -------------------------------------------------------#
-            thissfilin="${bioinit}/${polyiata}_nounder."
+            #------------------------------------------------------------------------------#
+            #    'isizepft' controls how many PFTs to use.                                 #
+            #------------------------------------------------------------------------------#
+            case ${isizepft} in 
+            0|5)
+               pftname="pft05"
+               ;;
+            2)
+               pftname="pft02"
+               ;;
+            esac
+            #------------------------------------------------------------------------------#
+
+            #------------------------------------------------------------------------------#
+            #     'iage' controls how many patches to use.                                 #
+            #------------------------------------------------------------------------------#
+            case ${iage} in
+            1)
+               agename="age01"
+               ;;
+            *)
+               agename="age00"
+               ;;
+            esac
+            #------------------------------------------------------------------------------#
+
+
+
+
+            #------------------------------------------------------------------------------#
+            #      Check whether the site has the PFT and age structure.                   #
+            #------------------------------------------------------------------------------#
+            case ${polyiata} in
+            hvd|s77|fns|cau|and|par|tap|dcm)
+               thissfilin="${bioinit}/${polyiata}_default."
+               ;;
+            cax|s67|s83|m34|gyf|pdg|rja|pnz|ban)
+               thissfilin="${bioinit}/${polyiata}_${pftname}+${agename}."
+               ;;
+            *)
+               echo " Polygon:  ${polyname}"
+               echo " IATA:     ${polyiata}"
+               echo " IAGE:     ${iage}"
+               echo " ISIZEPFT: ${isizepft}"
+               echo " INITMODE: ${initmode}"
+               echo "This IATA cannot be initiealised with these settings!"
+               exit 59
+               ;;
+            esac
+            #------------------------------------------------------------------------------#
             ;;
          2)
-            #----- ALS initialisation. ----------------------------------------------------#
-            thissfilin="${bioinit}/${polyiata}_alsinit."
+            #------------------------------------------------------------------------------#
+            #     ALS initialisation. ISIZEPFT has disturbance history information.        #
+            #------------------------------------------------------------------------------#
+            case ${polyiata} in
+            l[0-5][0-3])
+               thissfilin="${alsinit}/${polyiata}."
+               ;;
+            *)
+               thissfilin="${alsinit}/${polyiata}_${isizepft}."
+               ;;
+            esac
+            #------------------------------------------------------------------------------#
             ;;
-         *)
-            #----- Invalid option. Stop the script. ---------------------------------------#
-            echo " Polygon:  ${polyname}"
-            echo " IATA:     ${polyiata}"
-            echo " ISIZEPFT: ${isizepft}"
-            echo "This IATA cannot be used by biomass initialisation with this ISIZEPFT!"
-            exit 57
+         3)
+            #------------------------------------------------------------------------------#
+            #     ALS initialisation using intensity. ISIZEPFT has disturbance history     #
+            # information.                                                                 #
+            #------------------------------------------------------------------------------#
+            thissfilin="${intinit}/${polyiata}_${isizepft}."
+            #------------------------------------------------------------------------------#
             ;;
-         esac
-         #---------------------------------------------------------------------------------#
-         ;;
-
-      1)
-         #---------------------------------------------------------------------------------#
-         #    'isizepft' controls how many PFTs to use.                                    #
-         #---------------------------------------------------------------------------------#
-         case ${isizepft} in 
-         0|5)
-            pftname="pft05"
+         4)
+            #------------------------------------------------------------------------------#
+            #     ALS initialisation using the lookup table. ISIZEPFT has disturbance      #
+            # history information.                                                         #
+            #------------------------------------------------------------------------------#
+            thissfilin="${lutinit}/${polyiata}_${isizepft}."
+            #------------------------------------------------------------------------------#
             ;;
-         2)
-            pftname="pft02"
-            ;;
-         esac
-         #---------------------------------------------------------------------------------#
-
-         #---------------------------------------------------------------------------------#
-         #     'iage' controls how many patches to use.                                    #
-         #---------------------------------------------------------------------------------#
-         case ${iage} in
-         1)
-            agename="age01"
-            ;;
-         *)
-            agename="age00"
-            ;;
-         esac
-         #---------------------------------------------------------------------------------#
-
-
-
-
-         #---------------------------------------------------------------------------------#
-         #      Check whether the site has the PFT and age structure.                      #
-         #---------------------------------------------------------------------------------#
-         case ${polyiata} in
-         hvd|s77|fns|cau|and|par|tap|dcm)
-            thissfilin="${bioinit}/${polyiata}_default."
-            ;;
-         cax|s67|s83|m34|gyf|pdg|rja|pnz|ban)
-            thissfilin="${bioinit}/${polyiata}_${pftname}+${agename}."
-            ;;
-         *)
-            echo " Polygon:  ${polyname}"
-            echo " IATA:     ${polyiata}"
-            echo " IAGE:     ${iage}"
-            echo " ISIZEPFT: ${isizepft}"
-            echo "This IATA cannot be used by biomass initialisation with this ISIZEPFT!"
-            exit 59
-            ;;
-         esac
-         #---------------------------------------------------------------------------------#
-         ;;
-      2)
-         #---------------------------------------------------------------------------------#
-         #     ALS initialisation. ISIZEPFT has disturbance history information.           #
-         #---------------------------------------------------------------------------------#
-         case ${polyiata} in
-         l[0-5][0-3])
-            thissfilin="${alsinit}/${polyiata}."
-            ;;
-         *)
-            thissfilin="${alsinit}/${polyiata}_${isizepft}."
+         5)
+            #----- isizepft controls actual or majestic initialisation. -------------------#
+            case ${isizepft} in
+            0)
+               #----- Actual sampling. ----------------------------------------------------#
+               thissfilin="${ebainit}/eba_actual_default."
+               #---------------------------------------------------------------------------#
+               ;;
+            1)
+               #----- Majestic sampling. --------------------------------------------------#
+               thissfilin="${ebainit}/eba_majestic_default."
+               #---------------------------------------------------------------------------#
+               ;;
+            2)
+               #----- Actual sampling + land use (pasture/cropland/plantation). -----------#
+               thissfilin="${ebainit}/eba_luactual_default."
+               #---------------------------------------------------------------------------#
+               ;;
+            3)
+               #----- Majestic sampling + land use (pasture/cropland/plantation). ---------#
+               thissfilin="${ebainit}/eba_lumajestic_default."
+               #---------------------------------------------------------------------------#
+               ;;
+            *)
+               #----- Invalid option. Stop the script. ------------------------------------#
+               echo " Polygon:  ${polyname}"
+               echo " IATA:     ${polyiata}"
+               echo " ISIZEPFT: ${isizepft}"
+               echo " INITMODE: ${initmode}"
+               echo "This IATA cannot be initiealised with these settings!"
+               exit 57
+               ;;
+            esac
+            #------------------------------------------------------------------------------#
             ;;
          esac
          #---------------------------------------------------------------------------------#
          ;;
+      *)
+         #----- No initial file needed; set the history file. -----------------------------#
+         thissfilin=${here}/${polyname}/histo/${polyname}
+         #---------------------------------------------------------------------------------#
+         ;;
+         #---------------------------------------------------------------------------------#
       esac
       #------------------------------------------------------------------------------------#
    else
+      #----- Set the history file. --------------------------------------------------------#
       thissfilin=${here}/${polyname}/histo/${polyname}
+      #------------------------------------------------------------------------------------#
    fi
    #---------------------------------------------------------------------------------------#
 
@@ -1998,6 +2197,7 @@ do
    sed -i~ s@mydbhharv@${dbhharv}@g              ${ED2IN}
    sed -i~ s@mybioharv@${bioharv}@g              ${ED2IN}
    sed -i~ s@myskidarea@${skidarea}@g            ${ED2IN}
+   sed -i~ s@myskiddbhthresh@${skiddbhthresh}@g  ${ED2IN}
    sed -i~ s@myskidsmall@${skidsmall}@g          ${ED2IN}
    sed -i~ s@myskidlarge@${skidlarge}@g          ${ED2IN}
    sed -i~ s@myfellingsmall@${fellingsmall}@g    ${ED2IN}
@@ -2081,7 +2281,7 @@ do
       echo "Polygon population has gone extinct.  No need to re-submit it."
       submit_now=false
       ;;
-   "CRASHED"|"METMISS"|"SIGSEGV"|"BAD_MET"|"STOPPED")
+   "CRASHED"|"HYDFAIL"|"METMISS"|"SIGSEGV"|"BAD_MET"|"STOPPED")
       echo "Polygon has serious errors.  Script will not submit the job this time."
       submit_now=false
       ;;

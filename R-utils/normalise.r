@@ -19,7 +19,7 @@ normalise <<- function(x,mu,sigma,distr=c("best","normal","lognormal","skewnorma
    #----- Exclude missing points. ---------------------------------------------------------#
    xfit        = x[is.finite(x)]
    nxfit       = length(xfit)
-   lntry       = all(xfit %>% 0)
+   lntry       = all(xfit %gt% 0)
    #---------------------------------------------------------------------------------------#
 
    #---------------------------------------------------------------------------------------#

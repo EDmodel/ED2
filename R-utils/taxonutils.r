@@ -5,8 +5,9 @@ unknown.wildcard     <<- c("aff","cf","deleteme","ind","indet","na","ni","sp","s
                           ,paste0("spb" ,sequence(99))
                           ,paste0("spp" ,sequence(99))
                           ,paste0("sp"  ,sequence(99),"cay-atdn")
-                          ,paste0("sp"  ,sequence(99),"guyafor")
-                          ,paste0("spfg",sequence(99),"-holst")
+                          ,paste0("sp"  ,sequence(99),"-cay"    )
+                          ,paste0("sp"  ,sequence(99),"guyafor" )
+                          ,paste0("spfg",sequence(99),"-holst"  )
                           )#end c
 unknown.common       <<- "mato"
 unk.liana.common     <<- "cipo"
@@ -73,7 +74,7 @@ standard.common.name <<- function(x){
    x = gsub(pattern="^quina-quina"    ,replacement="quinaquina"  ,x=x)
    x = gsub(pattern="^tamarino"       ,replacement="tamarindo"   ,x=x)
    x = gsub(pattern="^taxi"           ,replacement="tachi"       ,x=x)
-   x = gsub(pattern="^uchi"           ,replacement="uxi"         ,x=x)
+   x = gsub(pattern="^uxi"            ,replacement="uchi"        ,x=x)
    x = gsub(pattern="verdadiera"      ,replacement="verdadeira"  ,x=x)
    x = gsub(pattern="^xixua"          ,replacement="chichua"     ,x=x)
    #---------------------------------------------------------------------------------------#
@@ -83,7 +84,10 @@ standard.common.name <<- function(x){
    #----- Full replacements. --------------------------------------------------------------#
    sel = (x %in% "?"                              ); x[sel] = NA_character_
    sel = (x %in% "abacaba"                        ); x[sel] = "bacaba"
+   sel = (x %in% "abacabeira"                     ); x[sel] = "bacaba"
    sel = (x %in% "abicuiba"                       ); x[sel] = "ucuuba"
+   sel = (x %in% "abirana"                        ); x[sel] = "abiurana"
+   sel = (x %in% "abirana branca"                 ); x[sel] = "abiurana branca"
    sel = (x %in% "abirana rosadinha"              ); x[sel] = "abiu rosadinho"
    sel = (x %in% "abil fura fura"                 ); x[sel] = "abiu-fura-fura"
    sel = (x %in% "abiui"                          ); x[sel] = "abiu"
@@ -96,12 +100,16 @@ standard.common.name <<- function(x){
    sel = (x %in% "abiu guajara"                   ); x[sel] = "abiu-guajara"
    sel = (x %in% "abiu goiabao"                   ); x[sel] = "abiu-goiabao"
    sel = (x %in% "abiu mangabinha"                ); x[sel] = "abiu-mangabinha"
+   sel = (x %in% "abiu rosadinha"                 ); x[sel] = "abiu rosadinho"
    sel = (x %in% "abiu tauari"                    ); x[sel] = "tauari"
    sel = (x %in% "abiu vermelha"                  ); x[sel] = "abiu vermelho"
    sel = (x %in% "abiurana vermelho"              ); x[sel] = "abiurana vermelha"
    sel = (x %in% "abiurana vermlho"               ); x[sel] = "abiurana vermelha"
    sel = (x %in% "abiuarana"                      ); x[sel] = "abiurana"
    sel = (x %in% "abiurana rosadinha"             ); x[sel] = "abiu rosadinho"
+   sel = (x %in% "acaizeiro"                      ); x[sel] = "acai"
+   sel = (x %in% "acariguara"                     ); x[sel] = "acariquara"
+   sel = (x %in% "acariguarana"                   ); x[sel] = "acariquarana"
    sel = (x %in% "acoita cavalo"                  ); x[sel] = "acoita-cavalo"
    sel = (x %in% "algodao brabo"                  ); x[sel] = "algodao-bravo"
    sel = (x %in% "algodao bravo"                  ); x[sel] = "algodao-bravo"
@@ -139,16 +147,19 @@ standard.common.name <<- function(x){
    sel = (x %in% "baubarana"                      ); x[sel] = "embaubarana"
    sel = (x %in% "breu/louro preto?"              ); x[sel] = NA_character_
    sel = (x %in% "breu aroeira"                   ); x[sel] = "breu-aroeira"
+   sel = (x %in% "breu brrote"                    ); x[sel] = "breu barrote"
    sel = (x %in% "breu sucuruba"                  ); x[sel] = "breu-sucuruba"
    sel = (x %in% "breu sucuruba branco"           ); x[sel] = "breu-sucuruba branco"
    sel = (x %in% "breu sucurubinha"               ); x[sel] = "breu-sucurubinha"
+   sel = (x %in% "brteu branco"                   ); x[sel] = "breu branco"
    sel = (x %in% "babao"                          ); x[sel] = "macauba"
    sel = (x %in% "bolao"                          ); x[sel] = "fava-bolota"
    sel = (x %in% "bombeira"                       ); x[sel] = "pau-pombo"
    sel = (x %in% "brau"                           ); x[sel] = "breu"
-   sel = (x %in% "brejauba"                       ); x[sel] = "brejauva"              
-   sel = (x %in% "breu sucuuba"                   ); x[sel] = "breu sucuruba"         
-   sel = (x %in% "cabeca de urubu"                ); x[sel] = "cabeca-de-urubu"       
+   sel = (x %in% "brejauba"                       ); x[sel] = "brejauva"
+   sel = (x %in% "breu sucuuba"                   ); x[sel] = "breu sucuruba"
+   sel = (x %in% "burra leteira"                  ); x[sel] = "burra leiteira"
+   sel = (x %in% "cabeca de urubu"                ); x[sel] = "cabeca-de-urubu"
    sel = (x %in% "cabela"                         ); x[sel] = "louro canela"          
    sel = (x %in% "cabriuva"                       ); x[sel] = "cabreuva"              
    sel = (x %in% "cabriuna"                       ); x[sel] = "cabreuva"              
@@ -156,8 +167,9 @@ standard.common.name <<- function(x){
    sel = (x %in% "cabreuba"                       ); x[sel] = "cabreuva"              
    sel = (x %in% "caca piolho"                    ); x[sel] = "mata-piolho"           
    sel = (x %in% "cacau bravo"                    ); x[sel] = "cacaui"                
-   sel = (x %in% "cacau da mata"                  ); x[sel] = "cacau"  
-   sel = (x %in% "cacaurana"                      ); x[sel] = "cacau"                 
+   sel = (x %in% "cacau da mata"                  ); x[sel] = "cacau"
+   sel = (x %in% "cacau do mato"                  ); x[sel] = "cacau"
+   sel = (x %in% "cacaurana"                      ); x[sel] = "cacau"
    sel = (x %in% "cachixa"                        ); x[sel] = "caxixa"
    sel = (x %in% "cachudinha"                     ); x[sel] = "cascudinha"            
    sel = (x %in% "cagaca"                         ); x[sel] = "abiurana-cagaca"
@@ -183,7 +195,9 @@ standard.common.name <<- function(x){
    sel = (x %in% "capueiro branco"                ); x[sel] = "capueiro"
    sel = (x %in% "caqui branco"                   ); x[sel] = "caqui"
    sel = (x %in% "caqui folha grande"             ); x[sel] = "caqui"
-   sel = (x %in% "carobia"                        ); x[sel] = "caroba"                
+   sel = (x %in% "carana"                         ); x[sel] = NA_character_
+   sel = (x %in% "carape"                         ); x[sel] = "caripe"
+   sel = (x %in% "carobia"                        ); x[sel] = "caroba"
    sel = (x %in% "cascudinho"                     ); x[sel] = "cascudinha"            
    sel = (x %in% "cascudo"                        ); x[sel] = "cascudinha"            
    sel = (x %in% "castanha do brasil"             ); x[sel] = "castanha-do-para"
@@ -196,7 +210,8 @@ standard.common.name <<- function(x){
    sel = (x %in% "castanha de sapocaia"           ); x[sel] = "castanha-sapucaia"     
    sel = (x %in% "castanha de sapucaia"           ); x[sel] = "castanha-sapucaia"     
    sel = (x %in% "castanha sapocaia"              ); x[sel] = "castanha-sapucaia"     
-   sel = (x %in% "castanheira"                    ); x[sel] = "castanha-do-para"      
+   sel = (x %in% "castanha sapucaia"              ); x[sel] = "castanha-sapucaia"
+   sel = (x %in% "castanheira"                    ); x[sel] = "castanha-do-para"
    sel = (x %in% "cauba"                          ); x[sel] = "macacauba"
    sel = (x %in% "cauxo"                          ); x[sel] = "caucho"                
    sel = (x %in% "caxeta"                         ); x[sel] = "caixeta"               
@@ -263,8 +278,9 @@ standard.common.name <<- function(x){
    sel = (x %in% "envira cabo de rodo"            ); x[sel] = "envira cabo-de-rodo"   
    sel = (x %in% "envira caju"                    ); x[sel] = "envira-caju"           
    sel = (x %in% "envira conduru"                 ); x[sel] = "envira-conduru"        
-   sel = (x %in% "envira cunauaru"                ); x[sel] = "envira-cunauaru"       
-   sel = (x %in% "envira de caju"                 ); x[sel] = "envira-jacu"           
+   sel = (x %in% "envira cunacaru"                ); x[sel] = "envira-cunauaru"
+   sel = (x %in% "envira cunauaru"                ); x[sel] = "envira-cunauaru"
+   sel = (x %in% "envira de caju"                 ); x[sel] = "envira-jacu"
    sel = (x %in% "envira de jacu"                 ); x[sel] = "envira-jacu"           
    sel = (x %in% "envira-mao-de-onca"             ); x[sel] = "envira mao-de-onca"    
    sel = (x %in% "envira molia branco"            ); x[sel] = "envira-molia branco"
@@ -304,19 +320,25 @@ standard.common.name <<- function(x){
    sel = (x %in% "fava orelha"                    ); x[sel] = "fava orelha-de-macaco" 
    sel = (x %in% "fava orelha de macaco"          ); x[sel] = "fava orelha-de-macaco" 
    sel = (x %in% "fava paricarana"                ); x[sel] = "fava-paricana"         
+   sel = (x %in% "fava rosa"                      ); x[sel] = "fava-de-rosca"
    sel = (x %in% "fava saboeira"                  ); x[sel] = "fava-saboeira"         
-   sel = (x %in% "fava tambori"                   ); x[sel] = "fava-tamboril"         
+   sel = (x %in% "fava saboeiro"                  ); x[sel] = "fava-saboeira"
+   sel = (x %in% "fava tambori"                   ); x[sel] = "fava-tamboril"
    sel = (x %in% "fava tamburi"                   ); x[sel] = "fava-tamboril"         
    sel = (x %in% "fava tamboril"                  ); x[sel] = "fava-tamboril" 
    sel = (x %in% "fava tamboriu"                  ); x[sel] = "fava-tamboril"  
-   sel = (x %in% "favera amargosa"                ); x[sel] = "fava amargosa"         
-   sel = (x %in% "faveira branca"                 ); x[sel] = "fava branca"           
-   sel = (x %in% "feijo branco"                   ); x[sel] = "freijo branco"         
+   sel = (x %in% "faveira"                        ); x[sel] = "fava"
+   sel = (x %in% "faveira amargosa"               ); x[sel] = "fava amargosa"
+   sel = (x %in% "faveira branca"                 ); x[sel] = "fava branca"
+   sel = (x %in% "faveira rosa"                   ); x[sel] = "fava-de-rosca"
+   sel = (x %in% "favera amargosa"                ); x[sel] = "fava amargosa"
+   sel = (x %in% "feijo branco"                   ); x[sel] = "freijo branco"
    sel = (x %in% "ferdinandusa elliptica"         ); x[sel] = "bacabinha quina"       
    sel = (x %in% "figado de preguisa"             ); x[sel] = "figado-de-preguica"
    sel = (x %in% "figueira brava"                 ); x[sel] = "figueira"              
-   sel = (x %in% "gameleiro"                      ); x[sel] = "gameleira"             
-   sel = (x %in% "gapeba"                         ); x[sel] = "guapeva"               
+   sel = (x %in% "gaivota"                        ); x[sel] = "gaivotinha"
+   sel = (x %in% "gameleiro"                      ); x[sel] = "gameleira"
+   sel = (x %in% "gapeba"                         ); x[sel] = "guapeva"
    sel = (x %in% "guapeba"                        ); x[sel] = "guapeva"               
    sel = (x %in% "gema de ovo"                    ); x[sel] = "gema-de-ovo"           
    sel = (x %in% "geniparana"                     ); x[sel] = "jeniparana"            
@@ -369,6 +391,7 @@ standard.common.name <<- function(x){
    sel = (x %in% "jacariuba"                      ); x[sel] = "jacareuba"
    sel = (x %in% "jambo"                          ); x[sel] = "jambo-do-mato"
    sel = (x %in% "jara"                           ); x[sel] = "jarana"
+   sel = (x %in% "jarana vermelha"                ); x[sel] = "jarana"
    sel = (x %in% "jaruma"                         ); x[sel] = "taruma"
    sel = (x %in% "jauari"                         ); x[sel] = "tauari"
    sel = (x %in% "jenita"                         ); x[sel] = "janita"                
@@ -401,9 +424,11 @@ standard.common.name <<- function(x){
    sel = (x %in% "mafim"                          ); x[sel] = "marfim"
    sel = (x %in% "mamao jacatia"                  ); x[sel] = "jacaratia"             
    sel = (x %in% "mamica de porca"                ); x[sel] = "mamica-de-porca"       
-   sel = (x %in% "mamonini"                       ); x[sel] = "mamoninha"             
+   sel = (x %in% "mamominho"                      ); x[sel] = "mamoninha"
+   sel = (x %in% "mamonini"                       ); x[sel] = "mamoninha"
    sel = (x %in% "mandioqueiro"                   ); x[sel] = "mandioqueira"
    sel = (x %in% "mandioqueiro escamoso"          ); x[sel] = "mandioqueira"
+   sel = (x %in% "manguirana"                     ); x[sel] = "manguerana"
    sel = (x %in% "mangueira"                      ); x[sel] = "manguerana"
    sel = (x %in% "manguerano"                     ); x[sel] = "manguerana"
    sel = (x %in% "maparajuba"                     ); x[sel] = "parajuba"
@@ -413,8 +438,10 @@ standard.common.name <<- function(x){
    sel = (x %in% "maquira"                        ); x[sel] = "muiratinga"
    sel = (x %in% "maracata"                       ); x[sel] = "marassacaca"
    sel = (x %in% "maracatia"                      ); x[sel] = "muiracatiara"
+   sel = (x %in% "maracatiara rajada"             ); x[sel] = "maracatiara"
    sel = (x %in% "maracacaca"                     ); x[sel] = "marassacaca"
    sel = (x %in% "marasacaca"                     ); x[sel] = "marassacaca"
+   sel = (x %in% "marauba"                        ); x[sel] = NA_character_
    sel = (x %in% "marimari"                       ); x[sel] = "fava-marimari"
    sel = (x %in% "massaranduba"                   ); x[sel] = "macaranduba"
    sel = (x %in% "mata fome"                      ); x[sel] = "mata-fome"
@@ -426,9 +453,11 @@ standard.common.name <<- function(x){
    sel = (x %in% "mata pau+jito"                  ); x[sel] = "gito"
    sel = (x %in% "mata caldo"                     ); x[sel] = "mata-calado"
    sel = (x %in% "melanciera"                     ); x[sel] = "melancieira"
+   sel = (x %in% "mirapiranga"                    ); x[sel] = "muirapiranga"
    sel = (x %in% "morto"                          ); x[sel] = "morta"
    sel = (x %in% "morango de macaco"              ); x[sel] = "morango-de-macaco"
    sel = (x %in% "morango de morcego"             ); x[sel] = "morango-de-macaco"
+   sel = (x %in% "muiracacaco"                    ); x[sel] = NA_character_
    sel = (x %in% "muiratinga folha grande/amapa"  ); x[sel] = "muiratinga folha grande"
    sel = (x %in% "muiratinga fura fura"           ); x[sel] = "muiratinga fura-fura"
    sel = (x %in% "mulatero"                       ); x[sel] = "mulateiro"
@@ -441,6 +470,8 @@ standard.common.name <<- function(x){
    sel = (x %in% "mutama"                         ); x[sel] = "mutambo"
    sel = (x %in% "mutamba"                        ); x[sel] = "mutambo"
    sel = (x %in% "mututiassu"                     ); x[sel] = "mututi-acu"
+   sel = (x %in% "nao identificada"               ); x[sel] = NA_character_
+   sel = (x %in% "nao indetificada"               ); x[sel] = NA_character_
    sel = (x %in% "ni"                             ); x[sel] = NA_character_
    sel = (x %in% "orelha de burro"                ); x[sel] = "orelha-de-burro"
    sel = (x %in% "orelha de macaco"               ); x[sel] = "fava orelha-de-macaco"
@@ -474,7 +505,7 @@ standard.common.name <<- function(x){
    sel = (x %in% "pau de rego"                    ); x[sel] = "pau-de-remo"
    sel = (x %in% "pau de remo"                    ); x[sel] = "pau-de-remo"
    sel = (x %in% "pau de sangue"                  ); x[sel] = "pau-sangue"
-   sel = (x %in% "pau doce"                       ); x[sel] = "pau-doce"
+   sel = (x %in% "pau-doce"                       ); x[sel] = "pau doce"
    sel = (x %in% "pau jacare"                     ); x[sel] = "pau-jacare"
    sel = (x %in% "pau marfim"                     ); x[sel] = "pau-marfim"
    sel = (x %in% "pau mulato"                     ); x[sel] = "pau-mulato"
@@ -488,6 +519,7 @@ standard.common.name <<- function(x){
    sel = (x %in% "pau rego"                       ); x[sel] = "pau-de-remo"
    sel = (x %in% "pau sangue"                     ); x[sel] = "pau-sangue"
    sel = (x %in% "pereauna"                       ); x[sel] = "perebuna"
+   sel = (x %in% "pedra ume"                      ); x[sel] = "pedra ume-caa"
    sel = (x %in% "pedra umi"                      ); x[sel] = "pedra ume-caa"
    sel = (x %in% "pelo de cutia"                  ); x[sel] = "pelo-de-cutia"
    sel = (x %in% "pente de macaco"                ); x[sel] = "pente-de-macaco"
@@ -496,19 +528,23 @@ standard.common.name <<- function(x){
    sel = (x %in% "pepino do mato"                 ); x[sel] = "pepino-do-mato"
    sel = (x %in% "pepino-do-mato"                 ); x[sel] = "pepino-do-mato"
    sel = (x %in% "perna de moca"                  ); x[sel] = "perna-de-moca"
-   sel = (x %in% "piqui"                          ); x[sel] = "piquia"  
+   sel = (x %in% "pincel de macaco"               ); x[sel] = "pente-de-macaco"
+   sel = (x %in% "piqui"                          ); x[sel] = "piquia"
    sel = (x %in% "piqui rosa"                     ); x[sel] = "piquia"
    sel = (x %in% "piquiazeiro"                    ); x[sel] = "piquia"
    sel = (x %in% "pitomba da mata"                ); x[sel] = "pitomba-da-mata"
+   sel = (x %in% "pocoro"                         ); x[sel] = NA_character_
    sel = (x %in% "pororoca"                       ); x[sel] = "jutai-pororoca"
    sel = (x %in% "prapara"                        ); x[sel] = "parapara"
    sel = (x %in% "pratudo"                        ); x[sel] = "pau-para-tudo"
+   sel = (x %in% "puriu"                          ); x[sel] = "purui"
    sel = (x %in% "puruirana/purui branco"         ); x[sel] = "purui branco"
    sel = (x %in% "quaiquara"                      ); x[sel] = "acariquara"
    sel = (x %in% "quariquara"                     ); x[sel] = "acariquara"
    sel = (x %in% "quariquarana"                   ); x[sel] = "acariquara"
    sel = (x %in% "quariquari"                     ); x[sel] = "acariquara"            
-   sel = (x %in% "quari quari"                    ); x[sel] = "acariquara"            
+   sel = (x %in% "quari quari"                    ); x[sel] = "acariquara"
+   sel = (x %in% "quariuba"                       ); x[sel] = "quaruba"
    sel = (x %in% "quaruba cedro"                  ); x[sel] = "quaruba-cedro"
    sel = (x %in% "quebrado"                       ); x[sel] = NA_character_
    sel = (x %in% "quina"                          ); x[sel] = "quinarana" 
@@ -536,7 +572,9 @@ standard.common.name <<- function(x){
    sel = (x %in% "seringa branco"                 ); x[sel] = "seringueira"           
    sel = (x %in% "seringa verdadeira"             ); x[sel] = "seringueira"           
    sel = (x %in% "seringarana preta"              ); x[sel] = "seringarana"           
-   sel = (x %in% "seritinga"                      ); x[sel] = "seringueira"           
+   sel = (x %in% "seringuarana"                   ); x[sel] = "seringarana"
+   sel = (x %in% "seritinga"                      ); x[sel] = "seringueira"
+   sel = (x %in% "sorvao"                         ); x[sel] = "sorva"
    sel = (x %in% "sorveira"                       ); x[sel] = "sorva"
    sel = (x %in% "sorveira leite"                 ); x[sel] = "sorva"                 
    sel = (x %in% "sorvo"                          ); x[sel] = "sorva"
@@ -551,13 +589,18 @@ standard.common.name <<- function(x){
    sel = (x %in% "tachi preto ???"                ); x[sel] = "tachi preto"
    sel = (x %in% "tachi preto folh"               ); x[sel] = "tachi preto"
    sel = (x %in% "tachi vermelha"                 ); x[sel] = "tachi vermelho"        
-   sel = (x %in% "talquari"                       ); x[sel] = "tauari"                
-   sel = (x %in% "tamaquarao"                     ); x[sel] = "tamaquare"             
+   sel = (x %in% "taguari"                        ); x[sel] = "taquari"
+   sel = (x %in% "talquari"                       ); x[sel] = "taquari"
+   sel = (x %in% "tamaguare"                      ); x[sel] = "tamaquare"
+   sel = (x %in% "tamaquarao"                     ); x[sel] = "tamaquare"
    sel = (x %in% "tamarindu"                      ); x[sel] = "tamarindo"              
    sel = (x %in% "tamauma"                        ); x[sel] = "sumauma"             
    sel = (x %in% "tamboril"                       ); x[sel] = "fava-tamboril"
    sel = (x %in% "tamboriul"                      ); x[sel] = "fava-tamboril"
    sel = (x %in% "tanari roxo"                    ); x[sel] = "tauari"
+   sel = (x %in% "tanenbuco"                      ); x[sel] = "tanimbuca"
+   sel = (x %in% "tanenbuco amarelo"              ); x[sel] = "tanimbuca amarela"
+   sel = (x %in% "tanibuca"                       ); x[sel] = "tanimbuca"
    sel = (x %in% "tangarana"                      ); x[sel] = "tangirana"
    sel = (x %in% "tanimbuca"                      ); x[sel] = "tanibuca"
    sel = (x %in% "tapiririca"                     ); x[sel] = "tatapiririca"
@@ -565,25 +608,35 @@ standard.common.name <<- function(x){
    sel = (x %in% "tatapiririca verm."             ); x[sel] = "tatapiririca vermelha"
    sel = (x %in% "taturana"                       ); x[sel] = "taturuba"
    sel = (x %in% "tauri"                          ); x[sel] = "tauari"                
+   sel = (x %in% "tento cachua"                   ); x[sel] = "tento caxua"
    sel = (x %in% "tento folha"                    ); x[sel] = "tento"
    sel = (x %in% "tento foha grauda"              ); x[sel] = "tento folha grauda"    
-   sel = (x %in% "tintero"                        ); x[sel] = "tinteiro"              
+   sel = (x %in% "timbora"                        ); x[sel] = "timborana"
+   sel = (x %in% "tintero"                        ); x[sel] = "tinteiro"
    sel = (x %in% "titiriba"                       ); x[sel] = "cucutitiriba"              
    sel = (x %in% "tucuma acu"                     ); x[sel] = "tucuma-acu"
-   sel = (x %in% "ucuarana"                       ); x[sel] = "urucurana"             
-   sel = (x %in% "ucuuba da varzea"               ); x[sel] = "ucuuba-da-varzea"    
+   sel = (x %in% "uchi coroa"                     ); x[sel] = "uchi-curua"
+   sel = (x %in% "ucuarana"                       ); x[sel] = "urucurana"
+   sel = (x %in% "ucurana"                        ); x[sel] = "urucurana"
+   sel = (x %in% "ucuuba da varzea"               ); x[sel] = "ucuuba-da-varzea"
    sel = (x %in% "ucuuba da terra firme"          ); x[sel] = "ucuuba terra-firme"    
+   sel = (x %in% "ucuuba folha grande"            ); x[sel] = "ucuuba"
    sel = (x %in% "ucuuba terra firme"             ); x[sel] = "ucuuba terra-firme"    
    sel = (x %in% "ucuuba tf"                      ); x[sel] = "ucuuba terra-firme"    
-   sel = (x %in% "ucuuba vermelho"                ); x[sel] = "ucuuba vermelha"       
+   sel = (x %in% "ucuuba t.f"                     ); x[sel] = "ucuuba terra-firme"
+   sel = (x %in% "ucuuba vermelho"                ); x[sel] = "ucuuba vermelha"
    sel = (x %in% "umbia"                          ); x[sel] = "goiabarana"
    sel = (x %in% "unha de vaca"                   ); x[sel] = "pata-de-vaca"          
    sel = (x %in% "uruci"                          ); x[sel] = "muruci"
    sel = (x %in% "urucu"                          ); x[sel] = "urucum"
+   sel = (x %in% "urucurana branco"               ); x[sel] = "urucurana branca"
    sel = (x %in% "urucuri"                        ); x[sel] = "urucum"
    sel = (x %in% "uruucurana"                     ); x[sel] = "urucurana"             
    sel = (x %in% "virola"                         ); x[sel] = "ucuuba"
+   sel = (x %in% "virola(ucuuba)"                 ); x[sel] = "ucuuba"
+   sel = (x %in% "virola/ucuuba preta"            ); x[sel] = "ucuuba preta"
    sel = (x %in% "xaonoquito"                     ); x[sel] = "pau vermelho"
+   sel = (x %in% "zaguari"                        ); x[sel] = "taquari"
    #---------------------------------------------------------------------------------------#
 
    return(x)
@@ -629,6 +682,29 @@ standard.scientific.name <<- function(dat,nafill=TRUE){
                                  , stringsAsFactors = FALSE
                                  )#end read.csv
    nsynonym            = nrow(synonym)
+   #---------------------------------------------------------------------------------------#
+   #     Make sure there is no circularity in the synonym table.                           #
+   #---------------------------------------------------------------------------------------#
+   circular = which(synonym$accepted %in% synonym$synonym)
+   if (length(circular) %gt% 0L){
+      toshow      = synonym[circular,,drop=FALSE]
+      toshow$line = circular
+      toshow      = toshow[,c("line","synonym","accepted"),drop=FALSE]
+      cat0("-----------------------------------------------------------")
+      cat0(" Circularity detected in file \"synonym_taxon.csv\":")
+      cat0(" ")
+      print(toshow,quote=FALSE)
+      cat0("-----------------------------------------------------------")
+      cat0(" ")
+      browser()
+   }#end if (length(circular) %gt% 0L)
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #     Replace synonyms with accepted names.                                             #
+   #---------------------------------------------------------------------------------------#
    idx                 = match(g.s,synonym$synonym)
    sel                 = is.finite(idx)
    g.s[sel]            = synonym$accepted[idx[sel]]
@@ -692,7 +768,7 @@ standard.scientific.name <<- function(dat,nafill=TRUE){
    #---------------------------------------------------------------------------------------#
 
    return(dat)
-}#end function standard.common.name
+}#end function standard.scientific.name
 #==========================================================================================#
 #==========================================================================================#
 
@@ -879,7 +955,7 @@ standard.order.phylum.name <<- function(datum,nafill=TRUE){
    #---------------------------------------------------------------------------------------#
    idx = which( ( ! (is.na(datum$family) | (datum$family %in% unknown.family) ) ) 
               & ( ! datum$family %in% f2o$family )
-              & ( regexpr(pattern=unknown.family,text=datum$family,ignore.case=T) %==% -1)
+              & ( regexpr(pattern=unknown.family,text=datum$family,ignore.case=T) %eq% -1)
               )#end which
    if (length(idx) > 0){
      tofill.fam = t(t(sort(unique(datum$family[idx]))))
@@ -1541,7 +1617,7 @@ find.wood.density <<- function( datum
    }else if (is.character(weight) && (length(weight) == 1)){
       #----- Character with column name was provided. -------------------------------------#
       if (weight %in% names(datum)){
-         wgtfac = ifelse(datum[[weight]] %>% 0, datum[[weight]], 0)
+         wgtfac = ifelse(datum[[weight]] %gt% 0, datum[[weight]], 0)
       }else{
          stop(paste0(" Weight Variable name (",weight,") not found in datum!"))
       }#end if
@@ -1551,13 +1627,13 @@ find.wood.density <<- function( datum
       if (! (weight %wr% c(1,ncol(datum)))){
          stop(paste0(" Weight column index (",weight,") doesn't make sense"))
       }else if (is.numeric(datum[,weight])){
-         wgtfac = ifelse(datum[,weight] %>% 0, datum[,weight], 0)
+         wgtfac = ifelse(datum[,weight] %gt% 0, datum[,weight], 0)
       }else{
          stop(paste0(" Column ",weight," of data frame is not numeric!"))
       }#end if
       #------------------------------------------------------------------------------------#
    }else if (is.numeric(weight) && (length(weight) == nrow(datum))){
-      wgtfac = ifelse(weight %>% 0, weight, 0)
+      wgtfac = ifelse(weight %gt% 0, weight, 0)
    }else{
       stop("Variable weight is not properly set!")
    }#end if (is.null(weight))
@@ -2004,7 +2080,7 @@ find.trait <<- function( datum
    }else if (is.character(weight) && (length(weight) == 1)){
       #----- Character with column name was provided. -------------------------------------#
       if (weight %in% names(datum)){
-         wgtfac = ifelse(datum[[weight]] %>% 0, datum[[weight]], 0)
+         wgtfac = ifelse(datum[[weight]] %gt% 0, datum[[weight]], 0)
       }else{
          stop(paste0(" Weight Variable name (",weight,") not found in datum!"))
       }#end if
@@ -2014,13 +2090,13 @@ find.trait <<- function( datum
       if (! (weight %wr% c(1,ncol(datum)))){
          stop(paste0(" Weight column index (",weight,") doesn't make sense"))
       }else if (is.numeric(datum[,weight])){
-         wgtfac = ifelse(datum[,weight] %>% 0, datum[,weight], 0)
+         wgtfac = ifelse(datum[,weight] %gt% 0, datum[,weight], 0)
       }else{
          stop(paste0(" Column ",weight," of data frame is not numeric!"))
       }#end if
       #------------------------------------------------------------------------------------#
    }else if (is.numeric(weight) && (length(weight) == nrow(datum))){
-      wgtfac = ifelse(weight %>% 0, weight, 0)
+      wgtfac = ifelse(weight %gt% 0, weight, 0)
    }else{
       stop("Variable weight is not properly set!")
    }#end if (is.null(weight))
@@ -2044,6 +2120,8 @@ find.trait <<- function( datum
    #     Read data base to fill traits.                                                    #
    #---------------------------------------------------------------------------------------#
    tdb  = read.csv(file=tdb.csv,header=TRUE,stringsAsFactors=FALSE)
+   keep = is.finite(tdb[[trait]])
+   tdb  = tdb[keep,,drop=FALSE]
    #---------------------------------------------------------------------------------------#
 
 
@@ -2675,6 +2753,10 @@ keep.gen.spe.only <<- function(x,out=c("both","genus","species"),is.debug=FALSE)
 
       #----- Separate the bogus _form2 that appears in some Paracou species. --------------#
       x = gsub(pattern="_form2$",replacement=" form2",x=x)
+      #------------------------------------------------------------------------------------#
+
+      #----- Remove "indet" that may appear in from of an unknown genus. ------------------#
+      x = gsub(pattern="^indet",replacement="",x=x)
       #------------------------------------------------------------------------------------#
 
 

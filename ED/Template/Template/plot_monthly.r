@@ -591,21 +591,57 @@ for (place in myplaces){
    #---------------------------------------------------------------------------------------#
 
 
+
    #---------------------------------------------------------------------------------------#
-   #     Replace the mortality and recruitment exponential rates by the "interests" rates. #
+   #     Convert mortality and recruitment so it is scaled between 0 and 100%.             #
    #---------------------------------------------------------------------------------------#
-   szpft$mort          = 100. * (1.0 - exp(- szpft$mort         )      )
-   szpft$dimort        = 100. * (1.0 - exp(- szpft$dimort       )      )
-   szpft$ncbmort       = 100. * (1.0 - exp(- szpft$ncbmort      )      )
-   szpft$recrpft       = 100. * (      exp(  szpft$recr         ) - 1.0)
-   szpft$agb.mort      = 100. * (1.0 - exp(- szpft$agb.mort     )      )
-   szpft$agb.dimort    = 100. * (1.0 - exp(- szpft$agb.dimort   )      )
-   szpft$agb.ncbmort   = 100. * (1.0 - exp(- szpft$agb.ncbmort  )      )
-   szpft$agb.recrpft   = 100. * (      exp(  szpft$agb.recr     ) - 1.0)
-   szpft$bsa.mort      = 100. * (1.0 - exp(- szpft$bsa.mort     )      )
-   szpft$bsa.dimort    = 100. * (1.0 - exp(- szpft$bsa.dimort   )      )
-   szpft$bsa.ncbmort   = 100. * (1.0 - exp(- szpft$bsa.ncbmort  )      )
-   szpft$bsa.recrpft   = 100. * (      exp(  szpft$bsa.recr     ) - 1.0)
+   struct    = c("szpft","emean","mmean","ymean")
+   struct    = struct[struct %in% ls()]
+   nstruct   = length(struct)
+   mort.list = c(    "mort",    "dimort",    "ncbmort",    "hydmort","fire.lethal"
+                 ,"agb.mort","agb.dimort","agb.ncbmort","agb.hydmort"
+                 ,"bsa.mort","bsa.dimort","bsa.ncbmort","bsa.hydmort"
+                 )#end c
+   recr.list = c(    "recr","agb.recr","bsa.recr")
+   for (s in sequence(nstruct)){
+      #----- Copy structure to a temporary variable. --------------------------------------#
+      stnow = struct[s]
+      xmean = get(struct[s])
+      #------------------------------------------------------------------------------------#
+
+
+      #----- Select mortality and recruitment variables to update. ------------------------#
+      mort.check  = mort.list[mort.list %in% names(xmean)]
+      nmort.check = length(mort.check)
+      recr.check  = recr.list[recr.list %in% names(xmean)]
+      nrecr.check = length(recr.check)
+      #------------------------------------------------------------------------------------#
+
+
+      #------------------------------------------------------------------------------------#
+      #     Loop through mortality variables, make them "interest rates".                  #
+      #------------------------------------------------------------------------------------#
+      for (m in sequence(nmort.check)){
+         mort.now = mort.check[m]
+         xmean[[mort.now]] = 100. * ( 1.0 - exp( - xmean[[mort.now]]) )
+      }#end for (m in sequence(nmort.check))
+      #------------------------------------------------------------------------------------#
+
+
+      #------------------------------------------------------------------------------------#
+      #     Loop through recruitment variables, make them "interest rates".                #
+      #------------------------------------------------------------------------------------#
+      for (r in sequence(nrecr.check)){
+         recr.now = recr.check[r]
+         xmean[[recr.now]] = 100. * ( exp( + xmean[[recr.now]] ) - 1.0)
+      }#end for (m in sequence(nmort.check))
+      #------------------------------------------------------------------------------------#
+
+
+      #------ Update structure. -----------------------------------------------------------#
+      dummy = assign(x=stnow,value=xmean)
+      #------------------------------------------------------------------------------------#
+   }#end for (s in seq_along(struct))
    #---------------------------------------------------------------------------------------#
 
 
@@ -732,10 +768,10 @@ for (place in myplaces){
                     , na.rm  = TRUE
                     )#end apply
    distave   = apply(X=lu$dist,MARGIN=c(2,3),FUN=mean)
-   selpftl   = pftave  %>% 0.
-   selpfts   = pftave  %>% 0. & (! (pft$key %in% "ALL") )
-   sellu     = luave   %>% 0.
-   seldist   = distave %>% 0.
+   selpftl   = pftave  %gt% 0.
+   selpfts   = pftave  %gt% 0. & (! (pft$key %in% "ALL") )
+   sellu     = luave   %gt% 0.
+   seldist   = distave %gt% 0.
    n.selpftl = sum(selpftl)
    n.selpfts = sum(selpfts)
    n.sellu   = sum(sellu  )
@@ -798,7 +834,7 @@ for (place in myplaces){
             thisvar = szpft[[vnam]][,ndbh+1,]
             if (plog){
                #----- Eliminate non-positive values in case it is a log plot. -------------#
-               badlog          = (! (thisvar %>% 0) ) & (! stackit)
+               badlog          = (! (thisvar %gt% 0) ) & (! stackit)
                thisvar[badlog] = NA_real_
             }#end if
          }else{
@@ -817,6 +853,7 @@ for (place in myplaces){
                bottom = rep(0.,times=ntimes)
             }#end if
 
+            thisvar = ifelse(test=is.finite(thisvar),yes=thisvar,no=0.)
             thisvar = cbind(bottom,thisvar[,sequence(npft),drop=FALSE])
             thisvar = t(apply(X=thisvar,MARGIN=1,FUN=cumsum))
          }#end if (stackit)
@@ -992,7 +1029,7 @@ for (place in myplaces){
          thisvar = szpft[[vnam]]
          if (plog){
             xylog           = "y"
-            badlog          = ( ! (thisvar %>% 0) ) & (! stackit)
+            badlog          = ( ! (thisvar %gt% 0) ) & (! stackit)
             thisvar[badlog] = NA_real_
          }else{
             xylog           = ""
@@ -1061,6 +1098,7 @@ for (place in myplaces){
                   bottom = rep(0.,times=ntimes)
                }#end if
                thisdbh = thisvar[,,p]
+               thisdbh = ifelse(test=is.finite(thisdbh),yes=thisdbh,no=0.)
                thisdbh = cbind(bottom,thisdbh[,sequence(ndbh),drop=FALSE])
                thisdbh = t(apply(X=thisdbh,MARGIN=1,FUN=cumsum))
             }else{
@@ -1912,7 +1950,7 @@ for (place in myplaces){
             thisvar = lu[[vnam]]
             if (plog){
                xylog           = "y"
-               badlog          = ! (thisvar %>% 0)
+               badlog          = ! (thisvar %gt% 0)
                thisvar[badlog] = NA
             }else{
                xylog           = ""
@@ -2183,7 +2221,8 @@ for (place in myplaces){
       legpos       = themenow$legpos
       plotit       = themenow$emean
       ylimit.fix   = themenow$emean.lim
-   
+      thstack      = themenow$stack
+
       if (plotit){
 
          #---------------------------------------------------------------------------------#
@@ -2191,11 +2230,50 @@ for (place in myplaces){
          #---------------------------------------------------------------------------------#
          outdir = file.path(outpref,"theme_emean")
          if (! file.exists(outdir)) dir.create(outdir)
-         cat0("      + ",group," time series for several variables.")
+         cat0("        ~ ",group," time series for several variables.")
+         #---------------------------------------------------------------------------------#
+
 
 
          #----- Define the number of layers. ----------------------------------------------#
          nlayers   = length(vnames)
+         #---------------------------------------------------------------------------------#
+
+
+         #---------------------------------------------------------------------------------#
+         #     Create a matrix with all the layers.                                        #
+         #---------------------------------------------------------------------------------#
+         ndat   = length(emean[[vnames[1]]])
+         if (thstack){
+            #----- Initialise the data with all layers. -----------------------------------#
+            ytheme = matrix(data=0,nrow=ndat,ncol=nlayers+1)
+            #------------------------------------------------------------------------------#
+
+
+            #----- Add layers. ------------------------------------------------------------#
+            layer.loop = sequence(nlayers+1)[-1]
+            for (l in layer.loop){
+               #----- Layers are added as a stack. ----------------------------------------#
+               v.vnow     = vnames[l-1]
+               ytheme[,l] = ytheme[,l-1] + emean[[v.vnow]]
+               #---------------------------------------------------------------------------#
+            }#end for (l in sequence(nlayers))
+            #------------------------------------------------------------------------------#
+         }else{
+            #----- Initialise the data with all layers. -----------------------------------#
+            ytheme = matrix(data=NA_real_,nrow=ndat,ncol=nlayers  )
+            #------------------------------------------------------------------------------#
+
+
+            #----- Add layers. ------------------------------------------------------------#
+            for (l in sequence(nlayers)){
+               #----- Layers are added as they are in the original values. ----------------#
+               v.vnow     = vnames[l]
+               ytheme[,l] = emean[[v.vnow]]
+               #---------------------------------------------------------------------------#
+            }#end for (l in sequence(nlayers))
+            #------------------------------------------------------------------------------#
+         }#end if (thstack)
          #---------------------------------------------------------------------------------#
 
 
@@ -2206,9 +2284,7 @@ for (place in myplaces){
          #---------------------------------------------------------------------------------#
          xlimit   = pretty.xylim(u=as.numeric(datum$tomonth),fracexp=0.0,is.log=FALSE)
          if (any(! is.finite(ylimit.fix))){
-            ylimit    = NULL
-            for (l in 1:nlayers) ylimit  = c(ylimit,emean[[vnames[l]]])
-            ylimit = pretty.xylim(u=ylimit,fracexp=0.0,is.log=plog)
+            ylimit = pretty.xylim(u=c(ytheme),fracexp=0.0,is.log=plog)
          }else{
             ylimit = ylimit.fix
          }#end if
@@ -2264,15 +2340,33 @@ for (place in myplaces){
             par(mar=c(0.1,4.6,0.1,2.1))
             plot.new()
             plot.window(xlim=c(0,1),ylim=c(0,1))
-            legend( x      = "bottom"
-                  , inset  = 0.0
-                  , legend = description
-                  , col    = lcolours
-                  , lwd    = llwd
-                  , ncol   = min(3,pretty.box(nlayers)$ncol)
-                  , xpd    = TRUE
-                  , bty    = "n"
-                  )#end legend
+            if (thstack){
+               #----- Fill legend. --------------------------------------------------------#
+               legend( x       = "bottom"
+                     , inset   = 0.0
+                     , legend  = rev(description)
+                     , fill    = rev(lcolours   )
+                     , border  = "transparent"
+                     , density = -1
+                     , xpd     = TRUE
+                     , cex     = 0.75
+                     , bty     = "n"
+                     )#end legend
+               #---------------------------------------------------------------------------#
+            }else{
+               #----- Line legend. --------------------------------------------------------#
+               legend( x      = "bottom"
+                     , inset  = 0.0
+                     , legend = description
+                     , col    = lcolours
+                     , lwd    = llwd
+                     , ncol   = 1
+                     , xpd    = TRUE
+                     , cex    = 0.75
+                     , bty    = "n"
+                     )#end legend
+               #---------------------------------------------------------------------------#
+            }#end if (thstack)
             #------------------------------------------------------------------------------#
 
 
@@ -2298,12 +2392,33 @@ for (place in myplaces){
             if (plotgrid){ 
                abline(v=whenplot8$levels,h=axTicks(side=2),col=grid.colour,lty="solid")
             }#end if
-            #----- Plot lines. ------------------------------------------------------------#
-            for (l in sequence(nlayers)){
-               thisvar = emean[[vnames[l]]]
-               points(x=datum$tomonth,y=thisvar,col=lcolours[l],lwd=llwd[l],type=ltype
-                     ,pch=16,cex=0.8)
-            }#end for
+            #----- Plot data. -------------------------------------------------------------#
+            if (thstack){
+               #----- Plot polygons. ------------------------------------------------------#
+               for (l in sequence(nlayers)){
+                  polygon( x       = c(datum$tomonth,rev(datum$tomonth))
+                         , y       = c(ytheme[,l]   ,rev(ytheme [,l+1]))
+                         , col     = lcolours[l]
+                         , border  = "transparent"
+                         , density = -1
+                         , lty     = "solid"
+                         )#end points
+               }#end for (l in sequence(nlayers))
+               #---------------------------------------------------------------------------#
+            }else{
+               #----- Plot lines. ---------------------------------------------------------#
+               for (l in sequence(nlayers)){
+                  points( x    = datum$tomonth
+                        , y    = ytheme  [,l]
+                        , col  = lcolours[ l]
+                        , lwd  = llwd    [ l]
+                        , type = ltype
+                        , pch  = 16
+                        , cex  = 0.8
+                        )#end points
+               }#end for (l in sequence(nlayers))
+               #---------------------------------------------------------------------------#
+            }#end if (thstack)
             #------------------------------------------------------------------------------#
 
 
@@ -2340,6 +2455,7 @@ for (place in myplaces){
       legpos       = themenow$legpos
       plotit       = themenow$mmean
       ylimit.fix   = themenow$mmean.lim
+      thstack      = themenow$stack
    
       if (plotit){
 
@@ -2348,11 +2464,48 @@ for (place in myplaces){
          #---------------------------------------------------------------------------------#
          outdir = file.path(outpref,"theme_mmean")
          if (! file.exists(outdir)) dir.create(outdir)
-         cat0("      + ",group," time series for several variables.")
+         cat0("        ~ ",group," time series for several variables.")
 
 
          #----- Define the number of layers. ----------------------------------------------#
          nlayers   = length(vnames)
+         #---------------------------------------------------------------------------------#
+
+
+         #---------------------------------------------------------------------------------#
+         #     Create a matrix with all the layers.                                        #
+         #---------------------------------------------------------------------------------#
+         ndat   = length(mmean[[vnames[1]]])
+         if (thstack){
+            #----- Initialise the data with all layers. -----------------------------------#
+            ytheme = matrix(data=0,nrow=ndat,ncol=nlayers+1)
+            #------------------------------------------------------------------------------#
+
+
+            #----- Add layers. ------------------------------------------------------------#
+            layer.loop = sequence(nlayers+1)[-1]
+            for (l in layer.loop){
+               #----- Layers are added as a stack. ----------------------------------------#
+               v.vnow     = vnames[l-1]
+               ytheme[,l] = ytheme[,l-1] + mmean[[v.vnow]]
+               #---------------------------------------------------------------------------#
+            }#end for (l in sequence(nlayers))
+            #------------------------------------------------------------------------------#
+         }else{
+            #----- Initialise the data with all layers. -----------------------------------#
+            ytheme = matrix(data=NA_real_,nrow=ndat,ncol=nlayers  )
+            #------------------------------------------------------------------------------#
+
+
+            #----- Add layers. ------------------------------------------------------------#
+            for (l in sequence(nlayers)){
+               #----- Layers are added as they are in the original values. ----------------#
+               v.vnow     = vnames[l]
+               ytheme[,l] = mmean[[v.vnow]]
+               #---------------------------------------------------------------------------#
+            }#end for (l in sequence(nlayers))
+            #------------------------------------------------------------------------------#
+         }#end if (thstack)
          #---------------------------------------------------------------------------------#
 
 
@@ -2363,9 +2516,7 @@ for (place in myplaces){
          #---------------------------------------------------------------------------------#
          xlimit    = pretty.xylim(u=montmont,fracexp=0.0,is.log=plog)
          if (any (! is.finite(ylimit.fix))){
-            ylimit    = NULL
-            for (l in 1:nlayers) ylimit  = c(ylimit,mmean[[vnames[l]]])
-            ylimit = pretty.xylim(u=ylimit,fracexp=0.0,is.log=plog)
+            ylimit = pretty.xylim(u=c(ytheme),fracexp=0.0,is.log=plog)
          }else{
             ylimit = ylimit.fix
          }#end if
@@ -2421,17 +2572,33 @@ for (place in myplaces){
             par(mar=c(0.1,4.6,0.1,2.1))
             plot.new()
             plot.window(xlim=c(0,1),ylim=c(0,1))
-            legend( x      = "bottom"
-                  , inset  = 0.0
-                  , legend = description
-                  , col    = lcolours
-                  , lwd    = llwd
-                  , pch    = 16
-                  , ncol   = min(3,pretty.box(nlayers)$ncol)
-                  , cex    = 0.9*cex.ptsz
-                  , xpd    = TRUE
-                  , bty    = "n"
-                  )#end legend
+            if (thstack){
+               #----- Fill legend. --------------------------------------------------------#
+               legend( x       = "bottom"
+                     , inset   = 0.0
+                     , legend  = rev(description)
+                     , fill    = rev(lcolours   )
+                     , border  = "transparent"
+                     , density = -1
+                     , xpd     = TRUE
+                     , cex     = 0.75
+                     , bty     = "n"
+                     )#end legend
+               #---------------------------------------------------------------------------#
+            }else{
+               #----- Line legend. --------------------------------------------------------#
+               legend( x      = "bottom"
+                     , inset  = 0.0
+                     , legend = description
+                     , col    = lcolours
+                     , lwd    = llwd
+                     , ncol   = 1
+                     , xpd    = TRUE
+                     , cex    = 0.75
+                     , bty    = "n"
+                     )#end legend
+               #---------------------------------------------------------------------------#
+            }#end if (thstack)
             #------------------------------------------------------------------------------#
 
 
@@ -2457,12 +2624,33 @@ for (place in myplaces){
             if (plotgrid){ 
                abline(v=mplot$levels,h=axTicks(side=2),col=grid.colour,lty="solid")
             }#end if
-            #----- Plot lines. ------------------------------------------------------------#
-            for (l in sequence(nlayers)){
-               thisvar = mmean[[vnames[l]]]
-               points(x=montmont,y=thisvar,col=lcolours[l],lwd=llwd[l],type=ltype
-                     ,pch=16,cex=0.8)
-            }#end for
+            #----- Plot data. -------------------------------------------------------------#
+            if (thstack){
+               #----- Plot polygons. ------------------------------------------------------#
+               for (l in sequence(nlayers)){
+                  polygon( x       = c(montmont  ,rev(montmont))
+                         , y       = c(ytheme[,l],rev(ytheme [,l+1]))
+                         , col     = lcolours[l]
+                         , border  = "transparent"
+                         , density = -1
+                         , lty     = "solid"
+                         )#end points
+               }#end for (l in sequence(nlayers))
+               #---------------------------------------------------------------------------#
+            }else{
+               #----- Plot lines. ---------------------------------------------------------#
+               for (l in sequence(nlayers)){
+                  points( x    = montmont
+                        , y    = ytheme  [,l]
+                        , col  = lcolours[ l]
+                        , lwd  = llwd    [ l]
+                        , type = ltype
+                        , pch  = 16
+                        , cex  = 0.8
+                        )#end points
+               }#end for (l in sequence(nlayers))
+               #---------------------------------------------------------------------------#
+            }#end if (thstack)
             #------------------------------------------------------------------------------#
 
 
@@ -2498,6 +2686,7 @@ for (place in myplaces){
       unit         = themenow$unit  
       legpos       = themenow$legpos
       plotit       = themenow$qmean 
+      thstack      = themenow$stack
       if (plog){ 
          xylog = "y"
       }else{
@@ -2514,16 +2703,64 @@ for (place in myplaces){
          if (! file.exists(outdir)) dir.create(outdir)
          outtheme = file.path(outdir,prefix)
          if (! file.exists(outtheme)) dir.create(outtheme)
-         cat0("      + ",group," diurnal cycle for several variables.")
+         cat0("        ~ ",group," diurnal cycle for several variables.")
 
 
          #----- Define the number of layers. ----------------------------------------------#
          nlayers   = length(vnames)
-         xlimit    = range(thisday)
-         ylimit    = NULL
-         for (l in sequence(nlayers)) ylimit = c(ylimit,umean[[vnames[l]]])
-         ylimit = pretty.xylim(u=ylimit,fracexp=0.0,is.log=FALSE)
          #---------------------------------------------------------------------------------#
+
+
+
+
+         #---------------------------------------------------------------------------------#
+         #     Create a matrix with all the layers.                                        #
+         #---------------------------------------------------------------------------------#
+         if (thstack){
+            #----- Initialise the data with all layers. -----------------------------------#
+            ytheme = array(data=0,dim=c(dim(umean[[vnames[1]]]),nlayers+1))
+            #------------------------------------------------------------------------------#
+
+
+            #----- Add layers. ------------------------------------------------------------#
+            layer.loop = sequence(nlayers+1)[-1]
+            for (l in layer.loop){
+               #----- Layers are added as a stack. ----------------------------------------#
+               v.vnow      = vnames[l-1]
+               ytheme[,,l] = ytheme[,,l-1] + umean[[v.vnow]]
+               #---------------------------------------------------------------------------#
+            }#end for (l in sequence(nlayers))
+            #------------------------------------------------------------------------------#
+         }else{
+            #----- Initialise the data with all layers. -----------------------------------#
+             ytheme = array(data=0,dim=c(dim(umean[[vnames[1]]]),nlayers))
+            #------------------------------------------------------------------------------#
+
+
+            #----- Add layers. ------------------------------------------------------------#
+            for (l in sequence(nlayers)){
+               #----- Layers are added as they are in the original values. ----------------#
+               v.vnow      = vnames[l]
+               ytheme[,,l] = umean[[v.vnow]]
+               #---------------------------------------------------------------------------#
+            }#end for (l in sequence(nlayers))
+            #------------------------------------------------------------------------------#
+         }#end if (thstack)
+         #---------------------------------------------------------------------------------#
+
+
+
+         #----- Append the first hour of the day at the end. ------------------------------#
+         ytheme = abind(ytheme,ytheme[,1,,drop=FALSE],along=2)
+         #---------------------------------------------------------------------------------#
+
+
+
+         #------ Find limits. -------------------------------------------------------------#
+         xlimit = range(thisday)
+         ylimit = pretty.xylim(u=c(ytheme),fracexp=0.0,is.log=FALSE)
+         #---------------------------------------------------------------------------------#
+
 
 
          #---------------------------------------------------------------------------------#
@@ -2574,15 +2811,33 @@ for (place in myplaces){
                par(mar=c(0.1,4.6,0.1,2.1))
                plot.new()
                plot.window(xlim=c(0,1),ylim=c(0,1))
-               legend( x      = "bottom"
-                     , inset  = 0.0
-                     , legend = description
-                     , col    = lcolours
-                     , lwd    = llwd
-                     , ncol   = min(3,pretty.box(nlayers)$ncol)
-                     , xpd    = TRUE
-                     , bty    = "n"
-                     )#end legend
+               if (thstack){
+                  #----- Fill legend. -----------------------------------------------------#
+                  legend( x       = "bottom"
+                        , inset   = 0.0
+                        , legend  = rev(description)
+                        , fill    = rev(lcolours   )
+                        , border  = "transparent"
+                        , density = -1
+                        , xpd     = TRUE
+                        , cex     = 0.75
+                        , bty     = "n"
+                        )#end legend
+                  #------------------------------------------------------------------------#
+               }else{
+                  #----- Line legend. -----------------------------------------------------#
+                  legend( x      = "bottom"
+                        , inset  = 0.0
+                        , legend = description
+                        , col    = lcolours
+                        , lwd    = llwd
+                        , ncol   = 1
+                        , xpd    = TRUE
+                        , cex    = 0.75
+                        , bty    = "n"
+                        )#end legend
+                  #------------------------------------------------------------------------#
+               }#end if (thstack)
                #---------------------------------------------------------------------------#
 
 
@@ -2608,14 +2863,35 @@ for (place in myplaces){
                if (plotgrid){ 
                   abline(v=uplot$levels,h=axTicks(side=2),col=grid.colour,lty="solid")
                }#end if
-               #----- Plot lines. ---------------------------------------------------------#
-               for (l in sequence(nlayers)){
-                  thisvar = umean[[vnames[l]]]
-                  thisvar = cbind(thisvar[,ndcycle],thisvar)
-                  points(x=thisday,y=thisvar[pmon,],col=lcolours[l]
-                        ,lwd=llwd[l],type=ltype,pch=16)
-               }#end for
+               #----- Plot data. ----------------------------------------------------------#
+               if (thstack){
+                  #----- Plot polygons. ---------------------------------------------------#
+                  for (l in sequence(nlayers)){
+                     polygon( x       = c(thisday        ,rev(thisday          ))
+                            , y       = c(ytheme[pmon,,l],rev(ytheme[pmon,,l+1]))
+                            , col     = lcolours[l]
+                            , border  = "transparent"
+                            , density = -1
+                            , lty     = "solid"
+                            )#end points
+                  }#end for (l in sequence(nlayers))
+                  #------------------------------------------------------------------------#
+               }else{
+                  #----- Plot lines. ------------------------------------------------------#
+                  for (l in sequence(nlayers)){
+                     points( x    = thisday
+                           , y    = ytheme  [pmon,,l]
+                           , col  = lcolours[ l]
+                           , lwd  = llwd    [ l]
+                           , type = ltype
+                           , pch  = 16
+                           , cex  = 0.8
+                           )#end points
+                  }#end for (l in sequence(nlayers))
+                  #------------------------------------------------------------------------#
+               }#end if (thstack)
                #---------------------------------------------------------------------------#
+
 
 
                #----- Close the device. ---------------------------------------------------#

@@ -311,6 +311,7 @@ module ed_init
                                    , near_bare_ground_big_leaf_init ! ! sub-routine
       use ed_bigleaf_init  , only : sas_to_bigleaf                 ! ! sub-routine
 #if defined(RAMS_MPI)
+      use mpi
       use ed_node_coms      , only : mynum                          & ! intent(in)
                                    , nnodetot                       & ! intent(in)
                                    , sendnum                        & ! intent(in)
@@ -320,9 +321,6 @@ module ed_init
 #endif
 
       implicit none
-#if defined(RAMS_MPI)
-      include 'mpif.h'
-#endif
       !----- Local variables --------------------------------------------------------------!
       integer                :: igr
       integer                :: ping 

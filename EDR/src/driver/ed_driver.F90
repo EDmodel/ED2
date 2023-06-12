@@ -30,11 +30,10 @@ subroutine ed_driver()
    use detailed_coms     , only : idetailed           & ! intent(in)
                                 , patch_keep          ! ! intent(in)
    use phenology_aux     , only : first_phenology     ! ! subroutine
-   implicit none
-   !----- Included variables. -------------------------------------------------------------!
 #if defined(RAMS_MPI)
-   include 'mpif.h' ! MPI commons
+   use mpi
 #endif
+   implicit none
    !----- Local variables. ----------------------------------------------------------------!
    character(len=12)           :: c0
    character(len=12)           :: c1

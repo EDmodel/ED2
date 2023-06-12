@@ -36,6 +36,9 @@ subroutine node_sendlbc()
    use mem_cuparm , only : nclouds  ! ! intent(in)
    use grid_dims  , only : maxgrds  ! ! intent(in)
    use mem_aerad  , only : nwave    ! ! intent(in)
+#if defined(RAMS_MPI)
+   use mpi
+#endif
 
    implicit none
    !----- Local variables. ----------------------------------------------------------------!
@@ -56,7 +59,6 @@ subroutine node_sendlbc()
    !----- Module variables. ---------------------------------------------------------------!
 #if defined(RAMS_MPI)
    include 'interface.h'
-   include 'mpif.h'
 #endif
    !---------------------------------------------------------------------------------------!
 
@@ -168,12 +170,14 @@ subroutine node_getlbc()
    use mem_scratch
    use mem_cuparm , only : nclouds  ! ! intent(in)
    use mem_aerad  , only : nwave    ! ! intent(in)
+#if defined(RAMS_MPI)
+   use mpi
+#endif
 
    implicit none
    !----- Module variables. ---------------------------------------------------------------!
 #if defined(RAMS_MPI)
    include 'interface.h'
-   include 'mpif.h'
 #endif
    !----- Local variables. ----------------------------------------------------------------!
 #if defined(RAMS_MPI)

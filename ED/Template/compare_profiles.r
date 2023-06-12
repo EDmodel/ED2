@@ -1810,7 +1810,7 @@ if (plot.site){
             # for relative components, to avoid weird results.                             #
             #------------------------------------------------------------------------------#
             sel.day = tapply(X=model$diel[mn],INDEX=model$hour[mn],FUN=commonest)
-            sel.day = sel.day %==% 2
+            sel.day = sel.day %eq% 2
             #------------------------------------------------------------------------------#
 
 

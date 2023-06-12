@@ -33,6 +33,7 @@ subroutine ed_init_atm()
                                     , terminate_cohorts            & ! subroutine
                                     , split_cohorts                ! ! subroutine
 #if defined(RAMS_MPI)
+   use mpi
    use ed_node_coms          , only : nnodetot                     & ! intent(in)
                                     , mynum                        & ! intent(in)
                                     , sendnum                      & ! intent(in)
@@ -95,10 +96,6 @@ subroutine ed_init_atm()
    !----- Local variables (MPI only). -----------------------------------------------------!
 #if defined(RAMS_MPI)
    integer                        :: ierr
-#endif
-   !----- Add the MPI common block. -------------------------------------------------------!
-#if defined(RAMS_MPI)
-   include 'mpif.h'
 #endif
    !---------------------------------------------------------------------------------------!
 

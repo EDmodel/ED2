@@ -389,7 +389,7 @@ cloud.metrics <<- function( x
      #-------------------------------------------------------------------------------------#
      #     Keep only the last returns.                                                     #
      #-------------------------------------------------------------------------------------#
-     sellast = x$retn.number %==% x$number.retn.gp
+     sellast = x$retn.number %eq% x$number.retn.gp
      #----- Check whether to use the subset or the entire thing (to generate NA). ---------#
      if (sum(sellast) >= min.pts){
        zlast   = x$z[sellast]
@@ -496,7 +496,7 @@ cloud.metrics <<- function( x
       }else{
          #----- Not an error.  Check whether this has been called by a friend function. ---#
          wcm[[n]] = paste(wcm[[n]],collapse="")
-         top      = substring(wcm[[n]],1,4) %==% "NULL"
+         top      = substring(wcm[[n]],1,4) %eq% "NULL"
          mess     = mess && ! ( grepl("cloud.metrics",wcm[[n]]) ||
                                 grepl("grid.metrics" ,wcm[[n]])  )
          #---------------------------------------------------------------------------------#
@@ -585,7 +585,7 @@ cloud.metrics <<- function( x
    zdens             = data.frame(x=zzdens$x,y=zzdens$y)
    if (any(is.finite(zzdens$y))){
       dz                = mean(diff(zdens$x))
-      spk               = peaks(zdens$y) & zdens$y %>% 1.e-10
+      spk               = peaks(zdens$y) & zdens$y %gt% 1.e-10
       zpeaks            = zdens[spk,]
       o                 = order(zpeaks$y,decreasing=TRUE)
       zpeaks            = zpeaks[o,]
@@ -727,7 +727,7 @@ cloud.metrics <<- function( x
       }else{
          #----- Not an error.  Check whether this has been called by a friend function. ---#
          wcm[[n]] = paste(wcm[[n]],collapse="")
-         top      = substring(wcm[[n]],1,4) %==% "NULL"
+         top      = substring(wcm[[n]],1,4) %eq% "NULL"
          mess     = mess && ! ( grepl("cloud.metrics",wcm[[n]]) ||
                                 grepl("grid.metrics" ,wcm[[n]])  )
          #---------------------------------------------------------------------------------#
@@ -824,7 +824,7 @@ open.fcan <<- function( pt.cloud
       ans = rep(NA,times=length(zabove))
    }else{
       #----- Discard data that are not classified as vegetation. --------------------------#
-      zveg    = ifelse( pt.cloud$pt.class %in% c(0,1,3,4,5) & pt.cloud$z %>=% zabove[1]
+      zveg    = ifelse( pt.cloud$pt.class %in% c(0,1,3,4,5) & pt.cloud$z %ge% zabove[1]
                       , pt.cloud$z
                       , NA
                       )#end ifelse

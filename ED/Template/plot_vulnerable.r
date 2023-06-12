@@ -101,7 +101,7 @@ ed22var[[ 1]] = list( vname   = "et"
                     , plog    = FALSE
                     , min     = 600
                     , max     = 1600
-                    , cscheme = "ipanoply"
+                    , cscheme = "rdbu"
                     )#end list
 ed22var[[ 2]] = list( vname   = "transp"
                     , desc    = "Transpiration"
@@ -109,7 +109,7 @@ ed22var[[ 2]] = list( vname   = "transp"
                     , plog    = FALSE
                     , min     = 400
                     , max     = 1000
-                    , cscheme = "clife"
+                    , cscheme = "prgn"
                     )#end list
 ed22var[[ 3]] = list( vname   = "gpp"
                     , desc    = "Gross Primary Productivity"
@@ -117,7 +117,7 @@ ed22var[[ 3]] = list( vname   = "gpp"
                     , plog    = FALSE
                     , min     = 1.5
                     , max     = 3.5
-                    , cscheme = "clife"
+                    , cscheme = "prgn"
                     )#end list
 ed22var[[ 4]] = list( vname   = "npp"
                     , desc    = "Net Primary Productivity"
@@ -125,7 +125,7 @@ ed22var[[ 4]] = list( vname   = "npp"
                     , plog    = FALSE
                     , min     = 1.2
                     , max     = 3.0
-                    , cscheme = "clife"
+                    , cscheme = "prgn"
                     )#end list
 ed22var[[ 5]] = list( vname   = "rshort"
                     , desc    = "Incoming SW Radiation"
@@ -133,7 +133,7 @@ ed22var[[ 5]] = list( vname   = "rshort"
                     , plog    = FALSE
                     , min     = 170
                     , max     = 230
-                    , cscheme = "icloudy"
+                    , cscheme = "ibugy"
                     )#end list
 ed22var[[ 6]] = list( vname   = "atm.temp"
                     , desc    = "Air temperature"
@@ -141,7 +141,7 @@ ed22var[[ 6]] = list( vname   = "atm.temp"
                     , plog    = FALSE
                     , min     = 15
                     , max     = 27
-                    , cscheme = "panoply"
+                    , cscheme = "irdbu"
                     )#end list
 ed22var[[ 7]] = list( vname   = "atm.vpd"
                     , desc    = "Air VPD"
@@ -149,7 +149,7 @@ ed22var[[ 7]] = list( vname   = "atm.vpd"
                     , plog    = FALSE
                     , min     = 5
                     , max     = 21
-                    , cscheme = "panoply"
+                    , cscheme = "irdbu"
                     )#end list
 ed22var[[ 8]] = list( vname   = "agb"
                     , desc    = "Above-ground biomass"
@@ -157,7 +157,7 @@ ed22var[[ 8]] = list( vname   = "agb"
                     , plog    = FALSE
                     , min     = 0
                     , max     = 22
-                    , cscheme = "clife"
+                    , cscheme = "prgn"
                     )#end list
 ed22var[[ 9]] = list( vname   = "bsa"
                     , desc    = "Basal Area"
@@ -165,7 +165,7 @@ ed22var[[ 9]] = list( vname   = "bsa"
                     , plog    = FALSE
                     , min     = 0
                     , max     = 32
-                    , cscheme = "clife"
+                    , cscheme = "prgn"
                     )#end list
 ed22var[[10]] = list( vname   = "lai"
                     , desc    = "Leaf area index"
@@ -173,7 +173,7 @@ ed22var[[10]] = list( vname   = "lai"
                     , plog    = FALSE
                     , min     = 1.5
                     , max     = 4.5
-                    , cscheme = "clife"
+                    , cscheme = "prgn"
                     )#end list
 #------------------------------------------------------------------------------------------#
 
@@ -183,7 +183,7 @@ ed22var[[10]] = list( vname   = "lai"
 statvar       = list()
 statvar[[ 1]] = list( vname   = "location"
                     , desc    = "Location Parameter"
-                    , cscheme = "ipanoply"
+                    , cscheme = "rdbu"
                     , unit    = "mmoyr"
                     , min     = 900
                     , max     = 3500
@@ -191,7 +191,7 @@ statvar[[ 1]] = list( vname   = "location"
                     )#end list
 statvar[[ 2]] = list( vname   = "scale"
                     , desc    = "Scale Parameter"
-                    , cscheme = "hue.hot"
+                    , cscheme = "magma"
                     , unit    = "mmoyr"
                     , min     = 100
                     , max     = 1000
@@ -199,7 +199,7 @@ statvar[[ 2]] = list( vname   = "scale"
                     )#end list
 statvar[[ 3]] = list( vname   = "shape"
                     , desc    = "Shape Parameter"
-                    , cscheme = "ipanoply"
+                    , cscheme = "rdbu"
                     , unit    = "empty"
                     , min     = -5
                     , max     = +5
@@ -207,7 +207,7 @@ statvar[[ 3]] = list( vname   = "shape"
                     )#end list
 statvar[[ 4]] = list( vname   = "dlocation.rel"
                     , desc    = "Vulnerability (Location)"
-                    , cscheme = "hue.hot"
+                    , cscheme = "magma"
                     , unit    = "empty"
                     , min     = -3
                     , max     =  0
@@ -215,7 +215,7 @@ statvar[[ 4]] = list( vname   = "dlocation.rel"
                     )#end list
 statvar[[ 5]] = list( vname   = "dscale.rel"
                     , desc    = "Vulnerability (Scale)"
-                    , cscheme = "ihue.hot"
+                    , cscheme = "imagma"
                     , unit    = "empty"
                     , min     =  0.0
                     , max     =  3.0
@@ -223,7 +223,7 @@ statvar[[ 5]] = list( vname   = "dscale.rel"
                     )#end list
 statvar[[ 6]] = list( vname   = "dshape.abs"
                     , desc    = "Vulnerability (Shape)"
-                    , cscheme = "hue.hot"
+                    , cscheme = "magma"
                     , unit    = "empty"
                     , min     = -3.0
                     , max     =  0.0
@@ -231,7 +231,7 @@ statvar[[ 6]] = list( vname   = "dshape.abs"
                     )#end list
 statvar[[ 7]] = list( vname   = "mean"
                     , desc    = "Mean"
-                    , cscheme = "ipanoply"
+                    , cscheme = "rdbu"
                     , unit    = "mmoyr"
                     , min     = 900
                     , max     = 3500
@@ -239,7 +239,7 @@ statvar[[ 7]] = list( vname   = "mean"
                     )#end list
 statvar[[ 8]] = list( vname   = "sdev"
                     , desc    = "Standard Deviation"
-                    , cscheme = "panoply"
+                    , cscheme = "irdbu"
                     , unit    = "mmoyr"
                     , min     = 100
                     , max     = 800
@@ -247,7 +247,7 @@ statvar[[ 8]] = list( vname   = "sdev"
                     )#end list
 statvar[[ 9]] = list( vname   = "skew"
                     , desc    = "Skewness"
-                    , cscheme = "ipanoply"
+                    , cscheme = "rdbu"
                     , unit    = "empty"
                     , min     = -1.5
                     , max     =  1.5
@@ -255,7 +255,7 @@ statvar[[ 9]] = list( vname   = "skew"
                     )#end list
 statvar[[10]] = list( vname   = "sn.cvar"
                     , desc    = "Coeff. of Variation (SN)"
-                    , cscheme = "panoply"
+                    , cscheme = "irdbu"
                     , unit    = "empty"
                     , min     = 0.1
                     , max     = 0.3
@@ -263,7 +263,7 @@ statvar[[10]] = list( vname   = "sn.cvar"
                     )#end list
 statvar[[11]] = list( vname   = "norm.cvar"
                     , desc    = "Coeff. of Variation"
-                    , cscheme = "panoply"
+                    , cscheme = "irdbu"
                     , unit    = "empty"
                     , min     = 0.10
                     , max     = 0.25
@@ -434,9 +434,7 @@ nptref = length(ptref)
 
 
 #------ List of schemes to use col1. ------------------------------------------------------#
-col1.schemes = c("panoply","ipanoply","muitas","imuitas","hue.purple","ihue.purple"
-                ,"cloudy","icloudy","hue.blue","ihue.blue","hue.green","ihue.green"
-                ,"clife","iclife","hue.cold","ihue.cold")
+col1.schemes = c("irdbu","rdbu","bugy","ibugy","prgn","iprgn","magma","imagma")
 #------------------------------------------------------------------------------------------#
 
 
@@ -1628,7 +1626,7 @@ for (v in sequence(nstatvar)){
 cat (" + Plot the RMSE for each site and data set...","\n")
 
    #---- Select colour for sites. ---------------------------------------------------------#
-   if ("panoply" %in% col1.schemes){
+   if ("irdbu" %in% col1.schemes){
       col.key = "col1"
    }else{
       col.key = "col2"
@@ -1732,7 +1730,7 @@ cat (" + Plot the RMSE for each site and data set...","\n")
                 , fixed.ylim     = TRUE
                 , xlim           = longitude.limit
                 , ylim           = latitude.limit
-                , colour.palette = panoply
+                , colour.palette = irdbu
                 , levels         = this.levels
                 , nlevels        = this.nlevels
                 , pch            = pch.wmo
@@ -2145,7 +2143,7 @@ for (v in sequence(nthree.dim)){
    n.pretty.fourth = length(pretty.fourth)
    fourth.breaks   = c(-Inf,pretty.fourth[-c(1,n.pretty.fourth)],Inf)
    fourth.colour   = cut(ymean[[vname.fourth]],fourth.breaks)
-   fourth.cscheme  = clife(n=length(levels(fourth.colour))-1)
+   fourth.cscheme  = prgn(n=length(levels(fourth.colour))-1)
    fourth.colour   = fourth.cscheme[match(fourth.colour,levels(fourth.colour))]
    #---------------------------------------------------------------------------------------#
 

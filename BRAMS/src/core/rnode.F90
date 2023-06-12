@@ -78,13 +78,16 @@ subroutine rams_node()
   use mem_leaf, only: isfcl ! intent(in)
 
   use dtset, only: dtset_new ! subroutine
+#if defined(RAMS_MPI)
+  use mpi
+#endif
+
 
   implicit none
 
   ! Local Variables:
 #if defined(RAMS_MPI)
   include 'interface.h'
-  include 'mpif.h'
 #endif
   integer :: isendflg,isendlite,isendmean,isendboth,nt,npass,icm,ifm,nfeed
   real :: wstart,totcpu,t1,w1,t6,w6
@@ -385,13 +388,15 @@ subroutine init_params(init)
   use mem_oda
   use mem_radiate, only: ISWRTYP, ILWRTYP ! Intent(in)
   use mem_leaf   , only: isfcl ! Intent(in)
+#if defined(RAMS_MPI)
+  use mpi
+#endif
 
   implicit none
 
   integer, intent(in) :: init
 
 #if defined(RAMS_MPI)
-  include 'mpif.h'
   include 'interface.h'
 #endif
   integer :: ierr
@@ -438,6 +443,9 @@ subroutine init_fields(init)
    use mem_cuparm, only : nclouds
    use mem_aerad , only : nwave
    use grid_dims , only : ndim_types
+#if defined(RAMS_MPI)
+   use mpi
+#endif
 
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
@@ -473,7 +481,6 @@ subroutine init_fields(init)
    !----- Include modules. ----------------------------------------------------------------!
 #if defined(RAMS_MPI)
    include 'interface.h'
-   include 'mpif.h'
 #endif
    !---------------------------------------------------------------------------------------!
 

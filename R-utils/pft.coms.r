@@ -102,7 +102,7 @@ par.twilight.min <<- 0.5 * Watts.2.Ein # Minimum non-nocturnal PAR.             
 
 
 #----- This is a flag for the maximum representable number in R. --------------------------#
-discard <<- 2^1023
+huge.num <<- 2^1023
 #------------------------------------------------------------------------------------------#
 
 
@@ -333,9 +333,9 @@ wdr.fs     <<- 0.30
 #------------------------------------------------------------------------------------------#
 #      Define reference heights for tropical allometry.                                    #
 #------------------------------------------------------------------------------------------#
-# IALLOM ........       0,       1,       2,       3,       4..............................#
-hgt.ref.trop = c(NA_real_,NA_real_,    61.7,NA_real_,NA_real_)[iallom+1]
-hgt.max.trop = c(     35.,     35.,     35.,     46.,     46.)[iallom+1]
+# IALLOM ........       0,       1,       2,       3,       4,       5.....................#
+hgt.ref.trop = c(NA_real_,NA_real_,    61.7,NA_real_,NA_real_,NA_real_)[iallom+1]
+hgt.max.trop = c(     35.,     35.,     35.,     46.,     46.,     46.)[iallom+1]
 #------------------------------------------------------------------------------------------#
 
 
@@ -366,7 +366,7 @@ hgt.max.trop = c(     35.,     35.,     35.,     46.,     46.)[iallom+1]
 #      Glob. Change Biol., 23(1):177-190. doi:10.1111/gcb.13388 (J17).                     #
 #                                                                                          #
 #------------------------------------------------------------------------------------------#
-c14f15.bl.xx  = c(0.46769540,0.6410495) # c(0.09747026,0.7587000)
+c14f15.bl.xx  = c(0.23384770,0.6410495) # c(0.09747026,0.7587000)
 c14f15.bs.tf  = c(0.06080334,1.0044785) # c(0.08204475,0.9814422)
 c14f15.bs.sv  = c(0.05602791,1.0093501) # c(0.08013971,0.9818603)
 c14f15.bs.gr  = c(1.e-5,1.0) * c14f15.bl.xx
@@ -1093,6 +1093,12 @@ pft = as.data.frame(pft,stringsAsFactors=FALSE)
 
 
 
+#----- Create flag to identify PFTs that should use the D^2*H allometry. ------------------#
+pft$ddh.allom = (iallom %in% c(3,4,5)) & pft$tropical & (! pft$liana)
+#------------------------------------------------------------------------------------------#
+
+
+
 #----- Adjust Vm0 based on settings and to make units consistent. -------------------------#
 pft$vm0 = ifelse( test = pft$pathway == 4
                 , yes  = pft$vm0 * vmfact.c4
@@ -1521,7 +1527,7 @@ if (iallom %in% c(0,1)){
    pft$b1Ht[tropical] = 0.0352
    pft$b2Ht[tropical] = 0.694
    #---------------------------------------------------------------------------------------#
-}else if (iallom %in% c(3)){
+}else if (iallom %in% c(3,5)){
    #---------------------------------------------------------------------------------------#
    #     Allometric equation based on the fitted curve using the Sustainable Landscapes    #
    # data set (L16) and the size- and site-dependent stratified sampling and aggregation   #
@@ -1595,15 +1601,15 @@ pft$hgt.show = pft$hgt.min + 0.015 * (pft$hgt.max - pft$hgt.min)
 pft$qsw = pft$SLA / sapwood.ratio.orig
 for (ipft in sequence(npft+1)){
    #---- Check PFT and allometry. ---------------------------------------------------------#
-   if (pft$tropical[ipft] && pft$conifer[ipft] && iallom %in% c(3)){
+   if (pft$tropical[ipft] && pft$conifer[ipft] && iallom %in% c(3,5)){
       pft$qsw[ipft] = pft$SLA[ipft] * pft$rho[ipft] / sapwood.factor["aa"]
-   }else if (pft$tropical[ipft] && pft$grass[ipft] && iallom %in% c(3)){
+   }else if (pft$tropical[ipft] && pft$grass[ipft] && iallom %in% c(3,5)){
       pft$qsw[ipft] = 1.0e-5
-   }else if (pft$tropical[ipft] && iallom %in% c(3)){
+   }else if (pft$tropical[ipft] && iallom %in% c(3,5)){
       pft$qsw[ipft] = pft$SLA[ipft] * pft$rho[ipft] / sapwood.factor["bl"]
    }else{
       pft$qsw[ipft] = pft$SLA[ipft] / sapwood.ratio.orig
-   }#end if (pft$tropical[ipft] && is.finite(pft$rho[ipft]) && iallom %in% c(3,4))
+   }#end if (pft$tropical[ipft] && is.finite(pft$rho[ipft]) && iallom %in% c(3,5))
    #---------------------------------------------------------------------------------------#
 }#end for (ipft in sequence(npft))
 #------------------------------------------------------------------------------------------#
@@ -1717,7 +1723,9 @@ pft$b1Xs  = 0.315769481
 pft$b1Xb  = 0.
 pft$qbark = 0.
 for (ipft in sequence(npft+1)){
-   skip = pft$grass[ipft] || pft$liana[ipft] || (! pft$tropical[ipft]) || ( iallom != 3 )
+   skip = (  pft$grass[ipft] || pft$liana[ipft] || (! pft$tropical[ipft])
+          || ( ! (iallom %in% c(3,5) ) ) 
+          )#end skip
    if (! skip){
       #------------------------------------------------------------------------------------#
       #     Variable b1Xs is the ratio between sapwood thickness and DBH.  It is currently #
@@ -1763,7 +1771,7 @@ pft$dbh.min   = rep(NA,times=npft+1)
 pft$dbh.crit  = rep(NA,times=npft+1)
 for (ipft in sequence(npft+1)){
    if (pft$tropical[ipft]){
-      if (iallom %in% c(0,1,3,4)){
+      if (iallom %in% c(0,1,3,4,5)){
          pft$dbh.min  [ipft] = exp((log(pft$hgt.min[ipft])-pft$b1Ht[ipft])/pft$b2Ht[ipft])
          pft$dbh.crit [ipft] = exp((log(pft$hgt.max[ipft])-pft$b1Ht[ipft])/pft$b2Ht[ipft])
       }else if (iallom %in% c(2)){
@@ -1842,7 +1850,7 @@ for (ipft in sequence(npft+1)){
          pft$b2Bs.small[ipft] = ndead.small[2]
          pft$b1Bs.large[ipft] = C2B * exp(ndead.large[1]) * pft$rho[ipft] / ndead.large[3]
          pft$b2Bs.large[ipft] = ndead.large[2]
-      }else if (iallom %in% c(3,4)){
+      }else if (iallom %in% c(3,4,5)){
          if (pft$grass[ipft]){
             c14f15.bs.xx = c14f15.bs.gr
          }else if (pft$savannah[ipft]){
@@ -1871,7 +1879,7 @@ for (ipft in sequence(npft+1)){
       }else if (iallom %in% c(2)){
          pft$b1Ca[ipft] = exp(ncrown.area[1])
          pft$b2Ca[ipft] = ncrown.area[2]
-      }else if (iallom %in% c(3,4)){
+      }else if (iallom %in% c(3,4,5)){
          #---------------------------------------------------------------------------------#
          #     Allometry using the Sustainable Landscapes data.                            #
          #---------------------------------------------------------------------------------#
@@ -1918,7 +1926,7 @@ for (ipft in sequence(npft+1)){
       # R2      = 0.673                                                                    #
       # RMSE    = 2.29                                                                     #
       #------------------------------------------------------------------------------------#
-      if (iallom %in% c(3,4) && (! pft$grass[ipft])){
+      if (iallom %in% c(3,4,5) && (! pft$grass[ipft])){
          pft$b1Cl[ipft] = 0.29754
          pft$b2Cl[ipft] = 1.0324
       }#end if
@@ -1943,10 +1951,10 @@ for (ipft in sequence(npft+1)){
       }else if(iallom %in% c(2)){
          pft$b1Bl[ipft] = C2B * exp(nleaf[1]) * pft$rho[ipft] / nleaf[3]
          pft$b2Bl[ipft] = nleaf[2]
-      }else if(iallom %in% c(3)){
+      }else if(iallom %in% c(3,5)){
          #---------------------------------------------------------------------------------#
          #    Leaf allometry, use the individual leaf area allometry derived from the BAAD #
-         # data base (F15), scaled by the specific leaf area.                              #
+         # data base (F15), scaled by the specific leaf area, and described in L20.        #
          #                                                                                 #
          # Reference:                                                                      #
          #                                                                                 #
@@ -1955,8 +1963,15 @@ for (ipft in sequence(npft+1)){
          #      database for woody plants. Ecology, 96 (5):1445-1445.                      #
          #      doi:10.1890/14-1889.1 (F15).                                               #
          #                                                                                 #
+         # Longo M, Saatchi SS, Keller M, Bowman KW, Ferraz A, Moorcroft PR, Morton D,     #
+         #    Bonal D, Brando P, Burban B et al. 2020. Impacts of degradation on water,    #
+         #    energy, and carbon cycling of the Amazon tropical forests.                   #
+         #    J. Geophys. Res.-Biogeosci., 125: e2020JG005677.                             #
+         #    doi:10.1029/2020JG005677 (L20).                                              #
+         #                                                                                 #
          #---------------------------------------------------------------------------------#
-         pft$b1Bl[ipft] = c14f15.bl.xx[1] / pft$SLA[ipft] 
+         # pft$b1Bl[ipft] = C2B * c14f15.bl.xx[1] / pft$SLA[ipft] 
+         pft$b1Bl[ipft] = c14f15.bl.xx[1]
          pft$b2Bl[ipft] = c14f15.bl.xx[2]
          #---------------------------------------------------------------------------------#
       }else{
@@ -2108,9 +2123,9 @@ if (iallom %in% c(0)){
                     , no   = 0.4223014
                     )#end ifelse
    #---------------------------------------------------------------------------------------#
-}else if (iallom %in% c(3)){
+}else if (iallom %in% c(4,5)){
    #----- Test allometry based on excavation data in Panama, using height as predictor. ---#
-   pft$b1Rd  [sequence(npft+1)] = -0.609
+   pft$b1Rd  [sequence(npft+1)] = -0.609 * 2
    pft$b2Rd  [sequence(npft+1)] =  0.580
    #---------------------------------------------------------------------------------------#
 }#end if
@@ -2125,34 +2140,34 @@ if (iallom %in% c(0)){
 #     BDead -> DBH parameters.  These are calculated a posteriori because they are just    #
 # the inverse of size->BDead allometry.                                                    #
 #------------------------------------------------------------------------------------------#
-pft$d2DBH.small = ifelse( test = pft$tropical & (! pft$liana) & (iallom %in% c(3,4))
+pft$d2DBH.small = ifelse( test = pft$ddh.allom
                         , yes  = 1.  / ( ( 2. + pft$b2Ht ) * pft$b2Bs.small )
                         , no   = 1.  / pft$b2Bs.small
                         )#end ifelse
-pft$d1DBH.small = ifelse( test = pft$tropical & (! pft$liana) & (iallom %in% c(3,4))
+pft$d1DBH.small = ifelse( test = pft$ddh.allom
                         , yes  = ( C2B / ( pft$b1Bs.small * exp(pft$b1Ht*pft$b2Bs.small) ) )
                                ^ pft$d2DBH.small
                         , no   = ( C2B / pft$b1Bs.small ) ^ pft$d2DBH.small
                         )#end ifelse
-pft$d2DBH.large = ifelse( test = pft$tropical & (! pft$liana) & (iallom %in% c(3,4))
+pft$d2DBH.large = ifelse( test = pft$ddh.allom
                         , yes  = 1.  / ( ( 2. + pft$b2Ht ) * pft$b2Bs.large )
                         , no   = 1.  / pft$b2Bs.large
                         )#end ifelse
-pft$d1DBH.large = ifelse( test = pft$tropical & (! pft$liana) & (iallom %in% c(3,4))
+pft$d1DBH.large = ifelse( test = pft$ddh.allom
                         , yes  = ( C2B / ( pft$b1Bs.large * exp(pft$b1Ht*pft$b2Bs.large) ) )
                                ^ pft$d2DBH.large
                         , no   = ( C2B / pft$b1Bs.large ) ^ pft$d2DBH.large
                         )#end ifelse
-pft$l2DBH       = ifelse( test = pft$tropical & (! pft$liana) & (iallom %in% c(3,4))
+pft$l2DBH       = ifelse( test = pft$ddh.allom
                         , yes  = 1.  / ( ( 2. + pft$b2Ht ) * pft$b2Bl )
                         , no   = 1.  / pft$b2Bl
                         )#end ifelse
-pft$l1DBH       = ifelse( test = pft$tropical & (! pft$liana) & (iallom %in% c(3,4))
-                        , yes  = ( C2B / ( pft$b1Bl * exp(pft$b1Ht*pft$b2Bl) ) )
+pft$l1DBH       = ifelse( test = pft$ddh.allom
+                        , yes  = ( 1. / ( pft$b1Bl * exp(pft$b1Ht*pft$b2Bl) ) )
                                ^ pft$l2DBH
                         , no   = ( C2B / pft$b1Bl ) ^ pft$l2DBH
                         )#end ifelse
-pft$bdead.crit  = ifelse( test = pft$tropical & (! pft$liana) & (iallom %in% c(3,4))
+pft$bdead.crit  = ifelse( test = pft$ddh.allom
                         , yes  = pft$b1Bs.small / C2B
                                * ( pft$dbh.crit * pft$dbh.crit * pft$hgt.max)
                                ^ pft$b2Bs.small
@@ -2214,8 +2229,7 @@ pft$b2Efrd   = rep(x=0.1822,times=npft+1)
 #------------------------------------------------------------------------------------------#
 pft$b1WAI = ifelse( test = pft$grass
                   , yes  = 0.0
-                  , no   = ifelse( test = pft$tropical & (! pft$liana)
-                                                       & (iallom %in% c(3,4))
+                  , no   = ifelse( test = pft$ddh.allom
                                  , yes  = ifelse( test = pft$conifer
                                                 , yes  = 0.01148449
                                                 , no   = 0.00378399
@@ -2228,8 +2242,7 @@ pft$b1WAI = ifelse( test = pft$grass
                   )#end ifelse
 pft$b2WAI = ifelse( test = pft$grass
                   , yes  = 0.0
-                  , no   = ifelse( test = pft$tropical & (! pft$liana)
-                                                       & (iallom %in% c(3,4))
+                  , no   = ifelse( test = pft$ddh.allom
                                  , yes  = ifelse( test = pft$conifer
                                                 , yes  = 0.77075160
                                                 , no   = 0.81667933
@@ -2350,6 +2363,12 @@ pft$eplastic.sla  = 0.5 * (-1.36 - 1.0000) + 0. * pft$kplastic.vm0
 pft$kplastic.ltor = -1 * with(pft,kplastic.vm0*eplastic.vm0+kplastic.sla*eplastic.sla)
 #------------------------------------------------------------------------------------------#
 
+
+
+#------ Fire survivorship parameters for when using the old models. -----------------------#
+pft$fire.s.efac = -0.12
+pft$fire.s.max  = ifelse(test = pft$grass,yes = 0.1, no = 0.9)
+#------------------------------------------------------------------------------------------#
 
 
 #----- Make it global. --------------------------------------------------------------------#

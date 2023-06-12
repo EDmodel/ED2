@@ -145,7 +145,7 @@ n             = n + 1
 compvar[[ n]] = list( vnam     = "zupr.gpp"
                     , desc     = "GPP - Upper canopy"
                     , unit     = "kgwom2oday"
-                    , cscheme  = "atlas"
+                    , cscheme  = "brbg"
                     , qmean    = FALSE
                     , clprof   = NA_character_
                     , clcum    = NA_character_
@@ -156,7 +156,7 @@ n             = n + 1
 compvar[[ n]] = list( vnam     = "zmid.gpp"
                     , desc     = "GPP - Mid-canopy"
                     , unit     = "kgwom2oday"
-                    , cscheme  = "atlas"
+                    , cscheme  = "brbg"
                     , qmean    = FALSE
                     , clprof   = NA_character_
                     , clcum    = NA_character_
@@ -167,7 +167,7 @@ n             = n + 1
 compvar[[ n]] = list( vnam     = "zlwr.gpp"
                     , desc     = "GPP - Lower canopy"
                     , unit     = "kgwom2oday"
-                    , cscheme  = "atlas"
+                    , cscheme  = "brbg"
                     , qmean    = FALSE
                     , clprof   = NA_character_
                     , clcum    = NA_character_
@@ -178,7 +178,7 @@ n             = n + 1
 compvar[[ n]] = list( vnam     = "gpp"
                     , desc     = "Gross primary productivity"
                     , unit     = "kgcom2oyr"
-                    , cscheme  = "atlas"
+                    , cscheme  = "brbg"
                     , qmean    = TRUE
                     , clprof   = "gpp"
                     , clcum    = "nplant"
@@ -189,7 +189,7 @@ n             = n + 1
 compvar[[ n]] = list( vnam     = "npp"
                     , desc     = "Net primary productivity"
                     , unit     = "kgcom2oyr"
-                    , cscheme  = "atlas"
+                    , cscheme  = "brbg"
                     , qmean    = TRUE
                     , clprof   = "npp"
                     , clcum    = "nplant"
@@ -200,7 +200,7 @@ n             = n + 1
 compvar[[ n]] = list( vnam     = "plant.resp"
                     , desc     = "Plant respiration"
                     , unit     = "kgcom2oyr"
-                    , cscheme  = "iatlas"
+                    , cscheme  = "ibrbg"
                     , qmean    = TRUE
                     , clprof   = "plant.resp"
                     , clcum    = "nplant"
@@ -211,7 +211,7 @@ n             = n + 1
 compvar[[ n]] = list( vnam     = "cba"
                     , desc     = "Carbon balance"
                     , unit     = "kgcom2oyr"
-                    , cscheme  = "atlas"
+                    , cscheme  = "brbg"
                     , qmean    = FALSE
                     , clprof   = "cba"
                     , clcum    = NA_character_
@@ -222,7 +222,7 @@ n             = n + 1
 compvar[[ n]] = list( vnam     = "reco"
                     , desc     = "Ecosystem respiration"
                     , unit     = "kgcom2oyr"
-                    , cscheme  = "iatlas"
+                    , cscheme  = "ibrbg"
                     , qmean    = TRUE
                     , clprof   = NA_character_
                     , clcum    = NA_character_
@@ -233,7 +233,7 @@ n             = n + 1
 compvar[[ n]] = list( vnam     = "nep"
                     , desc     = "Net Ecosystem Productivity"
                     , unit     = "kgcom2oyr"
-                    , cscheme  = "atlas"
+                    , cscheme  = "brbg"
                     , qmean    = TRUE
                     , clprof   = NA_character_
                     , clcum    = NA_character_
@@ -244,7 +244,7 @@ n             = n + 1
 compvar[[ n]] = list( vnam     = "hflxca"
                     , desc     = "Sensible heat flux"
                     , unit     = "wom2"
-                    , cscheme  = "panoply"
+                    , cscheme  = "irdbu"
                     , qmean    = TRUE
                     , clprof   = NA_character_
                     , clcum    = NA_character_
@@ -255,7 +255,7 @@ n             = n + 1
 compvar[[ n]] = list( vnam     = "wflxca"
                     , desc     = "Water vapour flux"
                     , unit     = "kgwom2oday"
-                    , cscheme  = "ipanoply"
+                    , cscheme  = "rdbu"
                     , qmean    = TRUE
                     , clprof   = NA_character_
                     , clcum    = NA_character_
@@ -266,7 +266,7 @@ n             = n + 1
 compvar[[ n]] = list( vnam     = "transp"
                     , desc     = "Transpiration"
                     , unit     = "kgwom2oday"
-                    , cscheme  = "ipanoply"
+                    , cscheme  = "rdbu"
                     , qmean    = TRUE
                     , clprof   = "transp"
                     , clcum    = "nplant"
@@ -277,7 +277,7 @@ n             = n + 1
 compvar[[ n]] = list( vnam     = "rshortup"
                     , desc     = "Upward SW radiation"
                     , unit     = "wom2"
-                    , cscheme  = "panoply"
+                    , cscheme  = "irdbu"
                     , qmean    = TRUE
                     , clprof   = NA_character_
                     , clcum    = NA_character_
@@ -288,7 +288,7 @@ n             = n + 1
 compvar[[ n]] = list( vnam     = "rlongup"
                     , desc     = "Upward LW radiation"
                     , unit     = "wom2"
-                    , cscheme  = "panoply"
+                    , cscheme  = "irdbu"
                     , qmean    = TRUE
                     , clprof   = NA_character_
                     , clcum    = NA_character_
@@ -299,7 +299,7 @@ n             = n + 1
 compvar[[ n]] = list( vnam     = "parup"
                     , desc     = "Upward PAR"
                     , unit     = "umolom2os"
-                    , cscheme  = "panoply"
+                    , cscheme  = "irdbu"
                     , qmean    = TRUE
                     , clprof   = NA_character_
                     , clcum    = NA_character_
@@ -310,7 +310,7 @@ n             = n + 1
 compvar[[ n]] = list( vnam     = "par.gnd"
                     , desc     = "Ground absorption - PAR"
                     , unit     = "umolom2os"
-                    , cscheme  = "panoply"
+                    , cscheme  = "irdbu"
                     , qmean    = TRUE
                     , clprof   = NA_character_
                     , clcum    = NA_character_
@@ -321,7 +321,7 @@ n             = n + 1
 compvar[[ n]] = list( vnam     = "rshort.gnd"
                     , desc     = "Ground absorption - SW"
                     , unit     = "umolom2os"
-                    , cscheme  = "panoply"
+                    , cscheme  = "irdbu"
                     , qmean    = TRUE
                     , clprof   = NA_character_
                     , clcum    = NA_character_
@@ -332,7 +332,7 @@ n             = n + 1
 compvar[[ n]] = list( vnam     = "sm.stress"
                     , desc     = "Soil moisture stress"
                     , unit     = "empty"
-                    , cscheme  = "panoply"
+                    , cscheme  = "irdbu"
                     , qmean    = TRUE
                     , clprof   = NA_character_
                     , clcum    = NA_character_
@@ -343,7 +343,7 @@ n             = n + 1
 compvar[[ n]] = list( vnam     = "leaf.gpp"
                     , desc     = "Leaf GPP"
                     , unit     = "kgcom2loyr"
-                    , cscheme  = "atlas"
+                    , cscheme  = "brbg"
                     , qmean    = TRUE
                     , clprof   = "leaf.gpp"
                     , clcum    = NA_character_
@@ -354,7 +354,7 @@ n             = n + 1
 compvar[[ n]] = list( vnam     = "leaf.temp"
                     , desc     = "Mean Leaf Temperature"
                     , unit     = "degC"
-                    , cscheme  = "panoply"
+                    , cscheme  = "irdbu"
                     , qmean    = TRUE
                     , clprof   = "leaf.temp"
                     , clcum    = NA_character_
@@ -365,7 +365,7 @@ n             = n + 1
 compvar[[ n]] = list( vnam     = "leaf.vpd"
                     , desc     = "Mean Leaf VPD"
                     , unit     = "hpa"
-                    , cscheme  = "panoply"
+                    , cscheme  = "irdbu"
                     , qmean    = TRUE
                     , clprof   = "leaf.vpd"
                     , clcum    = NA_character_
@@ -376,7 +376,7 @@ n             = n + 1
 compvar[[ n]] = list( vnam     = "leaf.gsw"
                     , desc     = "Stomatal conductance"
                     , unit     = "kgwom2loday"
-                    , cscheme  = "ipanoply"
+                    , cscheme  = "rdbu"
                     , qmean    = TRUE
                     , clprof   = "leaf.gsw"
                     , clcum    = NA_character_
@@ -387,7 +387,7 @@ n             = n + 1
 compvar[[ n]] = list( vnam     = "par.leaf"
                     , desc     = "Leaf Absorption - PAR"
                     , unit     = "umolom2os"
-                    , cscheme  = "panoply"
+                    , cscheme  = "irdbu"
                     , qmean    = TRUE
                     , clprof   = "leaf.par"
                     , clcum    = "lai"
@@ -398,7 +398,7 @@ n             = n + 1
 compvar[[ n]] = list( vnam     = "par.leaf.beam"
                     , desc     = "Leaf Absorption - Direct PAR"
                     , unit     = "umolom2os"
-                    , cscheme  = "panoply"
+                    , cscheme  = "irdbu"
                     , qmean    = TRUE
                     , clprof   = "leaf.par.beam"
                     , clcum    = "lai"
@@ -409,7 +409,7 @@ n             = n + 1
 compvar[[ n]] = list( vnam     = "par.leaf.diff"
                     , desc     = "Leaf Absorption - Diffuse PAR"
                     , unit     = "umolom2os"
-                    , cscheme  = "panoply"
+                    , cscheme  = "irdbu"
                     , qmean    = TRUE
                     , clprof   = "leaf.par.diff"
                     , clcum    = "lai"
@@ -420,7 +420,7 @@ n             = n + 1
 compvar[[ n]] = list( vnam     = "leaf.par"
                     , desc     = "Norm. Leaf Absorption - PAR"
                     , unit     = "umolom2los"
-                    , cscheme  = "panoply"
+                    , cscheme  = "irdbu"
                     , qmean    = TRUE
                     , clprof   = "leaf.par"
                     , clcum    = NA_character_
@@ -431,7 +431,7 @@ n             = n + 1
 compvar[[ n]] = list( vnam     = "leaf.par.beam"
                     , desc     = "Norm. Leaf Absorption - Direct PAR"
                     , unit     = "umolom2los"
-                    , cscheme  = "panoply"
+                    , cscheme  = "irdbu"
                     , qmean    = TRUE
                     , clprof   = "leaf.par.beam"
                     , clcum    = NA_character_
@@ -442,7 +442,7 @@ n             = n + 1
 compvar[[ n]] = list( vnam     = "leaf.par.diff"
                     , desc     = "Norm. Leaf Absorption - Diffuse PAR"
                     , unit     = "umolom2los"
-                    , cscheme  = "panoply"
+                    , cscheme  = "irdbu"
                     , qmean    = TRUE
                     , clprof   = "leaf.par.diff"
                     , clcum    = NA_character_
@@ -453,7 +453,7 @@ n             = n + 1
 compvar[[ n]] = list( vnam     = "assim.light"
                     , desc     = "Light-limited Assimilation"
                     , unit     = "umolom2los"
-                    , cscheme  = "atlas"
+                    , cscheme  = "brbg"
                     , qmean    = TRUE
                     , clprof   = "assim.light"
                     , clcum    = NA_character_
@@ -464,7 +464,7 @@ n             = n + 1
 compvar[[ n]] = list( vnam     = "assim.rubp"
                     , desc     = "RuBP-limited Assimilation"
                     , unit     = "umolom2los"
-                    , cscheme  = "atlas"
+                    , cscheme  = "brbg"
                     , qmean    = TRUE
                     , clprof   = "assim.rubp"
                     , clcum    = NA_character_
@@ -475,7 +475,7 @@ n             = n + 1
 compvar[[ n]] = list( vnam     = "phap.lpar"
                     , desc     = "Daytime PAR absorportion by leaves"
                     , unit     = "hpa"
-                    , cscheme  = "panoply"
+                    , cscheme  = "irdbu"
                     , qmean    = FALSE
                     , clprof   = NA_character_
                     , clcum    = NA_character_
@@ -486,7 +486,7 @@ n             = n + 1
 compvar[[ n]] = list( vnam     = "phap.lvpd"
                     , desc     = "Daytime Leaf VPD"
                     , unit     = "hpa"
-                    , cscheme  = "panoply"
+                    , cscheme  = "irdbu"
                     , qmean    = FALSE
                     , clprof   = NA_character_
                     , clcum    = NA_character_
@@ -497,7 +497,7 @@ n             = n + 1
 compvar[[ n]] = list( vnam     = "phap.ltemp"
                     , desc     = "Daytime Leaf Temperature"
                     , unit     = "degC"
-                    , cscheme  = "panoply"
+                    , cscheme  = "irdbu"
                     , qmean    = FALSE
                     , clprof   = NA_character_
                     , clcum    = NA_character_
@@ -508,7 +508,7 @@ n             = n + 1
 compvar[[ n]] = list( vnam     = "phap.sms"
                     , desc     = "Daytime soil moisture stress"
                     , unit     = "empty"
-                    , cscheme  = "panoply"
+                    , cscheme  = "irdbu"
                     , qmean    = FALSE
                     , clprof   = NA_character_
                     , clcum    = NA_character_
@@ -519,7 +519,7 @@ n             = n + 1
 compvar[[ n]] = list( vnam     = "phap.lgsw"
                     , desc     = "Daytime stomatal conductance"
                     , unit     = "kgwom2loday"
-                    , cscheme  = "ipanoply"
+                    , cscheme  = "rdbu"
                     , qmean    = FALSE
                     , clprof   = NA_character_
                     , clcum    = NA_character_
@@ -713,8 +713,8 @@ msize   = plotsize(proje=FALSE,paper=mpaper,extendfc="lon",extfactor=f.ext/2)
 #      Define some utility functions to determine derived patch variables.                 #
 #------------------------------------------------------------------------------------------#
 sum.soil.c.fun = function(fast,slow,struct) fast + slow + struct
-bowen.fun      = function(h,qw) ifelse(test = qw %!=% 0., yes = h/qw, no = NA)
-tratio.fun     = function(tp,w) ifelse(test =  w %!=% 0., yes = tp/w, no = NA)
+bowen.fun      = function(h,qw) ifelse(test = qw %ne% 0., yes = h/qw, no = NA)
+tratio.fun     = function(tp,w) ifelse(test =  w %ne% 0., yes = tp/w, no = NA)
 discard.fun    = function(x) x * NA
 #------------------------------------------------------------------------------------------#
 
@@ -741,7 +741,7 @@ layer.gpp.one.fun = function(dat,top,bot){
    #------ We can't process empty data frames. --------------------------------------------#
    if (nrow(dat) > 0){
       #----- Discard empty layers. --------------------------------------------------------#
-      dat = dat[dat$lai %>% 0,,drop=FALSE]
+      dat = dat[dat$lai %gt% 0,,drop=FALSE]
       #------------------------------------------------------------------------------------#
    }#end if (nrow(dat) > 0)
    #---------------------------------------------------------------------------------------#
@@ -800,7 +800,7 @@ layer.gpp.one.fun = function(dat,top,bot){
    #------ We can't process empty data frames. --------------------------------------------#
    if (nrow(dat) > 0){
       #----- Discard empty layers. --------------------------------------------------------#
-      dat = dat[dat$lai %>% 0,,drop=FALSE]
+      dat = dat[dat$lai %gt% 0,,drop=FALSE]
       #------------------------------------------------------------------------------------#
    }#end if (nrow(dat) > 0)
    #---------------------------------------------------------------------------------------#

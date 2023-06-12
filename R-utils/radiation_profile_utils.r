@@ -74,7 +74,7 @@ layer.absorption <<- function(ipaco,down,up){
 rel.last <<- function(x){
    if (length(x) == 0){
       ans = NA
-   }else if (x[1] %==% 0){
+   }else if (x[1] %eq% 0){
       ans = NA
    }else{
       ans = x[length(x)] /x[1]

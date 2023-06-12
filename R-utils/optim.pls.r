@@ -67,7 +67,11 @@ optim.pls <<- function( formula
 
    #----- Run PLS. ------------------------------------------------------------------------#
    if (verbose) cat0( "             > PLS (full model)")
-   ans              = plsr(formula=form.now,data=data,verbose=verbose,...)
+   ans              = plsr( formula      = form.now
+                          , data         = data
+                          , verbose      = verbose
+                          , ...
+                          )#end plsr
    ans$orig.formula = formula
    ans$formula      = form.now
    ans$yname        = yname
@@ -79,16 +83,18 @@ optim.pls <<- function( formula
 
 
    #----- Retrieve MSE in case back-transformation is sought. -----------------------------#
-   resnow     = ans$residuals[,1,]
-   rsumsq     = apply(X=resnow,MARGIN=2,FUN=sum2,na.rm=TRUE)
-   nnow       = apply(X=resnow,MARGIN=2,FUN=function(x) sum(is.finite(x)))
-   msenow     = MSEP(object=ans,"adjCV")
-   ans$mse    = c(msenow$val[1,1,-1])
-   ans$vary   = if(ylog){var(log(data[yname]),na.rm=TRUE)}else{var(data[yname],na.rm=TRUE)}
-   ans$fve    = 1 - ans$mse / ans$vary
-   max.fve    = max(ans$fve,na.rm=TRUE)
-   rel.fve    = ans$fve / max.fve
-   ans$ncomp  = min(which(rel.fve >= fve.tolerance))
+   msenow.t  = MSEP(object=ans,"train")$val[,,]
+   msenow.a  = MSEP(object=ans,"adjCV")$val[,,]
+   if (ylog){
+      yvar = var(log(data[[yname]]),na.rm=TRUE)
+   }else{
+      yvar = var(data[[yname]],na.rm=TRUE)
+   }#end if (ylog)
+   fve       = 1. - msenow.a / yvar
+   max.fve   = max(fve,na.rm=TRUE)
+   rel.fve   = fve / max.fve
+   ans$ncomp = min(which(rel.fve %ge% fve.tolerance)) - 1L
+   ans$mse   = apply(ans$residuals[,1,],MARGIN=2L,FUN=mean2)
    #---------------------------------------------------------------------------------------#
 
 
@@ -106,7 +112,7 @@ optim.pls <<- function( formula
       ans$ln.pred   = ypred
       ans$ln.sigma  = sqrt(ans$mse[ans$ncomp])
       ans$predicted = exp(ypred + 0.5 * ans$mse[ans$ncomp])
-      ans$sigma     = with(ans,sqrt(exp(mse[ncomp])-1)*exp(2.*ans$ln.pred + mse[ncomp]))
+      ans$sigma     = with(ans,sqrt(exp(mse[ncomp])-1)*exp(2.*ln.pred + mse[ncomp]))
       plwr          = 0.5 * (1.0 - ci.level)
       pupr          = 0.5 * (1.0 + ci.level)
       ans$qlow      = qlnorm(p=plwr,meanlog=ans$ln.pred,sdlog=ans$ln.sigma)
@@ -139,7 +145,6 @@ optim.pls <<- function( formula
    dotdotdot = modifyList( x   = dotdotdot
                          , val = list( verbose     = FALSE
                                      , model       = FALSE
-                                     , ncomp       = ans$ncomp
                                      )#end list
                          )#end modifyList
    #---------------------------------------------------------------------------------------#
@@ -228,6 +233,9 @@ optim.pls <<- function( formula
       if (is.null (boot.class)){
          idx         = sample.int(n=n.data,replace=TRUE)
          ixval       = which(! (sequence(n.data) %in% idx))
+      }else if (n.uniq.class == 1L){
+         idx         = sample.int(n=n.data,replace=TRUE)
+         ixval       = which(! (sequence(n.data) %in% idx))
       }else{
          use.class   = lit.sample(x=uniq.class,size=n.uniq.class,replace=TRUE)
          use.sample  = mapply( FUN      = function(x,y) which(y %in% x)
@@ -248,8 +256,12 @@ optim.pls <<- function( formula
 
 
       #----- Call PLS. --------------------------------------------------------------------#
-      dotnow   = modifyList(x=dotdotdot,val=list(data=boot.data))
-      pls.now = try(do.call(what="plsr",args=dotnow),silent=TRUE)
+      dotnow    = modifyList(x=dotdotdot,val=list(data=boot.data))
+      pls.now   = try(do.call(what="plsr",args=dotnow),silent=TRUE)
+      boot.fine = ! ("try-error" %in% is(pls.now))
+      if (boot.fine){
+         boot.fine = any(is.finite(pls.now$fitted.values))
+      }#end if (boot.fine)
       #------------------------------------------------------------------------------------#
 
 
@@ -257,12 +269,11 @@ optim.pls <<- function( formula
       #------------------------------------------------------------------------------------#
       #      Check whether to append to the data set.                                      #
       #------------------------------------------------------------------------------------#
-      if (! ("try-error" %in% is(pls.now))){
+      if (boot.fine){
          ib       = ib + 1
 
          #----- Retrieve MSE in case back-transformation is sought. -----------------------#
-         mse.now = MSEP(object=pls.now,"adjCV")
-         mse.now = c(mse.now$val[1,1,ans$ncomp+1])
+         mse.now = mean2(pls.now$residuals[,1,ans$ncomp],na.rm=TRUE)
          #---------------------------------------------------------------------------------#
 
 
@@ -288,7 +299,7 @@ optim.pls <<- function( formula
          #---------------------------------------------------------------------------------#
       }else if (verbose){
          cat0("             > Bootstrap  realisation failed, skip it.")
-      }#end if (! ("try-error" %in% is(pls.now)))
+      }#end if (boot.fine)
       #------------------------------------------------------------------------------------#
    }#end while (ib < n.boot)
    #---------------------------------------------------------------------------------------#
@@ -363,17 +374,20 @@ optim.pls <<- function( formula
          #----- Call PLS. -----------------------------------------------------------------#
          dotnow  = modifyList(x=dotdotdot,val=list(data=sim.data))
          pls.now = try(do.call(what="plsr",args=dotnow),silent=TRUE)
+         syobs.fine = ! ("try-error" %in% is(pls.now))
+         if (syobs.fine){
+            syobs.fine = any(is.finite(pls.now$fitted.values))
+         }#end if (boot.fine)
          #---------------------------------------------------------------------------------#
 
 
          #---------------------------------------------------------------------------------#
          #      Check whether to append to the data set.                                   #
          #---------------------------------------------------------------------------------#
-         if (! ("try-error" %in% is(pls.now))){
+         if (syobs.fine){
 
             #----- Retrieve MSE in case back-transformation is sought. --------------------#
-            mse.now = MSEP(object=pls.now,"adjCV")
-            mse.now = c(mse.now$val[1,1,ans$ncomp+1])
+            mse.now = mean2(pls.now$residuals[,1,ans$ncomp])
             #------------------------------------------------------------------------------#
 
 
@@ -405,7 +419,7 @@ optim.pls <<- function( formula
             #----- Show banner to entertain the bored user. -------------------------------#
             if (verbose) cat0("             > Sigma-y realisation failed, skip it.")
             #------------------------------------------------------------------------------#
-         }#end if (! ("try-error" %in% is(pls.now)))
+         }#end if (syobs.fine)
          #---------------------------------------------------------------------------------#
 
 

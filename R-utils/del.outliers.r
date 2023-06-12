@@ -102,9 +102,9 @@ del.outliers <<- function( x                  # Vector to be evaluated
          #     Discard suspicious data.                                                    #
          #---------------------------------------------------------------------------------#
          is.infty            = is.infinite(thisnorm)
-         is.unreal           = abs(thisnorm  )           %>% max.real
-         is.outlier          = abs(thisnorm  )           %>% max.fine
-         is.spike            = abs(thisnorm-neigh.norm) %>=% spike.min
+         is.unreal           = abs(thisnorm  )          %gt% max.real
+         is.outlier          = abs(thisnorm  )          %gt% max.fine
+         is.spike            = abs(thisnorm-neigh.norm) %ge% spike.min
          weird               = is.infty | is.unreal | (is.outlier & is.spike)
          thisvar[weird]      = NA_real_
          nweird              = sum(weird)
@@ -191,9 +191,9 @@ del.outliers <<- function( x                  # Vector to be evaluated
          #     Discard suspicious data.                                                    #
          #---------------------------------------------------------------------------------#
          is.infty            = is.infinite(thisnorm)
-         is.unreal           = abs(thisnorm  )           %>% max.real
-         is.outlier          = abs(thisnorm  )           %>% max.fine
-         is.spike            = abs(thisnorm-neigh.norm) %>=% spike.min
+         is.unreal           = abs(thisnorm  )          %gt% max.real
+         is.outlier          = abs(thisnorm  )          %gt% max.fine
+         is.spike            = abs(thisnorm-neigh.norm) %ge% spike.min
          weird               = is.infty | is.unreal | (is.outlier & is.spike)
          thisvar[weird]      = NA_real_
          nweird              = sum(weird)

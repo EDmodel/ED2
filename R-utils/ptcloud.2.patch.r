@@ -284,8 +284,8 @@ ptcloud.2.patch <<- function( pt.cloud
             hgt.cutoff = dbh2h(dbh=dbh0.min  ,ipft=pft.def)
             hgt.bottom = hgt.cutoff
          }#end if (cstep %in% "calibration")
-         k.sel = which(hgtprof[ipk] %>=% hgt.cutoff)
-         k.bot = which(hgtprof[ipk] %>=% hgt.bottom)
+         k.sel = which(hgtprof[ipk] %ge% hgt.cutoff)
+         k.bot = which(hgtprof[ipk] %ge% hgt.bottom)
          #---------------------------------------------------------------------------------#
 
 
@@ -305,15 +305,15 @@ ptcloud.2.patch <<- function( pt.cloud
          }else if (length(k.sel) == 0){
             #----- Tallest cohort is outside range of DBH.  Don't constrain. --------------#
             k.idx = ibnd[max(k.bot) + 1]
-            sel   = hgtprof %>=% hgtprof[k.idx]
+            sel   = hgtprof %ge% hgtprof[k.idx]
             bel   = sel
             #------------------------------------------------------------------------------#
          }else{
             #----- Keep only cohorts whose peak is above minimum DBH. ---------------------#
             k.idx = ibnd[max(k.sel) + 1]
             b.idx = ibnd[max(k.bot) + 1]
-            sel   = hgtprof %>=% hgtprof[k.idx]
-            bel   = hgtprof %>=% hgtprof[b.idx]
+            sel   = hgtprof %ge% hgtprof[k.idx]
+            bel   = hgtprof %ge% hgtprof[b.idx]
             #------------------------------------------------------------------------------#
          }#end if ((length(k.sel) == 0) && (length(k.bot) == 0))
          #---------------------------------------------------------------------------------#
@@ -341,7 +341,7 @@ ptcloud.2.patch <<- function( pt.cloud
             #------ Selected data. --------------------------------------------------------#
             ulai = sapply(X=c.ulai,FUN=sum      )
             uipk = sapply(X=c.uipk,FUN=commonest)
-            keep = ulai %>% 0.
+            keep = ulai %gt% 0.
             if (any(keep)){
                ulai = c(ulai [keep],0)
                uipk = uipk   [keep]
@@ -360,7 +360,7 @@ ptcloud.2.patch <<- function( pt.cloud
             #------ Total data. -----------------------------------------------------------#
             blai = sapply(X=b.ulai,FUN=sum      )
             bipk = sapply(X=b.uipk,FUN=commonest)
-            beep = blai %>% 0.
+            beep = blai %gt% 0.
             if (any(beep)){
                blai = c(blai [beep],0)
                bipk = bipk   [beep]
@@ -472,7 +472,7 @@ ptcloud.2.patch <<- function( pt.cloud
          ipft.bft   = rep(mypfts         , each = bcoh ) + 0L * bpft
          wdns.bft   = rep(pft$rho[mypfts], each = bcoh ) + 0. * bpft
          sla.bft    = rep(pft$SLA[mypfts], each = bcoh ) + 0. * bpft
-         bleaf.bft  = ( size2bl(dbh=dbh.bft,hgt=hgt.bft,sla=sla.pft,ipft=ipft.bft)
+         bleaf.bft  = ( size2bl(dbh=dbh.bft,hgt=hgt.bft,sla=sla.bft,ipft=ipft.bft)
                       + 0. * bpft
                       )#end bleaf.bft
          bdead.bft  = size2bd(dbh=dbh.bft,hgt=hgt.bft,ipft=ipft.bft)  + 0. * bpft
@@ -603,7 +603,7 @@ ptcloud.2.patch <<- function( pt.cloud
 
 
             #----- Check for degenerate solution. -----------------------------------------#
-            suspicious = (sum(lai.pft*f.net) %>% 12)
+            suspicious = (sum(lai.pft*f.net) %gt% 12)
             #------------------------------------------------------------------------------#
 
 
@@ -613,11 +613,11 @@ ptcloud.2.patch <<- function( pt.cloud
             # This indicates that most of the returns are coming from below the            #
             # calibration layer (DBH > 10cm) so it is really unconstrained.                #
             #------------------------------------------------------------------------------#
-            x.bsa = (f.bsa %>=% f.max.oth) && (b.bsa %<=% b.min.oth)
-            x.lai = (f.lai %>=% f.max.oth) && (b.lai %<=% b.min.oth)
-            x.agb = (f.agb %>=% f.max.oth) && (b.agb %<=% b.min.oth)
-            x.npl = (f.npl %>=% f.max.npl) && (b.npl %<=% b.min.npl)
-            x.net = (f.net %>=% f.max.oth) && (b.net %<=% b.min.oth)
+            x.bsa = (f.bsa %ge% f.max.oth) && (b.bsa %le% b.min.oth)
+            x.lai = (f.lai %ge% f.max.oth) && (b.lai %le% b.min.oth)
+            x.agb = (f.agb %ge% f.max.oth) && (b.agb %le% b.min.oth)
+            x.npl = (f.npl %ge% f.max.npl) && (b.npl %le% b.min.npl)
+            x.net = (f.net %ge% f.max.oth) && (b.net %le% b.min.oth)
             x.any = x.npl || x.bsa || x.lai || x.agb || x.net
             f.bsa = ifelse(test=x.any,yes=f.net.def,no=f.bsa)
             f.lai = ifelse(test=x.any,yes=f.net.def,no=f.lai)
@@ -724,7 +724,7 @@ ptcloud.2.patch <<- function( pt.cloud
 
 
             #----- Check for degenerate solution. -----------------------------------------#
-            suspicious = suspicious || (pssnow$lai %>% 12)
+            suspicious = suspicious || (pssnow$lai %gt% 12)
             if (suspicious){
                if (nidx > 0){
                   #----- Aggregate information of the suspicious patch. -------------------#
@@ -737,7 +737,7 @@ ptcloud.2.patch <<- function( pt.cloud
                                + css.agf * ( css.bsap + css.bbark + cssnow$bdead )
                                )#end css.agb
                   css.bsa    = 0.25 * pi * cssnow$dbh * cssnow$dbh
-                  css.use    = cssnow$dbh %>=% 10.0
+                  css.use    = cssnow$dbh %ge% 10.0
                   npl.show   = 10000. * sum(cssnow$n[css.use])
                   lai.show   = sum(cssnow$lai)
                   agb.show   = sum(cssnow$n[css.use]*css.agb[css.use])

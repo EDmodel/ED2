@@ -15,14 +15,13 @@ curve.features <<- function( x
                            , span   = 3L
                            , do.pad = TRUE
                            , xscale = max(abs(x),na.rm=TRUE)
-                           , toler  = 10000. * .Machine$double.eps
-                           , toler2 = 100.   * .Machine$double.eps
+                           , toler  = 1.e-4
                            ){
    #----- Make sure span is odd. ----------------------------------------------------------#
    span = as.integer(span)
-   if ( ! ((span %% 2) %==% 1 && span %>=% 3L)){
+   if ( ! ((span %% 2) %eq% 1 && span %ge% 3L)){
       stop(paste0(" Invalid span (",span,")! It must be an odd number (3 or greater)!"))
-   }#end if ( ! ((span %% 2) %==% 1))
+   }#end if ( ! ((span %% 2) %eq% 1))
    #---------------------------------------------------------------------------------------#
 
 
@@ -41,7 +40,7 @@ curve.features <<- function( x
    #---------------------------------------------------------------------------------------#
    #     Make sure that x can be normalised by the given scale.                            #
    #---------------------------------------------------------------------------------------#
-   if (xscale %>% 0.){
+   if (xscale %gt% 0.){
       x = x / xscale
    }else{
       stop(paste0("Invalid xscale (",xscale,").  It must be positive."))
@@ -57,12 +56,22 @@ curve.features <<- function( x
    im1     = pmax(i-1, 1)
    #----- First derivative. ---------------------------------------------------------------#
    xp      = x[ip1] - x[im1]
-   xp      = ifelse(test=abs(xp) %>=% toler, yes=xp, no = 0.)
+   xpscale = max(abs(xp),na.rm=TRUE)
+   if (xpscale %gt% 0.){
+      xp = ifelse(test= abs( xp / xpscale ) %ge% toler, yes= xp / xpscale, no = 0.)
+   }else{
+      xp = 0. * xp
+   }#end if (xpscale %gt% 0.)
    #----- Second derivative. --------------------------------------------------------------#
-   xpp     = x[ip1] - 2.*x[i] + x[im1]
-   xpp[1]  = xpp[2]
-   xpp[nx] = xpp[nx-1] 
-   xpp     = ifelse(test=abs(xpp) %>=% toler2, yes=xpp, no = 0.)
+   xpp      = x[ip1] - 2.*x[i] + x[im1]
+   xpp[1]   = xpp[2]
+   xpp[nx]  = xpp[nx-1] 
+   xppscale = max(abs(xpp),na.rm=TRUE)
+   if (xppscale %gt% 0.){
+      xpp = ifelse(test= abs( xpp / xppscale ) %ge% toler, yes= xpp / xppscale, no = 0.)
+   }else{
+      xpp = 0. * xpp
+   }#end if (xppscale %gt% 0.)
    #---------------------------------------------------------------------------------------#
 
 
@@ -79,6 +88,7 @@ curve.features <<- function( x
    #      Create an zero matrix to pad the answers.                                        #
    #---------------------------------------------------------------------------------------#
    zero    = matrix(data=0.,nrow=soff,ncol=span)
+   x.mat   = t(apply(X=rbind(zero,embed(x=x  ,dimension=span),zero),MARGIN=1,FUN=rev))
    xp.mat  = t(apply(X=rbind(zero,embed(x=xp ,dimension=span),zero),MARGIN=1,FUN=rev))
    xpp.mat = t(apply(X=rbind(zero,embed(x=xpp,dimension=span),zero),MARGIN=1,FUN=rev))
    #---------------------------------------------------------------------------------------#
@@ -102,28 +112,81 @@ curve.features <<- function( x
    xpp.left    = apply( X = xpp.mat, MARGIN = 1, FUN = signblock, block = "left"  )
    xpp.right   = apply( X = xpp.mat, MARGIN = 1, FUN = signblock, block = "right" )
    xpp.both    = apply( X = xpp.mat, MARGIN = 1, FUN = signblock, block = "all"   )
-   #----- Make sure we only select one element in the neighbourhood. ----------------------#
-   xp.zeroest  = apply( X      = abs(xp.mat[,smid]) < abs(xp.mat[,-smid,drop=FALSE])
-                      , MARGIN = 1
-                      , FUN    = all
-                      )#end apply
-   xpp.zeroest = apply( X      = abs(xpp.mat[,smid]) < abs(xpp.mat[,-smid,drop=FALSE])
-                      , MARGIN = 1
-                      , FUN    = all
-                      )#end apply
    #---------------------------------------------------------------------------------------#
 
 
 
    #---------------------------------------------------------------------------------------#
-   #      Find maxima.                                                                     #
+   #      Find features.                                                                   #
    #---------------------------------------------------------------------------------------#
-   ans = data.frame( max = xp.zeroest  & xp.left*xp.right   == -1 & xpp.both         == -1
-                   , min = xp.zeroest  & xp.left*xp.right   == -1 & xpp.both         == +1
-                   , iph = xpp.zeroest & xpp.left*xpp.right == -1 & xpp.left*xp.both == -1
-                   , ipv = xpp.zeroest & xpp.left*xpp.right == -1 & xpp.left*xp.both == +1
+   ans = data.frame( max = xp.left*xp.right   == -1 & xpp.both         == -1
+                   , min = xp.left*xp.right   == -1 & xpp.both         == +1
+                   , iph = xpp.left*xpp.right == -1 & xpp.left*xp.both == -1
+                   , ipv = xpp.left*xpp.right == -1 & xpp.left*xp.both == +1
                    )#end data.frame
    #---------------------------------------------------------------------------------------#
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #    It is often the case that neighbouring cells are selected. In this case we         #
+   # only keep one in the neighbourhood.                                                   #
+   #---------------------------------------------------------------------------------------#
+   #---- Maximum. Pick the maximum in the immediate vicinity. -----------------------------#
+   imax = which(ans$max)
+   if (length(imax) > 1){
+      xtest = NULL
+      for (o in seq(from=-soff,to=soff,by=1)){
+         xoff  = x[imax+o]
+         xoff  = ifelse(test=(imax+o) %in% imax,yes=xoff,no=-Inf)
+         xtest = cbind(xtest,xoff)
+      }#end for (o in seq(from=-soff,to=soff,by=1))
+      xrefr                = apply(X=xtest[,-smid],MARGIN=1,FUN=max)
+      iskip                = xtest[,smid] < xrefr
+      ans$max[imax[iskip]] = FALSE
+   }#end if (length(imax) > 1)
+   #---- Minimum. Pick the minimum in the immediate vicinity. -----------------------------#
+   imin = which(ans$min)
+   if (length(imin) > 1){
+      xtest = NULL
+      for (o in seq(from=-soff,to=soff,by=1)){
+         xoff  = x[imin+o]
+         xoff  = ifelse(test=(imin+o) %in% imin,yes=xoff,no=+Inf)
+         xtest = cbind(xtest,xoff)
+      }#end for (o in seq(from=-soff,to=soff,by=1))
+      xrefr                = apply(X=xtest[,-smid],MARGIN=1,FUN=min)
+      iskip                = xtest[,smid] > xrefr
+      ans$min[imin[iskip]] = FALSE
+   }#end if (length(imin) > 1)
+   #---- Horizontal inflection point.  Pick the flattest point in the immediate vicinity. -#
+   iiph = which(ans$iph)
+   if (length(iiph) > 1){
+      xptest = NULL
+      for (o in seq(from=-soff,to=soff,by=1)){
+         xpoff  = xp[iiph+o]
+         xpoff  = ifelse(test=(iiph+o) %in% iiph,yes=xpoff,no=+Inf)
+         xptest = cbind(xptest,xpoff)
+      }#end for (o in seq(from=-soff,to=soff,by=1))
+      xprefr               = apply(X=abs(xptest[,-smid]),MARGIN=1,FUN=min)
+      iskip                = abs(xptest[,smid]) > xprefr
+      ans$iph[iiph[iskip]] = FALSE
+   }#end if (length(iiph) > 1)
+   #---- Vertical inflection point.  Pick the steepest point in the immediate vicinity. ---#
+   iipv = which(ans$ipv)
+   if (length(iipv) > 1){
+      xptest = NULL
+      for (o in seq(from=-soff,to=soff,by=1)){
+         xpoff  = xp[iipv+o]
+         xpoff  = ifelse(test=(iipv+o) %in% iipv,yes=xpoff,no=0.)
+         xptest = cbind(xptest,xpoff)
+      }#end for (o in seq(from=-soff,to=soff,by=1))
+      xprefr               = apply(X=abs(xptest[,-smid]),MARGIN=1,FUN=max)
+      iskip                = abs(xptest[,smid]) < xprefr
+      ans$ipv[iipv[iskip]] = FALSE
+   }#end if (length(iipv) > 1)
+   #---------------------------------------------------------------------------------------#
+
+
 
 
    #----- Flag edges as inflection points in case their first derivative is not zero. -----#

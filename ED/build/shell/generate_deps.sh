@@ -4,6 +4,7 @@ includes="-I ${edroot}/src/include"
 edsrc="${edroot}/src/*/*.f90 ${edroot}/src/*/*.F90 ${edroot}/src/*/*.c"
 rm -f dependency.mk
 ./sfmakedepend.pl ${includes} -f dependency.mk ${bramssrc} ${edsrc} 2> /dev/null
+sed -i~ s@mpi.mod@@g dependency.mk
 sed -i~ s@hdf5.mod@@g dependency.mk
 sed -i~ s@ifport.mod@@g dependency.mk
 sed -i~ s@leaf.coms.mod@@g dependency.mk

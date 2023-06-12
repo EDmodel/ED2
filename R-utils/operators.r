@@ -5,7 +5,7 @@
 
 
 #----- Safe logical operators.  These will always return FALSE if x or y are not finite. --#
-'%==%' <<- function(x,y){
+'%eq%' <<- function(x,y){
    if (any(c(FALSE,is.numeric(x) & is.numeric(y)),na.rm=TRUE)){
       ans = is.finite(unlist(x)) & is.finite(unlist(y)) & x == y
    }else{
@@ -13,7 +13,7 @@
    }#end if
    return(ans)
 }#end function
-'%!=%' <<- function(x,y){
+'%ne%' <<- function(x,y){
    if (any(c(FALSE,is.numeric(x) & is.numeric(y)),na.rm=TRUE)){
       ans = is.finite(unlist(x)) & is.finite(unlist(y)) & x != y
    }else{
@@ -21,10 +21,10 @@
    }#end if
    return(ans)
 }#end function
-'%>%'  <<- function(x,y) is.finite(unlist(x)) & is.finite(unlist(y)) & x  > y
-'%<%'  <<- function(x,y) is.finite(unlist(x)) & is.finite(unlist(y)) & x  < y
-'%>=%' <<- function(x,y) is.finite(unlist(x)) & is.finite(unlist(y)) & x >= y
-'%<=%' <<- function(x,y) is.finite(unlist(x)) & is.finite(unlist(y)) & x <= y
+'%gt%' <<- function(x,y) is.finite(unlist(x)) & is.finite(unlist(y)) & x  > y
+'%lt%' <<- function(x,y) is.finite(unlist(x)) & is.finite(unlist(y)) & x  < y
+'%ge%' <<- function(x,y) is.finite(unlist(x)) & is.finite(unlist(y)) & x >= y
+'%le%' <<- function(x,y) is.finite(unlist(x)) & is.finite(unlist(y)) & x <= y
 #------------------------------------------------------------------------------------------#
 
 

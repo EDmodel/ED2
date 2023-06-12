@@ -8,7 +8,7 @@ commonest <<- function(x,na.rm=FALSE) {
    unique.x = unique(x)
    nu       = length(unique.x)
    idx      = which.max(tabulate(match(x, unique.x)))
-   fine     = is.finite(idx) && idx %>=% 1 && idx %<=% nu
+   fine     = is.finite(idx) && idx %ge% 1 && idx %le% nu
    if (fine){
       often = unique.x[idx]
    }else{
@@ -30,9 +30,9 @@ commonest <<- function(x,na.rm=FALSE) {
 weighted.commonest <<- function(x,w,na.rm=FALSE) {
    #------ Discard NA entries. ------------------------------------------------------------#
    if (na.rm){
-      keep = (! is.na(x)) & (w %>% 0)
+      keep = (! is.na(x)) & (w %gt% 0)
    }else{
-      keep = w %>% 0
+      keep = w %gt% 0
    }#end if (na.rm)
    #---------------------------------------------------------------------------------------#
 

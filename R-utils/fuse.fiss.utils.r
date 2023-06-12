@@ -250,15 +250,21 @@ fuse.trees <<- function(receptor,donor,don.2.rec,survey.years,sci.strict=TRUE){
          #---------------------------------------------------------------------------------#
 
 
-      }else if (  length(grep(pattern="dead."     ,x=vname)) > 0
-               || length(grep(pattern="canopy."   ,x=vname)) > 0
-               || length(grep(pattern="height."   ,x=vname)) > 0
-               || length(grep(pattern="band."     ,x=vname)) > 0
-               || length(grep(pattern="pom."      ,x=vname)) > 0
-               || length(grep(pattern="ladder"    ,x=vname)) > 0
-               || length(grep(pattern="cnpj"      ,x=vname)) > 0
-               || length(grep(pattern="soil"      ,x=vname)) > 0
-               || length(grep(pattern="code"      ,x=vname)) > 0
+      }else if (  any(grepl(pattern="dead."         ,x=vname))
+               || any(grepl(pattern="canopy."       ,x=vname))
+               || any(grepl(pattern="height."       ,x=vname))
+               || any(grepl(pattern="band."         ,x=vname))
+               || any(grepl(pattern="pom."          ,x=vname))
+               || any(grepl(pattern="ladder"        ,x=vname))
+               || any(grepl(pattern="cnpj"          ,x=vname))
+               || any(grepl(pattern="soil"          ,x=vname))
+               || any(grepl(pattern="code"          ,x=vname))
+               || any(grepl(pattern="plant.ID"      ,x=vname))
+               || any(grepl(pattern="voucher.number",x=vname))
+               || any(grepl(pattern="status"        ,x=vname))
+               || any(grepl(pattern="tax.reliab"    ,x=vname))
+               || any(grepl(pattern="flag"          ,x=vname))
+               || any(grepl(pattern="n.tag"         ,x=vname))
                ){
          #---- Variables that we update only if they have NA. -----------------------------#
          sel                      = ( is.na(receptor[[vname]])
@@ -332,7 +338,7 @@ fuse.trees <<- function(receptor,donor,don.2.rec,survey.years,sci.strict=TRUE){
 
       }else{
          #----- Missing instructions, quit... ---------------------------------------------#
-         cat ("     * VARIABLE: ",vname," has no instrucion!","\n")
+         cat ("     * VARIABLE: ",vname," has no instruction!","\n")
          stop("Could not process the variable, sorry!")
          #---------------------------------------------------------------------------------#
       }#end if
@@ -351,19 +357,25 @@ fuse.trees <<- function(receptor,donor,don.2.rec,survey.years,sci.strict=TRUE){
 
 #==========================================================================================#
 #==========================================================================================#
-#     Function blend.trees                                                                 #
+#     Function merge.trees                                                                 #
 #                                                                                          #
-#     This function blends one tree to the other.  This is slightly different from the     #
-# fusion routine above because blending adds information but compares the periods for      #
+#     This function merges one tree to the other.  This is slightly different from the     #
+# fusion routine above because merging adds information but compares the periods for       #
 # which information is to be added.  The other difference is that IT CANNOT BE USED IN     #
 # VECTOR MODE: it works between one donor and one receptor only.                           #
 #                                                                                          #
 #     receptor        -- The data frame that will receive the data                         #
 #     donor           -- The data frame that will send the data                            #
-#     don.2.rec       -- The indices of the receptor that will receive the data.           #
-#     update.yr.notes -- Should we use notes.orig to make year notes? (TRUE/FALSE).        #
+#     years.merge     -- Years to merge data.                                              #
+#     use.xy          -- Variable to force using either donor ("from") or receptor ("to")  #
+#                        coordinate information.  Default (NA_character_) is to check for  #
+#                        merged year and data availability.                                #
+#     use.tag         -- Variable to force using either donor ("from") or receptor ("to")  #
+#                        tag information.  Default (NA_character_) is to check for         #
+#                        merged year and data availability.                                #
 #------------------------------------------------------------------------------------------#
-blend.trees = function(receptor,donor,years.blend){
+merge.trees = function(receptor,donor,years.merge
+                      ,use.xy=NA_character_,use.tag=NA_character_){
 
    #---------------------------------------------------------------------------------------#
    #       Get the list of all variables.                                                  #
@@ -394,7 +406,7 @@ blend.trees = function(receptor,donor,years.blend){
       vname       = variables[nv]
       old         = paste("old",vname,sep=".")
       first       = paste(vname,"1st",sep=".")
-      blend.input = paste(substring(vname,1,nchar(vname)-5),years.blend,sep=".")
+      merge.input = paste(substring(vname,1,nchar(vname)-5),years.merge,sep=".")
       #------------------------------------------------------------------------------------#
 
 
@@ -402,16 +414,17 @@ blend.trees = function(receptor,donor,years.blend){
       #------------------------------------------------------------------------------------#
       #      Decide what to do based on the variable.                                      #
       #------------------------------------------------------------------------------------#
-      if ( length(grep(pattern="trans"     ,x=vname)) > 0 ||
-           length(grep(pattern="full.tag"  ,x=vname)) > 0 ||
-           length(grep(pattern="old."      ,x=vname)) > 0 ||
-           length(grep(pattern=".1st"      ,x=vname)) > 0 ||
-           length(grep(pattern="scientific",x=vname)) > 0 ||
-           length(grep(pattern="genus"     ,x=vname)) > 0 ||
-           length(grep(pattern="family"    ,x=vname)) > 0 ||
-           length(grep(pattern="year.last" ,x=vname)) > 0 ||
-           length(grep(pattern="cnpj"      ,x=vname)) > 0 ||
-           length(grep(pattern="conflict." ,x=vname)) > 0){
+      if ( any(grepl(pattern="trans"     ,x=vname)) ||
+           any(grepl(pattern="full.tag"  ,x=vname)) ||
+           any(grepl(pattern="old."      ,x=vname)) ||
+           any(grepl(pattern=".1st"      ,x=vname)) ||
+           any(grepl(pattern="scientific",x=vname)) ||
+           any(grepl(pattern="genus"     ,x=vname)) ||
+           any(grepl(pattern="family"    ,x=vname)) ||
+           any(grepl(pattern="year.last" ,x=vname)) ||
+           any(grepl(pattern="cnpj"      ,x=vname)) ||
+           any(grepl(pattern="conflict." ,x=vname))
+           ){
          #---------------------------------------------------------------------------------#
          #     We skip these variables.                                                    #
          #---------------------------------------------------------------------------------#
@@ -422,7 +435,7 @@ blend.trees = function(receptor,donor,years.blend){
 
       }else if (vname %in% c("year.added")){
          #---- We always keep the lowest value. -------------------------------------------#
-         receptor$year.added = min(receptor$year.added,min(years.blend))
+         receptor$year.added = min(receptor$year.added,min(years.merge))
          #---------------------------------------------------------------------------------#
 
 
@@ -440,16 +453,17 @@ blend.trees = function(receptor,donor,years.blend){
          #---------------------------------------------------------------------------------#
 
 
-      }else if (vname %in% c("tag","x","y")){
+      }else if (vname %in% c("x","y")){
          #---------------------------------------------------------------------------------#
-         #     We will consider changing the values only if the donor has information.     #
+         #     We will consider changing the values only if the donor has information or   #
+         # if we have clear instructions of what to do.                                    #
          #---------------------------------------------------------------------------------#
-         if (! is.na(donor[[vname]])){
+         if (is.na(use.xy) && (! is.na(donor[[vname]]))){
             #------------------------------------------------------------------------------#
             #     We update coordinates only if the last year of the original dataset was  #
-            # less than the years we are blending.                                         #
+            # less than the years we are merging.                                          #
             #------------------------------------------------------------------------------#
-            if (  (  ( max(years.blend)  >  receptor$year.last )
+            if (  (  ( max(years.merge)  >  receptor$year.last )
                   && ( receptor[[vname]] != donor[[vname]]     ) )
                || is.na(receptor[[vname]]) ){
                receptor[[old  ]] = receptor[[vname]]
@@ -459,16 +473,83 @@ blend.trees = function(receptor,donor,years.blend){
 
 
             #------------------------------------------------------------------------------#
-            #     We don't change the "1st" variables unless the data we are blending is   #
+            #     We don't change the "1st" variables unless the data we are merging is    #
             # older than the first year the receptor has data.                             #
             #------------------------------------------------------------------------------#
-            if (  (  ( min(years.blend)  <  receptor$year.1st  )
+            if (  (  ( min(years.merge)  <  receptor$year.1st  )
                   && ( receptor[[vname]] != donor[[vname]]     ) )
                || is.na(receptor[[vname]]) ){
                receptor[[first]] = donor[[first]]
             }#end if
             #------------------------------------------------------------------------------#
-         }#end if
+         }else if (use.xy %in% "from"){
+            #------------------------------------------------------------------------------#
+            #     Set coordinates based on donor.                                          #
+            #------------------------------------------------------------------------------#
+            receptor[[vname]] = donor[[vname]]
+            receptor[[old  ]] = donor[[old  ]]
+            receptor[[first]] = donor[[first]]
+            #------------------------------------------------------------------------------#
+         }else if (use.xy %in% "to"){
+            #------------------------------------------------------------------------------#
+            #     Set coordinates based on receptor.  Dummy commands, no need to do        #
+            # anything.                                                                    #
+            #------------------------------------------------------------------------------#
+            receptor[[vname]] = receptor[[vname]]
+            receptor[[old  ]] = receptor[[old  ]]
+            receptor[[first]] = receptor[[first]]
+            #------------------------------------------------------------------------------#
+         }#end if (is.na(use.xy) && (! is.na(donor[[vname]])))
+         #---------------------------------------------------------------------------------#
+
+
+      }else if (vname %in% c("tag")){
+         #---------------------------------------------------------------------------------#
+         #     We will consider changing the values only if the donor has information or   #
+         # if we have clear instructions of what to do.                                    #
+         #---------------------------------------------------------------------------------#
+         if (is.na(use.tag) && (! is.na(donor[[vname]]))){
+            #------------------------------------------------------------------------------#
+            #     We update coordinates only if the last year of the original dataset was  #
+            # less than the years we are merging.                                          #
+            #------------------------------------------------------------------------------#
+            if (  (  ( max(years.merge)  >  receptor$year.last )
+                  && ( receptor[[vname]] != donor[[vname]]     ) )
+               || is.na(receptor[[vname]]) ){
+               receptor[[old  ]] = receptor[[vname]]
+               receptor[[vname]] = donor   [[vname]]
+            }#end if
+            #------------------------------------------------------------------------------#
+
+
+            #------------------------------------------------------------------------------#
+            #     We don't change the "1st" variables unless the data we are merging is    #
+            # older than the first year the receptor has data.                             #
+            #------------------------------------------------------------------------------#
+            if (  (  ( min(years.merge)  <  receptor$year.1st  )
+                  && ( receptor[[vname]] != donor[[vname]]     ) )
+               || is.na(receptor[[vname]]) ){
+               receptor[[first]] = donor[[first]]
+            }#end if
+            #------------------------------------------------------------------------------#
+         }else if (use.tag %in% "from"){
+            #------------------------------------------------------------------------------#
+            #     Set coordinates based on donor.                                          #
+            #------------------------------------------------------------------------------#
+            receptor[[vname]] = donor[[vname]]
+            receptor[[old  ]] = donor[[old  ]]
+            receptor[[first]] = donor[[first]]
+            #------------------------------------------------------------------------------#
+         }else if (use.tag %in% "to"){
+            #------------------------------------------------------------------------------#
+            #     Set coordinates based on receptor.  Dummy commands, no need to do        #
+            # anything.                                                                    #
+            #------------------------------------------------------------------------------#
+            receptor[[vname]] = receptor[[vname]]
+            receptor[[old  ]] = receptor[[old  ]]
+            receptor[[first]] = receptor[[first]]
+            #------------------------------------------------------------------------------#
+         }#end if (is.na(use.tag) && (! is.na(donor[[vname]])))
          #---------------------------------------------------------------------------------#
 
 
@@ -528,7 +609,7 @@ blend.trees = function(receptor,donor,years.blend){
             #------------------------------------------------------------------------------#
             #     Check whether we update the common name.                                 #
             #------------------------------------------------------------------------------#
-            if ( receptor$year.last < max(years.blend) ){
+            if ( receptor$year.last < max(years.merge) ){
                copy.common = ! donor.c.ignotum
                update.old  = ( copy.common && (! receptor.c.ignotum)
                                            && receptor$common != donor$common )
@@ -541,7 +622,7 @@ blend.trees = function(receptor,donor,years.blend){
             #------------------------------------------------------------------------------#
             #     Check whether the donor first name is older than the receptor one.       #
             #------------------------------------------------------------------------------#
-            if ( receptor$year.1st > min(years.blend) ){
+            if ( receptor$year.1st > min(years.merge) ){
                if ( ! donor.f.ignotum ){
                   receptor$common.1st = donor$common.1st
                }#end if
@@ -600,9 +681,9 @@ blend.trees = function(receptor,donor,years.blend){
                || ( length(grep(pattern="notes.",x=vname)) > 0
                   &&  ! vname %in% c("notes.orig","notes.qaqc") ) ){
          #---------------------------------------------------------------------------------#
-         #      Variables that we update only if this is the blending year.                #
+         #      Variables that we update only if this is the merging year.                 #
          #---------------------------------------------------------------------------------#
-         if (vname %in% blend.input && (! is.na(donor[[vname]]))){
+         if (vname %in% merge.input && (! is.na(donor[[vname]]))){
             #----- Copy only the cells that had no info before. ---------------------------#
             receptor[[vname]] = donor[[vname]]
             #------------------------------------------------------------------------------#
@@ -612,7 +693,7 @@ blend.trees = function(receptor,donor,years.blend){
 
          #---------------------------------------------------------------------------------#
          #     For DBH, we also check whether they match in case of overlap, and flag any  #
-         # mismatch for blending years.                                                    #
+         # mismatch for merging years.                                                     #
          #---------------------------------------------------------------------------------#
          if ( length(grep(pattern="dbh."  ,x=vname)) > 0){
             dbh.vars              = c(dbh.vars,vname)
@@ -624,11 +705,18 @@ blend.trees = function(receptor,donor,years.blend){
          #---------------------------------------------------------------------------------#
 
 
-      }else if (  length(grep(pattern="canopy."   ,x=vname)) > 0
-               || length(grep(pattern="height."   ,x=vname)) > 0
-               || length(grep(pattern="band."     ,x=vname)) > 0
-               || length(grep(pattern="pom."      ,x=vname)) > 0
-               || length(grep(pattern="ladder"    ,x=vname)) > 0
+      }else if (  any(grepl(pattern="canopy."       ,x=vname))
+               || any(grepl(pattern="height."       ,x=vname))
+               || any(grepl(pattern="band."         ,x=vname))
+               || any(grepl(pattern="pom."          ,x=vname))
+               || any(grepl(pattern="ladder"        ,x=vname))
+               || any(grepl(pattern="plant.ID"      ,x=vname))
+               || any(grepl(pattern="voucher.number",x=vname))
+               || any(grepl(pattern="status"        ,x=vname))
+               || any(grepl(pattern="tax.reliab"    ,x=vname))
+               || any(grepl(pattern="flag"          ,x=vname))
+               || any(grepl(pattern="n.tag"         ,x=vname))
+
                ){
          #---- Variables that we update only if they have NA. -----------------------------#
          sel                      = ( is.na(receptor[[vname]])
@@ -645,7 +733,7 @@ blend.trees = function(receptor,donor,years.blend){
 
       }else{
          #----- Missing instructions, quit... ---------------------------------------------#
-         cat ("     * VARIABLE: ",vname," has no instrucion!","\n")
+         cat ("     * VARIABLE: ",vname," has no instruction!","\n")
          stop("Could not process the variable, sorry!")
          #---------------------------------------------------------------------------------#
       }#end if

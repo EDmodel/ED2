@@ -115,7 +115,7 @@ del.bad.rshort <<- function(dat,rshort.day.min=0.,par.frac.min=0.80,alb.max=0.30
    #---------------------------------------------------------------------------------------#
    #     We don't let radiation exceed maximum.                                            #
    #---------------------------------------------------------------------------------------#
-   cat ("   - Ensure daytime radiation does not exceed maximum.")
+   cat0("   - Ensure daytime radiation does not exceed maximum.")
    dat$rshort.in[dat$daytime] = pmin(dat$rshort.in[dat$daytime],dat$rshort.pot[dat$daytime])
    dat$par.in   [dat$daytime] = pmin(dat$par.in   [dat$daytime],dat$par.pot   [dat$daytime])
    #---------------------------------------------------------------------------------------#

@@ -88,7 +88,7 @@ gridded.plot <<- function( x                = seq(from=0,to=1,len=nrow(z))
 
 
    #----- No messed-up axes are allowed, they must increase. ------------------------------#
-   if (any(diff(x) %<=% 0) || any(diff(y) %<=% 0)){
+   if (any(diff(x) %le% 0) || any(diff(y) %le% 0)){
        stop("increasing x and y values expected")
    }#end if
    #---------------------------------------------------------------------------------------#
@@ -246,7 +246,19 @@ gridded.plot <<- function( x                = seq(from=0,to=1,len=nrow(z))
 
 
       #----- Plot the title. --------------------------------------------------------------#
-      if (! is.null(key.title)) do.call(what="title",args=key.title)
+      if (! is.null(key.title)){
+         #---- Make sure that the key title will work with multiple configurations. -------#
+         if (! is.list(key.title)){
+            key.title=list(main=key.title)
+         }else if (! "main" %in% names(key.title)){
+            names(key.title)[[1]] = "main"
+         }#end if
+         #---------------------------------------------------------------------------------#
+
+         #----- Call the command. ---------------------------------------------------------#
+         do.call(what="title",args=key.title)
+         #---------------------------------------------------------------------------------#
+      }#end if (! is.null(key.title))
       #------------------------------------------------------------------------------------#
    #=======================================================================================#
    #=======================================================================================#

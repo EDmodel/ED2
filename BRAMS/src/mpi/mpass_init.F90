@@ -21,12 +21,14 @@
 subroutine masterput_processid(nproc,taskids,master_num)
 
    use rpara
+#if defined(RAMS_MPI)
+   use mpi
+#endif
 
    implicit none
    !----- External variable declaration ---------------------------------------------------!
 #if defined(RAMS_MPI)
    include 'interface.h'
-   include 'mpif.h'
 #endif
    !----- Arguments -----------------------------------------------------------------------!
    integer, dimension(*), intent(in) :: taskids
@@ -165,11 +167,13 @@ subroutine masterput_nl(master_num)
                                  , ribmax                      & ! intent(in)
                                  , leaf_maxwhc                 & ! intent(in)
                                  , min_patch_area              ! ! intent(in)
+#if defined(RAMS_MPI)
+   use mpi
+#endif
    implicit none
    !----- External variable declaration ---------------------------------------------------!
 #if defined(RAMS_MPI)
    include 'interface.h'
-   include 'mpif.h'
 #endif
    !----- Arguments -----------------------------------------------------------------------!
    integer, intent(in) :: master_num
@@ -498,12 +502,14 @@ subroutine masterput_gridinit(master_num)
 
    use mem_grid
    use rpara
+#if defined(RAMS_MPI)
+   use mpi
+#endif
 
    implicit none
    !----- External variable declaration ---------------------------------------------------!
 #if (RAMS_MPI)
    include 'interface.h'
-   include 'mpif.h'
 #endif
    !----- Arguments -----------------------------------------------------------------------!
    integer, intent(in) :: master_num
@@ -550,11 +556,13 @@ subroutine masterput_grid_dimens(master_num)
    use mem_grid
    use cyclic_mod
    use rpara
+#if defined(RAMS_MPI)
+   use mpi
+#endif
 
    implicit none
    !----- External variable declaration ---------------------------------------------------!
 #if defined(RAMS_MPI)
-   include 'mpif.h'
    include 'interface.h'
 #endif
    !----- Arguments -----------------------------------------------------------------------!
@@ -640,12 +648,14 @@ subroutine masterput_gridset(master_num)
 
    use mem_grid
    use rpara
+#if defined(RAMS_MPI)
+   use mpi
+#endif
 
    implicit none
    !----- External variable declaration ---------------------------------------------------!
 #if defined(RAMS_MPI)
    include 'interface.h'
-   include 'mpif.h'
 #endif
    !----- Arguments -----------------------------------------------------------------------!
    integer, intent(in) :: master_num
@@ -702,13 +712,15 @@ subroutine masterput_misc(master_num)
    use rpara
    use mem_cuparm
    use ref_sounding
+#if defined(RAMS_MPI)
+   use mpi
+#endif
 
    implicit none
 
    !----- External variable declaration ---------------------------------------------------!
 #if defined(RAMS_MPI)
    include 'interface.h'
-   include 'mpif.h'
 #endif
    !----- Arguments -----------------------------------------------------------------------!
    integer                      , intent(in) :: master_num
@@ -777,12 +789,14 @@ subroutine masterput_cofnest(master_num)
 
    use mem_grid
    use rpara
+#if defined(RAMS_MPI)
+   use mpi
+#endif
 
    implicit none
    !----- External variable declaration ---------------------------------------------------!
 #if defined(RAMS_MPI)
    include 'interface.h'
-   include 'mpif.h'
 #endif
    !----- Arguments -----------------------------------------------------------------------!
    integer, intent(in) :: master_num
@@ -841,12 +855,14 @@ subroutine masterput_micphys(master_num)
 
    use micphys
    use rpara
+#if defined(RAMS_MPI)
+   use mpi
+#endif
 
    implicit none
    !----- External variable declaration ---------------------------------------------------!
 #if defined(RAMS_MPI)
    include 'interface.h'
-   include 'mpif.h'
 #endif
    !----- Arguments -----------------------------------------------------------------------!
    integer, intent(in) :: master_num
@@ -900,12 +916,14 @@ subroutine nodeget_processid(init)
 
    use grid_dims
    use node_mod
+#if defined(RAMS_MPI)
+   use mpi
+#endif
 
    implicit none
    !----- External variable declaration ---------------------------------------------------!
 #if defined(RAMS_MPI)
    include 'interface.h'
-   include 'mpif.h'
 #endif
    !----- Arguments -----------------------------------------------------------------------!
    integer, intent(in) :: init
@@ -1033,11 +1051,13 @@ subroutine nodeget_nl
                                  , ribmax                      & ! intent(out)
                                  , leaf_maxwhc                 & ! intent(out)
                                  , min_patch_area              ! ! intent(out)
+#if defined(RAMS_MPI)
+   use mpi
+#endif
    implicit none
    !----- External variable declaration ---------------------------------------------------!
 #if defined(RAMS_MPI)
    include 'interface.h'
-   include 'mpif.h'
 #endif
    !----- Local variables -----------------------------------------------------------------!
    integer :: nm,ierr
@@ -1363,12 +1383,14 @@ subroutine nodeget_gridinit
 
    use mem_grid
    use node_mod
+#if defined(RAMS_MPI)
+   use mpi
+#endif
 
    implicit none
    !----- External variable declaration ---------------------------------------------------!
 #if defined(RAMS_MPI)
    include 'interface.h'
-   include 'mpif.h'
 #endif
    !----- Local variables -----------------------------------------------------------------!
    integer :: nm,ierr
@@ -1413,12 +1435,14 @@ subroutine nodeget_grid_dimens()
    use mem_grid
    use node_mod
    use cyclic_mod 
+#if defined(RAMS_MPI)
+   use mpi
+#endif
 
    implicit none
    !----- External variable declaration ---------------------------------------------------!
 #if defined(RAMS_MPI)
    include 'interface.h'
-   include 'mpif.h'
 #endif
    !----- Local variables -----------------------------------------------------------------!
    integer                              :: nm
@@ -1525,12 +1549,14 @@ subroutine nodeget_gridset
 
    use mem_grid
    use node_mod
+#if defined(RAMS_MPI)
+   use mpi
+#endif
    implicit none
 
    !----- External variable declaration ---------------------------------------------------!
 #if defined(RAMS_MPI)
    include 'interface.h'
-   include 'mpif.h'
 #endif
    !----- Local variables -----------------------------------------------------------------!
    integer             :: ierr
@@ -1586,12 +1612,14 @@ subroutine nodeget_misc
    use mem_cuparm
    use ref_sounding
    use node_mod, only : master_num
+#if defined(RAMS_MPI)
+   use mpi
+#endif
 
    implicit none
    !----- External variable declaration ---------------------------------------------------!
 #if defined(RAMS_MPI)
    include 'interface.h'
-   include 'mpif.h'
 #endif
    !----- Local variables -----------------------------------------------------------------!
    integer             :: ierr
@@ -1659,12 +1687,14 @@ subroutine nodeget_cofnest
 
    use mem_grid
    use node_mod, only : master_num
+#if defined(RAMS_MPI)
+   use mpi
+#endif
 
    implicit none
    !----- External variable declaration ---------------------------------------------------!
 #if defined(RAMS_MPI)
    include 'interface.h'
-   include 'mpif.h'
 #endif
    !----- Local variables -----------------------------------------------------------------!
    integer             :: ierr
@@ -1722,12 +1752,14 @@ subroutine nodeget_micphys
 
    use micphys
    use node_mod, only : master_num
+#if defined(RAMS_MPI)
+   use mpi
+#endif
 
    implicit none
    !----- External variable declaration ---------------------------------------------------!
 #if defined(RAMS_MPI)
    include 'interface.h'
-   include 'mpif.h'
 #endif
    !----- Local variables -----------------------------------------------------------------!
    integer             :: ierr

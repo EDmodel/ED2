@@ -30,6 +30,7 @@ module ed_print
    subroutine print_fields(ifm,cgrid)
     
 #if defined(RAMS_MPI)
+      use mpi
       use ed_node_coms , only : mynum         & ! intent(in)
                               , nnodetot      & ! intent(in)
                               , sendnum       & ! intent(in)
@@ -49,10 +50,6 @@ module ed_print
                               , num_var       ! ! intent(in)
       use ed_max_dims  , only : str_len_short ! ! intent(in)
       implicit none
-      !----- Standard common blocks. ------------------------------------------------------!
-#if defined(RAMS_MPI)
-      include 'mpif.h'
-#endif
       !----- Arguments. -------------------------------------------------------------------!
       integer                            , intent(in) :: ifm
       type(edtype)                       , target     :: cgrid

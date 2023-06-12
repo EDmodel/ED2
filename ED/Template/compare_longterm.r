@@ -14,7 +14,7 @@ graphics.off()
 #      Here is the user defined variable section.                                          #
 #------------------------------------------------------------------------------------------#
 here    = getwd()                               #   Current directory
-srcdir  = "/n/home00/mlongo/util/Rsc"           #   Script directory
+srcdir  = "/n/home00/mlongo/Util/Rsc"           #   Script directory
 ibackground    = 0                              # Make figures compatible to background
                                                 # 0 -- white
                                                 # 1 -- black
@@ -236,7 +236,7 @@ n             = n + 1
 compvar[[ n]] = list( vnam         = "agb"
                     , desc         = "Above-ground biomass"
                     , unit         = untab$kgcom2
-                    , cscheme.mean = "panoply"
+                    , cscheme.mean = "irdbu"
                     , hue.low      = "blue"
                     , hue.high     = "orangered"
                     , szpftvar     = TRUE
@@ -249,7 +249,7 @@ n             = n + 1
 compvar[[ n]] = list( vnam         = "ba"
                     , desc         = "Basal area"
                     , unit         = untab$m2om2
-                    , cscheme.mean = "panoply"
+                    , cscheme.mean = "irdbu"
                     , hue.low      = "blue"
                     , hue.high     = "orangered"
                     , szpftvar     = TRUE
@@ -262,7 +262,7 @@ n             = n + 1
 compvar[[ n]] = list( vnam         = "lai"
                     , desc         = "Leaf area index"
                     , unit         = untab$m2lom2
-                    , cscheme.mean = "panoply"
+                    , cscheme.mean = "irdbu"
                     , hue.low      = "blue"
                     , hue.high     = "orangered"
                     , szpftvar     = TRUE
@@ -275,7 +275,7 @@ n             = n + 1
 compvar[[ n]] = list( vnam         = "gpp"
                     , desc         = "Gross primary productivity"
                     , unit         = untab$kgcom2oyr
-                    , cscheme.mean = "panoply"
+                    , cscheme.mean = "irdbu"
                     , hue.low      = "blue"
                     , hue.high     = "orangered"
                     , szpftvar     = TRUE
@@ -288,7 +288,7 @@ n             = n + 1
 compvar[[ n]] = list( vnam         = "npp"
                     , desc         = "Net primary productivity"
                     , unit         = untab$kgcom2oyr
-                    , cscheme.mean = "panoply"
+                    , cscheme.mean = "irdbu"
                     , hue.low      = "blue"
                     , hue.high     = "orangered"
                     , szpftvar     = TRUE
@@ -301,7 +301,7 @@ n             = n + 1
 compvar[[ n]] = list( vnam         = "plant.resp"
                     , desc         = "Plant respiration"
                     , unit         = untab$kgcom2oyr
-                    , cscheme.mean = "panoply"
+                    , cscheme.mean = "irdbu"
                     , hue.low      = "blue"
                     , hue.high     = "orangered"
                     , szpftvar     = TRUE
@@ -314,7 +314,7 @@ n             = n + 1
 compvar[[ n]] = list( vnam         = "cba"
                     , desc         = "Carbon balance"
                     , unit         = untab$kgcom2oyr
-                    , cscheme.mean = "panoply"
+                    , cscheme.mean = "irdbu"
                     , hue.low      = "blue"
                     , hue.high     = "orangered"
                     , szpftvar     = TRUE
@@ -327,7 +327,7 @@ n             = n + 1
 compvar[[ n]] = list( vnam         = "reco"
                     , desc         = "Ecosystem respiration"
                     , unit         = untab$kgcom2oyr
-                    , cscheme.mean = "panoply"
+                    , cscheme.mean = "irdbu"
                     , hue.low      = "blue"
                     , hue.high     = "orangered"
                     , szpftvar     = FALSE
@@ -340,7 +340,7 @@ n             = n + 1
 compvar[[ n]] = list( vnam         = "nep"
                     , desc         = "Net Ecosystem Productivity"
                     , unit         = untab$kgcom2oyr
-                    , cscheme.mean = "panoply"
+                    , cscheme.mean = "irdbu"
                     , hue.low      = "blue"
                     , hue.high     = "orangered"
                     , szpftvar     = FALSE
@@ -353,7 +353,7 @@ n             = n + 1
 compvar[[ n]] = list( vnam         = "hflxca"
                     , desc         = "Sensible heat flux"
                     , unit         = untab$wom2
-                    , cscheme.mean = "panoply"
+                    , cscheme.mean = "irdbu"
                     , hue.low      = "blue"
                     , hue.high     = "orangered"
                     , szpftvar     = FALSE
@@ -366,7 +366,7 @@ n             = n + 1
 compvar[[ n]] = list( vnam         = "wflxca"
                     , desc         = "Water vapour flux"
                     , unit         = untab$kgwom2oday
-                    , cscheme.mean = "panoply"
+                    , cscheme.mean = "irdbu"
                     , hue.low      = "blue"
                     , hue.high     = "orangered"
                     , szpftvar     = FALSE
@@ -379,7 +379,7 @@ n             = n + 1
 compvar[[ n]] = list( vnam         = "transp"
                     , desc         = "Transpiration"
                     , unit         = untab$kgwom2oday
-                    , cscheme.mean = "panoply"
+                    , cscheme.mean = "irdbu"
                     , hue.low      = "blue"
                     , hue.high     = "orangered"
                     , szpftvar     = TRUE
@@ -392,7 +392,7 @@ n             = n + 1
 compvar[[ n]] = list( vnam         = "bowen"
                     , desc         = "Bowen ratio"
                     , unit         = untab$empty
-                    , cscheme.mean = "panoply"
+                    , cscheme.mean = "irdbu"
                     , hue.low      = "blue"
                     , hue.high     = "orangered"
                     , szpftvar     = FALSE
@@ -405,7 +405,7 @@ n             = n + 1
 compvar[[ n]] = list( vnam         = "tratio"
                     , desc         = "Transpiration ratio"
                     , unit         = untab$empty
-                    , cscheme.mean = "panoply"
+                    , cscheme.mean = "irdbu"
                     , hue.low      = "blue"
                     , hue.high     = "orangered"
                     , szpftvar     = FALSE
@@ -418,7 +418,7 @@ n             = n + 1
 compvar[[ n]] = list( vnam         = "ustar"
                     , desc         = "Friction velocity"
                     , unit         = untab$mos
-                    , cscheme.mean = "panoply"
+                    , cscheme.mean = "irdbu"
                     , hue.low      = "blue"
                     , hue.high     = "orangered"
                     , szpftvar     = FALSE
@@ -431,7 +431,7 @@ n             = n + 1
 compvar[[ n]] = list( vnam         = "rshortup"
                     , desc         = "Upward SW radiation"
                     , unit         = untab$wom2
-                    , cscheme.mean = "panoply"
+                    , cscheme.mean = "irdbu"
                     , hue.low      = "blue"
                     , hue.high     = "orangered"
                     , szpftvar     = FALSE
@@ -444,7 +444,7 @@ n             = n + 1
 compvar[[ n]] = list( vnam         = "albedo"
                     , desc         = "Albedo"
                     , unit         = untab$wom2
-                    , cscheme.mean = "panoply"
+                    , cscheme.mean = "irdbu"
                     , hue.low      = "blue"
                     , hue.high     = "orangered"
                     , szpftvar     = FALSE
@@ -457,7 +457,7 @@ n             = n + 1
 compvar[[ n]] = list( vnam         = "rlongup"
                     , desc         = "Upward LW radiation"
                     , unit         = untab$wom2
-                    , cscheme.mean = "panoply"
+                    , cscheme.mean = "irdbu"
                     , hue.low      = "blue"
                     , hue.high     = "orangered"
                     , szpftvar     = FALSE
@@ -470,7 +470,7 @@ n             = n + 1
 compvar[[ n]] = list( vnam         = "parup"
                     , desc         = "Upward PAR"
                     , unit         = untab$umolom2os
-                    , cscheme.mean = "panoply"
+                    , cscheme.mean = "irdbu"
                     , hue.low      = "blue"
                     , hue.high     = "orangered"
                     , szpftvar     = FALSE
@@ -483,7 +483,7 @@ n             = n + 1
 compvar[[ n]] = list( vnam         = "par.gnd"
                     , desc         = "Ground absorption - PAR"
                     , unit         = untab$umolom2os
-                    , cscheme.mean = "panoply"
+                    , cscheme.mean = "irdbu"
                     , hue.low      = "blue"
                     , hue.high     = "orangered"
                     , szpftvar     = FALSE
@@ -496,7 +496,7 @@ n             = n + 1
 compvar[[ n]] = list( vnam         = "rshort.gnd"
                     , desc         = "Ground absorption - SW"
                     , unit         = untab$umolom2os
-                    , cscheme.mean = "panoply"
+                    , cscheme.mean = "irdbu"
                     , hue.low      = "blue"
                     , hue.high     = "orangered"
                     , szpftvar     = FALSE
@@ -509,7 +509,7 @@ n             = n + 1
 compvar[[ n]] = list( vnam         = "leaf.gpp"
                     , desc         = "Leaf GPP"
                     , unit         = untab$kgcom2loyr
-                    , cscheme.mean = "panoply"
+                    , cscheme.mean = "irdbu"
                     , hue.low      = "blue"
                     , hue.high     = "orangered"
                     , szpftvar     = TRUE
@@ -522,7 +522,7 @@ n             = n + 1
 compvar[[ n]] = list( vnam         = "leaf.gsw"
                     , desc         = "Stomatal conductance"
                     , unit         = untab$kgwom2loday
-                    , cscheme.mean = "panoply"
+                    , cscheme.mean = "irdbu"
                     , hue.low      = "blue"
                     , hue.high     = "orangered"
                     , szpftvar     = TRUE
@@ -535,7 +535,7 @@ n             = n + 1
 compvar[[ n]] = list( vnam         = "leaf.temp"
                     , desc         = "Leaf temperature"
                     , unit         = untab$degC
-                    , cscheme.mean = "panoply"
+                    , cscheme.mean = "irdbu"
                     , hue.low      = "blue"
                     , hue.high     = "orangered"
                     , szpftvar     = TRUE
@@ -548,7 +548,7 @@ n             = n + 1
 compvar[[ n]] = list( vnam         = "leaf.vpd"
                     , desc         = "Leaf VPD"
                     , unit         = untab$hpa
-                    , cscheme.mean = "panoply"
+                    , cscheme.mean = "irdbu"
                     , hue.low      = "blue"
                     , hue.high     = "orangered"
                     , szpftvar     = TRUE
@@ -561,7 +561,7 @@ n             = n + 1
 compvar[[ n]] = list( vnam         = "par.leaf"
                     , desc         = "Leaf Absorption - PAR"
                     , unit         = untab$umolom2os
-                    , cscheme.mean = "panoply"
+                    , cscheme.mean = "irdbu"
                     , hue.low      = "blue"
                     , hue.high     = "orangered"
                     , szpftvar     = TRUE
@@ -574,7 +574,7 @@ n             = n + 1
 compvar[[ n]] = list( vnam         = "par.leaf.beam"
                     , desc         = "Leaf Absorption - Direct PAR"
                     , unit         = untab$umolom2os
-                    , cscheme.mean = "panoply"
+                    , cscheme.mean = "irdbu"
                     , hue.low      = "blue"
                     , hue.high     = "orangered"
                     , szpftvar     = TRUE
@@ -587,7 +587,7 @@ n             = n + 1
 compvar[[ n]] = list( vnam         = "par.leaf.diff"
                     , desc         = "Leaf Absorption - Diffuse PAR"
                     , unit         = untab$umolom2os
-                    , cscheme.mean = "panoply"
+                    , cscheme.mean = "irdbu"
                     , hue.low      = "blue"
                     , hue.high     = "orangered"
                     , szpftvar     = TRUE
@@ -600,7 +600,7 @@ n             = n + 1
 compvar[[ n]] = list( vnam         = "leaf.par"
                     , desc         = "Norm. Leaf Absorption - PAR"
                     , unit         = untab$umolom2los
-                    , cscheme.mean = "panoply"
+                    , cscheme.mean = "irdbu"
                     , hue.low      = "blue"
                     , hue.high     = "orangered"
                     , szpftvar     = TRUE
@@ -613,7 +613,7 @@ n             = n + 1
 compvar[[ n]] = list( vnam         = "leaf.par.beam"
                     , desc         = "Norm. Leaf Absorption - Direct PAR"
                     , unit         = untab$umolom2los
-                    , cscheme.mean = "panoply"
+                    , cscheme.mean = "irdbu"
                     , hue.low      = "blue"
                     , hue.high     = "orangered"
                     , szpftvar     = TRUE
@@ -626,7 +626,7 @@ n             = n + 1
 compvar[[ n]] = list( vnam         = "leaf.par.diff"
                     , desc         = "Norm. Leaf Absorption - Diffuse PAR"
                     , unit         = untab$umolom2los
-                    , cscheme.mean = "panoply"
+                    , cscheme.mean = "irdbu"
                     , hue.low      = "blue"
                     , hue.high     = "orangered"
                     , szpftvar     = TRUE
@@ -639,7 +639,7 @@ n             = n + 1
 compvar[[ n]] = list( vnam         = "assim.light"
                     , desc         = "Light-limited Assimilation"
                     , unit         = untab$umolom2los
-                    , cscheme.mean = "panoply"
+                    , cscheme.mean = "irdbu"
                     , hue.low      = "blue"
                     , hue.high     = "orangered"
                     , szpftvar     = TRUE
@@ -652,7 +652,7 @@ n             = n + 1
 compvar[[ n]] = list( vnam         = "assim.rubp"
                     , desc         = "RuBP-limited Assimilation"
                     , unit         = untab$umolom2los
-                    , cscheme.mean = "panoply"
+                    , cscheme.mean = "irdbu"
                     , hue.low      = "blue"
                     , hue.high     = "orangered"
                     , szpftvar     = TRUE
@@ -665,7 +665,7 @@ n             = n + 1
 compvar[[ n]] = list( vnam         = "assim.co2"
                     , desc         = "CO2-limited Assimilation"
                     , unit         = untab$umolom2los
-                    , cscheme.mean = "panoply"
+                    , cscheme.mean = "irdbu"
                     , hue.low      = "blue"
                     , hue.high     = "orangered"
                     , szpftvar     = TRUE
@@ -678,7 +678,7 @@ n             = n + 1
 compvar[[ n]] = list( vnam         = "fast.soil.c"
                     , desc         = "Fast soil carbon"
                     , unit         = untab$kgcom2
-                    , cscheme.mean = "panoply"
+                    , cscheme.mean = "irdbu"
                     , hue.low      = "blue"
                     , hue.high     = "orangered"
                     , szpftvar     = FALSE
@@ -691,7 +691,7 @@ n             = n + 1
 compvar[[ n]] = list( vnam         = "struct.soil.c"
                     , desc         = "Structural soil carbon"
                     , unit         = untab$kgcom2
-                    , cscheme.mean = "panoply"
+                    , cscheme.mean = "irdbu"
                     , hue.low      = "blue"
                     , hue.high     = "orangered"
                     , szpftvar     = FALSE
@@ -704,7 +704,7 @@ n             = n + 1
 compvar[[ n]] = list( vnam         = "slow.soil.c"
                     , desc         = "Slow soil carbon"
                     , unit         = untab$kgcom2
-                    , cscheme.mean = "panoply"
+                    , cscheme.mean = "irdbu"
                     , hue.low      = "blue"
                     , hue.high     = "orangered"
                     , szpftvar     = FALSE
@@ -717,7 +717,7 @@ n             = n + 1
 compvar[[ n]] = list( vnam         = "tot.soil.c"
                     , desc         = "Soil carbon"
                     , unit         = untab$kgcom2
-                    , cscheme.mean = "panoply"
+                    , cscheme.mean = "irdbu"
                     , hue.low      = "blue"
                     , hue.high     = "orangered"
                     , szpftvar     = FALSE
@@ -730,7 +730,7 @@ n             = n + 1
 compvar[[ n]] = list( vnam         = "can.depth"
                     , desc         = "Mean canopy height"
                     , unit         = untab$m
-                    , cscheme.mean = "panoply"
+                    , cscheme.mean = "irdbu"
                     , hue.low      = "blue"
                     , hue.high     = "orangered"
                     , szpftvar     = FALSE
@@ -743,7 +743,7 @@ n             = n + 1
 compvar[[ n]] = list( vnam         = "can.area"
                     , desc         = "Mean canopy area"
                     , unit         = untab$empty
-                    , cscheme.mean = "panoply"
+                    , cscheme.mean = "irdbu"
                     , hue.low      = "blue"
                     , hue.high     = "orangered"
                     , szpftvar     = FALSE
@@ -756,7 +756,7 @@ n             = n + 1
 compvar[[ n]] = list( vnam         = "wood.dens"
                     , desc         = "Mean wood density"
                     , unit         = untab$gocm3
-                    , cscheme.mean = "panoply"
+                    , cscheme.mean = "irdbu"
                     , hue.low      = "blue"
                     , hue.high     = "orangered"
                     , szpftvar     = FALSE
@@ -769,7 +769,7 @@ n             = n + 1
 compvar[[ n]] = list( vnam         = "firemort"
                     , desc         = "Fire mortality"
                     , unit         = untab$pcpopoyr
-                    , cscheme.mean = "panoply"
+                    , cscheme.mean = "irdbu"
                     , hue.low      = "blue"
                     , hue.high     = "orangered"
                     , szpftvar     = TRUE
@@ -782,7 +782,7 @@ n             = n + 1
 compvar[[ n]] = list( vnam         = "ncbmort"
                     , desc         = "Density-dependent mortality"
                     , unit         = untab$pcpopoyr
-                    , cscheme.mean = "panoply"
+                    , cscheme.mean = "irdbu"
                     , hue.low      = "blue"
                     , hue.high     = "orangered"
                     , szpftvar     = TRUE
@@ -795,7 +795,7 @@ n             = n + 1
 compvar[[ n]] = list( vnam         = "dimort"
                     , desc         = "Density independent mortality"
                     , unit         = untab$pcpopoyr
-                    , cscheme.mean = "panoply"
+                    , cscheme.mean = "irdbu"
                     , hue.low      = "blue"
                     , hue.high     = "orangered"
                     , szpftvar     = TRUE
@@ -808,7 +808,7 @@ n             = n + 1
 compvar[[ n]] = list( vnam         = "mort"
                     , desc         = "Mortality rate"
                     , unit         = untab$pcpopoyr
-                    , cscheme.mean = "panoply"
+                    , cscheme.mean = "irdbu"
                     , hue.low      = "blue"
                     , hue.high     = "orangered"
                     , szpftvar     = TRUE
@@ -1454,12 +1454,12 @@ if (reload.range && file.exists(rdata.range)){
                   #------ Bowen ratio: use the patch-level variable. ----------------------#
                   hflxca  = datum$patch$hflxca [[stamp]]
                   qwflxca = datum$patch$qwflxca[[stamp]]
-                  vnow    = ifelse(qwflxca %!=% 0, hflxca/qwflxca, NA)
+                  vnow    = ifelse(qwflxca %ne% 0, hflxca/qwflxca, NA)
                }else if(this.vnam %in% "tratio"){
                   #------ Bowen ratio: use the patch-level variable. ----------------------#
                   transp  = datum$patch$transp[[stamp]]
                   wflxca  = datum$patch$wflxca[[stamp]]
-                  vnow    = ifelse(wflxca %!=% 0, transp/wflxca, NA)
+                  vnow    = ifelse(wflxca %ne% 0, transp/wflxca, NA)
                }else if(this.patchvar){
                   #------ Use patch-level info if available... ----------------------------#
                   vnow = datum$patch [[this.vnam]][[stamp]]
@@ -1663,20 +1663,20 @@ for (p in loop.sites){
             szpft = NULL
             patch = NULL
          }else if (this.vnam %in% "bowen"){
-            emean = with(datum$emean,ifelse(qwflxca %!=% 0,hflxca/qwflxca,NA))
+            emean = with(datum$emean,ifelse(qwflxca %ne% 0,hflxca/qwflxca,NA))
             szpft = NULL
             patch = with( data = datum$patch
-                        , expr = mapply( FUN      = function(h,qw) ifelse(qw%!=%0,h/qw,NA)
+                        , expr = mapply( FUN      = function(h,qw) ifelse(qw%ne%0,h/qw,NA)
                                        , h        = hflxca
                                        , qw       = qwflxca
                                        , SIMPLIFY = FALSE
                                        )#end mapply
                         )#end with
          }else if (this.vnam %in% "tratio"){
-            emean = with(datum$emean,ifelse(wflxca %!=% 0,transp/wflxca,NA))
+            emean = with(datum$emean,ifelse(wflxca %ne% 0,transp/wflxca,NA))
             szpft = NULL
             patch = with( data = datum$patch
-                        , expr = mapply( FUN      = function(tp,w) ifelse(w%!=%0,tp/w,NA)
+                        , expr = mapply( FUN      = function(tp,w) ifelse(w%ne%0,tp/w,NA)
                                        , tp       = transp
                                        , w        = wflxca
                                        , SIMPLIFY = FALSE
@@ -4115,7 +4115,7 @@ if (plot.ym.patch){
                #     Update range.                                                         #
                #---------------------------------------------------------------------------#
                if (zlog){
-                  ym.patch     = ifelse(ym.patch %>% 0.0,ym.patch,NA)
+                  ym.patch     = ifelse(ym.patch %gt% 0.0,ym.patch,NA)
                   yrange[,p,s] = range(c(yrange[,p,s],ym.patch),finite=TRUE)
                }else if (this.vnam %in% "bowen"){
                   ym.patch     = pmax(bmn,pmin(bmx,ym.patch))
@@ -4560,7 +4560,7 @@ if (plot.zm.patch){
                   zm.patch   = model[[this.vnam]]$zm.age
                }#end if
                if (zlog){
-                  zm.patch       = ifelse(zm.patch %>% 0.0,zm.patch,NA)
+                  zm.patch       = ifelse(zm.patch %gt% 0.0,zm.patch,NA)
                }else if (this.vnam %in% "bowen"){
                   zm.patch       = pmax(bmn,pmin(bmx,zm.patch)) + 0. * zm.patch
                }else if (this.vnam %in% "tratio"){
@@ -5056,7 +5056,7 @@ if (plot.xyz.patch){
                #     Update range.                                                         #
                #---------------------------------------------------------------------------#
                if (zlog){
-                  mm.patch = ifelse(mm.patch %>% 0.0,mm.patch,NA)
+                  mm.patch = ifelse(mm.patch %gt% 0.0,mm.patch,NA)
                }else if (this.vnam %in% "bowen"){
                   mm.patch = pmax(bmn,pmin(bmx,mm.patch)) + 0. * mm.patch
                }else if (this.vnam %in% "tratio"){

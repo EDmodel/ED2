@@ -20,11 +20,11 @@ subroutine master_ed_init(iparallel)
                             , allocate_edglobals & ! subroutine
                             , allocate_edtype    & ! subroutine
                             , edgrid_g           ! ! intent(inout)
-   implicit none
-   !------Included variables. -------------------------------------------------------------!
+   !------MPI variables and procedures. ---------------------------------------------------!
 #if defined(RAMS_MPI)
-   include 'mpif.h'
+   use mpi
 #endif
+   implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    integer, intent(in) :: iparallel
    !----- Local variables. ----------------------------------------------------------------!
@@ -108,11 +108,11 @@ subroutine node_ed_init
                            , allocate_edglobals & ! sub-routine
                            , allocate_edtype    & ! sub-routine
                            , edgrid_g           ! ! structure
-   implicit none
-   !------Included variables. -------------------------------------------------------------!
+   !------MPI variables and procedures. ---------------------------------------------------!
 #if defined(RAMS_MPI)
-   include 'mpif.h'
+   use mpi
 #endif
+   implicit none
    !----- Local variables. ----------------------------------------------------------------!
    integer             :: ifm
    integer             :: ierr
@@ -181,12 +181,11 @@ subroutine copy_in_bramsmpi(master_num_b,mchnum_b,mynum_b,nmachs_b,machs_b,ipara
    use grid_coms   , only : ngrids     & ! intent(out)
                           , nnxp       & ! intent(out)
                           , nnyp       ! ! intent(out)
+#if defined(RAMS_MPI)
+   use mpi
+#endif
 
    implicit none
-   !----- Included variables. -------------------------------------------------------------!
-#if defined(RAMS_MPI)
-   include 'mpif.h'
-#endif
    !----- Arguments. ----------------------------------------------------------------------!
    integer                     , intent(in) :: master_num_b
    integer                     , intent(in) :: mchnum_b
@@ -267,11 +266,11 @@ subroutine init_master_work(ipara)
                            , allocate_edglobals  & ! sub-routine
                            , allocate_edtype     ! ! sub-routine
    use mem_polygons , only : maxsite             ! ! intent(in)
-   implicit none
-   !----- Included variables. -------------------------------------------------------------!
+   !----- MPI variables and procedures. ---------------------------------------------------!
 #if defined(RAMS_MPI)
-   include 'mpif.h'
+   use mpi
 #endif
+   implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    integer, intent(in) :: ipara
    !----- Local variables. ----------------------------------------------------------------!
@@ -510,11 +509,10 @@ subroutine init_node_work()
                            , allocate_edglobals     & ! sub-routine
                            , allocate_edtype        ! ! sub-routine
    use mem_polygons , only : maxsite                ! ! sub-routine
-   implicit none
-   !----- Included variables. -------------------------------------------------------------!
 #if defined(RAMS_MPI)
-   include 'mpif.h'
+   use mpi
 #endif
+   implicit none
    !----- Local variables. ----------------------------------------------------------------!
    integer                             :: ifm
    integer                             :: nm

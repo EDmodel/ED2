@@ -89,13 +89,13 @@ vcf.degrad <<- function(shrub,tree,bare){
 
 
    #----- Create vector by classes. -------------------------------------------------------#
-   vc0 = tree %>=% 0.75
-   vc1 = tree %>=% 0.50 & tree  %<%  0.75 & bare  %<%  0.20
-   vc2 = tree %>=% 0.50 & tree  %<%  0.75 & bare  %>=% 0.20
-   vc3 = tree %>=% 0.25 & tree  %<%  0.50 & bare  %<%  0.20
-   vc4 = tree %>=% 0.25 & tree  %<%  0.50 & bare  %>=% 0.20 & bare %<% 0.50
-   vc5 = tree %<%  0.25 & bare  %<%  0.50
-   vc6 = bare %>=% 0.50
+   vc0 = tree %ge% 0.75
+   vc1 = tree %ge% 0.50 & tree  %lt%  0.75 & bare  %lt% 0.20
+   vc2 = tree %ge% 0.50 & tree  %lt%  0.75 & bare  %ge% 0.20
+   vc3 = tree %ge% 0.25 & tree  %lt%  0.50 & bare  %lt% 0.20
+   vc4 = tree %ge% 0.25 & tree  %lt%  0.50 & bare  %ge% 0.20 & bare %lt% 0.50
+   vc5 = tree %lt% 0.25 & bare  %lt%  0.50
+   vc6 = bare %ge% 0.50
    #---------------------------------------------------------------------------------------#
 
 

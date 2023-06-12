@@ -271,8 +271,8 @@ plot.rgb <<- function( x
          green.l  = seq(from=0,to=1-red.span[n],by=0.5*delta)
          blue.l   = seq(from=0,to=1-red.span[n],by=0.5*delta)
          rgb.l    = expand.grid(red=red.span[n],green=green.l,blue=blue.l)
-         keep     = ( rowSums(rgb.l) %>=% (1-sqrt(.Machine$double.eps))
-                    & rowSums(rgb.l) %<=% (1+sqrt(.Machine$double.eps)) )
+         keep     = ( rowSums(rgb.l) %ge% (1-sqrt(.Machine$double.eps))
+                    & rowSums(rgb.l) %le% (1+sqrt(.Machine$double.eps)) )
          rgb.l    = rgb.l[keep,] / rowSums(rgb.l[keep,])
 
          #---------------------------------------------------------------------------------#

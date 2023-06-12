@@ -19,7 +19,18 @@ Ft.ustar <<- function(ustar,cflxca,cflxst,nighttime,delta=0.01,nmin=10){
    #---------------------------------------------------------------------------------------#
 
 
-   #----- Delete data that is missing. ----------------------------------------------------#
+   #---------------------------------------------------------------------------------------#
+   #    In case storage is always NA, it means storage was not measured. In this case, we  #
+   # assume zero storage whenever the CO2 flux is not missing.                             #
+   #---------------------------------------------------------------------------------------#
+   if ( all(! is.finite(cflxst)) && any(is.finite(cflxca)) ){
+      cflxst = ifelse( test = is.finite(cflxca), yes = 0., no = NA_real_ )
+   }#end if ( all(! is.finite(cflxst)) && any(is.finite(cflxca)) )
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #----- Delete missing data. ------------------------------------------------------------#
    keep   = is.finite(ustar) & is.finite(cflxca) & is.finite(cflxst) & nighttime
    keep   = ifelse(is.na(keep),FALSE,keep)
    ustar  = ustar [keep]
@@ -80,7 +91,7 @@ Ft.ustar <<- function(ustar,cflxca,cflxst,nighttime,delta=0.01,nmin=10){
    while (iterate){
       b   = b + 1
       ttt     = t.test(x=sp.cflxca[[b]],y=sp.cflxst[[b]],alternative="greater")
-      iterate = b < nbins && ttt$p.value %>=% 0.01
+      iterate = b < nbins && ttt$p.value %ge% 0.01
    }#end for
    #---------------------------------------------------------------------------------------#
 
@@ -129,8 +140,8 @@ Ft.ustar <<- function(ustar,cflxca,cflxst,nighttime,delta=0.01,nmin=10){
 
 
       #---- Check whether the p.value is sufficiently large. ------------------------------#
-      success = (  ( p.ft %<=% p.lm && p.lm %>=% 0.10 && p.ft %>=% 0.10 )
-                || ( p.ft %>=% 0.50 && p.lm %>=% 0.50 ) )
+      success = (  ( p.ft %le% p.lm && p.lm %ge% 0.10 && p.ft %ge% 0.10 )
+                || ( p.ft %ge% 0.50 && p.lm %ge% 0.50 ) )
       iterate = ( ! success ) && (b < (nbins - 2))
       cat(" u* = ",ustar.breaks[b],";   p.lm    = ",sprintf("%.2f",p.lm)
                                   ,";   p.ft    = ",sprintf("%.2f",p.ft)

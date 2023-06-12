@@ -44,8 +44,8 @@ test.goodness <<- function(x.mod,x.obs,x.sigma=NULL,n.parameters=NULL,out.dfr=FA
 
 
       #----- Find associated weights, and re-create the vectors x.mod and x.obs. ----------#
-      x.wgt      = ifelse(x.sigma %>% 0, 1. / x.sigma^2, 0)
-      sel        = x.wgt %>% 0
+      x.wgt      = ifelse(x.sigma %gt% 0, 1. / x.sigma^2, 0)
+      sel        = x.wgt %gt% 0
       x.obs.orig = x.obs
       x.mod.orig = x.mod
       x.obs      = x.obs[sel] * sqrt(x.wgt[sel])

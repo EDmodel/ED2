@@ -103,12 +103,12 @@ ifeq ($(KIND_COMP),B)
    F_OPTS= -FR -O0 -recursive  -check all,noarg_temp_created -g -debug extended            \
            -debug-parameters all  -fpe0 -no-ftz -traceback -ftrapuv -fp-stack-check        \
            -implicitnone -assume byterecl -warn unused -warn uncalled -warn usage          \
-           -warn interfaces -warn declarations -qopenmp -diag-error=all -static
+           -warn interfaces -warn declarations -warn errors -qopenmp -static
    C_OPTS= -O0 -DLITTLE  -g -traceback -qopenmp -static
    LOADER_OPTS=-FR -O0 -recursive  -check all,noarg_temp_created -g -debug extended        \
                -debug-parameters all -fpe0 -no-ftz -traceback -ftrapuv -fp-stack-check     \
                -implicitnone -assume byterecl -warn unused -warn uncalled -warn usage      \
-               -warn interfaces -warn declarations -qopenmp -diag-error=all 
+               -warn interfaces -warn declarations -warn errors -qopenmp
    #---------------------------------------------------------------------------------------#
 endif
 ifeq ($(KIND_COMP),C)

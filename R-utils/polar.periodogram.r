@@ -55,7 +55,7 @@ polar.periodogram <<- function( X
    nn   = ncol (X)
    FF   = fft(Xp) / mm / nn
    II   = abs(FF) * abs(FF) * mm * nn
-   sig2 = var(c(X))
+   sig2 = var(c(Xp),na.rm=TRUE)
    #---------------------------------------------------------------------------------------#
 
 
@@ -114,24 +114,27 @@ polar.periodogram <<- function( X
 
 
    #---------------------------------------------------------------------------------------#
+   #     Find the variance of the retained spectrum.                                       #
+   #---------------------------------------------------------------------------------------#
+   sig2p = sum(II.keep)
+   #---------------------------------------------------------------------------------------#
+
+
+   #---------------------------------------------------------------------------------------#
    #      Decide how to aggregate data.                                                    #
    #---------------------------------------------------------------------------------------#
    if (which.bin %in% "radius"){
       m.II = tapply(X=II.keep,INDEX=R.cut,FUN=mean,na.rm=TRUE)
-      s.II = tapply(X=II.keep,INDEX=R.cut,FUN=sd  ,na.rm=TRUE)
-      ans  = m.II / s.II
+      ans  = m.II / sig2p
    }else if (which.bin %in% c("theta","angle")){
       m.II = tapply(X=II.keep,INDEX=TH.cut,FUN=mean,na.rm=TRUE)
-      s.II = tapply(X=II.keep,INDEX=TH.cut,FUN=sd  ,na.rm=TRUE)
-      ans  = m.II / s.II
+      ans  = m.II / sig2p
    }else if (which.bin %in% "both"){
       m.II = tapply(X=II.keep,INDEX=list(R.cut,TH.cut),FUN=mean,na.rm=TRUE)
-      s.II = tapply(X=II.keep,INDEX=list(R.cut,TH.cut),FUN=sd  ,na.rm=TRUE)
-      ans  = m.II / s.II
+      ans  = m.II / sig2p
    }else if (which.bin %in% "length"){
-      m.II       = tapply(X=II.keep,INDEX=list(R.cut,TH.cut),FUN=mean,na.rm=TRUE)
-      s.II       = tapply(X=II.keep,INDEX=list(R.cut,TH.cut),FUN=sd  ,na.rm=TRUE)
-      ans        = m.II / s.II
+      m.II       = tapply(X=II.keep,INDEX=R.cut,FUN=mean,na.rm=TRUE)
+      ans        = m.II / sig2p
       len        = tapply(X=LL.keep,INDEX=R.cut,FUN=mean,na.rm=TRUE)
       names(ans) = len
    }else if (which.bin %in% "none"){
@@ -146,5 +149,60 @@ polar.periodogram <<- function( X
    return(ans)
    #---------------------------------------------------------------------------------------#
 }#end polar.periodogram
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
+#      This function is a wrapper for the FOTO package, when using matrices as opposed to  #
+# rasters. It internally creates a raster that is then sent to the package function.  This #
+# copies part of the steps in the function "foto" because the package by default applies   #
+# the principal component analysis and this is done separately.                            #
+#------------------------------------------------------------------------------------------#
+foto.periodogram <<- function(X){
+   #------ Create a temporary raster to send to the FOTO function. ------------------------#
+   myenv  = environment()
+   nx     = nrow(X)
+   ny     = ncol(X)
+   yswap  = rev(sequence(ny))
+   Xt     = t(X[,yswap])
+   img    = raster(Xt)
+   wsize  = min(nx,ny)/1
+   N      = ceiling(img@nrows/wsize)
+   M      = ceiling(img@ncols/wsize)
+   cells  = N * M
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #------ Run the FOTO function for this raster. Single window using the entire image. ---#
+   Imat         = matrix(img,wsize,wsize)
+   fftim        = Mod(stats::fft(Imat))^2
+   offfft       = ceiling(dim(Imat)[1]/2)
+   r            = sqrt((col(Imat) - offfft)^2 + (row(Imat) - offfft)^2)
+   rzonal       = raster::zonal( x     = raster::raster(fftim)
+                               , z     = raster::raster(r)
+                               , fun   = "mean"
+                               , na.rm = TRUE
+                               )#end raster::zonal
+   rspec        = rev(rzonal[, 2])
+   names(rspec) = rev(rzonal[, 1])
+   sigma        = sd(Imat,na.rm=TRUE)
+   rscal        = rspec / sigma
+
+   iuse         = rev(sequence(wsize/2)[-c(1,2)])
+   ans          = rscal[iuse]
+   #---------------------------------------------------------------------------------------#
+
+
+   #----- Return answer. ------------------------------------------------------------------#
+   return(ans)
+   #---------------------------------------------------------------------------------------#
+}#end foto.periodogram
 #==========================================================================================#
 #==========================================================================================#
