@@ -1563,7 +1563,7 @@ module disturbance
                !---------------------------------------------------------------------------!
             case default
                !------ Read anthropogenic disturbance from external data set. -------------!
-               if (clutime%landuse(12) < 0 .or. clutime%landuse(14) < 0) then
+               if (clutime%landuse(12) < 0. .or. clutime%landuse(14) < 0.) then
                   find_target                         = .true.
                   cpoly%primary_harvest_target  (isi) = 0.
                   cpoly%secondary_harvest_target(isi) = 0.
@@ -2265,6 +2265,9 @@ module disturbance
       csite%fmean_sfcw_mass      (np) = csite%fmean_sfcw_mass      (np)                    &
                                       + csite%fmean_sfcw_mass      (cp)                    &
                                       * area_fac
+      csite%fmean_snowfac        (np) = csite%fmean_snowfac        (np)                    &
+                                      + csite%fmean_snowfac        (cp)                    &
+                                      * area_fac
       csite%fmean_rshort_gnd     (np) = csite%fmean_rshort_gnd     (np)                    &
                                       + csite%fmean_rshort_gnd     (cp)                    &
                                       * area_fac
@@ -2486,6 +2489,9 @@ module disturbance
                                              * area_fac
          csite%dmean_sfcw_fliq      (    np) = csite%dmean_sfcw_fliq      (    np)         &
                                              + csite%dmean_sfcw_fliq      (    cp)         &
+                                             * area_fac
+         csite%dmean_snowfac        (    np) = csite%dmean_snowfac        (    np)         &
+                                             + csite%dmean_snowfac        (    cp)         &
                                              * area_fac
          csite%dmean_rshort_gnd     (    np) = csite%dmean_rshort_gnd     (    np)         &
                                              + csite%dmean_rshort_gnd     (    cp)         &
@@ -2769,6 +2775,9 @@ module disturbance
                                              * area_fac
          csite%mmean_sfcw_fliq      (    np) = csite%mmean_sfcw_fliq      (    np)         &
                                              + csite%mmean_sfcw_fliq      (    cp)         &
+                                             * area_fac
+         csite%mmean_snowfac        (    np) = csite%mmean_snowfac        (    np)         &
+                                             + csite%mmean_snowfac        (    cp)         &
                                              * area_fac
          csite%mmean_rshort_gnd     (    np) = csite%mmean_rshort_gnd     (    np)         &
                                              + csite%mmean_rshort_gnd     (    cp)         &
@@ -3064,6 +3073,9 @@ module disturbance
                                              * area_fac
          csite%qmean_sfcw_fliq      (  :,np) = csite%qmean_sfcw_fliq      (  :,np)         &
                                              + csite%qmean_sfcw_fliq      (  :,cp)         &
+                                             * area_fac
+         csite%qmean_snowfac        (  :,np) = csite%qmean_snowfac        (  :,np)         &
+                                             + csite%qmean_snowfac        (  :,cp)         &
                                              * area_fac
          csite%qmean_soil_energy    (:,:,np) = csite%qmean_soil_energy    (:,:,np)         &
                                              + csite%qmean_soil_energy    (:,:,cp)         &

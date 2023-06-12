@@ -34,7 +34,7 @@ module vegetation_dynamics
                                       , yr_day                        ! ! intent(in)
       use mem_polygons         , only : maxpatch                      ! ! intent(in)
       use average_utils        , only : normalize_ed_today_vars       & ! sub-routine
-                                      , normalize_ed_todaynpp_vars    & ! sub-routine
+                                      , copy_today_to_dmean_vars      & ! sub-routine
                                       , zero_ed_today_vars            ! ! sub-routine
       use canopy_radiation_coms, only : ihrzrad                       ! ! intent(in)
       use hrzshade_utils       , only : split_hrzshade                & ! sub-routine
@@ -129,7 +129,7 @@ module vegetation_dynamics
 
 
          !------  update dmean and mmean values for NPP allocation terms ------------------!
-         call normalize_ed_todayNPP_vars(cgrid)
+         call copy_today_to_dmean_vars(cgrid)
          !---------------------------------------------------------------------------------!
 
 

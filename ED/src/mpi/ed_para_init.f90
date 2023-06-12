@@ -517,7 +517,6 @@ subroutine ed_parvec_work(ifm,nxp,nyp)
                            , npolys_run          & ! intent(out)
                            , ed_alloc_work_vec   & ! subroutine
                            , ed_nullify_work_vec ! ! subroutine
-   use soil_coms    , only : ed_nstyp            ! ! intent(in)
    use mem_polygons , only : maxsite             ! ! intent(in)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
@@ -659,7 +658,8 @@ subroutine ed_load_work_from_history()
    real            , external    :: dist_gc
    !---------------------------------------------------------------------------------------!
 
-   
+   write (unit=*,fmt='(a)') ' Welcome to ed_load_work_from_history!'
+
 
    !---------------------------------------------------------------------------------------!
    !     Here we decide whether this is a history or an ED-2.1 restart run.  In case none  !

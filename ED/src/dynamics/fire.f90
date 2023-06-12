@@ -62,7 +62,7 @@ module fire
       real                           :: fuel
       real                           :: ignition_rate
       real                           :: mean_fire_intensity
-      real                           :: sum_pcpg
+      real                           :: sum_accp
       logical                        :: people_around
       !------------------------------------------------------------------------------------!
 
@@ -97,8 +97,8 @@ module fire
             !     Find the total rainfall of the past year and reset the counter for this  !
             ! month.                                                                       !
             !------------------------------------------------------------------------------!
-            sum_pcpg                         = sum(cpoly%avg_monthly_pcpg(:,isi))
-            cpoly%avg_monthly_pcpg(imon,isi) = 0.
+            sum_accp                         = sum(cpoly%avg_monthly_accp(:,isi))
+            cpoly%avg_monthly_accp(imon,isi) = 0.
             !------------------------------------------------------------------------------!
 
 

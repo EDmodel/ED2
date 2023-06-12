@@ -345,6 +345,8 @@ module ed_met_driver
       type(edtype)          , pointer :: cgrid
       character(len=str_len)          :: infile
       integer                         :: igr
+      integer                         :: year_cyc
+      integer                         :: year_cyc_2
       integer                         :: year_use
       integer                         :: iformat
       integer                         :: iv
@@ -526,9 +528,18 @@ module ed_met_driver
       !------------------------------------------------------------------------------------!
       !     We now retrieve the met driver year based on the stored sequence.              !
       !------------------------------------------------------------------------------------!
-      iyear    = current_time%year-iyeara+1
-      year_use = metyears(iyear)
-
+      !----- If we need to recycle over years, find the appropriate year to apply. --------!
+      year_cyc = current_time%year
+      ncyc = metcycf - metcyc1 + 1
+      !----- If we are after the last year... ---------------------------------------------!
+      do while(year_cyc > metcycf)
+         year_cyc = year_cyc - ncyc
+      end do
+      !----- If we are before the first year... -------------------------------------------!
+      do while(year_cyc < metcyc1)
+         year_cyc = year_cyc + ncyc
+      end do
+      !------------------------------------------------------------------------------------!
 
       gridloop: do igr = 1,ngrids
 
@@ -536,7 +547,7 @@ module ed_met_driver
 
          !----- Loop over the different file formats --------------------------------------!
          formloop: do iformat = 1, nformats
-               
+
             !------------------------------------------------------------------------------!
             !   SPECIAL CASE FOR CO2:                                                      !
             !     Usually we do not want to cycle CO2 but only the other meteorology.      !
@@ -545,8 +556,30 @@ module ed_met_driver
             !------------------------------------------------------------------------------!
             not_cycle_co2 = (met_nv(iformat) == 1 .and. trim(met_vars(iformat,1)) == 'co2')
             if (not_cycle_co2) then
-               year_use = current_time%year
-            endif
+               !---------------------------------------------------------------------------!
+               !      Make sure that the special CO2 file exists.  If not, then use the    !
+               ! default met cycle years.                                                  !
+               !---------------------------------------------------------------------------!
+               write(infile,fmt='(a,i4.4,a,a)') trim(met_names(iformat)),current_time%year &
+                                               ,mname(current_time%month),'.h5'
+               inquire(file=trim(infile),exist=exans)
+               if (exans) then
+                  !----- Allow CO2 outside met cycle. -------------------------------------!
+                  year_use = current_time%year
+                  !------------------------------------------------------------------------!
+               else
+                  !----- Typical case. Pool data from the meteorological cycle. -----------!
+                  year_use = year_cyc
+                  !------------------------------------------------------------------------!
+               end if
+               !---------------------------------------------------------------------------!
+            else
+               !----- Typical case. Pool data from the meteorological cycle. --------------!
+               year_use = year_cyc
+               !---------------------------------------------------------------------------!
+            end if
+            !------------------------------------------------------------------------------!
+
             !----- Create the file name and check whether it exists. ----------------------!
             write(infile,fmt='(a,i4.4,a,a)')   trim(met_names(iformat)), year_use          &
                                               ,mname(current_time%month),'.h5'
@@ -555,10 +588,17 @@ module ed_met_driver
                call shdf5_open_f(trim(infile),'R')
             else
                write (unit=*,fmt='(a)'       )  '------------------------------'
-               write (unit=*,fmt='(a,1x,i12)')  ' - METCYC1  =',metcyc1
-               write (unit=*,fmt='(a,1x,i12)')  ' - METCYCF  =',metcycf
-               write (unit=*,fmt='(a,1x,i12)')  ' - IYEAR    =',iyear
-               write (unit=*,fmt='(a,1x,i12)')  ' - YEAR_USE =',year_use
+               write (unit=*,fmt='(a,1x,a)'  )  ' - MET_VARS    =',trim(met_vars(iformat,1))
+               write (unit=*,fmt='(a,1x,l1)' )  ' - CYCLE_CO2   =',.not. not_cycle_co2
+               write (unit=*,fmt='(a,1x,i12)')  ' - METCYC1     =',metcyc1
+               write (unit=*,fmt='(a,1x,i12)')  ' - METCYCF     =',metcycf
+               write (unit=*,fmt='(a,1x,i12)')  ' - NCYC        =',ncyc
+               write (unit=*,fmt='(a,1x,i12)')  ' - NYEARS      =',nyears
+               write (unit=*,fmt='(a,1x,i12)')  ' - IYEAR       =',iyear
+               write (unit=*,fmt='(a,1x,i12)')  ' - MONTH_CURR  =',current_time%month
+               write (unit=*,fmt='(a,1x,i12)')  ' - YEAR_CURR   =',current_time%year
+               write (unit=*,fmt='(a,1x,i12)')  ' - YEAR_CYC    =',year_cyc
+               write (unit=*,fmt='(a,1x,i12)')  ' - YEAR_USE    =',year_use
                write (unit=*,fmt='(a)'       )  '------------------------------'
                call fatal_error('Cannot open met driver input file '//trim(infile)//'!'    &
                                ,'read_met_drivers_init','ed_met_driver.f90')
@@ -573,7 +613,7 @@ module ed_met_driver
             !----- Loop over variables. and read the data. --------------------------------!
             do iv = 1, met_nv(iformat)
                offset = 0
-               call read_ol_file(infile,iformat, iv, mname(current_time%month)      &
+               call read_ol_file(infile,iformat, iv, mname(current_time%month)             &
                                 ,current_time%year, offset, cgrid)
             end do
 
@@ -584,27 +624,61 @@ module ed_met_driver
             !------------------------------------------------------------------------------!
             !      For all interpolated variables, we also need the next time.             !
             !------------------------------------------------------------------------------!
-            !------ Find next month and year ----------------------------------------------!
+
+            !------------------------------------------------------------------------------!
+            !     Find next month and year. If this takes us into the next year, increment !
+            ! year and reset month to January.                                             !
+            !------------------------------------------------------------------------------!
             m2 = current_time%month + 1
-            
-            !------------------------------------------------------------------------------!
-            !     If this takes us into the next year, take the next year in sequence and  !
-            ! reset month to January.                                                      !
-            !------------------------------------------------------------------------------!
-            if (m2 == 13) then
-               m2 = 1
-               y2 = current_time%year + 1
-            else 
-               !----- Otherwise, use the same year. ---------------------------------------!
-               y2 = current_time%year
-            end if
-            iyear = y2 - iyeara + 1
-            year_use_2 = metyears(iyear)
-            
-            ! Again consider the special case of not cycling co2
+            select case (m2)
+            case (13)
+               m2         = 1
+               y2         = current_time%year + 1
+               year_cyc_2 = y2
+               
+               !----- If we are now after the last year... --------------------------------!
+               do while(year_cyc_2 > metcycf)
+                  year_cyc_2 = year_cyc_2 - ncyc
+               end do
+               !---------------------------------------------------------------------------!
+
+               !----- If we are now before the first year... ------------------------------!
+               do while(year_cyc_2 < metcyc1)
+                  year_cyc_2 = year_cyc_2 + ncyc
+               end do
+               !---------------------------------------------------------------------------!
+            case default
+               !---- Same year as the previous month. -------------------------------------!
+               y2         = current_time%year
+               year_cyc_2 = year_cyc
+               !---------------------------------------------------------------------------!
+            end select
+
+            !------------------------------------------------------------------------------#
+            !   Again consider the special case of not cycling co2
+            !------------------------------------------------------------------------------#
             if (not_cycle_co2) then
-                year_use_2 = y2
-            endif
+               !---------------------------------------------------------------------------!
+               !      Make sure that the special CO2 file exists.  If not, then use the    !
+               ! default met cycle years.                                                  !
+               !---------------------------------------------------------------------------!
+               write(infile,fmt='(a,i4.4,a,a)') trim(met_names(iformat)),y2,mname(m2),'.h5'
+               inquire(file=trim(infile),exist=exans)
+               if (exans) then
+                  !----- Allow CO2 outside met cycle. -------------------------------------!
+                  year_use_2 = y2
+                  !------------------------------------------------------------------------!
+               else
+                  !----- Typical case. Pool data from the meteorological cycle. -----------!
+                  year_use_2 = year_cyc_2
+                  !------------------------------------------------------------------------!
+               end if
+               !---------------------------------------------------------------------------!
+            else
+               !----- Typical case. Pool data from the meteorological cycle. --------------!
+               year_use_2 = year_cyc_2
+               !---------------------------------------------------------------------------!
+            end if
             !----- Now, open the file once. -----------------------------------------------!
             write(infile,fmt='(a,i4.4,a,a)')  trim(met_names(iformat)), year_use_2         &
                                              ,mname(m2),'.h5'
@@ -612,10 +686,26 @@ module ed_met_driver
             if (exans) then
                call shdf5_open_f(trim(infile),'R')
             else
+               write (unit=*,fmt='(a)'       )  '------------------------------'
+               write (unit=*,fmt='(a,1x,a)'  )  ' - MET_VARS    =',trim(met_vars(iformat,1))
+               write (unit=*,fmt='(a,1x,l1)' )  ' - CYCLE_CO2   =',.not. not_cycle_co2
+               write (unit=*,fmt='(a,1x,i12)')  ' - METCYC1     =',metcyc1
+               write (unit=*,fmt='(a,1x,i12)')  ' - METCYCF     =',metcycf
+               write (unit=*,fmt='(a,1x,i12)')  ' - NCYC        =',ncyc
+               write (unit=*,fmt='(a,1x,i12)')  ' - NYEARS      =',nyears
+               write (unit=*,fmt='(a,1x,i12)')  ' - IYEAR       =',iyear
+               write (unit=*,fmt='(a,1x,i12)')  ' - MONTH_CURR  =',current_time%month
+               write (unit=*,fmt='(a,1x,i12)')  ' - YEAR_CURR   =',current_time%year
+               write (unit=*,fmt='(a,1x,i12)')  ' - YEAR_CYC    =',year_cyc
+               write (unit=*,fmt='(a,1x,i12)')  ' - YEAR_USE    =',year_use
+               write (unit=*,fmt='(a,1x,i12)')  ' - MONTH_CYC_2 =',m2
+               write (unit=*,fmt='(a,1x,i12)')  ' - YEAR_CYC_2  =',year_cyc_2
+               write (unit=*,fmt='(a,1x,i12)')  ' - YEAR_USE_2  =',year_use_2
+               write (unit=*,fmt='(a)'       )  '------------------------------'
                call fatal_error('Cannot open met driver input file '//trim(infile)//'!'    &
                                ,'read_met_drivers_init','ed_met_driver.f90')
             end if
-            
+
             !----- Loop over variables. ---------------------------------------------------!
             varloop: do iv = 1, met_nv(iformat)
 
@@ -674,6 +764,8 @@ module ed_met_driver
       type(edtype)          , pointer :: cgrid
       character(len=str_len)          :: infile
       integer                         :: igr
+      integer                         :: year_cyc
+      integer                         :: year_cyc_2
       integer                         :: year_use
       integer                         :: ncyc
       integer                         :: iformat
@@ -694,17 +786,17 @@ module ed_met_driver
 
 
       !----- If we need to recycle over years, find the appropriate year to apply. --------!
-      year_use = current_time%year
-      ncyc = metcycf - metcyc1 + 1
+      year_cyc = current_time%year
+      ncyc     = metcycf - metcyc1 + 1
 
       !----- If we are after the last year... ---------------------------------------------!
-      do while(year_use > metcycf)
-         year_use = year_use - ncyc
+      do while(year_cyc > metcycf)
+         year_cyc = year_cyc - ncyc
       end do
 
       !----- If we are before the first year... -------------------------------------------!
-      do while(year_use < metcyc1)
-         year_use = year_use + ncyc
+      do while(year_cyc < metcyc1)
+         year_cyc = year_cyc + ncyc
       end do
 
       gridloop: do igr=1,ngrids
@@ -713,7 +805,7 @@ module ed_met_driver
 
          !----- Loop over the different file formats --------------------------------------!
          formloop: do iformat = 1, nformats
-            
+
             !------------------------------------------------------------------------------!
             !   SPECIAL CASE FOR CO2:                                                      !
             !     Usually we do not want to cycle CO2 but only the other meteorology.      !
@@ -722,8 +814,32 @@ module ed_met_driver
             !------------------------------------------------------------------------------!
             not_cycle_co2 = (met_nv(iformat) == 1 .and. trim(met_vars(iformat,1)) == 'co2')
             if (not_cycle_co2) then
-                year_use = current_time%year
-            endif
+               !---------------------------------------------------------------------------!
+               !      Make sure that the special CO2 file exists.  If not, then use the    !
+               ! default met cycle years.                                                  !
+               !---------------------------------------------------------------------------!
+               write(infile,fmt='(a,i4.4,a,a)') trim(met_names(iformat)),current_time%year &
+                                               ,mname(current_time%month),'.h5'
+               inquire(file=trim(infile),exist=exans)
+               if (exans) then
+                  !----- Allow CO2 outside met cycle. -------------------------------------!
+                  year_use = current_time%year
+                  !------------------------------------------------------------------------!
+               else
+                  !----- Typical case. Pool data from the meteorological cycle. -----------!
+                  year_use = year_cyc
+                  !------------------------------------------------------------------------!
+               end if
+               !---------------------------------------------------------------------------!
+            else
+               !----- Typical case. Pool data from the meteorological cycle. --------------!
+               year_use = year_cyc
+               !---------------------------------------------------------------------------!
+            end if
+            !------------------------------------------------------------------------------!
+
+
+
             !----- Create the file name and check whether it exists. ----------------------!
             write(infile,'(a,i4.4,a,a)')trim(met_names(iformat)), year_use,   &
                  mname(current_time%month),'.h5'
@@ -732,6 +848,17 @@ module ed_met_driver
             if(exans)then
                call shdf5_open_f(trim(infile),'R')
             else
+               write (unit=*,fmt='(a)'       )  '------------------------------'
+               write (unit=*,fmt='(a,1x,a)'  )  ' - MET_VARS    =',trim(met_vars(iformat,1))
+               write (unit=*,fmt='(a,1x,l1)' )  ' - CYCLE_CO2   =',.not. not_cycle_co2
+               write (unit=*,fmt='(a,1x,i12)')  ' - METCYC1     =',metcyc1
+               write (unit=*,fmt='(a,1x,i12)')  ' - METCYCF     =',metcycf
+               write (unit=*,fmt='(a,1x,i12)')  ' - NCYC        =',ncyc
+               write (unit=*,fmt='(a,1x,i12)')  ' - MONTH_CURR  =',current_time%month
+               write (unit=*,fmt='(a,1x,i12)')  ' - YEAR_CURR   =',current_time%year
+               write (unit=*,fmt='(a,1x,i12)')  ' - YEAR_CYC    =',year_cyc
+               write (unit=*,fmt='(a,1x,i12)')  ' - YEAR_USE    =',year_use
+               write (unit=*,fmt='(a)'       )  '------------------------------'
                call fatal_error('Cannot open met driver input file '//trim(infile)//'!'    &
                                ,'read_met_drivers','ed_met_driver.f90')
             end if
@@ -766,37 +893,63 @@ module ed_met_driver
             !------------------------------------------------------------------------------!
             !      For all interpolated variables, we also need the next time.             !
             !------------------------------------------------------------------------------!
-            !------ Find next month and year ----------------------------------------------!
+
+            !------------------------------------------------------------------------------!
+            !     Find next month and year. If this takes us into the next year, increment !
+            ! year and reset month to January.                                             !
+            !------------------------------------------------------------------------------!
             m2 = current_time%month + 1
-            y2 = current_time%year
-            year_use_2 = year_use
-            
-            
-            !------------------------------------------------------------------------------!
-            !     If this takes us into the next year, increment year and reset month to   !
-            ! January.                                                                     !
-            !------------------------------------------------------------------------------!
-            if(m2 == 13)then
+            select case (m2)
+            case (13)
                m2 = 1
                y2 = current_time%year + 1
-               year_use_2 = y2
+               year_cyc_2 = y2
                
                !----- If we are now after the last year... --------------------------------!
-               do while(year_use_2 > metcycf)
-                  year_use_2 = year_use_2 - ncyc
+               do while(year_cyc_2 > metcycf)
+                  year_cyc_2 = year_cyc_2 - ncyc
                end do
-               
-               !----- If we are now before the first year... ------------------------------!
-               do while(year_use_2 < metcyc1)
-                  year_use_2 = year_use_2 + ncyc
-               end do
-            end if
+               !---------------------------------------------------------------------------!
 
-            ! Again, consider the special case for not_cycle_co2
+               !----- If we are now before the first year... ------------------------------!
+               do while(year_cyc_2 < metcyc1)
+                  year_cyc_2 = year_cyc_2 + ncyc
+               end do
+               !---------------------------------------------------------------------------!
+            case default
+               !---- Same year as the previous month. -------------------------------------!
+               y2         = current_time%year
+               year_cyc_2 = year_cyc
+               !---------------------------------------------------------------------------!
+            end select
+
+            !---- Again, consider the special case for not_cycle_co2. ---------------------!
             if (not_cycle_co2) then
-                year_use_2 = y2
-            endif
-            
+               !---------------------------------------------------------------------------!
+               !      Make sure that the special CO2 file exists.  If not, then use the    !
+               ! default met cycle years.                                                  !
+               !---------------------------------------------------------------------------!
+               write(infile,fmt='(a,i4.4,a,a)') trim(met_names(iformat)),y2                &
+                                               ,mname(current_time%month),'.h5'
+               inquire(file=trim(infile),exist=exans)
+               if (exans) then
+                  !----- Allow CO2 outside met cycle. -------------------------------------!
+                  year_use_2 = y2
+                  !------------------------------------------------------------------------!
+               else
+                  !----- Typical case. Pool data from the meteorological cycle. -----------!
+                  year_use_2 = year_cyc_2
+                  !------------------------------------------------------------------------!
+               end if
+               !---------------------------------------------------------------------------!
+            else
+               !----- Typical case. Pool data from the meteorological cycle. --------------!
+               year_use_2 = year_cyc_2
+               !---------------------------------------------------------------------------!
+            end if
+            !------------------------------------------------------------------------------!
+
+
             !----- Now, open the file once. -----------------------------------------------!
             write(infile,fmt='(a,i4.4,a,a)')  trim(met_names(iformat)), year_use_2         &
                                              ,mname(m2),'.h5'
@@ -804,6 +957,20 @@ module ed_met_driver
             if (exans) then
                call shdf5_open_f(trim(infile),'R')
             else
+               write (unit=*,fmt='(a)'       )  '------------------------------'
+               write (unit=*,fmt='(a,1x,a)'  )  ' - MET_VARS    =',trim(met_vars(iformat,1))
+               write (unit=*,fmt='(a,1x,l1)' )  ' - CYCLE_CO2   =',.not. not_cycle_co2
+               write (unit=*,fmt='(a,1x,i12)')  ' - METCYC1     =',metcyc1
+               write (unit=*,fmt='(a,1x,i12)')  ' - METCYCF     =',metcycf
+               write (unit=*,fmt='(a,1x,i12)')  ' - NCYC        =',ncyc
+               write (unit=*,fmt='(a,1x,i12)')  ' - MONTH_CURR  =',current_time%month
+               write (unit=*,fmt='(a,1x,i12)')  ' - YEAR_CURR   =',current_time%year
+               write (unit=*,fmt='(a,1x,i12)')  ' - YEAR_CYC    =',year_cyc
+               write (unit=*,fmt='(a,1x,i12)')  ' - YEAR_USE    =',year_use
+               write (unit=*,fmt='(a,1x,i12)')  ' - MONTH_CYC_2 =',m2
+               write (unit=*,fmt='(a,1x,i12)')  ' - YEAR_CYC_2  =',year_cyc_2
+               write (unit=*,fmt='(a,1x,i12)')  ' - YEAR_USE_2  =',year_use_2
+               write (unit=*,fmt='(a)'       )  '------------------------------'
                call fatal_error ('Cannot open met driver input file '//trim(infile)//'!'   &
                                 ,'read_met_drivers','ed_met_driver.f90')
             end if
