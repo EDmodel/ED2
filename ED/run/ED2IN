@@ -976,9 +976,16 @@ $ED_NL
    !     tropical  - drought-deciduous (light phenology);                                  !
    !     conifers  - evergreen;                                                            !
    !     hardwoods - cold-deciduous;                                                       !
+   !                                                                                       !
    !  4: (Beta).                                                                           !
    !     grasses   - drought-deciduous (hydraulics scheme);                                !
    !     tropical  - drought-deciduous (hydraulics scheme);                                !
+   !     conifers  - evergreen;                                                            !
+   !     hardwoods - cold-deciduous;                                                       !
+   !                                                                                       !
+   !  5: (Beta).                                                                           !
+   !     grasses   - drought-deciduous (hydraulics scheme);                                !
+   !     tropical  - drought-deciduous (hydraulics scheme + light phenology);              !
    !     conifers  - evergreen;                                                            !
    !     hardwoods - cold-deciduous;                                                       !
    !                                                                                       !

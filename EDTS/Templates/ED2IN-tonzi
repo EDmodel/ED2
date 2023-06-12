@@ -848,37 +848,52 @@ $ED_NL
    ! IPHEN_SCHEME -- It controls the phenology scheme.  Even within each scheme, the       !
    !                 actual phenology will be different depending on the PFT.              !
    !                                                                                       !
-   ! -1: grasses   - evergreen;                                                            !
+   ! -1: (ED-2.2 default for evergreen tropical).                                          !
+   !     grasses   - evergreen;                                                            !
    !     tropical  - evergreen;                                                            !
    !     conifers  - evergreen;                                                            !
    !     hardwoods - cold-deciduous (Botta et al.);                                        !
    !                                                                                       !
-   !  0: grasses   - drought-deciduous (old scheme);                                       !
+   !  0: (Deprecated).                                                                     !
+   !     grasses   - drought-deciduous (old scheme);                                       !
    !     tropical  - drought-deciduous (old scheme);                                       !
    !     conifers  - evergreen;                                                            !
    !     hardwoods - cold-deciduous;                                                       !
    !                                                                                       !
-   !  1: prescribed phenology                                                              !
+   !  1: (ED-2.2 default for prescribed phenology; deprecated for tropical PFTs).          !
+   !     phenology is prescribed for cold-deciduous broadleaf trees.                       !
    !                                                                                       !
-   !  2: grasses   - drought-deciduous (new scheme);                                       !
+   !  2: (ED-2.2 default).                                                                 !
+   !     grasses   - drought-deciduous (new scheme);                                       !
    !     tropical  - drought-deciduous (new scheme);                                       !
    !     conifers  - evergreen;                                                            !
    !     hardwoods - cold-deciduous;                                                       !
    !                                                                                       !
-   !  3: grasses   - drought-deciduous (new scheme);                                       !
+   !  3: (Beta).                                                                           !
+   !     grasses   - drought-deciduous (new scheme);                                       !
    !     tropical  - drought-deciduous (light phenology);                                  !
    !     conifers  - evergreen;                                                            !
    !     hardwoods - cold-deciduous;                                                       !
    !                                                                                       !
-   !  4: grasses   - drought-deciduous (plant hydraulics);                                 !
-   !     tropical  - drought-deciduous (plant hydraulics;                                  !
+   !  4: (Beta).                                                                           !
+   !     grasses   - drought-deciduous (hydraulics scheme);                                !
+   !     tropical  - drought-deciduous (hydraulics scheme);                                !
    !     conifers  - evergreen;                                                            !
    !     hardwoods - cold-deciduous;                                                       !
+   !                                                                                       !
+   !  5: (Beta).                                                                           !
+   !     grasses   - drought-deciduous (hydraulics scheme);                                !
+   !     tropical  - drought-deciduous (hydraulics scheme + light phenology);              !
+   !     conifers  - evergreen;                                                            !
+   !     hardwoods - cold-deciduous;                                                       !
+   !                                                                                       !
    !                                                                                       !
    !  Old scheme: plants shed their leaves once instantaneous amount of available water    !
    !              becomes less than a critical value.                                      !
    !  New scheme: plants shed their leaves once a 10-day running average of available      !
    !              water becomes less than a critical value.                                !
+   !  Hydraulics scheme: plants shed their leaves once predawn leaf water potential is     !
+   !              lower than tugor loss point for 10 consecutive days                      !
    !---------------------------------------------------------------------------------------!
    NL%IPHEN_SCHEME    = 2     
    !---------------------------------------------------------------------------------------!

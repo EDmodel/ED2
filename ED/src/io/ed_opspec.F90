@@ -1872,9 +1872,9 @@ end do
    
    end if
 
-   if (iphen_scheme < -1 .or. iphen_scheme > 4) then
+   if (iphen_scheme < -1 .or. iphen_scheme > 5) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
-                    'Invalid IPHEN_SCHEME, it must be between -1 and 4. Yours is set to'   &
+                    'Invalid IPHEN_SCHEME, it must be between -1 and 5. Yours is set to'   &
                     ,iphen_scheme,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
@@ -1893,7 +1893,7 @@ end do
    ! model may be linear or log-linear.  Don't bother checking if IPHEN_SCHEME is not 3.   !
    !---------------------------------------------------------------------------------------!
    select case (iphen_scheme)
-   case (3)
+   case (3,5)
       !----- Light-driven phenology is enabled.  Check settings. --------------------------!
       select case (economics_scheme)
       case (1)

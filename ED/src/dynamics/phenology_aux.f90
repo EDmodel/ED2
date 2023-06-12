@@ -288,7 +288,7 @@ module phenology_aux
       !------------------------------------------------------------------------------------!
       sitepft_loop: do ipft=1,n_pft
          select case (phenology(ipft))
-         case (3)
+         case (3,6)
             !------ The actual turnover amplitude is based on a running average. ----------!
             cpoly%turnover_amp(isi) = (1.0 - turnamp_wgt) * cpoly%turnover_amp(isi)        &
                                     +        turnamp_wgt  * turnamp_now
@@ -414,7 +414,7 @@ module phenology_aux
             ! -modulated.                                                                  !
             !------------------------------------------------------------------------------!
             select case (phenology(ipft))
-            case (3)
+            case (3,6)
                !----- Update the data set. ------------------------------------------------!
                cpatch%llspan(ico) = cpatch%llspan   (ico)                                  &
                                   * cpoly%llspan_toc(ipft,isi) / llspan_toc_in(ipft)

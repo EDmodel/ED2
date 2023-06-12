@@ -22,40 +22,55 @@ module phenology_coms
 
    integer                :: iphen_scheme
    !---------------------------------------------------------------------------------------!
-   !< IPHEN_SCHEME -- It controls the phenology scheme.  Even within each scheme, the     \n
-   !<                 actual phenology will be different depending on the PFT.            \n
+   !<IPHEN_SCHEME -- It controls the phenology scheme.  Even within each scheme, the      \n
+   !<                actual phenology will be different depending on the PFT.             \n
    !<                                                                                     \n
-   !< -1: grasses   - evergreen;                                                          \n
-   !<     tropical  - evergreen;                                                          \n
-   !<     conifers  - evergreen;                                                          \n
-   !<     hardwoods - cold-deciduous (Botta et al.);                                      \n
+   !<-1: (ED-2.2 default for evergreen tropical).                                         \n
+   !<    grasses   - evergreen;                                                           \n
+   !<    tropical  - evergreen;                                                           \n
+   !<    conifers  - evergreen;                                                           \n
+   !<    hardwoods - cold-deciduous (Botta et al.);                                       \n
    !<                                                                                     \n
-   !<  0: grasses   - drought-deciduous (old scheme);                                     \n
-   !<     tropical  - drought-deciduous (old scheme);                                     \n
-   !<     conifers  - evergreen;                                                          \n
-   !<     hardwoods - cold-deciduous;                                                     \n
+   !< 0: (Deprecated).                                                                    \n
+   !<    grasses   - drought-deciduous (old scheme);                                      \n
+   !<    tropical  - drought-deciduous (old scheme);                                      \n
+   !<    conifers  - evergreen;                                                           \n
+   !<    hardwoods - cold-deciduous;                                                      \n
    !<                                                                                     \n
-   !<  1: prescribed phenology                                                            \n
+   !< 1: (ED-2.2 default for prescribed phenology; deprecated for tropical PFTs).         \n
+   !<    phenology is prescribed for cold-deciduous broadleaf trees.                      \n
    !<                                                                                     \n
-   !<  2: grasses   - drought-deciduous (new scheme);                                     \n
-   !<     tropical  - drought-deciduous (new scheme);                                     \n
-   !<     conifers  - evergreen;                                                          \n
-   !<     hardwoods - cold-deciduous;                                                     \n
+   !< 2: (ED-2.2 default).                                                                \n
+   !<    grasses   - drought-deciduous (new scheme);                                      \n
+   !<    tropical  - drought-deciduous (new scheme);                                      \n
+   !<    conifers  - evergreen;                                                           \n
+   !<    hardwoods - cold-deciduous;                                                      \n
    !<                                                                                     \n
-   !<  3: grasses   - drought-deciduous (new scheme);                                     \n
-   !<     tropical  - drought-deciduous (light phenology);                                \n
-   !<     conifers  - evergreen;                                                          \n
-   !<     hardwoods - cold-deciduous;                                                     \n
+   !< 3: (Beta).                                                                          \n
+   !<    grasses   - drought-deciduous (new scheme);                                      \n
+   !<    tropical  - drought-deciduous (light phenology);                                 \n
+   !<    conifers  - evergreen;                                                           \n
+   !<    hardwoods - cold-deciduous;                                                      \n
    !<                                                                                     \n
-   !<  4: grasses   - drought-deciduous (plant hydraulics);                               \n
-   !<     tropical  - drought-deciduous (plant hydraulics;                                \n
-   !<     conifers  - evergreen;                                                          \n
-   !<     hardwoods - cold-deciduous;                                                     \n
+   !< 4: (Beta).                                                                          \n
+   !<    grasses   - drought-deciduous (hydraulics scheme);                               \n
+   !<    tropical  - drought-deciduous (hydraulics scheme);                               \n
+   !<    conifers  - evergreen;                                                           \n
+   !<    hardwoods - cold-deciduous;                                                      \n
    !<                                                                                     \n
-   !<  Old scheme: plants shed their leaves once instantaneous amount of available water  \n
-   !<              becomes less than a critical value.                                    \n
-   !<  New scheme: plants shed their leaves once a 10-day running average of available    \n
-   !<              water becomes less than a critical value.                              \n
+   !< 5: (Beta).                                                                          \n
+   !<    grasses   - drought-deciduous (hydraulics scheme);                               \n
+   !<    tropical  - drought-deciduous (hydraulics scheme + light phenology);             \n
+   !<    conifers  - evergreen;                                                           \n
+   !<    hardwoods - cold-deciduous;                                                      \n
+   !<                                                                                     \n
+   !<                                                                                     \n
+   !< Old scheme: plants shed their leaves once instantaneous amount of available water   \n
+   !<             becomes less than a critical value.                                     \n
+   !< New scheme: plants shed their leaves once a 10-day running average of available     \n
+   !<             water becomes less than a critical value.                               \n
+   !< Hydraulics scheme: plants shed their leaves once predawn leaf water potential is    \n
+   !<             lower than tugor loss point for 10 consecutive days                     \n
    !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
@@ -174,6 +189,14 @@ module phenology_coms
    ! phenology.                                                                            !
    !---------------------------------------------------------------------------------------!
    logical :: spot_phen
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Threshold for shedding all leaves when leaf water potential is very low. .       !
+   !---------------------------------------------------------------------------------------!
+   real    :: f_psi_xdry
    !---------------------------------------------------------------------------------------!
 
 
