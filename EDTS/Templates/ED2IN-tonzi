@@ -1324,10 +1324,67 @@ $ED_NL
    !---------------------------------------------------------------------------------------!
    !  IANTH_DISTURB -- This flag controls whether to include anthropogenic disturbances    !
    !                   such as land clearing, abandonment, and logging.                    !
-   !                   0.  no anthropogenic disturbance.                                   !
-   !                   1.  use anthropogenic disturbance dataset.                          !
+   !                   0.  No anthropogenic disturbance.                                   !
+   !                   1.  Use anthropogenic disturbance dataset (ED-2.2 default when      !
+   !                       anthropogenic disturbance is sought).                           !
+   !                   2.  Site-specific forest plantation or selective logging cycle.     !
+   !                       (Longo et al., in prep.) (Beta)                                 !
+   !                                                                                       !
+   ! The following variables are used only when IANTH_DISTURB is 2.                        !
+   !                                                                                       !
+   ! SL_SCALE           -- This flag assumes whether the simulation scale is local or      !
+   !                       landscape.  This controls the recurrence of logging.            !
+   !                       0.  Local. The simulation represents one logging unit.  Apply   !
+   !                           logging only once every SL_NYRS                             !
+   !                       1.  Landscape.  The simulation represents a landscape. Logging  !
+   !                           occurs every year but it is restricted to patches with age  !
+   !                           greater than or equal to SL_NYRS                            !
+   ! SL_YR_FIRST        -- The first year to apply logging.  In case IANTH_DISTURB is 2 it !
+   !                       must be a simulation year (i.e. between IYEARA and IYEARZ).     !
+   ! SL_NYRS            -- This variable defines the logging cycle, in years (see variable !
+   !                       SL_SCALE above)                                                 !
+   ! SL_PFT             -- PFTs that can be harvested.                                     !
+   ! SL_PROB_HARVEST    -- Logging intensity (one value for each PFT provided in SL_PFT).  !
+   !                       Values should be between 0.0 and 1.0, with 0 meaning no         !
+   !                       removal, and 1 removal of all trees needed to meet demands.     !
+   ! SL_MINDBH_HARVEST  -- Minimum DBH for logging (one value for each PFT provided in     !
+   !                       SL_PFT).                                                        !
+   ! SL_BIOMASS_HARVEST -- Target biomass to be harvested in each cycle, in kgC/m2.  If    !
+   !                       zero, then all trees that meet the minimum DBH and minimum      !
+   !                       patch age will be logged.  In case you don't want logging to    !
+   !                       occur, don't set this value to zero! Instead, set IANTH_DISTURB !
+   !                       to zero.                                                        !
+   !                                                                                       !
+   ! The following variables are used when IANTH_DISTURB is 1 or 2.                        !
+   !                                                                                       !
+   ! SL_SKID_REL_AREA    -- area damaged by skid trails (relative to felled area).         !
+   ! SL_SKID_DBH_THRESH  -- DBH threshold for damage caused in skid trails.                !
+   ! SL_SKID_S_GTHARV    -- survivorship of trees with DBH > MINDBH in skid trails.        !
+   ! SL_SKID_S_LTHARV    -- survivorship of trees with DBH < MINDBH in skid trails.        !
+   ! SL_FELLING_S_LTHARV -- survivorship of trees with DBH < MINDBH in felling gaps.       !
+   !                                                                                       !
+   ! Cropland variables, used when IANTH_DISTURB is 1 or 2.                                !
+   !                                                                                       !
+   ! CL_FSEEDS_HARVEST   -- fraction of seeds that is harvested.                           !
+   ! CL_FSTORAGE_HARVEST -- fraction of non-structural carbon that is harvested.           !
+   ! CL_FLEAF_HARVEST    -- fraction of leaves that is harvested in croplands.             !
    !---------------------------------------------------------------------------------------!
-   NL%IANTH_DISTURB   = 0
+   NL%IANTH_DISTURB       = 0
+   NL%SL_SCALE            = 1
+   NL%SL_YR_FIRST         = 1992
+   NL%SL_NYRS             = 50
+   NL%SL_PFT              = 2,3,4
+   NL%SL_PROB_HARVEST     = 1.0,1.0,1.0
+   NL%SL_MINDBH_HARVEST   = 50.,50.,50.
+   NL%SL_BIOMASS_HARVEST  = 0
+   NL%SL_SKID_REL_AREA    = 1
+   NL%SL_SKID_DBH_THRESH  = 30.
+   NL%SL_SKID_S_GTHARV    = 1
+   NL%SL_SKID_S_LTHARV    = 0.6
+   NL%SL_FELLING_S_LTHARV = 0.35
+   NL%CL_FSEEDS_HARVEST   = 0.75
+   NL%CL_FSTORAGE_HARVEST = 0.00
+   NL%CL_FLEAF_HARVEST    = 0.00
    !---------------------------------------------------------------------------------------!
 
 

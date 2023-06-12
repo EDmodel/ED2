@@ -1263,6 +1263,7 @@ subroutine ed_opspec_misc
                                     , sl_mindbh_harvest            & ! intent(in)
                                     , sl_biomass_harvest           & ! intent(in)
                                     , sl_skid_rel_area             & ! intent(in)
+                                    , sl_skid_dbh_thresh           & ! intent(in)
                                     , sl_skid_s_gtharv             & ! intent(in)
                                     , sl_skid_s_ltharv             & ! intent(in)
                                     , sl_felling_s_ltharv          & ! intent(in)
@@ -2387,7 +2388,15 @@ end do
          write (reason,fmt='(2a,1x,es12.5,a)')                                             &
                        'Invalid SL_SKID_REL_AREA, it must be between 0. and 5.'            &
                       ,'  Yours is set to',sl_skid_rel_area,'...'
-         call opspec_fatal(reason,'opspec_misc')  
+         call opspec_fatal(reason,'opspec_misc')
+         ifaterr = ifaterr +1
+      end if
+
+      if (sl_skid_dbh_thresh < 0. .or. sl_skid_dbh_thresh > 1000.) then
+         write (reason,fmt='(2a,1x,es12.5,a)')                                             &
+                       'Invalid SL_SKID_DBH_THRESH, it must be between 0. and 1000.'       &
+                      ,'  Yours is set to',sl_skid_dbh_thresh,'...'
+         call opspec_fatal(reason,'opspec_misc')
          ifaterr = ifaterr +1
       end if
 
@@ -2395,7 +2404,7 @@ end do
          write (reason,fmt='(2a,1x,es12.5,a)')                                             &
                        'Invalid SL_SKID_S_GTHARV, it must be between 0. and 1.'            &
                       ,'  Yours is set to',sl_skid_s_gtharv,'...'
-         call opspec_fatal(reason,'opspec_misc')  
+         call opspec_fatal(reason,'opspec_misc')
          ifaterr = ifaterr +1
       end if
 
@@ -2403,7 +2412,7 @@ end do
          write (reason,fmt='(2a,1x,es12.5,a)')                                             &
                        'Invalid SL_SKID_S_LTHARV, it must be between 0. and 1.'            &
                       ,'  Yours is set to',sl_skid_s_ltharv,'...'
-         call opspec_fatal(reason,'opspec_misc')  
+         call opspec_fatal(reason,'opspec_misc')
          ifaterr = ifaterr +1
       end if
 
