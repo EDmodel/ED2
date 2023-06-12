@@ -110,6 +110,17 @@ module therm_lib
    !=======================================================================================!
 
 
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !   Weighting factor for atmospheric ThetaV (as opposed to canopy air space ThetaV).    !
+   !---------------------------------------------------------------------------------------!
+   real(kind=4), parameter :: fthva_rp = 0.5
+   !=======================================================================================!
+   !=======================================================================================!
+
+
    contains
 
 
@@ -2501,14 +2512,19 @@ module therm_lib
       real(kind=4), intent(in) :: zcan     ! Height at canopy level              [       m]
       !------Local variables. -------------------------------------------------------------!
       real(kind=4)             :: pinc     ! Pressure increment                  [ Pa^R/cp]
+      real(kind=4)             :: thvref   ! Reference virtual pot. temperature  [       K]
+      real(kind=4)             :: thvcan   ! CAS virtual pot. temperature        [       K]
       real(kind=4)             :: thvbar   ! Average virtual pot. temperature    [       K]
       !------------------------------------------------------------------------------------!
 
       !------------------------------------------------------------------------------------!
       !      First we compute the average virtual potential temperature between the canopy !
-      ! top and the reference level.                                                       !
+      ! top and the reference level.  Because of the equation below, we average the        !
+      ! inverse of the potential temperature.                                              !
       !------------------------------------------------------------------------------------!
-      thvbar = 0.5 * (thetaref * (1. + epim1 * shvref) + thetacan * (1. + epim1 * shvcan))
+      thvref = thetaref * (1.0 + epim1 * shvref)
+      thvcan = thetacan * (1.0 + epim1 * shvcan)
+      thvbar = thvref * thvcan / ( ( 1.0 - fthva_rp ) * thvref + fthva_rp * thvcan )
       !------------------------------------------------------------------------------------!
 
 
