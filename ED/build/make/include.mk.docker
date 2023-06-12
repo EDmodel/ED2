@@ -28,12 +28,16 @@ USE_MPIWTIME=1
 # gfortran
 CMACH=PC_LINUX1
 FC_TYPE=GNU
-F_COMP=mpif90
+# F_COMP=mpif90
+F_COMP=gfortran
 F_OPTS=-O3 -ffree-line-length-none  -fno-whole-file
-C_COMP=mpicc
+# C_COMP=mpicc
+C_COMP=gcc
 C_OPTS=-O3
-LOADER=mpif90
+# LOADER=mpif90
+LOADER=gfortran
 LOADER_OPTS=${F_OPTS}
+# C_LOADER=mpicc # C_LOADER is obsolete and can be removed
 LIBS=
 MOD_EXT=mod
 
@@ -41,7 +45,8 @@ MOD_EXT=mod
 MPI_PATH=
 PAR_INCS=
 PAR_LIBS=
-PAR_DEFS=-DRAMS_MPI
+# PAR_DEFS=-DRAMS_MPI
+PAR_DEFS=
 
 # For IBM,HP,SGI,ALPHA,LINUX use these:
 ARCHIVE=ar rs
