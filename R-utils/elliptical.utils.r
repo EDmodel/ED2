@@ -5,16 +5,16 @@
 elliptical.radius <<- function(x,y,theta,degrees=FALSE){
    if (degrees) theta = theta * pio180
 
-   both.zero = x %==% 0 & y %==% 0
-   x.zero    = x %==% 0 & y %!=% 0
-   y.zero    = x %!=% 0 & y %==% 0
+   both.zero = (x %eq% 0) & (y %eq% 0)
+   x.zero    = (x %eq% 0) & (y %ne% 0)
+   y.zero    = (x %ne% 0) & (y %eq% 0)
 
    x[x.zero] = sqrt(.Machine$double.eps) * y[x.zero]
    y[y.zero] = sqrt(.Machine$double.eps) * x[y.zero]
 
-   ans = ifelse( both.zero
-               , 0
-               , x*y / sqrt(y*y*(cos(theta))^2+x*x*(sin(theta))^2)
+   ans = ifelse( test = both.zero
+               , yes  = 0
+               , no   = x*y / sqrt(y*y*(cos(theta))^2+x*x*(sin(theta))^2)
                )#end ifelse
 
    return(ans)
@@ -36,9 +36,9 @@ elliptical.area <<- function(x,y,theta0=0,theta1=2*pi,degrees=FALSE){
       theta1 = theta1 * pio180
    }#end if
 
-   both.zero = x %==% 0 & y %==% 0
-   x.zero    = x %==% 0 & y %!=% 0
-   y.zero    = x %!=% 0 & y %==% 0
+   both.zero = ( x %eq% 0 ) & ( y %eq% 0 )
+   x.zero    = ( x %eq% 0 ) & ( y %ne% 0 )
+   y.zero    = ( x %ne% 0 ) & ( y %eq% 0 )
 
    x[x.zero] = sqrt(.Machine$double.eps) * y[x.zero]
    y[y.zero] = sqrt(.Machine$double.eps) * x[y.zero]

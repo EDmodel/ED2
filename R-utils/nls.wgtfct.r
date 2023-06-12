@@ -126,7 +126,7 @@ nls.wgtfct <<- function(expr,nbrks=10){
 
 
       #----- Append variable to the temporary environment. --------------------------------#
-      xysigma = ifelse(xysigma %>% 0 ,xysigma,NA)
+      xysigma = ifelse(xysigma %gt% 0 ,xysigma,NA)
       assign(x="xysigma",value=xysigma,envir=newEnv)
       #------------------------------------------------------------------------------------#
    }#end if (length(grep("xysigma", expr)) > 0)
@@ -148,7 +148,7 @@ nls.wgtfct <<- function(expr,nbrks=10){
 
 
       #----- Append variable to the temporary environment. --------------------------------#
-      yysigma = ifelse(yysigma %>% 0 ,yysigma,NA)
+      yysigma = ifelse(yysigma %gt% 0 ,yysigma,NA)
       assign(x="yysigma",value=yysigma,envir=newEnv)
       #------------------------------------------------------------------------------------#
    }#end if (length(grep("yysigma", expr)) > 0)
@@ -207,7 +207,7 @@ nls.wgtfct <<- function(expr,nbrks=10){
 
 
          #----- Append variable to the temporary environment. -----------------------------#
-         xrsigma = ifelse(xrsigma %>% 0 ,xrsigma,NA)
+         xrsigma = ifelse(xrsigma %gt% 0 ,xrsigma,NA)
          assign(x="xrsigma",value=xrsigma,envir=newEnv)
          #---------------------------------------------------------------------------------#
       }#end if (length(grep("xrsigma", expr)) > 0)
@@ -229,7 +229,7 @@ nls.wgtfct <<- function(expr,nbrks=10){
 
 
          #----- Append variable to the temporary environment. -----------------------------#
-         yrsigma = ifelse(yrsigma %>% 0 ,yrsigma,NA)
+         yrsigma = ifelse(yrsigma %gt% 0 ,yrsigma,NA)
          assign(x="yrsigma",value=yrsigma,envir=newEnv)
          #---------------------------------------------------------------------------------#
       }#end if (length(grep("yrsigma", expr)) > 0)
@@ -243,7 +243,7 @@ nls.wgtfct <<- function(expr,nbrks=10){
    # values or negative numbers, if they somehow exist, replace them by zero.              #
    #---------------------------------------------------------------------------------------#
    ans = eval(expr=parse(text = expr), envir = newEnv)
-   ans = ifelse(ans %>% 0, ans, 0)
+   ans = ifelse(ans %gt% 0, ans, 0)
    ans = c(ans)
    names(ans) = NULL
    #---------------------------------------------------------------------------------------#

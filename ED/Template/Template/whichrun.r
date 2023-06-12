@@ -53,6 +53,7 @@ endrun     = file.path(main,polyg,"serial_lsf.out" )
 hasrun     = file.path(main,polyg,"serial_out.out" )
 haserr     = file.path(main,polyg,"serial_out.err" )
 hascrashed = file.path(main,polyg,"crashed_out.out")
+hashydfail = file.path(main,polyg,"hydfail_out.out")
 hassigsegv = file.path(main,polyg,"sigsegv_out.out")
 hasbad.met = file.path(main,polyg,"bad_met_out.out")
 hasmetmiss = file.path(main,polyg,"metmiss_out.out")
@@ -85,13 +86,15 @@ if (file.exists(hasrun) && ! sigsegv){
    metmiss  = ( length(grep("Cannot open met driver input file",simout)) > 0
               | length(grep("Specify ED_MET_DRIVER_DB properly",simout)) > 0 )
    crashed  = length(grep("IFLAG1 problem."                    ,simout)) > 0
+   hydfail  = length(grep("Plant Hydrodynamics is off-track."  ,simout)) > 0
    bad.met  = length(grep("Meteorological forcing has issues"  ,simout)) > 0
    stopped  = length(grep("FATAL ERROR"                        ,simout)) > 0
    finished = length(grep("ED-2\\.2 execution ends"            ,simout)) > 0
-   running  = ! (metmiss || crashed || stopped || finished)
+   running  = ! (metmiss || crashed || hydfail || stopped || finished)
 }else if (file.exists(hasrun) && sigsegv){
    metmiss  = FALSE
    crashed  = FALSE
+   hydfail  = FALSE
    bad.met  = FALSE
    stopped  = FALSE
    finished = FALSE
@@ -100,6 +103,7 @@ if (file.exists(hasrun) && ! sigsegv){
    metmiss  = file.exists(hasmetmiss)
    bad.met  = file.exists(hasbad.met)
    crashed  = file.exists(hascrashed)
+   hydfail  = file.exists(hashydfail)
    stopped  = file.exists(hasstopped)
    sigsegv  = file.exists(hassigsegv)
    finished = FALSE
@@ -153,7 +157,7 @@ if (nhisto > 0){
          dummy    = file.remove(tryhisto)
          if (finished){
             finished = FALSE
-            running  = ! (metmiss || crashed || stopped || finished)
+            running  = ! (metmiss || crashed || hydfail || stopped || finished)
          }#end if
       }else{
          hasoutput = TRUE
@@ -351,6 +355,8 @@ if (running && hasoutput){
    status    = paste(polyg,yyyy,mm,dd,hhhh,"SIGSEGV",agb,bsa,lai,scb,npa,sep=" ")
 }else if(crashed){
    status    = paste(polyg,yyyy,mm,dd,hhhh,"CRASHED",agb,bsa,lai,scb,npa,sep=" ")
+}else if(hydfail){
+   status    = paste(polyg,yyyy,mm,dd,hhhh,"HYDFAIL",agb,bsa,lai,scb,npa,sep=" ")
 }else if(bad.met){
    status    = paste(polyg,yyyy,mm,dd,hhhh,"BAD_MET",agb,bsa,lai,scb,npa,sep=" ")
 }else if (metmiss){
