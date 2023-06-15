@@ -10,15 +10,21 @@ ARG ED2_KIND=E
 ENV ED2_KIND=${ED2_KIND}
 
 # compile HDF5 with intel
-RUN wget -q https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-1.10/hdf5-1.10.9/src/CMake-hdf5-1.10.9.tar.gz && \
+RUN df -h . && \
+    wget -q https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-1.10/hdf5-1.10.9/src/CMake-hdf5-1.10.9.tar.gz && \
     tar xf CMake-hdf5-1.10.9.tar.gz && \
     cd CMake-hdf5-1.10.9 && \
     sed -e  's/^#*\(.*BUILD_FORTRAN:BOOL=ON.*\)/\1/' \
         -e  's/^#*\(.*BUILD_FORTRAN:BOOL=OFF.*\)/#\1/' \
         -e  's/^#*\(.*intel.cmake.*\)/\1/' \
         -i HDF5options.cmake && \
+    df -h . && \
     ctest -S HDF5config.cmake,BUILD_GENERATOR=Unix,INSTALLDIR=/opt/hdf5 -C Release -V -O hdf5.log && \
-    ./HDF5-1.10.9-Linux.sh --skip-license --exclude-subdir --prefix=/opt
+    df -h . && \
+    ./HDF5-1.10.9-Linux.sh --skip-license --exclude-subdir --prefix=/opt && \
+    cd && \
+    rm -rf CMake-hdf5-1.10.9.tar.gz CMake-hdf5-1.10.9 && \
+    df -h .
 
 # copy the source only, this prevents a full rebuild in case of changes to Dockerfile or non source files
 COPY BRAMS    /ED2/BRAMS
