@@ -185,7 +185,7 @@ jobs:
       # this will update the README of the dockerhub repo
       - name: Docker Hub Description
         if: env.DOCKERHUB_README == 'true'
-        uses: peter-evans/dockerhub-description@v2
+        uses: peter-evans/dockerhub-description@v3
         env:
           DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
           DOCKERHUB_PASSWORD: ${{ secrets.DOCKERHUB_PASSWORD }}
