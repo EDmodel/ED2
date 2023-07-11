@@ -42,13 +42,20 @@ module plant_hydro
    !>
    !> \author Xiangtao Xu, 30 Jan. 2018
    !---------------------------------------------------------------------------------------!
-   subroutine plant_hydro_driver(csite,ipa,ntext_soil)
+   subroutine plant_hydro_driver(csite,ipa,lsl,ntext_soil,site_isoilbc)
       use ed_state_vars        , only : sitetype               & ! structure
                                       , patchtype              ! ! structure
       use ed_misc_coms         , only : dtlsm                  & ! intent(in)
                                       , dtlsm_o_frqsum         & ! intent(in)
                                       , current_time           ! ! intent(in)
       use soil_coms            , only : soil                   & ! intent(in)
+                                      , slzt                   & ! intent(in)
+                                      , dslz                   & ! intent(in)
+                                      , dslzt                  & ! intent(in)
+                                      , dslzti                 & ! intent(in)
+                                      , dslzi                  & ! intent(in)
+                                      , sin_sldrain            & ! intent(in)
+                                      , slcons1                & ! intent(in)
                                       , matric_potential       & ! function
                                       , hydr_conduct           ! ! function
       use grid_coms            , only : nzg                    ! ! intent(in)
@@ -59,23 +66,30 @@ module plant_hydro
       use pft_coms             , only : C2B                    & ! intent(in)
                                       , leaf_water_cap         & ! intent(in)
                                       , leaf_psi_min           & ! intent(in)
+                                      , wood_psi_min           & ! intent(in)
                                       , small_psi_min          ! ! intent(in)
 
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(sitetype)        , target      :: csite
       integer               , intent(in)  :: ipa
+      integer               , intent(in)  :: lsl
       integer,dimension(nzg), intent(in)  :: ntext_soil
+      integer               , intent(in)  :: site_isoilbc
       !----- Local Vars  ------------------------------------------------------------------!
       type(patchtype)       , pointer     :: cpatch      !< patch strcture
       real                                :: swater_min  !< Min. soil moisture for condct.
-      real                                :: swater_max  !< Max. soil moisture for condct.
+      real                                :: swater_try  !< Projected soil water.
       real                                :: swater_use  !< soil moisture
+      real                                :: avg_cond0   !< Interpolated conductance
       integer                             :: nsoil       !< soil type for soil
       integer                             :: k           !< iterator for soil lyr
       integer                             :: ico         !< iterator for cohort
       integer                             :: ipft        !< PFT index
       real ,dimension(nzg)                :: soil_psi    !< soil water potential   [      m]
+      real ,dimension(0:nzg+1)            :: soil_psipz0 !< soil water potential   [      m]
+      real ,dimension(0:nzg+1)            :: soil_cond0  !< soil water conductance [kg/m2/s]
+      real ,dimension(0:nzg+1)            :: wflux0      !< potential water flux   [kg/m2/s]
       real ,dimension(nzg)                :: soil_cond   !< soil water conductance [kg/m2/s]
       real                                :: sap_frac    !< sapwood fraction       [    ---]
       real                                :: sap_area    !< sapwood area           [     m2]
@@ -85,7 +99,7 @@ module plant_hydro
       logical                             :: track_hydraulics !< whether track hydraulics
       !----- Variables for debugging purposes ---------------------------------------------!
       integer, parameter                  :: dco        = 0 ! the cohort to debug
-      logical, dimension(3)               :: error_flag
+      logical, dimension(6)               :: error_flag
       logical, parameter                  :: debug_flag = .false.
       character(len=13)     , parameter   :: efmt       = '(a,1x,es12.5)'
       character(len=9)      , parameter   :: ifmt       = '(a,1x,i5)'
@@ -128,43 +142,107 @@ module plant_hydro
 
          !---------------------------------------------------------------------------------!
          !     Calculate water potential and conductance in each soil layer in preparation
-         ! for later calculations.
+         ! for later calculations.  Soil conductance is only allowed for layers above the
+         ! lowest resolvable soil depth.  We calculate the conductance twice: the first
+         ! time we compute the target conductance, and in the second time we impose bounds
+         ! to avoid soil water to be over-extracted by plants.
          !---------------------------------------------------------------------------------!
-         do k = 1,nzg
+         soil_cond0 (:) = 0.0
+         soil_psipz0(:) = 0.0
+         wflux0     (:) = 0.0
+         !----- First guess. --------------------------------------------------------------!
+         guess_1st_loop: do k = lsl,nzg
             nsoil = ntext_soil(k)
+            soil_cond0 (k) = wdns * hydr_conduct(k,nsoil,csite%soil_water  (k,ipa)         &
+                                                        ,csite%soil_fracliq(k,ipa) )
+            soil_psipz0(k) = csite%soil_mstpot(k,ipa) + slzt(k)
+         end do guess_1st_loop
+         !----- Bottom boundary condition. ------------------------------------------------!
+         select case (site_isoilbc)
+         case (0)
+            !----- Bedrock. ---------------------------------------------------------------!
+            soil_psipz0(lsl-1) = soil_psipz0(lsl)
+            soil_cond0 (lsl-1) = soil_cond0 (lsl)
+            !------------------------------------------------------------------------------!
+         case (1)
+            !----- Free drainage. ---------------------------------------------------------!
+            soil_psipz0(lsl-1) = csite%soil_mstpot(lsl,ipa) + slzt(lsl-1)
+            soil_cond0 (lsl-1) = soil_cond0 (lsl)
+            !------------------------------------------------------------------------------!
+         case (2)
+            !----- Partial drainage. ------------------------------------------------------!
+            soil_psipz0(lsl-1) = csite%soil_mstpot(lsl,ipa)                                     &
+                               + slzt(lsl) - dslzt(lsl) * sin_sldrain
+            soil_cond0 (lsl-1) = soil_cond0 (lsl)
+            !------------------------------------------------------------------------------!
+         case (3)
+            !----- Aquifer. ---------------------------------------------------------------!
+            nsoil              = ntext_soil(lsl)
+            soil_psipz0(lsl-1) = soil(nsoil)%slpots
+            soil_cond0 (lsl-1) = slcons1(lsl-1,nsoil)
+            !------------------------------------------------------------------------------!
+         end select
+         !----- Top boundary condition. ---------------------------------------------------!
+         soil_psipz0(nzg+1) = soil_psipz0(nzg)
+         !----- First guess for water flux. -----------------------------------------------!
+         do k = lsl,nzg
+            nsoil = ntext_soil(k)
+            select case (soil(nsoil)%method)
+            case ('BDRK')
+               !----- Bedrock, soil conductance should be zero. ---------------------------!
+               wflux0(k) = 0.
+               !---------------------------------------------------------------------------!
+            case default
+               !----- Log-linear interpolation of conductivity to layer interface. --------!
+               avg_cond0 = soil_cond0(k-1) *  ( soil_cond0(k) / soil_cond0(k-1) )          &
+                                           ** ( dslz(k-1) / (dslz(k-1) + dslz(k)) )
+               !---------------------------------------------------------------------------!
 
+               !------ Estimate flux at interface. ----------------------------------------!
+               wflux0(k) = - avg_cond0 * ( soil_psipz0(k) - soil_psipz0(k-1) ) * dslzti(k)
+               !---------------------------------------------------------------------------!
+            end select
             !------------------------------------------------------------------------------!
-            !      Get bounded soil moisture.                                              !
-            !  MLO.  The lower bound used to be air-dry soil moisture.  This causes issues !
-            !  in the RK4 integrator if the soil moisture is just slightly above air-dry   !
-            !  and dtlsm is long.  For the time being, I am assuming that soil             !
-            !  conductivity is halted just below the permanent wilting point.  Similarly,  !
-            !  I am assuming that matric potential cannot exceed a value slightly less     !
-            !  than the bubbling point.                                                    !
+         end do
+         !----- Find bounded fluxes. ------------------------------------------------------!
+         soil_cond(:) = 0.
+         do k = lsl,nzg
             !------------------------------------------------------------------------------!
+            !     Quick estimate of soil water for the next step.                          !
+            !------------------------------------------------------------------------------!
+            nsoil = ntext_soil(k)
+            swater_use = csite%soil_water(k,ipa) * csite%soil_fracliq(k,ipa)
             swater_min = mg_safe * soil(nsoil)%soilcp  + om_safe * soil(nsoil)%soilwp
-            swater_max = mg_safe * soil(nsoil)%sfldcap + om_safe * soil(nsoil)%slmsts
-            swater_use = max( swater_min                                                   &
-                            , min(swater_max                                               &
-                                 ,csite%soil_water(k,ipa) * csite%soil_fracliq(k,ipa) ) )
+            swater_try = csite%soil_water(k,ipa)                                           &
+                       + dtlsm * dslzi(k) * ( wflux0(k) - wflux0(k+1))
             !------------------------------------------------------------------------------!
 
-
-            !----- Clapp & Hornberger curves. ---------------------------------------------!
-            soil_psi(k)  = matric_potential(nsoil,swater_use)
             !------------------------------------------------------------------------------!
-
-
+            !      Check whether or not the conductance could drive soil water too low.    !
             !------------------------------------------------------------------------------!
-            !    In the model, soil can't get drier than residual soil moisture.  Ensure   !
-            ! that hydraulic conductivity is effectively zero in case soil moisture        !
-            ! reaches this level or drier.                                                 !
-            !------------------------------------------------------------------------------!
-            if (csite%soil_water(k,ipa) < swater_min) then
+            if ( swater_use < swater_min) then
+               !------ Soil is already very dry (or frozen).  Halt water transport. -------!
+               swater_use   = swater_min
                soil_cond(k) = 0.
+               soil_psi (k) = matric_potential(nsoil,swater_use)
+               !---------------------------------------------------------------------------!
+            else if ( (swater_try < swater_use) .and. (swater_try < swater_min)) then
+               !---------------------------------------------------------------------------!
+               !     Conductance could desiccate soil layer, down-regulate soil            !
+               ! conductance and adjust soil matric potential accordingly.  We also change !
+               ! the units for conductance to kg/m2/s.                                     !
+               !---------------------------------------------------------------------------!
+               soil_cond(k) = wdns * soil_cond0(k) * ( swater_use - swater_min)            &
+                                                   / ( swater_use - swater_try)
+               soil_psi(k)  = matric_potential(nsoil,swater_use)
+               !---------------------------------------------------------------------------!
             else
-               soil_cond(k) = wdns * hydr_conduct(k,nsoil,csite%soil_water(k,ipa)          &
-                                                 ,csite%soil_fracliq(k,ipa))
+               !---------------------------------------------------------------------------!
+               !     Use the actual conductance (just convert it to kg/m2/s).              !
+               !---------------------------------------------------------------------------!
+               soil_cond(k) = wdns * soil_cond0(k)
+               soil_psi (k) = matric_potential(nsoil,swater_use)
+               !---------------------------------------------------------------------------!
             end if
             !------------------------------------------------------------------------------!
          end do
@@ -226,13 +304,53 @@ module plant_hydro
                                        + transp * dtlsm        & ! kgH2O
                                        / c_leaf                ! ! kgH2O/m
                   !------------------------------------------------------------------------!
+
+
+                  !------------------------------------------------------------------------!
+                  !      Run sanity check.  The code will crash if any of these happens.   !
+                  !                                                                        !
+                  ! 1.  If leaf_psi is invalid (run the debugger, the problem may be else- !
+                  !     where)                                                             !
+                  ! 2.  If leaf_psi is positive (non-sensical)                             !
+                  ! 3.  If leaf_psi is too negative (also non-sensical)                    !
+                  !------------------------------------------------------------------------!
+                  error_flag(1) = isnan_real(cpatch%leaf_psi(ico)) ! NaN values
+                  error_flag(2) = cpatch%leaf_psi(ico) > 0.        ! Positive potential
+                  error_flag(3) = merge( cpatch%leaf_psi(ico) < small_psi_min(ipft)        &
+                                       , cpatch%leaf_psi(ico) < leaf_psi_min (ipft)        &
+                                       , cpatch%is_small(ico)                        )
+                  !------------------------------------------------------------------------!
                else
                   !----- No leaves, set leaf_psi the same as wood_psi - hite. -------------!
                   cpatch%leaf_psi(ico) = cpatch%wood_psi(ico) - cpatch%hite(ico)
                   !------------------------------------------------------------------------!
+
+
+                  !----- Skip checking leaf psi. ------------------------------------------!
+                  error_flag(1) = .false.
+                  error_flag(2) = .false.
+                  error_flag(3) = .false.
+                  !------------------------------------------------------------------------!
                end if
                !---------------------------------------------------------------------------!
 
+
+               !---------------------------------------------------------------------------!
+               !      Run sanity check for wood.  The code will crash if any of these      !
+               ! happens.                                                                  !
+               !                                                                           !
+               ! 1.  If wood_psi is invalid (run the debugger, the problem may be else-    !
+               !     where)                                                                !
+               ! 2.  If wood_psi is positive (non-sensical)                                !
+               ! 3.  If wood_psi is too negative (also non-sensical)                       !
+               !---------------------------------------------------------------------------!
+               error_flag(4) = isnan_real(cpatch%wood_psi(ico)) ! NaN values
+               error_flag(5) = cpatch%wood_psi(ico) > 0.        ! Positive potential
+               error_flag(6) = merge( cpatch%wood_psi(ico) < small_psi_min(ipft)           &
+                                    , cpatch%wood_psi(ico) < wood_psi_min (ipft)           &
+                                    , cpatch%is_small(ico)                        )
+               !---------------------------------------------------------------------------!
+ 
 
                !---------------------------------------------------------------------------!
                !      Run sanity check.  The code will crash if any of these happen.       !
@@ -242,17 +360,12 @@ module plant_hydro
                ! 2.  If leaf_psi is positive (non-sensical)                                !
                ! 3.  If leaf_psi is too negative (also non-sensical)                       !
                !---------------------------------------------------------------------------!
-               error_flag(1) = isnan_real(cpatch%leaf_psi(ico)) ! NaN values
-               error_flag(2) = cpatch%leaf_psi(ico) > 0.        ! Positive potential
-               error_flag(3) = merge( cpatch%leaf_psi(ico) < small_psi_min(ipft)           &
-                                    , cpatch%leaf_psi(ico) < leaf_psi_min (ipft)           &
-                                    , cpatch%is_small(ico)                        )
                if ((debug_flag .and. (dco == 0 .or. ico == dco)) .or. any(error_flag)) then
                   write (unit=*,fmt='(a)') ' '
                   write (unit=*,fmt='(92a)') ('=',k=1,92)
                   write (unit=*,fmt='(92a)') ('=',k=1,92)
                   write (unit=*,fmt='(a)'  )                                               &
-                     ' Invalid leaf_psi detected.'
+                     ' Invalid leaf_psi or wood_psi detected.'
                   write (unit=*,fmt='(92a)') ('-',k=1,92)
                   write (unit=*,fmt='(a,i4.4,2(1x,i2.2),1x,f6.0)') ' TIME           : '    &
                                                   ,current_time%year,current_time%month    &
@@ -266,12 +379,17 @@ module plant_hydro
                   write (unit=*,fmt=lfmt   ) ' + SMALL            =',cpatch%is_small(ico)
 
                   write (unit=*,fmt='(a)'  ) ' '
-                  write (unit=*,fmt=lfmt   ) ' + FINITE           =',.not. error_flag(1)
-                  write (unit=*,fmt=lfmt   ) ' + NEGATIVE         =',.not. error_flag(2)
-                  write (unit=*,fmt=lfmt   ) ' + BOUNDED          =',.not. error_flag(3)
+                  write (unit=*,fmt=lfmt   ) ' + FINITE   (Leaf)  =',.not. error_flag(1)
+                  write (unit=*,fmt=lfmt   ) ' + NEGATIVE (Leaf)  =',.not. error_flag(2)
+                  write (unit=*,fmt=lfmt   ) ' + BOUNDED  (Leaf)  =',.not. error_flag(3)
+                  write (unit=*,fmt=lfmt   ) ' + FINITE   (Wood)  =',.not. error_flag(4)
+                  write (unit=*,fmt=lfmt   ) ' + NEGATIVE (Wood)  =',.not. error_flag(5)
+                  write (unit=*,fmt=lfmt   ) ' + BOUNDED  (Wood)  =',.not. error_flag(6)
 
                   write (unit=*,fmt='(a)'  ) ' '
                   write (unit=*,fmt=efmt   ) ' + LEAF_PSI_MIN     =',leaf_psi_min (ipft)
+                  write (unit=*,fmt=efmt   ) ' + WOOD_PSI_MIN     =',wood_psi_min (ipft)
+                  write (unit=*,fmt=efmt   ) ' + WOOD_PSI_MIN     =',wood_psi_min (ipft)
                   write (unit=*,fmt=efmt   ) ' + SMALL_PSI_MIN    =',small_psi_min(ipft)
 
                   write (unit=*,fmt='(a)'  ) ' '
@@ -346,7 +464,7 @@ module plant_hydro
                        ,cpatch%bleaf(ico),bsap,cpatch%broot(ico)      &!input
                        ,cpatch%hite(ico),transp                       &!input
                        ,cpatch%leaf_psi(ico),cpatch%wood_psi(ico)     &!input
-                       ,soil_psi,soil_cond,ipa,ico                    &!input
+                       ,soil_psi,soil_cond,lsl,ipa,ico                &!input
                        ,cpatch%wflux_wl(ico),cpatch%wflux_gw(ico)     &!output
                        ,cpatch%wflux_gw_layer(:,ico))                 !!output
                !---------------------------------------------------------------------------!
@@ -452,7 +570,7 @@ module plant_hydro
                ,sap_area,nplant,ipft,is_small,krdepth                   & !plant input
                ,bleaf,bsap,broot,hite                                   & !plant input
                ,transp,leaf_psi,wood_psi                                & !plant input
-               ,soil_psi,soil_cond                                      & !soil  input
+               ,soil_psi,soil_cond,lsl                                  & !soil  input
                ,ipa,ico                                                 & !debug input
                ,wflux_wl,wflux_gw,wflux_gw_layer)                       ! !flux  output
       use soil_coms       , only : slz8                 & ! intent(in)
@@ -491,6 +609,7 @@ module plant_hydro
       real   ,                 intent(in)  :: wood_psi       !wood water pot.     [      m]
       real   , dimension(nzg), intent(in)  :: soil_psi       !soil water pot.     [      m]
       real   , dimension(nzg), intent(in)  :: soil_cond      !soil water cond.    [kg/m2/s]
+      integer,                 intent(in)  :: lsl           !lowest active lyr    [    ---]
       integer,                 intent(in)  :: ipa            !Patch index         [    ---]
       integer,                 intent(in)  :: ico            !Cohort index        [    ---]
       real   ,                 intent(out) :: wflux_wl       !wood-leaf flux      [   kg/s]
@@ -558,6 +677,7 @@ module plant_hydro
       logical           , parameter         :: debug_flag = .false.
       !----- External function ------------------------------------------------------------!
       real(kind=4)      , external          :: sngloff       ! Safe dble 2 single precision
+      logical           , external          :: isnan_dble    ! Check for NaN 
       !------------------------------------------------------------------------------------!
 
 
@@ -718,7 +838,7 @@ module plant_hydro
             wflux_wl_d = 0.d0
 
             !------ Proj_leaf_psi is only dependent upon transpiration. -------------------!
-            if (c_leaf > 0.) then
+            if (c_leaf > 0.d0) then
                 proj_leaf_psi = leaf_psi_d - transp_d * dt_d / c_leaf
             else
                 proj_leaf_psi = leaf_psi_d
@@ -753,7 +873,7 @@ module plant_hydro
             !------------------------------------------------------------------------------!
             !     Find sapflow.
             !------------------------------------------------------------------------------!
-            if (stem_cond == 0.) then
+            if (stem_cond == 0.d0) then
                !---- 1.2.2. Zero flux because stem conductivity is also zero. -------------!
                wflux_wl_d = 0.d0
                !---------------------------------------------------------------------------!
@@ -863,7 +983,7 @@ module plant_hydro
          !     No need to calculate water flow: wood psi is only dependent upon sapflow.
          !---------------------------------------------------------------------------------!
          wflux_gw_d    = 0.d0
-         if (c_stem > 0.) then
+         if (c_stem > 0.d0) then
             !----- Make sure that projected wood psi will be bounded. ---------------------!
             wflux_wl_d    = min(wflux_wl_d, (wood_psi_d - wood_psi_lwr_d) * c_stem / dt_d )
             proj_wood_psi = wood_psi_d - wflux_wl_d * dt_d / c_stem
@@ -937,11 +1057,26 @@ module plant_hydro
       !     d.  Projected leaf/wood potential is less than minimum acceptable
       !     e.  Current leaf/wood potential is less than minimum acceptable
       !------------------------------------------------------------------------------------!
-      error_flag(1) = isnan(wflux_wl_d)              .or. isnan(wflux_gw_d)
-      error_flag(2) = proj_leaf_psi > 0.             .or. proj_wood_psi > 0.
-      error_flag(3) = leaf_psi_d    > 0.             .or. wood_psi_d    > 0.
-      error_flag(4) = proj_leaf_psi < leaf_psi_min_d .or. proj_wood_psi < wood_psi_min_d
-      error_flag(5) = leaf_psi_d    < leaf_psi_min_d .or. wood_psi_d    < wood_psi_min_d
+      if (c_leaf > 0.d0) then
+         !------ Check for errors in both wood and leaf. ----------------------------------!
+         error_flag(1) = isnan_dble(wflux_wl_d)         .or. isnan_dble(wflux_gw_d)
+         error_flag(2) = proj_leaf_psi > 0.d0           .or. proj_wood_psi > 0.d0
+         error_flag(3) = leaf_psi_d    > 0.d0           .or. wood_psi_d    > 0.d0
+         error_flag(4) = proj_leaf_psi < leaf_psi_min_d .or. proj_wood_psi < wood_psi_min_d
+         error_flag(5) = leaf_psi_d    < leaf_psi_min_d .or. wood_psi_d    < wood_psi_min_d
+         !---------------------------------------------------------------------------------!
+      else
+         !---------------------------------------------------------------------------------!
+         !     Check for errors in wood only, as plant has no leaves.  The only exception  !
+         ! is the flux from wood to leaf, which should never be NaN, so we still check it. !
+         !---------------------------------------------------------------------------------!
+         error_flag(1) = isnan_dble(wflux_wl_d)         .or. isnan_dble(wflux_gw_d)
+         error_flag(2) = proj_wood_psi > 0.d0
+         error_flag(3) = wood_psi_d    > 0.d0
+         error_flag(4) = proj_wood_psi < wood_psi_min_d
+         error_flag(5) = wood_psi_d    < wood_psi_min_d
+         !---------------------------------------------------------------------------------!
+      end if
 
       if ( (debug_flag .and. (dco == 0 .or. ico == dco)) .or. any(error_flag)) then
          write (unit=*,fmt='(a)') ' '
@@ -971,11 +1106,12 @@ module plant_hydro
          write (unit=*,fmt=efmt   ) ' + SAPWOOD_AREA     =',sap_area
 
          write (unit=*,fmt='(a)'  ) ' '
-         write (unit=*,fmt=lfmt   ) ' + Finite fluxes     =',.not. error_flag(1)
-         write (unit=*,fmt=lfmt   ) ' + Negative Proj Psi =',.not. error_flag(2)
-         write (unit=*,fmt=lfmt   ) ' + Negative Curr Psi =',.not. error_flag(3)
-         write (unit=*,fmt=lfmt   ) ' + Bounded Proj Psi  =',.not. error_flag(4)
-         write (unit=*,fmt=lfmt   ) ' + Bounded Curr Psi  =',.not. error_flag(5)
+         write (unit=*,fmt=lfmt   ) ' + Leaves were checked =',c_leaf > 0.d0
+         write (unit=*,fmt=lfmt   ) ' + Finite fluxes       =',.not. error_flag(1)
+         write (unit=*,fmt=lfmt   ) ' + Negative Proj Psi   =',.not. error_flag(2)
+         write (unit=*,fmt=lfmt   ) ' + Negative Curr Psi   =',.not. error_flag(3)
+         write (unit=*,fmt=lfmt   ) ' + Bounded Proj Psi    =',.not. error_flag(4)
+         write (unit=*,fmt=lfmt   ) ' + Bounded Curr Psi    =',.not. error_flag(5)
 
          write (unit=*,fmt='(a)'  ) ' '
          write (unit=*,fmt=efmt   ) ' + LEAF_PSI_MIN      =',leaf_psi_min (ipft)
@@ -1017,7 +1153,8 @@ module plant_hydro
       !     Copy all the results to output variables.
       !------------------------------------------------------------------------------------!
       wflux_wl = sngloff(wflux_wl_d,tiny_offset)
-      do k = 1, nzg
+      wflux_gw_layer(:) = 0.0
+      do k = lsl, nzg
          wflux_gw_layer(k) = sngloff(wflux_gw_layer_d(k),tiny_offset)
       end do
       wflux_gw = sum(wflux_gw_layer)

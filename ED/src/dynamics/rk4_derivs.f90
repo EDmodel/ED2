@@ -25,7 +25,11 @@ module rk4_derivs
    !---------------------------------------------------------------------------------------!
    subroutine leaf_derivs(initp,dinitp,csite,ipa,ibuff,dt,is_hybrid)
 
-      use rk4_coms               , only : rk4patchtype       ! ! structure
+      use rk4_coms               , only : rk4patchtype       & ! structure
+                                        , rk4aux             & ! intent(out)
+                                        , zero_rk4_aux       & ! sub-routine
+                                        , zero_rk4_patch     & ! sub-routine
+                                        , zero_rk4_cohort    ! ! sub-routine
       use ed_state_vars          , only : sitetype           & ! structure
                                         , polygontype        ! ! structure
       use grid_coms              , only : nzg                & ! intent(in)
@@ -43,10 +47,15 @@ module rk4_derivs
                                                    !    solver solution.
       !------------------------------------------------------------------------------------!
 
-      !----- Ensure that theta_Eiv and water storage derivatives are both zero. -----------!
-      dinitp%ebudget_storage   = 0.d0
-      dinitp%wbudget_storage   = 0.d0
-      dinitp%co2budget_storage = 0.d0
+
+      !---- Flush all derivatives to zero. ------------------------------------------------!
+      call zero_rk4_patch (dinitp)
+      call zero_rk4_cohort(dinitp)
+      !------------------------------------------------------------------------------------!
+
+
+      !---- Flush auxiliary variables to zero. --------------------------------------------!
+      call zero_rk4_aux(rk4aux(ibuff))
       !------------------------------------------------------------------------------------!
 
 
@@ -84,15 +93,13 @@ module rk4_derivs
                                       , slzt8                 & ! intent(in)
                                       , dslzt8                & ! intent(in)
                                       , ss                    & ! intent(in)
-                                      , isoilbc               & ! intent(in)
                                       , sin_sldrain8          & ! intent(in)
                                       , hydr_conduct8         ! ! function
       use rk4_coms             , only : checkbudget           & ! intent(in)
                                       , print_detailed        & ! intent(in)
                                       , rk4site               & ! intent(in)
                                       , rk4patchtype          & ! structure
-                                      , rk4aux                & ! intent(out)
-                                      , zero_rk4_aux          ! ! intent(in)
+                                      , rk4aux                ! ! intent(out)
       use ed_state_vars        , only : sitetype              & ! structure
                                       , patchtype             & ! structure
                                       , polygontype           ! ! structure
@@ -171,27 +178,6 @@ module rk4_derivs
       ksn  = initp%nlev_sfcwater
       klsl = rk4site%lsl
       kben = klsl - 1
-      !------------------------------------------------------------------------------------!
-
-
-      !---- Flush auxiliary variables to zero. --------------------------------------------!
-      call zero_rk4_aux(rk4aux(ibuff))
-      !------------------------------------------------------------------------------------!
-
-
-
-      !----- Make sure derivatives are flushed to zero. -----------------------------------!
-      dinitp%soil_energy(:)     = 0.0d0
-      dinitp%soil_water(:)      = 0.0d0
-      dinitp%sfcwater_depth(:)  = 0.0d0
-      dinitp%sfcwater_energy(:) = 0.0d0
-      dinitp%sfcwater_mass(:)   = 0.0d0
-      dinitp%virtual_energy     = 0.0d0
-      dinitp%virtual_water      = 0.0d0
-      dinitp%virtual_depth      = 0.0d0
-      if (fast_diagnostics .or. print_detailed) then
-         dinitp%avg_transloss(:)   = 0.0d0
-      end if
       !------------------------------------------------------------------------------------!
 
 
@@ -355,7 +341,7 @@ module rk4_derivs
       !    Find the boundary condition for total potential beneath the bottom layer.       !
       !------------------------------------------------------------------------------------!
       nsoil = rk4site%ntext_soil(klsl)
-      select case (isoilbc)
+      select case (rk4site%isoilbc)
       case (0)
          !---------------------------------------------------------------------------------!
          !    Bedrock.  Make the potential exactly the same as the bottom layer, and the   !
@@ -420,6 +406,7 @@ module rk4_derivs
          rk4aux(ibuff)%psiplusz (kben) = slzt8(kben) + initp%soil_mstpot(kben)
          rk4aux(ibuff)%drysoil  (kben) = .false.
          rk4aux(ibuff)%satsoil  (kben) = .false.
+         !---------------------------------------------------------------------------------!
 
       end select
       !------------------------------------------------------------------------------------!
@@ -598,7 +585,10 @@ module rk4_derivs
 
          if (initp%virtual_water /= 0.d0) then  !!process "virtural water" pool
             nsoil = rk4site%ntext_soil(mzg)
-            if (nsoil /= 13) then
+            select case (trim(soil8(nsoil)%method))
+            case ('BDRK')
+               continue
+            case default
                infilt = - dslzi8(mzg) * 5.d-1                                              &
                         * hydr_conduct8(mzg,nsoil,initp%soil_water(mzg)                    &
                                        ,initp%soil_fracliq(mzg))                           &
@@ -610,12 +600,15 @@ module rk4_derivs
                rk4aux(ibuff)%qw_flux_g(mzg+1) = rk4aux(ibuff)%qw_flux_g(mzg+1) + qinfilt
                dinitp%virtual_water    = dinitp%virtual_water    - infilt*wdns8
                dinitp%virtual_energy   = dinitp%virtual_energy   - qinfilt
-            end if
+            end select
          end if  !! end virtual water pool
          if (initp%nlev_sfcwater >= 1) then !----- Process "snow" water pool --------------!
             surface_water = initp%sfcwater_mass(1)*initp%sfcwater_fracliq(1)*wdnsi8 !(m/m2)
             nsoil = rk4site%ntext_soil(mzg)
-            if (nsoil /= 13) then
+            select case (trim(soil8(nsoil)%method))
+            case ('BDRK')
+               continue
+            case default
                !----- Calculate infiltration rate (m/s) -----------------------------------!
                infilt = - dslzi8(mzg) * 5.d-1                                              &
                         * hydr_conduct8(mzg,nsoil,initp%soil_water(mzg)                    &
@@ -629,7 +622,7 @@ module rk4_derivs
                dinitp%sfcwater_mass(1)   = dinitp%sfcwater_mass(1)   - infilt*wdns8
                dinitp%sfcwater_energy(1) = dinitp%sfcwater_energy(1) - qinfilt
                dinitp%sfcwater_depth(1)  = dinitp%sfcwater_depth(1)  - infilt
-            end if
+            end select
          end if  ! End snow water pool
       end if  !! End alternate infiltration
       !------------------------------------------------------------------------------------!
@@ -648,7 +641,10 @@ module rk4_derivs
       !------------------------------------------------------------------------------------!
       do k = klsl, mzg
          nsoil = rk4site%ntext_soil(k)
-         if (nsoil /= 13) then
+         select case (trim(soil8(nsoil)%method))
+         case ('BDRK')
+            rk4aux(ibuff)%w_flux_g(k) = 0.d0
+         case default
 
             !----- Log-linear interpolation of hydraulic conductivity to layer interface. -!
             avg_hydcond =  rk4aux(ibuff)%hydcond(k-1)                                      &
@@ -677,10 +673,7 @@ module rk4_derivs
 
             end if
             !------------------------------------------------------------------------------!
-
-         else
-            rk4aux(ibuff)%w_flux_g(k) = 0.d0
-         end if
+         end select
          !---------------------------------------------------------------------------------!
 
 
@@ -780,8 +773,10 @@ module rk4_derivs
                   !------------------------------------------------------------------------!
                   !     Skip calculation if no water is available in this layer.           !
                   !------------------------------------------------------------------------!
-                  if ( rk4site%ntext_soil(k2)          == 13        .or.                   &
-                       rk4aux(ibuff)%avail_h2o_lyr(k2) <  tiny_num8 ) cycle k2_transp_loop
+                  if ( trim(soil8(rk4site%ntext_soil(k2))%method) == 'BDRK'    .or.        &
+                       rk4aux(ibuff)%avail_h2o_lyr(k2)            <  tiny_num8      ) then
+                     cycle k2_transp_loop
+                  end if
                   !------------------------------------------------------------------------!
 
 
@@ -861,6 +856,19 @@ module rk4_derivs
             wloss_tot      = 0.d0
             qloss_tot      = 0.d0
             uint_water_k1  = tl2uint8(initp%soil_tempk(k1),1.d0)
+
+
+            !------------------------------------------------------------------------------!
+            !  MLO -> XX.  I added this if to bypass contributions from this layer to      !
+            !              transpiration when the soil is completely desiccated.  Do you   !
+            !              foresee any problems?                                           !
+            !------------------------------------------------------------------------------!
+            if (rk4aux(ibuff)%drysoil(k1)) then
+               cycle k1_transh_loop
+            end if
+            !------------------------------------------------------------------------------!
+
+
 
             !------------------------------------------------------------------------------!
             !      Integrate the total to be removed from this layer.  Add water and       !

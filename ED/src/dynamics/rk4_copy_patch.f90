@@ -931,10 +931,11 @@ module rk4_copy_patch
    !     This subroutine will copy the variables from the integration buffer to the state  !
    ! patch and cohorts.                                                                    !
    !---------------------------------------------------------------------------------------!
-   subroutine initp2modelp(hdid,initp,csite,ipa,nighttime,wbudget_loss2atm,ebudget_netrad  &
-                          ,ebudget_loss2atm,co2budget_loss2atm,wbudget_loss2drainage       &
-                          ,ebudget_loss2drainage,wbudget_loss2runoff,ebudget_loss2runoff   &
-                          ,co2budget_denseffect,ebudget_denseffect,wbudget_denseffect)
+   subroutine initp2modelp(hdid,initp,csite,ipa,nighttime,wbudget_loss2atm                 &
+                          ,ebudget_netrad,ebudget_loss2atm,co2budget_loss2atm              &
+                          ,wbudget_loss2drainage,ebudget_loss2drainage,wbudget_loss2runoff &
+                          ,ebudget_loss2runoff,co2budget_denseffect,ebudget_denseffect     &
+                          ,wbudget_denseffect)
       use rk4_coms             , only : rk4patchtype         & ! structure
                                       , rk4site              & ! intent(in)
                                       , rk4min_veg_temp      & ! intent(in)

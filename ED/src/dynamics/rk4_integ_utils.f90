@@ -252,10 +252,10 @@ module rk4_integ_utils
    ! This is to ensure all variables are in double precision, so consistent with the       !
    ! buffer variables.                                                                     !
    !---------------------------------------------------------------------------------------!
-   subroutine copy_met_2_rk4site(mzg,atm_ustar,atm_theiv,atm_vpdef,atm_theta,atm_tmp       &
-                                ,atm_shv,atm_co2,zoff,exner,pcpg,qpcpg,dpcpg,prss,rshort   &
-                                ,rlong,par_beam,par_diffuse,nir_beam,nir_diffuse,geoht     &
-                                ,lsl,ntext_soil,green_leaf_factor,lon,lat,cosz)
+   subroutine copy_met_2_rk4site(mzg,site_isoilbc,atm_ustar,atm_theiv,atm_vpdef,atm_theta  &
+                                ,atm_tmp,atm_shv,atm_co2,zoff,exner,pcpg,qpcpg,dpcpg,prss  &
+                                ,rshort,rlong,par_beam,par_diffuse,nir_beam,nir_diffuse    &
+                                ,geoht,lsl,ntext_soil,green_leaf_factor,lon,lat,cosz)
       use ed_max_dims    , only : n_pft         ! ! intent(in)
       use rk4_coms       , only : rk4site       ! ! structure
       use canopy_air_coms, only : ustmin8       ! ! intent(in)
@@ -268,9 +268,9 @@ module rk4_integ_utils
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       integer                  , intent(in) :: mzg
+      integer                  , intent(in) :: site_isoilbc
       integer                  , intent(in) :: lsl
       real                     , intent(in) :: atm_ustar
-   !   real                     , intent(in) :: vels
       real                     , intent(in) :: atm_theiv
       real                     , intent(in) :: atm_vpdef
       real                     , intent(in) :: atm_theta
@@ -300,8 +300,11 @@ module rk4_integ_utils
       
       !----- Copy the integer variables. --------------------------------------------------!
       rk4site%lsl               = lsl
+      rk4site%isoilbc           = site_isoilbc
       rk4site%ntext_soil(:)     = 0
       rk4site%ntext_soil(1:mzg) = ntext_soil(1:mzg)
+      !------------------------------------------------------------------------------------!
+
 
       !----- Convert to double precision. -------------------------------------------------!
       rk4site%atm_theiv             = dble(atm_theiv           )
@@ -597,8 +600,7 @@ module rk4_integ_utils
       use grid_coms            , only : nzg                   & ! intent(in)
                                       , nzs                   ! ! intent(in)
       use consts_coms          , only : wdnsi8                ! ! intent(in)
-      use soil_coms            , only : isoilbc               & ! intent(in)
-                                      , dslzi8                ! ! intent(in)
+      use soil_coms            , only : dslzi8                ! ! intent(in)
       use physiology_coms      , only : plant_hydro_scheme    ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
@@ -993,15 +995,15 @@ module rk4_integ_utils
          !     Drainage terms will be checked only if the boundary condition is free       !
          ! drainage.                                                                       !
          !---------------------------------------------------------------------------------!
-         if (isoilbc == 0 .or. (abs(y%ebudget_loss2drainage)  < tiny_offset .and.          &
-                                abs(dy%ebudget_loss2drainage) < tiny_offset)      ) then
+         if (rk4site%isoilbc == 0  .or. (abs(y%ebudget_loss2drainage)  < tiny_offset       &
+                                  .and.  abs(dy%ebudget_loss2drainage) < tiny_offset)) then
             yscal%ebudget_loss2drainage = huge_offset
          else 
             yscal%ebudget_loss2drainage = abs(y%ebudget_loss2drainage)                     &
                                         + abs(dy%ebudget_loss2drainage*htry)
          end if
-         if (isoilbc == 0 .or. (abs(y%wbudget_loss2drainage)  < tiny_offset .and.          &
-                                abs(dy%wbudget_loss2drainage) < tiny_offset)      ) then
+         if (rk4site%isoilbc == 0  .or. (abs(y%wbudget_loss2drainage)  < tiny_offset       &
+                                  .and.  abs(dy%wbudget_loss2drainage) < tiny_offset)) then
             yscal%wbudget_loss2drainage = huge_offset
          else 
             yscal%wbudget_loss2drainage = abs(y%wbudget_loss2drainage)                     &
@@ -1847,7 +1849,8 @@ module rk4_integ_utils
                                , patchtype                 ! ! structure
       use grid_coms     , only : nzg                       & ! intent(in)
                                , nzs                       ! ! intent(in)
-      use ed_misc_coms  , only : dtlsm                     ! ! intent(in)
+      use ed_misc_coms  , only : dtlsm                     & ! intent(in)
+                               , current_time              ! ! intent(in)
 
       implicit none
       !----- Arguments --------------------------------------------------------------------!
@@ -1945,8 +1948,18 @@ module rk4_integ_utils
                write (unit=*,fmt='(80a)')         ('=',k=1,80)
                write (unit=*,fmt='(a)')           '   STEPSIZE UNDERFLOW IN RKQS'
                write (unit=*,fmt='(80a)')         ('-',k=1,80)
+               write (unit=*,fmt='(a,1x,2(i2.2,a),i4.4,1x,3(i2.2,a))')                     &
+                  ' + TIME:          '                                                     &
+                        ,current_time%month,'/',current_time%date,'/',current_time%year    &
+                        ,current_time%hour,':',current_time%min,':',current_time%sec,' UTC'
                write (unit=*,fmt='(a,1x,f9.4)')   ' + LONGITUDE:     ',rk4site%lon
                write (unit=*,fmt='(a,1x,f9.4)')   ' + LATITUDE:      ',rk4site%lat
+               write (unit=*,fmt='(a)')           ' + SITE INFO:     '
+               write (unit=*,fmt='(a,1x,i6)')     '   - NUMBER:      ',isi
+               write (unit=*,fmt='(a,1x,i6)')     '   - NTEXT(NZG)   '                     &
+                                                                   ,rk4site%ntext_soil(nzg)
+               write (unit=*,fmt='(a,1x,i6)')     '   - LSL:         ',rk4site%lsl
+               write (unit=*,fmt='(a,1x,i6)')     '   - ISOILBC:     ',rk4site%isoilbc
                write (unit=*,fmt='(a)')           ' + PATCH INFO:    '
                write (unit=*,fmt='(a,1x,i6)')     '   - NUMBER:      ',ipa
                write (unit=*,fmt='(a,1x,es12.4)') '   - AGE:         ',csite%age(ipa)

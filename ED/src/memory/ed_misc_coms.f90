@@ -8,6 +8,11 @@ module ed_misc_coms
 
    implicit none
 
+
+   !----- String for the output format of the restore file. -------------------------------!
+   character(len=26), parameter :: fmtrest = '(i4.4,2(1x,i2.2),1x,2i2.2)'
+   !---------------------------------------------------------------------------------------!
+
    type simtime
       integer :: year
       integer :: month

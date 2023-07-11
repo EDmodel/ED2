@@ -402,6 +402,7 @@ module rk4_coms
    !---------------------------------------------------------------------------------------!
    type rk4sitetype
       integer                         :: lsl
+      integer                         :: isoilbc
       integer     , dimension(nzgmax) :: ntext_soil
       real(kind=8), dimension(n_pft)  :: green_leaf_factor
       real(kind=8)                    :: atm_rhos

@@ -509,6 +509,7 @@ end subroutine event_harvest
 subroutine event_planting(pft,density8)
   use rk4_integ_utils, only : initialize_rk4patches
   use update_derived_utils, only : update_patch_thermo_props  &
+                                 , update_patch_thermo_fmean  &
                                  , update_patch_derived_props &
                                  , update_site_derived_props
   use grid_coms, only : ngrids,nzg,nzs
@@ -553,8 +554,11 @@ subroutine event_planting(pft,density8)
            csite => cpoly%site(isi)
 
            do ipa=1,csite%npatches
-              call update_patch_thermo_props(csite,ipa,ipa,nzg,nzs,cpoly%ntext_soil(:,isi))
-              call plant_patch(csite,ipa,nzg,pft,density,cpoly%ntext_soil(:,isi) &
+              call update_patch_thermo_props(csite,ipa,ipa,nzg,nzs,cpoly%lsl(isi) &
+                                            ,cpoly%ntext_soil(:,isi))
+              call update_patch_thermo_fmean(csite,ipa,ipa,nzg,cpoly%lsl(isi)     &
+                                            ,cpoly%ntext_soil(:,isi))
+              call plant_patch(csite,ipa,nzg,pft,density,cpoly%ntext_soil(:,isi)  &
                               ,planting_ht,cpoly%lsl(isi))
               call update_patch_derived_props(csite,ipa,.true.)
               call new_patch_sfc_props(csite, ipa,nzg,nzs,cpoly%ntext_soil(:,isi))
