@@ -6,7 +6,6 @@
 !------------------------------------------------------------------------------------------!
 subroutine read_ed22_initial_file
 
-
    use ed_max_dims         , only : n_pft                       & ! intent(in)
                                   , huge_site                   & ! intent(in)
                                   , huge_patch                  & ! intent(in)
