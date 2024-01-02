@@ -27,6 +27,13 @@
 !==========================================================================================!
 module farq_katul
 
+   !---------------------------------------------------------------------------------------!
+   !     This is a flag used in various sub-routines and functions and denote that we      !
+   ! should ignore the result.                                                             !
+   !---------------------------------------------------------------------------------------!
+   real(kind=8), parameter :: discard = huge(1.d0)
+   !---------------------------------------------------------------------------------------!
+
    contains
    !=======================================================================================!
    !=======================================================================================!
@@ -409,9 +416,6 @@ module farq_katul
         real(kind=8)                :: test_dcidg
         real(kind=8)                :: test_dfcdg
         real(kind=8)                :: test_dfedg
-        real(kind=8)                :: test_fc_light
-        real(kind=8)                :: test_fc_rubp
-        real(kind=8)                :: test_fc_3rd
         real(kind=8)                :: opt_ci_light
         real(kind=8)                :: opt_ci_rubp
         real(kind=8)                :: opt_ci_3rd
@@ -851,17 +855,9 @@ module farq_katul
         real(kind=8)                :: k1,k2        !! Variable used in photosynthesis equation
         real(kind=8)                :: a,b,c        !! Coefficients of the quadratic equation to solve ci
         real(kind=8)                :: rad          !! sqrt(b2-4ac)
+        real(kind=8)                :: ciroot1      !! First root of ci
+        real(kind=8)                :: ciroot2      !! Second root of ci
         real(kind=8)                :: dbdg,dcdg    !! derivatives of b,c wrt. gsc
-        real(kind=8)                :: ci_rubp      !! ci for rubp-limited scenario
-        real(kind=8)                :: dcidg_rubp   !! derivative of ci wrt. gsc for rubp-limited scenario
-        real(kind=8)                :: dfcdg_rubp   !! derivative of fc wrt. gsc for rubp-limited scenario
-        real(kind=8)                :: ci_light     !! ci for light-limited scenario
-        real(kind=8)                :: dcidg_light  !! derivative of ci wrt. gsc for light-limited scenario
-        real(kind=8)                :: dfcdg_light  !! derivative of fc wrt. gsc for light-limited scenario
-        real(kind=8)                :: ci_3rd       !! ci for TPU/CO2-limited scenario
-        real(kind=8)                :: dcidg_3rd    !! derivative of ci wrt. gsc for TPU/CO2-limited scenario
-        real(kind=8)                :: dfcdg_3rd    !! derivative of fc wrt. gsc for TPU/CO2-limited scenario
-
         !------------------------------------------------------------------------------------!
 
 
@@ -889,7 +885,8 @@ module farq_katul
 
             ! solve the quadratic equation
             rad = sqrt(b ** 2 - 4.d0 * a * c)
-            ci = - (b - rad) / (2.d0 * a)
+            call solve_quadratic8(a,b,c,-discard,ciroot1,ciroot2)
+            ci = max(ciroot1,ciroot2)
             fc = gsbc * (met(ib)%can_co2 - ci)
 
             ! calculate derivatives
@@ -917,7 +914,8 @@ module farq_katul
             c = (-k1 * aparms(ib)%compp - k2 * aparms(ib)%leaf_resp) / gsbc - k2 * met(ib)%can_co2
 
             rad = sqrt(b ** 2 - 4.d0 * a * c)
-            ci = - (b - rad) / (2.d0 * a)
+            call solve_quadratic8(a,b,c,-discard,ciroot1,ciroot2)
+            ci = max(ciroot1,ciroot2)
             fc = gsbc * (met(ib)%can_co2 - ci)
 
             ! calculate derivatives

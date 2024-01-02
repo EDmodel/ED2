@@ -2333,6 +2333,489 @@ end function eifun8
 
 
 
+!==========================================================================================!
+!==========================================================================================!
+!    Heapsort is a robust and efficient sorting algorithm.  For more details, check        !
+! The Numerical Recipes Book (chapter 8).                                                  !
+!------------------------------------------------------------------------------------------!
+subroutine heapsort(nx,xi,increase,xo)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer               , intent(in)  :: nx       ! Size of input/output vectors
+   real   , dimension(nx), intent(in)  :: xi       ! Input vector
+   logical               , intent(in)  :: increase ! Sort from small to large?
+   real   , dimension(nx), intent(out) :: xo       ! Output vector
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                             :: i        ! Counter
+   integer                             :: ir       ! Index of selected data
+   integer                             :: j        ! Index of selected data
+   integer                             :: l        ! Index of selected data
+   real                                :: aux      ! Placeholder
+   !---------------------------------------------------------------------------------------!
+
+
+   !----- Skip routine in case this has only one element. ---------------------------------!
+   if (nx < 2) then
+      xo(:) = xi(:)
+      return
+   else if (.not. increase) then
+      !----- Cheat by making numbers negative.  We switch values back in before leaving. --!
+      xo(:) = -xi(:)
+      !------------------------------------------------------------------------------------!
+   else
+      xo(:) = xi(:)
+   end if
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !    The index l will be decremented from its initial value down to 1 during the        !
+   ! "hiring" (heap creation) phase.  Once it reaches 1, the index ir will be decremented  !
+   ! from its initial value down to 1 during the "retirement-and-promotion" (heap          !
+   ! selection) phase.                                                                     !
+   !---------------------------------------------------------------------------------------!
+   l  = nx/2 + 1
+   ir = nx
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Main loop.                                                                        !
+   !---------------------------------------------------------------------------------------!
+   outer_loop: do
+      !------------------------------------------------------------------------------------!
+      !      Check whether we are in the hiring phase or in the retirement-and-promotion   !
+      ! phase.                                                                             !
+      !------------------------------------------------------------------------------------!
+      if (l > 1) then
+         !---------------------------------------------------------------------------------!
+         !     Still in hiring phase.                                                      !
+         !---------------------------------------------------------------------------------!
+         l   = l - 1
+         aux = xo(l)
+         !---------------------------------------------------------------------------------!
+      else
+         !---------------------------------------------------------------------------------!
+         !    In the retirement-and-promotion phase.                                       !
+         !---------------------------------------------------------------------------------!
+         !----- Clear a space at end of array. --------------------------------------------!
+         aux    = xo(ir)
+         !----- Retire the top of the heap into it. ---------------------------------------!
+         xo(ir) = xo(1)
+         !----- Decrease the size of the corporation. -------------------------------------!
+         ir      = ir -1
+         !----- Check how we are doing with promotions. -----------------------------------!
+         if (ir == 1) then
+            !----- Done with the last promotion.  The least competent worker of all! ------!
+            xo(1) = aux
+            !------------------------------------------------------------------------------!
+
+            !------------------------------------------------------------------------------!
+            !      Time to leave the loop (and the sub-routine).                           !
+            !------------------------------------------------------------------------------!
+            exit outer_loop
+            !------------------------------------------------------------------------------!
+         end if
+         !---------------------------------------------------------------------------------!
+      end if
+      !------------------------------------------------------------------------------------!
+
+      !------------------------------------------------------------------------------------!
+      !    Whether in hiring phase or promotion phase, we here set up to sift down element !
+      ! aux to its proper level.                                                           !
+      !------------------------------------------------------------------------------------!
+      i = l
+      j = l+1
+      inner_loop: do
+         if (j > ir) exit inner_loop
+
+         !----- Compare to the better underling. ------------------------------------------!
+         if (j < ir) then
+            if(xo(j) < xo(j+1)) j = j + 1
+         end if
+         !---------------------------------------------------------------------------------!
+
+
+         !---------------------------------------------------------------------------------!
+         !     Check whether to demote aux or not.                                         !
+         !---------------------------------------------------------------------------------!
+         if (aux < xo(j)) then
+            !----- Demote aux. ------------------------------------------------------------!
+            xo(i) = xo(j)
+            i     = j
+            j     = j + j
+            !------------------------------------------------------------------------------!
+         else
+            !----- This is aux's level.  Set j to terminate the sift-down. ----------------!
+            j     = ir + 1
+            !------------------------------------------------------------------------------!
+         end if
+         !---------------------------------------------------------------------------------!
+      end do inner_loop
+      !------------------------------------------------------------------------------------!
+
+      !----- Put aux into its slot. -------------------------------------------------------!
+      xo(i) = aux
+      !------------------------------------------------------------------------------------!
+   end do outer_loop
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Before we leave, check whether this should be a high-to-low sorting.  In case so, !
+   ! switch the sign again.                                                                !
+   !---------------------------------------------------------------------------------------!
+   if (.not. increase) xo(:) = -xo(:)
+   !---------------------------------------------------------------------------------------!
+
+   return
+end subroutine heapsort
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!     Function that defines the quantile given a vector.  This is a rather simple          !
+! estimator, it should work reasonably well as long as x is sufficiently large and not a   !
+! crazy distribution.                                                                      !
+!------------------------------------------------------------------------------------------!
+real function fquant(nx,x,prob)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer               , intent(in) :: nx
+   real   , dimension(nx), intent(in) :: x
+   real                  , intent(in) :: prob
+   !----- Internal variables. -------------------------------------------------------------!
+   real   , dimension(nx)             :: xsort
+   integer                            :: il
+   integer                            :: ih
+   real                               :: wl
+   real                               :: wh
+   real                               :: ridx
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Sanity check: prob must be between 0 and 1.  If not, crash!                       !
+   !---------------------------------------------------------------------------------------!
+   if (prob < 0. .or. prob > 1.) then
+      write(unit=*,fmt='(a)'          ) ' '
+      write(unit=*,fmt='(a)'          ) ' '
+      write(unit=*,fmt='(a)'          ) '================================================='
+      write(unit=*,fmt='(a)'          ) '================================================='
+      write(unit=*,fmt='(a)'          ) '    In function fquant: Invalid PROB!'
+      write(unit=*,fmt='(a)'          ) '-------------------------------------------------'
+      write(unit=*,fmt='(a,1x,es12.5)') '   -> Provided PROB: ',prob
+      write(unit=*,fmt='(a)'          ) '-------------------------------------------------'
+      write(unit=*,fmt='(a)'          ) ' '
+      write(unit=*,fmt='(a)'          ) ' '
+      call fatal_error('Invalid prob setting','fquant','numutils.f90')
+   end if
+   !---------------------------------------------------------------------------------------!
+
+
+   !----- Sort output vector. -------------------------------------------------------------!
+   call heapsort(nx,x,.true.,xsort)
+   !---------------------------------------------------------------------------------------!
+
+   !---------------------------------------------------------------------------------------!
+   !      Find the quantile position in terms of indices.                                  !
+   !---------------------------------------------------------------------------------------!
+   !----- Position without interpolation. -------------------------------------------------!
+   ridx   = 1. + prob * real(nx-1)
+   !----- Index just before ridx. ---------------------------------------------------------!
+   il     = max(1,floor(ridx))
+   !----- Index just after ridx. ----------------------------------------------------------!
+   ih     = min(nx,ceiling(ridx))
+   !----- Quantile is the interpolated value. ---------------------------------------------!
+   if (il == ih) then
+      fquant = xsort(il)
+   else
+      !----- Weight factors. --------------------------------------------------------------!
+      wl     = ridx - real(il)
+      wh     = real(ih) - ridx
+      !------------------------------------------------------------------------------------!
+
+      !----- Quantile is the weighted average. --------------------------------------------!
+      fquant = (wl * xsort(il) + wh * xsort(ih)) / (wl + wh)
+      !------------------------------------------------------------------------------------!
+   end if
+   !---------------------------------------------------------------------------------------!
+
+
+   return
+end function fquant
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!     Wrapper for the function above, with an additional mask vector to select only some   !
+! elements.                                                                                !
+!------------------------------------------------------------------------------------------!
+real function fquant_mask(nx,x,mask,prob)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer               , intent(in)  :: nx
+   real   , dimension(nx), intent(in)  :: x
+   logical, dimension(nx), intent(in)  :: mask
+   real                  , intent(in)  :: prob
+   !----- Internal variables. -------------------------------------------------------------!
+   real   , dimension(:) , allocatable :: xuse
+   integer                             :: nuse
+   !----- External functions. -------------------------------------------------------------!
+   real                  , external    :: fquant
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Count elements to be used, then allocate xuse and xsort.                         !
+   !---------------------------------------------------------------------------------------!
+   nuse        = count(mask)
+   allocate (xuse(nuse))
+   xuse        = pack(x,mask)
+   fquant_mask = fquant(nuse,xuse,prob)
+   deallocate(xuse)
+   !---------------------------------------------------------------------------------------!
+
+   return
+end function fquant_mask
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!     Sub-routine that solves the quadratic equation ( a * x**2 + b * x + c = 0).          !
+! This is an extension of the Numeric Recipes in Fortran 90 to account for the trivial     !
+! cases and for checking when the discriminant is negative.                                !
+!     The subroutine also requires a "undef" flag to be passed, which will flag cases      !
+! in which one or both solutions are not valid. This is an argument so the solver can be   !
+! used when either the largest or the smallest root is sought.                             !
+!------------------------------------------------------------------------------------------!
+subroutine solve_quadratic(aquad,bquad,cquad,undef,root1,root2)
+   use rconstants, only : tiny_num
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   real(kind=4), intent(in)  :: aquad
+   real(kind=4), intent(in)  :: bquad
+   real(kind=4), intent(in)  :: cquad
+   real(kind=4), intent(in)  :: undef
+   real(kind=4), intent(out) :: root1
+   real(kind=4), intent(out) :: root2
+   !----- Internal variables. -------------------------------------------------------------!
+   real(kind=4)              :: discr
+   real(kind=4)              :: qfact
+   logical                   :: a_offzero
+   logical                   :: b_offzero
+   logical                   :: c_offzero
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !----- Save logical tests. -------------------------------------------------------------!
+   a_offzero = abs(aquad) >= tiny_num
+   b_offzero = abs(bquad) >= tiny_num
+   c_offzero = abs(cquad) >= tiny_num
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Check for cases to solve.                                                         !
+   !---------------------------------------------------------------------------------------!
+   if (a_offzero .and. ( b_offzero .or. c_offzero ) ) then
+      !------------------------------------------------------------------------------------!
+      !    Quadratic equation with two non-zero solutions. Find the discriminant to find   !
+      ! out whether the solutions are real (if negative, then the roots are complex).      !
+      !------------------------------------------------------------------------------------!
+      discr = bquad*bquad - 4.0 * aquad * cquad
+      !------------------------------------------------------------------------------------!
+
+      !------------------------------------------------------------------------------------!
+      !     Check discriminant sign (but allow for round-off errors).                      !
+      !------------------------------------------------------------------------------------!
+      if (discr >= - tiny_num) then
+         !----- Coerce discriminant to non-negative. --------------------------------------!
+         discr = max(0.0,discr)
+         !---------------------------------------------------------------------------------!
+
+         !---------------------------------------------------------------------------------!
+         !     Find the q factor as in the numerical recipes, which allows for a more      !
+         ! robust solution.  This is safe whenever b or c are non-zero, as q cannot be     !
+         ! zero in these cases.
+         !---------------------------------------------------------------------------------!
+         qfact  = - 0.5 * (bquad + sign(sqrt(discr),bquad))
+         root1  = qfact / aquad
+         root2  = cquad / qfact
+      else
+         !----- Negative discriminant, return invalid roots. ------------------------------!
+         root1  = undef
+         root2  = undef
+         !---------------------------------------------------------------------------------!
+      end if
+   else if (a_offzero) then
+      !------------------------------------------------------------------------------------!
+      !     Both bquad and cquad are nearly zero. Double root, and both have to be zero.   !
+      !------------------------------------------------------------------------------------!
+      root1 = 0.0
+      root2 = 0.0
+      !------------------------------------------------------------------------------------!
+   else if (b_offzero) then
+      !------------------------------------------------------------------------------------!
+      !     "aquad" is not zero, not a true quadratic equation. Single root.               !
+      !------------------------------------------------------------------------------------!
+      root1 = - cquad / bquad
+      root2 = undef
+      !------------------------------------------------------------------------------------!
+   else
+      !------------------------------------------------------------------------------------!
+      !     Both aquad and bquad are zero, this really doesn't make any sense and should   !
+      ! never happen. If it does, issue an error and stop the run.                         !
+      !------------------------------------------------------------------------------------!
+      write (unit=*,fmt='(a)')           '------------------------------------------------'
+      write (unit=*,fmt='(a)')           ' Quadratic equation cannot be solved!'
+      write (unit=*,fmt='(a)')           ' ''aquad'' and/or ''bquad'' must be non-zero.'
+      write (unit=*,fmt='(a)')           '------------------------------------------------'
+      write (unit=*,fmt='(a,1x,es12.5)') ' aquad = ',aquad
+      write (unit=*,fmt='(a,1x,es12.5)') ' bquad = ',bquad
+      write (unit=*,fmt='(a,1x,es12.5)') ' cquad = ',cquad
+      write (unit=*,fmt='(a)')           '------------------------------------------------'
+      call fatal_error(' Invalid coefficients for quadratic equation'                      &
+                      ,'solve_quadratic','numutils.f90')
+      !------------------------------------------------------------------------------------!
+   end if
+   !---------------------------------------------------------------------------------------!
+
+   return
+end subroutine solve_quadratic
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!     Sub-routine that solves the quadratic equation ( a * x**2 + b * x + c = 0).          !
+! This is an extension of the Numeric Recipes in Fortran 90 to account for the trivial     !
+! cases and for checking when the discriminant is negative.                                !
+!     The subroutine also requires a "undef" flag to be passed, which will flag cases      !
+! in which one or both solutions are not valid. This is an argument so the solver can be   !
+! used when either the largest or the smallest root is sought.                             !
+!------------------------------------------------------------------------------------------!
+subroutine solve_quadratic8(aquad,bquad,cquad,undef,root1,root2)
+   use rconstants, only : tiny_num8
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   real(kind=8), intent(in)  :: aquad
+   real(kind=8), intent(in)  :: bquad
+   real(kind=8), intent(in)  :: cquad
+   real(kind=8), intent(in)  :: undef
+   real(kind=8), intent(out) :: root1
+   real(kind=8), intent(out) :: root2
+   !----- Internal variables. -------------------------------------------------------------!
+   real(kind=8)              :: discr
+   real(kind=8)              :: qfact
+   logical                   :: a_offzero
+   logical                   :: b_offzero
+   logical                   :: c_offzero
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !----- Save logical tests. -------------------------------------------------------------!
+   a_offzero = abs(aquad) >= tiny_num8
+   b_offzero = abs(bquad) >= tiny_num8
+   c_offzero = abs(cquad) >= tiny_num8
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Check for cases to solve.                                                         !
+   !---------------------------------------------------------------------------------------!
+   if (a_offzero .and. ( b_offzero .or. c_offzero ) ) then
+      !------------------------------------------------------------------------------------!
+      !    Quadratic equation with two non-zero solutions. Find the discriminant to find   !
+      ! out whether the solutions are real (if negative, then the roots are complex).      !
+      !------------------------------------------------------------------------------------!
+      discr = bquad*bquad - 4.d0 * aquad * cquad
+      !------------------------------------------------------------------------------------!
+
+      !------------------------------------------------------------------------------------!
+      !     Check discriminant sign (but allow for round-off errors).                      !
+      !------------------------------------------------------------------------------------!
+      if (discr >= - tiny_num8) then
+         !----- Coerce discriminant to non-negative. --------------------------------------!
+         discr = max(0.d0,discr)
+         !---------------------------------------------------------------------------------!
+
+         !---------------------------------------------------------------------------------!
+         !     Find the q factor as in the numerical recipes, which allows for a more      !
+         ! robust solution.  This is safe whenever b or c are non-zero, as q cannot be     !
+         ! zero in these cases.
+         !---------------------------------------------------------------------------------!
+         qfact  = - 5.d-1 * (bquad + sign(sqrt(discr),bquad))
+         root1  = qfact / aquad
+         root2  = cquad / qfact
+      else
+         !----- Negative discriminant, return invalid roots. ------------------------------!
+         root1  = undef
+         root2  = undef
+         !---------------------------------------------------------------------------------!
+      end if
+   else if (a_offzero) then
+      !------------------------------------------------------------------------------------!
+      !     Both bquad and cquad are nearly zero. Double root, and both have to be zero.   !
+      !------------------------------------------------------------------------------------!
+      root1 = 0.d0
+      root2 = 0.d0
+      !------------------------------------------------------------------------------------!
+   else if (b_offzero) then
+      !------------------------------------------------------------------------------------!
+      !     "aquad" is not zero, not a true quadratic equation. Single root.               !
+      !------------------------------------------------------------------------------------!
+      root1 = - cquad / bquad
+      root2 = undef
+      !------------------------------------------------------------------------------------!
+   else
+      !------------------------------------------------------------------------------------!
+      !     Both aquad and bquad are zero, this really doesn't make any sense and should   !
+      ! never happen. If it does, issue an error and stop the run.                         !
+      !------------------------------------------------------------------------------------!
+      write (unit=*,fmt='(a)')           '------------------------------------------------'
+      write (unit=*,fmt='(a)')           ' Quadratic equation cannot be solved!'
+      write (unit=*,fmt='(a)')           ' ''aquad'' and/or ''bquad'' must be non-zero.'
+      write (unit=*,fmt='(a)')           '------------------------------------------------'
+      write (unit=*,fmt='(a,1x,es12.5)') ' aquad = ',aquad
+      write (unit=*,fmt='(a,1x,es12.5)') ' bquad = ',bquad
+      write (unit=*,fmt='(a,1x,es12.5)') ' cquad = ',cquad
+      write (unit=*,fmt='(a)')           '------------------------------------------------'
+      call fatal_error(' Invalid coefficients for quadratic equation'                      &
+                      ,'solve_quadratic8','numutils.f90')
+      !------------------------------------------------------------------------------------!
+   end if
+   !---------------------------------------------------------------------------------------!
+
+   return
+end subroutine solve_quadratic8
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
 
 !==========================================================================================!
 !==========================================================================================!

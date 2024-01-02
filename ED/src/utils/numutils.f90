@@ -906,3 +906,224 @@ end function fquant_mask
 !==========================================================================================!
 !==========================================================================================!
 
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!     Sub-routine that solves the quadratic equation ( a * x**2 + b * x + c = 0).          !
+! This is an extension of the Numeric Recipes in Fortran 90 to account for the trivial     !
+! cases and for checking when the discriminant is negative.                                !
+!     The subroutine also requires a "undef" flag to be passed, which will flag cases      !
+! in which one or both solutions are not valid. This is an argument so the solver can be   !
+! used when either the largest or the smallest root is sought.                             !
+!------------------------------------------------------------------------------------------!
+subroutine solve_quadratic(aquad,bquad,cquad,undef,root1,root2)
+   use consts_coms, only : tiny_num
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   real(kind=4), intent(in)  :: aquad
+   real(kind=4), intent(in)  :: bquad
+   real(kind=4), intent(in)  :: cquad
+   real(kind=4), intent(in)  :: undef
+   real(kind=4), intent(out) :: root1
+   real(kind=4), intent(out) :: root2
+   !----- Internal variables. -------------------------------------------------------------!
+   real(kind=4)              :: discr
+   real(kind=4)              :: qfact
+   logical                   :: a_offzero
+   logical                   :: b_offzero
+   logical                   :: c_offzero
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !----- Save logical tests. -------------------------------------------------------------!
+   a_offzero = abs(aquad) >= tiny_num
+   b_offzero = abs(bquad) >= tiny_num
+   c_offzero = abs(cquad) >= tiny_num
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Check for cases to solve.                                                         !
+   !---------------------------------------------------------------------------------------!
+   if (a_offzero .and. ( b_offzero .or. c_offzero ) ) then
+      !------------------------------------------------------------------------------------!
+      !    Quadratic equation with two non-zero solutions. Find the discriminant to find   !
+      ! out whether the solutions are real (if negative, then the roots are complex).      !
+      !------------------------------------------------------------------------------------!
+      discr = bquad*bquad - 4.0 * aquad * cquad
+      !------------------------------------------------------------------------------------!
+
+      !------------------------------------------------------------------------------------!
+      !     Check discriminant sign (but allow for round-off errors).                      !
+      !------------------------------------------------------------------------------------!
+      if (discr >= - tiny_num) then
+         !----- Coerce discriminant to non-negative. --------------------------------------!
+         discr = max(0.0,discr)
+         !---------------------------------------------------------------------------------!
+
+         !---------------------------------------------------------------------------------!
+         !     Find the q factor as in the numerical recipes, which allows for a more      !
+         ! robust solution.  This is safe whenever b or c are non-zero, as q cannot be     !
+         ! zero in these cases.
+         !---------------------------------------------------------------------------------!
+         qfact  = - 0.5 * (bquad + sign(sqrt(discr),bquad))
+         root1  = qfact / aquad
+         root2  = cquad / qfact
+      else
+         !----- Negative discriminant, return invalid roots. ------------------------------!
+         root1  = undef
+         root2  = undef
+         !---------------------------------------------------------------------------------!
+      end if
+   else if (a_offzero) then
+      !------------------------------------------------------------------------------------!
+      !     Both bquad and cquad are nearly zero. Double root, and both have to be zero.   !
+      !------------------------------------------------------------------------------------!
+      root1 = 0.0
+      root2 = 0.0
+      !------------------------------------------------------------------------------------!
+   else if (b_offzero) then
+      !------------------------------------------------------------------------------------!
+      !     "aquad" is not zero, not a true quadratic equation. Single root.               !
+      !------------------------------------------------------------------------------------!
+      root1 = - cquad / bquad
+      root2 = undef
+      !------------------------------------------------------------------------------------!
+   else
+      !------------------------------------------------------------------------------------!
+      !     Both aquad and bquad are zero, this really doesn't make any sense and should   !
+      ! never happen. If it does, issue an error and stop the run.                         !
+      !------------------------------------------------------------------------------------!
+      write (unit=*,fmt='(a)')           '------------------------------------------------'
+      write (unit=*,fmt='(a)')           ' Quadratic equation cannot be solved!'
+      write (unit=*,fmt='(a)')           ' ''aquad'' and/or ''bquad'' must be non-zero.'
+      write (unit=*,fmt='(a)')           '------------------------------------------------'
+      write (unit=*,fmt='(a,1x,es12.5)') ' aquad = ',aquad
+      write (unit=*,fmt='(a,1x,es12.5)') ' bquad = ',bquad
+      write (unit=*,fmt='(a,1x,es12.5)') ' cquad = ',cquad
+      write (unit=*,fmt='(a)')           '------------------------------------------------'
+      call fatal_error(' Invalid coefficients for quadratic equation'                      &
+                      ,'solve_quadratic','numutils.f90')
+      !------------------------------------------------------------------------------------!
+   end if
+   !---------------------------------------------------------------------------------------!
+
+   return
+end subroutine solve_quadratic
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!     Sub-routine that solves the quadratic equation ( a * x**2 + b * x + c = 0).          !
+! This is an extension of the Numeric Recipes in Fortran 90 to account for the trivial     !
+! cases and for checking when the discriminant is negative.                                !
+!     The subroutine also requires a "undef" flag to be passed, which will flag cases      !
+! in which one or both solutions are not valid. This is an argument so the solver can be   !
+! used when either the largest or the smallest root is sought.                             !
+!------------------------------------------------------------------------------------------!
+subroutine solve_quadratic8(aquad,bquad,cquad,undef,root1,root2)
+   use consts_coms, only : tiny_num8
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   real(kind=8), intent(in)  :: aquad
+   real(kind=8), intent(in)  :: bquad
+   real(kind=8), intent(in)  :: cquad
+   real(kind=8), intent(in)  :: undef
+   real(kind=8), intent(out) :: root1
+   real(kind=8), intent(out) :: root2
+   !----- Internal variables. -------------------------------------------------------------!
+   real(kind=8)              :: discr
+   real(kind=8)              :: qfact
+   logical                   :: a_offzero
+   logical                   :: b_offzero
+   logical                   :: c_offzero
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !----- Save logical tests. -------------------------------------------------------------!
+   a_offzero = abs(aquad) >= tiny_num8
+   b_offzero = abs(bquad) >= tiny_num8
+   c_offzero = abs(cquad) >= tiny_num8
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Check for cases to solve.                                                         !
+   !---------------------------------------------------------------------------------------!
+   if (a_offzero .and. ( b_offzero .or. c_offzero ) ) then
+      !------------------------------------------------------------------------------------!
+      !    Quadratic equation with two non-zero solutions. Find the discriminant to find   !
+      ! out whether the solutions are real (if negative, then the roots are complex).      !
+      !------------------------------------------------------------------------------------!
+      discr = bquad*bquad - 4.d0 * aquad * cquad
+      !------------------------------------------------------------------------------------!
+
+      !------------------------------------------------------------------------------------!
+      !     Check discriminant sign (but allow for round-off errors).                      !
+      !------------------------------------------------------------------------------------!
+      if (discr >= - tiny_num8) then
+         !----- Coerce discriminant to non-negative. --------------------------------------!
+         discr = max(0.d0,discr)
+         !---------------------------------------------------------------------------------!
+
+         !---------------------------------------------------------------------------------!
+         !     Find the q factor as in the numerical recipes, which allows for a more      !
+         ! robust solution.  This is safe whenever b or c are non-zero, as q cannot be     !
+         ! zero in these cases.
+         !---------------------------------------------------------------------------------!
+         qfact  = - 5.d-1 * (bquad + sign(sqrt(discr),bquad))
+         root1  = qfact / aquad
+         root2  = cquad / qfact
+      else
+         !----- Negative discriminant, return invalid roots. ------------------------------!
+         root1  = undef
+         root2  = undef
+         !---------------------------------------------------------------------------------!
+      end if
+   else if (a_offzero) then
+      !------------------------------------------------------------------------------------!
+      !     Both bquad and cquad are nearly zero. Double root, and both have to be zero.   !
+      !------------------------------------------------------------------------------------!
+      root1 = 0.d0
+      root2 = 0.d0
+      !------------------------------------------------------------------------------------!
+   else if (b_offzero) then
+      !------------------------------------------------------------------------------------!
+      !     "aquad" is not zero, not a true quadratic equation. Single root.               !
+      !------------------------------------------------------------------------------------!
+      root1 = - cquad / bquad
+      root2 = undef
+      !------------------------------------------------------------------------------------!
+   else
+      !------------------------------------------------------------------------------------!
+      !     Both aquad and bquad are zero, this really doesn't make any sense and should   !
+      ! never happen. If it does, issue an error and stop the run.                         !
+      !------------------------------------------------------------------------------------!
+      write (unit=*,fmt='(a)')           '------------------------------------------------'
+      write (unit=*,fmt='(a)')           ' Quadratic equation cannot be solved!'
+      write (unit=*,fmt='(a)')           ' ''aquad'' and/or ''bquad'' must be non-zero.'
+      write (unit=*,fmt='(a)')           '------------------------------------------------'
+      write (unit=*,fmt='(a,1x,es12.5)') ' aquad = ',aquad
+      write (unit=*,fmt='(a,1x,es12.5)') ' bquad = ',bquad
+      write (unit=*,fmt='(a,1x,es12.5)') ' cquad = ',cquad
+      write (unit=*,fmt='(a)')           '------------------------------------------------'
+      call fatal_error(' Invalid coefficients for quadratic equation'                      &
+                      ,'solve_quadratic8','numutils.f90')
+      !------------------------------------------------------------------------------------!
+   end if
+   !---------------------------------------------------------------------------------------!
+
+   return
+end subroutine solve_quadratic8
+!==========================================================================================!
+!==========================================================================================!
