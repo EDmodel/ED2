@@ -1,8 +1,7 @@
 # ----------------------------------------------------------------------
 # Build ED2 model
 # ----------------------------------------------------------------------
-#FROM debian:bullseye-slim AS build
-FROM ubuntu:20.04 AS build
+FROM ubuntu:22.04 AS build
 
 # Some variables that can be used to set control the docker build
 ARG ED2_KIND=E
@@ -37,8 +36,7 @@ RUN if [ -e ed_*-opt ]; then mv ed_*-opt ed2; else mv ed_*-dbg ed2; fi
 # ----------------------------------------------------------------------
 # Minimal image with just ED2 model
 # ----------------------------------------------------------------------
-#FROM debian:bullseye-slim
-FROM ubuntu:20.04
+FROM ubuntu:22.04
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \

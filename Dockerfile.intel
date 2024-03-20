@@ -42,9 +42,7 @@ RUN if [ -e ed_*-opt ]; then mv ed_*-opt ed2; else mv ed_*-dbg ed2; fi
 # ----------------------------------------------------------------------
 # Minimal image with just ED2 model
 # ----------------------------------------------------------------------
-#FROM debian:bullseye-slim
-#FROM ubuntu:20.04
-FROM centos:7
+FROM ubuntu:22.04
 
 WORKDIR /data
 COPY --from=build /ED2/ED/build/ed2 /usr/bin
