@@ -29,7 +29,7 @@ PKG_CHECK_MODULES([HDF5], [hdf5_fortran], [have_hdf5=yes], [have_hdf5=no])
 
 AS_IF([test "x$FC" = "xmpif90"],
   [
-    AS_IF([test "x$os_name" = "xMSYS_NT"],
+    AS_IF([test "x$os_name" != "xDarwin" -a "x$os_name" != "xLinux"],
       [
         PKG_CHECK_MODULES([MPI], [msmpi], [have_mpi=yes], [have_mpi=no])
       ],
@@ -40,7 +40,7 @@ AS_IF([test "x$FC" = "xmpif90"],
 
     AS_IF([test "x$have_mpi" = "xyes"],
       [
-        CFLAGS="${CFLAGS} ${MPI_CFLAGS}"
+        CFLAGS="${CFLAGS} ${MPI_CFLAGS} -DRAMS_MPI -fallow-invalid-boz -fallow-argument-mismatch"
         LIBS="${LIBS} ${MPI_LIBS}"
       ],
       [
