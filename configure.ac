@@ -11,8 +11,8 @@ PKG_PROG_PKG_CONFIG()
 AS_IF([test "x$os_name" != "xDarwin" -a "x$os_name" != "xLinux"],
   [
     AC_DEFINE_UNQUOTED([PKG_CONFIG_SYSTEM_INCLUDE_PATH], ["$PKG_CONFIG_SYSTEM_INCLUDE_PATH"], [MINGW defined pkg-config default system path])
-    CFLAGS="${CFLAGS} -I\"${PKG_CONFIG_SYSTEM_INCLUDE_PATH}\" ${FFLAGS} -D_WIN32"
-    CPPFLAGS="${CFLAGS} ${FFLAGS} -D_WIN32"
+    CFLAGS="${CFLAGS} -I\"${PKG_CONFIG_SYSTEM_INCLUDE_PATH}\" ${FCFLAGS} -D_WIN32"
+    CPPFLAGS="${CFLAGS} ${FCFLAGS} -D_WIN32"
     MAIN="${MAIN}.exe"
     SHLIB="rED2.dll"
   ]
@@ -25,7 +25,7 @@ AC_PROG_RANLIB
 AC_LANG([Fortran])
 
 
-PKG_CHECK_MODULES([HDF5], [hdf5_fortran], [have_hdf5=yes], [have_hdf5=no])
+PKG_CHECK_MODULES([hdf5_fortran], [hdf5_fortran], [have_hdf5=yes], [have_hdf5=no])
 
 AS_IF([test "x$FC" = "xmpif90"],
   [
@@ -34,7 +34,7 @@ AS_IF([test "x$FC" = "xmpif90"],
         PKG_CHECK_MODULES([MPI], [msmpi], [have_mpi=yes], [have_mpi=no])
       ],
       [
-        PKG_CHECK_MODULES([MPI], [mpi-fort mpich], [have_mpi=yes], [have_mpi=no])
+        PKG_CHECK_MODULES([MPI], [mpi-fort], [have_mpi=yes], [have_mpi=no])
       ]
     )
 
@@ -53,21 +53,51 @@ AS_IF([test "x$FC" = "xmpif90"],
 
 AS_IF([test "x$have_hdf5" = "xyes"],
   [
-    LIBS="${LIBS} ${HDF5_LIBS} ${MPILIBS}"
-    CFLAGS="${CFLAGS} ${HDF5_CFLAGS}"
+    LIBS="${LIBS} ${hdf5_fortran_LIBS} ${MPILIBS}"
+    CFLAGS="${CFLAGS} ${hdf5_fortran_CFLAGS}"
   ],
   [
-    AC_MSG_ERROR([HDF5 library not found!
-    Please install HDF5 library and try again:
+    PKG_CHECK_MODULES([HDF5], [hdf5], [have_hdf5=yes], [have_hdf5=no])
     
-      Debian: sudo apt-get install libhdf5-dev
-      Fedora: sudo dnf install hdf5-devel
-      CentOS: sudo yum install hdf5-devel
-      MacOS: brew install hdf5
-      Windows MinGW: pacman -S mingw-w64-x86_64-hdf5
-    ])
+    AS_IF([test "x$have_hdf5" = "xyes"],
+      [
+        LIBS="${LIBS} ${HDF5_LIBS} -lhdf5 -lhdf5_fortran"
+        FCFLAGS="${CFLAGS} ${HDF5_CFLAGS}"
+
+        AC_MSG_CHECKING([for HDF5 support in Fortran])
+        AC_LANG_PUSH([Fortran])
+
+        AC_LINK_IFELSE([AC_LANG_PROGRAM([], [[
+              use hdf5
+              integer :: hdferr
+              call h5open_f(hdferr)
+              call h5close_f(hdferr)
+        ]])],
+        [AC_MSG_RESULT([yes])
+        HDF5_OK=yes],
+        [AC_MSG_RESULT([no])
+        HDF5_OK=no])
+
+        AC_LANG_POP([Fortran])
+      ],
+      [have_hdf5=no])
   ]
 )
+
+AS_IF([test "x$have_hdf5" = "xno"],[
+      AC_MSG_ERROR([
+HDF5 library not found!
+
+Please install HDF5 library and try again:
+
+    Debian: sudo apt-get install libhdf5-dev
+    Fedora: sudo dnf install hdf5-devel
+    CentOS: sudo yum install hdf5-devel
+    MacOS: brew install hdf5
+    Windows MinGW: pacman -S mingw-w64-x86_64-hdf5
+      ])
+])
+
 
 AC_SUBST([CC])
 AC_SUBST([FC])
