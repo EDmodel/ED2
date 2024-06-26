@@ -314,7 +314,11 @@ int vfscale(float *a,int n,double *min,double *max )
 }
 
 /************************************************************************/
+#ifdef _WIN32
+#include <dirent_win.h>
+#else
 #include <dirent.h>
+#endif
 #include <string.h>
 
 void filelist_c_( int *inum, int *indices, char *prefix, char *chario){
@@ -535,7 +539,7 @@ void filelist_c_( int *inum, int *indices, char *prefix, char *chario){
 
 /* This is for the omp thread/processor pinning check. */
 /* MLO.  This didn't work in the SUNHPC cluster, disabling it for now */
-#if defined(SUNHPC) || defined(__APPLE__)
+#if defined(SUNHPC) || defined(__APPLE__) || defined(_WIN32)
 int findmycpu_ ()
 {
 	int cpu;
