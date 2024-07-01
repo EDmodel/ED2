@@ -28,7 +28,9 @@ subroutine ed_masterput_processid(nproc,headnode_num,masterworks,par_run)
                           , master_num  & ! intent(out)
                           , machs       ! ! intent(out)
 #endif
-
+#if defined(RAMS_MPI)
+   use mpi
+#endif
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    integer, intent(in) :: headnode_num
@@ -38,7 +40,6 @@ subroutine ed_masterput_processid(nproc,headnode_num,masterworks,par_run)
    integer :: nm
 #if defined(RAMS_MPI)
    integer :: ierr
-   include 'mpif.h'
    !---------------------------------------------------------------------------------------!
 #endif
 
@@ -360,6 +361,9 @@ subroutine ed_masterput_nl(par_run)
                                    , patch_keep                ! ! intent(in)
    use fusion_fission_coms  , only : ifusion                   ! ! intent(in)
 #endif
+#if defined(RAMS_MPI)
+      use mpi
+#endif
    implicit none
 
    !----- Arguments. ----------------------------------------------------------------------!
@@ -369,7 +373,6 @@ subroutine ed_masterput_nl(par_run)
    integer             :: ierr
    integer             :: n
    !------ Pre-compiled options. ----------------------------------------------------------!
-   include 'mpif.h'
 #endif
    !---------------------------------------------------------------------------------------!
 
@@ -727,6 +730,9 @@ subroutine ed_masterput_met_header(par_run)
                              , metvars_len       ! ! intent(in)
 #endif
 
+#if defined(RAMS_MPI)
+     use mpi
+#endif
    implicit none
    !------ Arguments. ---------------------------------------------------------------------!
    integer                      , intent(in)   :: par_run
@@ -737,7 +743,6 @@ subroutine ed_masterput_met_header(par_run)
    integer                                     :: f
    integer                                     :: v
    !------ Pre-compiled options. ----------------------------------------------------------!
-   include 'mpif.h'
    !---------------------------------------------------------------------------------------!
 #endif
 
@@ -813,6 +818,10 @@ subroutine ed_masterput_poly_dims(par_run,masterworks)
                             , npolys_run   ! ! intent(in)
    use mem_polygons  , only : n_ed_region  & ! intent(in)
                             , n_poi        ! ! intent(in)
+   
+#if defined(RAMS_MPI)
+     use mpi
+#endif
    implicit none
    !----- Local constants. ----------------------------------------------------------------!
    integer                     , parameter   :: nmethods = 3
@@ -838,7 +847,6 @@ subroutine ed_masterput_poly_dims(par_run,masterworks)
    real                                      :: totalwork
 #if defined(RAMS_MPI)
    integer                                   :: ierr
-   include 'mpif.h'
 #endif
    !---------------------------------------------------------------------------------------!
 
@@ -1122,6 +1130,9 @@ subroutine ed_masterput_worklist_info(par_run)
                            , py_off                ! ! intent(in)
    use mem_polygons , only : maxsite               ! ! intent(in)
    use ed_mem_alloc , only : ed_memory_allocation  ! ! subroutine
+#if defined(RAMS_MPI)
+     use mpi
+#endif
    implicit none
    !------ Arguments. ---------------------------------------------------------------------!
    integer                      , intent(in)   :: par_run
@@ -1139,8 +1150,6 @@ subroutine ed_masterput_worklist_info(par_run)
    integer                                     :: mpiid
    integer        , dimension(:), allocatable  :: iscratch
    real           , dimension(:), allocatable  :: rscratch
-   !------ Pre-compiled options. ----------------------------------------------------------!
-   include 'mpif.h'
 #endif
    !---------------------------------------------------------------------------------------!
 
@@ -1311,12 +1320,14 @@ subroutine ed_nodeget_processid(init)
    use ed_para_coms, only : nthreads   ! ! intent(out)
 #else
 #endif
+#if defined(RAMS_MPI)
+      use mpi
+#endif   
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    integer, intent(in) :: init
    !----- Local variables. ----------------------------------------------------------------!
 #if defined(RAMS_MPI)
-   include 'mpif.h'
    integer, dimension(MPI_STATUS_SIZE) :: status
 #endif
    integer :: ierr
@@ -1599,6 +1610,7 @@ subroutine ed_nodeget_nl
                                    , time2canopy               & ! intent(out)
                                    , min_patch_area            ! ! intent(out)
    use canopy_layer_coms    , only : crown_mod                 ! ! intent(out)
+   
    use canopy_radiation_coms, only : icanrad                   & ! intent(out)
                                    , ihrzrad                   & ! intent(out)
                                    , ltrans_vis                & ! intent(out)
@@ -1620,9 +1632,12 @@ subroutine ed_nodeget_nl
                                    , patch_keep                ! ! intent(out)
    use fusion_fission_coms  , only : ifusion                   ! ! intent(out)
 #endif
-   implicit none
+
 #if defined(RAMS_MPI)
-   include 'mpif.h'
+  use mpi
+#endif
+implicit none
+#if defined(RAMS_MPI)
    !----- Local variables. ----------------------------------------------------------------!
    integer :: n
 #endif
@@ -1996,9 +2011,11 @@ subroutine ed_nodeget_met_header()
                              , met_land_mask ! ! intent(out)
 #endif
 
-   implicit none
 #if defined(RAMS_MPI)
-   include 'mpif.h'
+    use mpi
+#endif 
+  implicit none
+#if defined(RAMS_MPI)
    !---- Local variables. -----------------------------------------------------------------!
    integer :: ierr
    integer :: nsize
@@ -2084,7 +2101,10 @@ subroutine ed_nodeget_poly_dims
    use grid_coms    , only : ngrids     ! ! intent(in)
 #endif
 
-   implicit none
+#if defined(RAMS_MPI)
+  use mpi
+#endif   
+implicit none
 
 #if defined(RAMS_MPI)
    !----- Local variables. ----------------------------------------------------------------!
@@ -2092,7 +2112,6 @@ subroutine ed_nodeget_poly_dims
    integer :: ifm
    integer :: nm
    !------ Pre-compiled options. ----------------------------------------------------------!
-   include 'mpif.h'
    !---------------------------------------------------------------------------------------!
    do ifm=1,ngrids
       do nm=1,nmachs
@@ -2131,11 +2150,11 @@ subroutine ed_nodeget_worklist_info
    use ed_node_coms , only : master_num          ! ! intent(in)
 #endif
 
-   implicit none
 #if defined(RAMS_MPI)
-   !------ Pre-compiled options. ----------------------------------------------------------!
-   include 'mpif.h'
+!------ Pre-compiled options. ----------------------------------------------------------!
+use mpi
 #endif
+implicit none
    !------ Local variables. ---------------------------------------------------------------!
    integer                             :: npolygons
    integer                             :: ifm

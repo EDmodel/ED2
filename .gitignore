@@ -166,3 +166,34 @@ R-utils/read.q.quick.r
 #Xiangtao Ignores
 ED/build/ed2_gfortran
 ED/build/ed2_ifort
+
+
+# http://www.gnu.org/software/automake
+Makefile.in
+/ar-lib
+/mdate-sh
+/py-compile
+/test-driver
+/ylwrap
+.deps/
+.dirstamp
+
+# http://www.gnu.org/software/autoconf
+autom4te.cache
+/autoscan.log
+/autoscan-*.log
+/aclocal.m4
+/compile
+/config.cache
+/config.guess
+/config.h.in
+/config.log
+/config.status
+/config.sub
+/configure
+/configure.scan
+/depcomp
+/install-sh
+/missing
+/stamp-h1
+/Makefile

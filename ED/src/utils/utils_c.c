@@ -8,6 +8,7 @@
 */
 
 #include "utils_sub_names.h"
+#include <stdint.h>
 
 #include <stdio.h>
 #include <math.h>
@@ -58,16 +59,15 @@ int iralloc(int *memtot,int *ia,int *ioff)
 
   iaddr = malloc((*memtot)*sizeof(float));
 
-/* Compute the offset for Fortran */
-
+/* Compute the offset for Fortran */  
 #ifdef CRAY
-  ifaddr = (int)ia;
-  imaddr = (int)iaddr;
-  *ioff=(imaddr-ifaddr);
+    ifaddr = (intptr_t)ia;
+    imaddr = (intptr_t)iaddr;
+    *ioff = (imaddr - ifaddr);
 #else
-  ifaddr = (int )ia;
-  imaddr = (int )iaddr;
-  *ioff = (imaddr-ifaddr)/sizeof(float);
+    ifaddr = (intptr_t)ia;
+    imaddr = (intptr_t)iaddr;
+    *ioff = (imaddr - ifaddr) / sizeof(float);
 #endif
 
 /* Find first empty location in address array */
@@ -314,7 +314,11 @@ int vfscale(float *a,int n,double *min,double *max )
 }
 
 /************************************************************************/
+#ifdef _WIN32
+#include <dirent_win.h>
+#else
 #include <dirent.h>
+#endif
 #include <string.h>
 
 void filelist_c_( int *inum, int *indices, char *prefix, char *chario){
@@ -346,7 +350,7 @@ void filelist_c_( int *inum, int *indices, char *prefix, char *chario){
   
   token = strtok (prefix, delim);
   tfound=0;
-  while (token != '\0') {
+  while (token != NULL) {
     tfound += 1;
 
     strcpy(dir,tmpdir);
@@ -377,7 +381,7 @@ void filelist_c_( int *inum, int *indices, char *prefix, char *chario){
     
     /* Try the next token */
     token = strtok(NULL,delim2);
-    if (token != '\0'){
+    if (token != NULL){
       tfound=2;
       strcpy(fpref2,token);
     }
@@ -388,15 +392,15 @@ void filelist_c_( int *inum, int *indices, char *prefix, char *chario){
 
 
     /* Try the first token */
-    token = strtok (fpref0, delim2);
-    if (token != '\0'){
+    token = strtok(fpref0, delim2);
+    if (token != NULL){
       tfound=1;
       strcpy(fpref1,token);
     }
     
     /* Try the next token */
     token = strtok(NULL,delim2);
-    if (token != '\0'){
+    if (token != NULL){
       tfound=2;
       strcpy(fpref2,token);
     }
@@ -535,7 +539,7 @@ void filelist_c_( int *inum, int *indices, char *prefix, char *chario){
 
 /* This is for the omp thread/processor pinning check. */
 /* MLO.  This didn't work in the SUNHPC cluster, disabling it for now */
-#if defined(SUNHPC) || defined(__APPLE__)
+#if defined(SUNHPC) || defined(__APPLE__) || defined(_WIN32)
 int findmycpu_ ()
 {
 	int cpu;
