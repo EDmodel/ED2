@@ -8,6 +8,7 @@
 */
 
 #include "utils_sub_names.h"
+#include <stdint.h>
 
 #include <stdio.h>
 #include <math.h>
@@ -58,16 +59,15 @@ int iralloc(int *memtot,int *ia,int *ioff)
 
   iaddr = malloc((*memtot)*sizeof(float));
 
-/* Compute the offset for Fortran */
-
+/* Compute the offset for Fortran */  
 #ifdef CRAY
-  ifaddr = (int)ia;
-  imaddr = (int)iaddr;
-  *ioff=(imaddr-ifaddr);
+    ifaddr = (intptr_t)ia;
+    imaddr = (intptr_t)iaddr;
+    *ioff = (imaddr - ifaddr);
 #else
-  ifaddr = (int )ia;
-  imaddr = (int )iaddr;
-  *ioff = (imaddr-ifaddr)/sizeof(float);
+    ifaddr = (intptr_t)ia;
+    imaddr = (intptr_t)iaddr;
+    *ioff = (imaddr - ifaddr) / sizeof(float);
 #endif
 
 /* Find first empty location in address array */
