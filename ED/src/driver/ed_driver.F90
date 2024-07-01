@@ -36,11 +36,12 @@ subroutine ed_driver()
    use hrzshade_utils       , only : init_cci_variables            ! ! subroutine
    use canopy_radiation_coms, only : ihrzrad                       ! ! intent(in)
    use random_utils         , only : init_random_seed              ! ! subroutine
-   implicit none
-   !----- Included variables. -------------------------------------------------------------!
 #if defined(RAMS_MPI)
-   include 'mpif.h' ! MPI commons
+  use mpi ! MPI commons
 #endif
+   implicit none
+
+   !----- Included variables. -------------------------------------------------------------!
    !----- Local variables. ----------------------------------------------------------------!
    character(len=12)           :: c0
    character(len=12)           :: c1

@@ -48,12 +48,12 @@ subroutine h5_output(vtype)
                            , sitetype              & ! structure
                            , patchtype             & ! structure
                            , gdpy                  ! ! intent(in)
-   implicit none
-
-   !------ Include standard common blocks. ------------------------------------------------!
+                           
+                           !------ Include standard common blocks. ------------------------------------------------!
 #if defined(RAMS_MPI)
-   include 'mpif.h'
+    use mpi
 #endif
+  implicit none
    !------ Arguments. ---------------------------------------------------------------------!
    character(len=*)                                 , intent(in) :: vtype
    !------ Local variables. ---------------------------------------------------------------!

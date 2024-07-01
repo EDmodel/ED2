@@ -319,10 +319,10 @@ module ed_init
       use ed_node_coms      , only : mynum                          ! ! intent(in)
 #endif
 
-      implicit none
 #if defined(RAMS_MPI)
-      include 'mpif.h'
+      use mpi
 #endif
+      implicit none
       !----- Local variables --------------------------------------------------------------!
       integer                :: igr
       integer                :: ping 

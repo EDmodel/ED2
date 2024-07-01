@@ -14,7 +14,10 @@
 !------------------------------------------------------------------------------------------!
 program main
    !$ use omp_lib
-   implicit none
+#if defined(RAMS_MPI)
+  use mpi
+#endif
+  implicit none
 
    !---------------------------------------------------------------------------------------!
    !      Local constants.                                                                 !
@@ -49,10 +52,7 @@ program main
    integer, dimension(64)                :: thread_use
    integer, dimension(64)                :: cpu_use
    integer, external                     :: findmycpu
-   !------ MPI interface. -----------------------------------------------------------------!
-#if defined(RAMS_MPI)
-   include 'mpif.h'
-#endif
+
    !---------------------------------------------------------------------------------------!
 
 

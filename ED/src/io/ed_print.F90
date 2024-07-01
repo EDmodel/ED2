@@ -48,11 +48,12 @@ module ed_print
       use ed_var_tables, only : vt_info       & ! intent(in)
                               , num_var       ! ! intent(in)
       use ed_max_dims  , only : str_len_short ! ! intent(in)
-      implicit none
+      
       !----- Standard common blocks. ------------------------------------------------------!
 #if defined(RAMS_MPI)
-      include 'mpif.h'
+      use mpi
 #endif
+      implicit none
       !----- Arguments. -------------------------------------------------------------------!
       integer                            , intent(in) :: ifm
       type(edtype)                       , target     :: cgrid

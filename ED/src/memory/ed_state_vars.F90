@@ -12774,11 +12774,11 @@ module ed_state_vars
 #endif
       use ed_max_dims  , only : maxgrds                  & ! intent(in)
                               , maxmach                  ! ! intent(in)
-      implicit none
 
 #if defined(RAMS_MPI)
-      include 'mpif.h'
+  use mpi
 #endif
+implicit none
       !----- Local variables. -------------------------------------------------------------!
       type(edtype)                                 , pointer   :: cgrid
       type(polygontype)                            , pointer   :: cpoly
