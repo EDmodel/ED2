@@ -28,5 +28,8 @@ libed2_a_SOURCES = $(SOURCES)
 # Additional Fortran clean files
 CLEANFILES = *.mod
 
+# Additional files for distribution
+EXTRA_DIST = ED/src/include EDR EDTS R-utils
+
 # Include the dependency makefile
 include ED/build/shell/dependency.mk
