@@ -350,7 +350,7 @@ void filelist_c_( int *inum, int *indices, char *prefix, char *chario){
   
   token = strtok (prefix, delim);
   tfound=0;
-  while (token != '\0') {
+  while (token != NULL) {
     tfound += 1;
 
     strcpy(dir,tmpdir);
@@ -381,7 +381,7 @@ void filelist_c_( int *inum, int *indices, char *prefix, char *chario){
     
     /* Try the next token */
     token = strtok(NULL,delim2);
-    if (token != '\0'){
+    if (token != NULL){
       tfound=2;
       strcpy(fpref2,token);
     }
@@ -392,15 +392,15 @@ void filelist_c_( int *inum, int *indices, char *prefix, char *chario){
 
 
     /* Try the first token */
-    token = strtok (fpref0, delim2);
-    if (token != '\0'){
+    token = strtok(fpref0, delim2);
+    if (token != NULL){
       tfound=1;
       strcpy(fpref1,token);
     }
     
     /* Try the next token */
     token = strtok(NULL,delim2);
-    if (token != '\0'){
+    if (token != NULL){
       tfound=2;
       strcpy(fpref2,token);
     }
