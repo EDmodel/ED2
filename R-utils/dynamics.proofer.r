@@ -84,7 +84,7 @@ death.proofer <<- function( datum                # Forest inventory data set
       for (y in sequence(n.years)){
          this.dead             = paste(dead.pref,year4[y],sep=vsep)
          if (this.dead %in% names(datum)){
-            sel                   = as.numeric(datum[[this.dead]]) %==% 1
+            sel                   = as.numeric(datum[[this.dead]]) %eq% 1
             datum$year.death[sel] = pmin(datum$year.death[sel],year4[y])
          }#end if (this.dead %in% names(datum))
          #---------------------------------------------------------------------------------#
@@ -102,7 +102,7 @@ death.proofer <<- function( datum                # Forest inventory data set
       for (y in sequence(n.years)){
          this.dbh                = paste(dbh.pref ,year4[y],sep=vsep)
          alive                   = ( is.finite(datum[[this.dbh]]) 
-                                   & datum$year.death %<=% year4[y]
+                                   & datum$year.death %le% year4[y]
                                    )#end alive
          datum$year.death[alive] = next.year[y]
          #---------------------------------------------------------------------------------#
@@ -966,7 +966,7 @@ dbh.gap.filler <<- function( datum
 
 
       #----- Find out whether to fill the data. -------------------------------------------#
-      dbh.miss      = is.na(datum[[dbh.label]]) | datum[[dbh.label]] %<% 0
+      dbh.miss      = is.na(datum[[dbh.label]]) | datum[[dbh.label]] %lt% 0
       if (any(is.na(dbh.miss))){
          cat0(" dbh.miss has NA!")
       }#end if
@@ -979,7 +979,7 @@ dbh.gap.filler <<- function( datum
       # been taken care of before, but after discarding some bad measurements a few other  #
       # pre-recruitment points may appear.                                                 #
       #------------------------------------------------------------------------------------#
-      bye     = datum[[dbh.label]] %>% 0 & is.na(dbh.table[,y])
+      bye     = datum[[dbh.label]] %gt% 0 & is.na(dbh.table[,y])
       message = paste0(dbh.label,"=",abs(datum[[dbh.label]])
                       ," is pre-recruitment thus removed",sep="")
       datum[[notes.label]][bye] = concatenate.message(datum[[notes.label]][bye]
@@ -1045,8 +1045,8 @@ dbh.gap.filler <<- function( datum
       #     Choose the years to update.  It has to be NA and it has to be post-            #
       # recruitment to be accepted.                                                        #
       #------------------------------------------------------------------------------------#
-      is.recruited = ( dbh.guess %>% ( dbh.min + dbh.min.toler )
-                     | datum[[dbh.label]] %>=% dbh.min
+      is.recruited = ( dbh.guess %gt% ( dbh.min + dbh.min.toler )
+                     | datum[[dbh.label]] %ge% dbh.min
                      | datum$year.recruit <= year4[y] )
       is.alive     = datum$year.death > year4[y]
       update.year  = dbh.miss & is.recruited & is.alive

@@ -17,6 +17,41 @@ cbrt <<- function(x){
 
 #==========================================================================================#
 #==========================================================================================#
+#     Function that finds the integer divisors of an integer and positive number.          #
+#------------------------------------------------------------------------------------------#
+divisors <<- function(x){
+   #---- Do not attempt to find divisors for non-integer quantities. ----------------------#
+   xint = as.integer(x)
+   #---------------------------------------------------------------------------------------#
+
+   #---- Find the results for each value. -------------------------------------------------#
+   if (length(x) > 1L){
+      ans = mapply( FUN = divisors, x = as.list(x))
+   }else if( xint %eq% x){
+      #--- Vector of potential divisors. We stop at half to speed up the code. ------------#
+      ans = seq_len(ceiling(abs(x)/2))
+      ans = c(ans[ (x %% ans) %eq% 0L],x)
+      #------------------------------------------------------------------------------------#
+   }else{
+      #---- Number is not integer, return nothing. ----------------------------------------#
+      ans = integer(length=0L)
+      #------------------------------------------------------------------------------------#
+   }#end if(length(x) > 1L)
+   #---------------------------------------------------------------------------------------#
+
+   #---- Return results. ------------------------------------------------------------------#
+   return(ans)
+   #---------------------------------------------------------------------------------------#
+}#end function divisors
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
 #     Functions that finds round of the log of the number.                                 #
 #------------------------------------------------------------------------------------------#
 round.log   <<- function(x,base=exp(1),...) base^(round(log(x,base=base),...))
@@ -34,7 +69,21 @@ round.log2  <<- function(x,...) 2^(round(log2(x),...))
 #     Base 10 exponential.                                                                 #
 #------------------------------------------------------------------------------------------#
 exp10 <<- function(x,...) 10^x
+#==========================================================================================#
+#==========================================================================================#
 
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
+#     Negative log of negative numbers.                                                    #
+#------------------------------------------------------------------------------------------#
+neglog   <<- function(x,...) -log(-x)
+negexp   <<- function(x,...) -exp(-x)
+neglog10 <<- function(x,...) -log10(-x)
+negexp10 <<- function(x,...) -10^(-x)
 #==========================================================================================#
 #==========================================================================================#
 
@@ -54,11 +103,11 @@ bound <<- function(x,lwr=min(x,na.rm=TRUE),upr=max(x,na.rm=TRUE),buff=2^-23){
    #---------------------------------------------------------------------------------------#
    #   Don't let the bounds to be insane.                                                  #
    #---------------------------------------------------------------------------------------#
-   if (lwr %>% upr){
+   if (lwr %gt% upr){
       cat0(" - Lower limit: ",lwr)
       cat0(" - Upper limit: ",upr)
       stop(" Lower and upper limit must be finite and lower cannot be greater than upper.")
-   }#end if (lwr %>% upr)
+   }#end if (lwr %gt% upr)
    #---------------------------------------------------------------------------------------#
 
 
@@ -68,7 +117,7 @@ bound <<- function(x,lwr=min(x,na.rm=TRUE),upr=max(x,na.rm=TRUE),buff=2^-23){
    if (! (buff %wr% c(0,1-2^-23))){
       cat0(" - buff: ",buff)
       stop(" Buffer must be between 0 (including) and 1 (excluding).")
-   }#end if (lwr %>% upr)
+   }#end if (! (buff %wr% c(0,1-2^-23)))
    #---------------------------------------------------------------------------------------#
 
 
@@ -271,7 +320,7 @@ weighted.frac <<- function(x,w,na.rm=TRUE){
       names(ans) = names(x)
       return(ans)
       #------------------------------------------------------------------------------------#
-   }else if (all(w %==% 0.)){
+   }else if (all(w %eq% 0.)){
       #----- Give equal chances in case all weights were zero. ----------------------------#
       w = rep(x=1.,times=nrow(x))
       #------------------------------------------------------------------------------------#
@@ -305,15 +354,23 @@ weighted.frac <<- function(x,w,na.rm=TRUE){
 weighted.quantile <<- function(x,w,qu=0.50,size.minp=10,na.rm=FALSE,out.case=FALSE){
 
    #----- Delete the missing values if the user asked to do it. ---------------------------#
-   if (any(w <= 0, na.rm = TRUE) || any(is.infinite(w)) || any(is.na(w))){
+   if (any(w %le% 0, na.rm = TRUE) || any(is.infinite(w)) || any(is.na(w))){
       stop(" Weights (w) must be positive and finite, and entirely defined!")
-   }else if(qu < 0. || qu > 1.){
+   }else if(qu %or% c(0,1.)){
       stop(" Quantile (qu) must be between 0 and 1. ")
    }else if(na.rm){
       keep = ! is.na(x)
       x    = x[keep]
       w    = w[keep]
    }#end if
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #    If nothing remains, return NA.                                                     #
+   #---------------------------------------------------------------------------------------#
+   if (length(x) == 0) return(NA_real_)
    #---------------------------------------------------------------------------------------#
 
 
@@ -341,18 +398,18 @@ weighted.quantile <<- function(x,w,qu=0.50,size.minp=10,na.rm=FALSE,out.case=FAL
    #---------------------------------------------------------------------------------------#
    #      Sort the values by the probability.                                              #
    #---------------------------------------------------------------------------------------#
-   if (qu <= cum[1]){
+   if (qu %le% cum[1]){
       qout = x[1]
       case = "minimum"
-   }else if (qu >= cum[length(cum)]){
+   }else if (qu %ge% cum[length(cum)]){
       qout = x[length(cum)]
       case = "maximum"
-   }else if (any(cum == qu)){
-      qout = x[which(cum == qu)]
+   }else if (any(cum %eq% qu)){
+      qout = x[which(cum %eq% qu)]
       case = "exact"
    }else{
-      below   = qu - cum ; below[below < 0] = Inf 
-      above   = cum - qu ; above[above < 0] = Inf
+      below   = qu - cum ; below[below %lt% 0] = Inf 
+      above   = cum - qu ; above[above %lt% 0] = Inf
       i.below = which.min(below)
       i.above = which.min(above)
       w.below = 1. / (below[i.below]^2)
@@ -404,7 +461,7 @@ weighted.sd <<- function(x,w,M=NULL,na.rm=FALSE){
    #---------------------------------------------------------------------------------------#
    #      Check whether at least one weight is non-zero.                                   #
    #---------------------------------------------------------------------------------------#
-   if (all(w %==% 0)){
+   if (all(w %eq% 0)){
       ans = NA
    }else{
       xwm    = weighted.mean(x=x,w=w)
@@ -735,7 +792,7 @@ meansdcv <<- function (x, na.rm = FALSE){
       nx    = length(xx)
       mu    = mean(xx)
       sigma = sd(xx)
-      cvar  = ifelse(sigma %>% 0,mu/sigma,NA)
+      cvar  = ifelse(sigma %gt% 0,mu/sigma,NA)
       
       ans = c( mean = mu
              , sd   = sigma
@@ -1086,7 +1143,7 @@ mean.se        <<- function(x,...)   sqrt(x = mean(x=x^2,...) / length(x[is.fini
 #==========================================================================================#
 #     Mean of elements that are finite and above minimum.                                  #
 #------------------------------------------------------------------------------------------#
-mean.above <<- function(x,xlwr,xnot=xlwr) if(any(x%>=%xlwr)){mean(x[x%>=%xlwr])}else{xnot}
+mean.above <<- function(x,xlwr,xnot=xlwr) if(any(x%ge%xlwr)){mean(x[x%ge%xlwr])}else{xnot}
 #==========================================================================================#
 #==========================================================================================#
 
@@ -1648,6 +1705,32 @@ left.cumprod <<- function(x) c(0,cumprod(x)[-length(x)])
 
 #==========================================================================================#
 #==========================================================================================#
+#     These functions are similar to cumsum, except that they ignore values above or below #
+# a certain threshold (source: (https://stackoverflow.com/questions/63636052/              #
+# calculate-cumulative-sum-cumsum-floored-at-zero).                                        #
+#------------------------------------------------------------------------------------------#
+#----- cumulative sum floored at thresh. --------------------------------------------------#
+floor.cumsum <<- function(x,thresh=0){
+   cs  = cumsum(x)
+   cn  = cummin(cs)
+   ans = cs - pmin(cn,thresh)
+   return(ans)
+}#end floor.cumsum
+#----- cumulative sum capped at thresh. ---------------------------------------------------#
+ceiling.cumsum <<- function(x,thresh=0){
+   cs  = cumsum(x)
+   cx  = cummax(cs)
+   ans = cs - pmax(cx,thresh)
+   return(ans)
+}#end ceiling.cumsum
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
 #      This function calculates cumulative sum for data with gaps.  It will treat NA as    #
 # zeroes, but the output for an NA entry will be always zero.  The default is to reset     #
 # the sum whenever there is a missing value.                                               #
@@ -1742,7 +1825,7 @@ thresh.cumsum <<- function(x,xthresh,thmax=TRUE,na.rm=FALSE){
    #---------------------------------------------------------------------------------------#
    if (all(! (is.na(x) | is.nan(x)))){
       #------------------------------------------------------------------------------------#
-      #      Decide what to do based on whether to limit maximum (thmax=TRUE) or maximum   #
+      #      Decide what to do based on whether to limit maximum (thmax=TRUE) or minimum   #
       # (thmax=FALSE) values.  I couldn't think of a vector way to solve this, so for now  #
       # I am using for loops.                                                              #
       #------------------------------------------------------------------------------------#
@@ -1755,9 +1838,9 @@ thresh.cumsum <<- function(x,xthresh,thmax=TRUE,na.rm=FALSE){
          #---------------------------------------------------------------------------------#
       }else{
          #----- Threshold is the maximum allowed value. -----------------------------------#
-         ans[1] = max(c(thresh,x[1]))
+         ans[1] = max(c(xthresh,x[1]))
          for (i in sequence(nx)[-1]){
-            ans[i] = max(thresh,ans[i-1]+x[i])
+            ans[i] = max(xthresh,ans[i-1]+x[i])
          }#end for (i in sequence(nx)[-1])
          #---------------------------------------------------------------------------------#
       }#end if (thmax)
@@ -1792,7 +1875,7 @@ thresh.cumsum <<- function(x,xthresh,thmax=TRUE,na.rm=FALSE){
 #------------------------------------------------------------------------------------------#
 aggr.fmin <<- function(x,fun=mean,fmin=0.5,...){
    #----- Check that fmin makes sense. ----------------------------------------------------#
-   if (! (fmin %>=% 0.0 & fmin %<=% 1.0)){
+   if (! (fmin %ge% 0.0 & fmin %le% 1.0)){
       stop (paste0("fmin must be between 0 and 1!  Yours is set to ",fmin,"..."))
    }#end if
    #---------------------------------------------------------------------------------------#
@@ -1815,8 +1898,8 @@ aggr.fmin <<- function(x,fun=mean,fmin=0.5,...){
       #----- Use only valid points. -------------------------------------------------------#
       xuse         = x[is.finite(x)]
       ans          = fun(xuse,...)
-      discard      = ! is.finite(ans)
-      ans[discard] = NA
+      is.bad       = ! is.finite(ans)
+      ans[is.bad]  = NA
       #------------------------------------------------------------------------------------#
    }else if (nkeep >= 1){
       #----- Use only valid points. -------------------------------------------------------#
@@ -1860,7 +1943,7 @@ aggr.fmin <<- function(x,fun=mean,fmin=0.5,...){
 #------------------------------------------------------------------------------------------#
 aggr.se <<- function(x,fmin=0.5,...){
    #----- Check that fmin makes sense. ----------------------------------------------------#
-   if (! (fmin %>=% 0.0 & fmin %<=% 1.0)){
+   if (! (fmin %ge% 0.0 & fmin %le% 1.0)){
       stop (paste0("fmin must be between 0 and 1!  Yours is set to ",fmin,"..."))
    }#end if
    #---------------------------------------------------------------------------------------#
@@ -1879,8 +1962,8 @@ aggr.se <<- function(x,fmin=0.5,...){
       xuse         = x[is.finite(x)]
       nuse         = length(xuse)
       ans          = sqrt(mean(xuse^2)/nuse)
-      discard      = ! is.finite(ans)
-      ans[discard] = NA
+      is.bad       = ! is.finite(ans)
+      ans[is.bad]  = NA
       #------------------------------------------------------------------------------------#
    }else{
       #----- Return NA. -------------------------------------------------------------------#
@@ -1912,18 +1995,44 @@ max.abs.diff <<- function(x,y,na.rm=TRUE) max(abs(x-y),na.rm=na.rm)
 
 #==========================================================================================#
 #==========================================================================================#
-#     This function counts the number of valid entries.                                    #
+#     This function checks whether or not the values are valid.                            #
 #------------------------------------------------------------------------------------------#
-count.valid <<- function(x,qq.rm=FALSE){
+is.valid <<- function(x,qq.rm=FALSE){
    type.x = typeof(x)
    if (type.x %in% "logical"){
-      ans = sum(! is.na(x))
+      ans = ! is.na(x)
    }else if (type.x %in% "character"){
-      ans = sum(! ( is.na(x) | ((x %in% "") & qq.rm)))
+      ans = ! ( is.na(x) | ((x %in% "") & qq.rm))
    }else{
-      ans = sum(is.finite(x))
+      ans = ! is.finite(x)
    }#end if (type.x %in% c("logical","character"))
    return(ans)
-}#end count.finite
+}#end is.finite
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
+#     This function counts the number of valid entries.                                    #
+#------------------------------------------------------------------------------------------#
+count.valid <<- function(x,qq.rm=FALSE) sum(is.valid(x,qq.rm=qq.rm))
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
+#     Error function and complementary error function. These are borrowed from package     #
+# pracma, use locally defined to avoid conflicts with many other functions.                #
+#------------------------------------------------------------------------------------------#
+errfun  <<- function(x){ pchisq(2 * x^2,1) * sign(x)}
+errfunc <<- function(x){ 2. * pnorm(-sqrt(2.)*x)}
 #==========================================================================================#
 #==========================================================================================#

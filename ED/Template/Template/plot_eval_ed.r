@@ -1080,7 +1080,7 @@ for (place in myplaces){
 
                   #----- Find and plot the distribution function for this hour. -----------#
                   sd.obser = sd(this.obser[sel],na.rm=TRUE)
-                  if (sd.obser %>% 1.0e-6){
+                  if (sd.obser %gt% 1.0e-6){
                      #----- Find the residuals. -------------------------------------------#
                      this.resid          = this.obser - this.model
                      comp$residuals[sel] = this.resid[sel]

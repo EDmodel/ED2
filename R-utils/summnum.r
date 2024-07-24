@@ -66,7 +66,7 @@ summnum <<- function(x,byrow=FALSE,finite.only=TRUE,neverlog=NULL,is.debug=FALSE
 
 
       #----- Second, ensure that zeroes are relatively rare. ------------------------------#
-      few.zeroes = ans$min %>=% 0. & ans$q100 %>% 0
+      few.zeroes = ans$min %ge% 0. & ans$q100 %gt% 0
       #------------------------------------------------------------------------------------#
 
 
@@ -102,7 +102,7 @@ summnum <<- function(x,byrow=FALSE,finite.only=TRUE,neverlog=NULL,is.debug=FALSE
                                       , no   = NA_real_
                                       )#end ifelse
                               )#end with
-      lognorm.is.better = ln.lnorm %>=% ln.norm
+      lognorm.is.better = ln.lnorm %ge% ln.norm
       #------------------------------------------------------------------------------------#
 
 
@@ -146,7 +146,7 @@ summnum.int <<- function(x,finite.only){
    if ("try-error" %in% is(wcm.2)){wcm.2 = NA}else if (is.null(wcm.2)){wcm.2 = NA}
    if ("try-error" %in% is(wcm.1)){wcm.1 = NA}else if (is.null(wcm.1)){wcm.1 = NA}
 
-   #if (! all(c(wcm.1,wcm.2,wcm.3) %==% c("lapply","sapply","summnum"))){
+   #if (! all(c(wcm.1,wcm.2,wcm.3) %eq% c("lapply","sapply","summnum"))){
    #   stop(" Function summnum.int is internal, and must be called through summnum","\n")
    #}#end if
    #---------------------------------------------------------------------------------------#
@@ -181,7 +181,7 @@ summnum.int <<- function(x,finite.only){
              , skew   = skew(x,na.rm=TRUE)
              , kurt   = kurt(x,na.rm=TRUE)
              , navl   = sum (! is.na(x))
-             , npos   = sum (x %<% 0)
+             , npos   = sum (x %lt% 0)
              , ntot   = nx
              )#end c
    }else{
@@ -244,7 +244,7 @@ lnlike.comp <<- function(x,xlab="nothing"){
    if ("try-error" %in% is(wcm.2)){wcm.2 = NA}else if (is.null(wcm.2)){wcm.2 = NA}
    if ("try-error" %in% is(wcm.1)){wcm.1 = NA}else if (is.null(wcm.1)){wcm.1 = NA}
 
-   #if (! all(c(wcm.1,wcm.2,wcm.3) %==% c("lapply","sapply","summnum"))){
+   #if (! all(c(wcm.1,wcm.2,wcm.3) %eq% c("lapply","sapply","summnum"))){
    #   stop(" Function sw.pvalue is internal and must be called through summnum","\n")
    #}#end if
    #---------------------------------------------------------------------------------------#
@@ -258,7 +258,7 @@ lnlike.comp <<- function(x,xlab="nothing"){
 
    #----- Make sure x is a simple vector.  Keep only the positive terms. ------------------#
    x   = as.numeric(unlist(c(x)))
-   lnx = ifelse(test=x %>% 0,yes=log(x),no=NA_real_)
+   lnx = ifelse(test=x %gt% 0,yes=log(x),no=NA_real_)
    sel = is.finite(lnx)
    x   = x  [sel]
    lnx = lnx[sel]
