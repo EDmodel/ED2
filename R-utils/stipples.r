@@ -6,7 +6,7 @@ stipples <<- function(xleft,ybottom,xright,ytop,density=2,pch=".",cex=0.7,col="b
 
    #----- Check that coordinates are all provided. ----------------------------------------#
    stopifnot(! ( missing(xleft) | missing(ybottom) | missing(xright) | missing(ytop)) )
-   stopifnot(density %>% 0)
+   stopifnot(density %gt% 0)
    #---------------------------------------------------------------------------------------#
 
 

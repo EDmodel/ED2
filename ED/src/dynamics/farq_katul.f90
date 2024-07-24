@@ -247,9 +247,6 @@ module farq_katul
 
       !update photosynthetic parameters with water stress
       select case (h2o_plant_lim)
-      case (0,1,2,3)
-          ! use fsw to account for water stress in photosyn_driv
-          water_stress_factor = 1.
       case (4)
           ! leaf water potential will influence stomata optimization 
           ! at two different scales
@@ -268,6 +265,9 @@ module farq_katul
                                         1. / (1. +      &
                                 0.1 * (leaf_psi / leaf_psi_tlp(ipft)) ** 6.0)))
           lambda8 = lambda8 * dble(exp(stoma_beta(ipft) * dmax_leaf_psi))
+      case default
+          ! use fsw to account for water stress in photosyn_driv
+          water_stress_factor = 1.
       end select
          
       !thispft(ib)%vm0  = thispft(ib)%vm0 * dble(water_stress_factor)
@@ -848,8 +848,8 @@ module farq_katul
         real(kind=8)                :: k1,k2        !! Variable used in photosynthesis equation
         real(kind=8)                :: a,b,c        !! Coefficients of the quadratic equation to solve ci
         real(kind=8)                :: rad          !! sqrt(b2-4ac)
-        real(kind=8)                :: dbdg,dcdg    !! derivatives of b,c wrt. gsc
-
+        real(kind=8)                :: dbdg         !! derivatives of b wrt. gsc
+        real(kind=8)                :: dcdg         !! derivatives of c wrt. gsc
         !------------------------------------------------------------------------------------!
 
 

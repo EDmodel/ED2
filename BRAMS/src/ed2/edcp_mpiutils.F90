@@ -235,11 +235,10 @@ subroutine masterput_ednl(mainnum)
                                    , idetailed                  & ! intent(in)
                                    , patch_keep                 ! ! intent(in)
    use fusion_fission_coms  , only : ifusion                    ! ! intent(in)
-   implicit none
-   !----- Standard common blocks. ---------------------------------------------------------!
 #if defined(RAMS_MPI)
-   include 'mpif.h'
+   use mpi
 #endif
+   implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    integer, intent(in) :: mainnum
    !----- Local variables. ----------------------------------------------------------------!
@@ -763,11 +762,10 @@ subroutine nodeget_ednl(master_num)
                                    , idetailed                  & ! intent(out)
                                    , patch_keep                 ! ! intent(out)
    use fusion_fission_coms  , only : ifusion                    ! ! intent(out)
-   implicit none
-   !----- Standard common blocks. ---------------------------------------------------------!
 #if defined(RAMS_MPI)
-   include 'mpif.h'
+   use mpi
 #endif
+   implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    integer, intent(in) :: master_num
    !----- Local variables. ----------------------------------------------------------------!

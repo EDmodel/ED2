@@ -129,7 +129,7 @@ module landuse_init
          write (unit=*,fmt='(a)') ' so MAX_LU_YEARS >= IYEARZ-IYEARA+1, then recompile'
          write (unit=*,fmt='(a)') ' your model.'
          call fatal_error ('Simulation is too long for anthropogenic disturbance.'         &
-                          ,'landuse_init','landuse_init.f90')
+                          ,'read_landuse_matrix','landuse_init.f90')
       end if
       !------------------------------------------------------------------------------------!
 
@@ -559,7 +559,7 @@ module landuse_init
                   write (unit=*,fmt='(a,1x,i6)')     ' - Nharvest:',nharvest
                   write (unit=*,fmt='(a)')           '------------------------------------'
                   call fatal_error('Land use area is zero, it doesn''t make any sense!'    &
-                                  ,'landuse_init','landuse_init.f90')
+                                  ,'read_landuse_matrix','landuse_init.f90')
                else
                   lu_area_i = 1. / lu_area
                end if

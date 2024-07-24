@@ -38,6 +38,9 @@ subroutine rams_master(ipara, nslaves, master_num, name_name)
   use mem_radiate, only: ISWRTYP, ILWRTYP ! Intent(in)
   use mem_leaf, only : isfcl ! Intent(in)
   use dtset, only: dtset_new ! subroutine
+#if defined(RAMS_MPI)
+  use mpi
+#endif
 
   implicit none
 
@@ -63,7 +66,6 @@ subroutine rams_master(ipara, nslaves, master_num, name_name)
   integer :: ierr
 #if defined(RAMS_MPI)
   include 'interface.h'
-  include 'mpif.h'
 #endif
   !MLO]
 

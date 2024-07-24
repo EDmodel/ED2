@@ -414,21 +414,58 @@ for (place in myplaces){
    #---------------------------------------------------------------------------------------#
 
 
+
+
    #---------------------------------------------------------------------------------------#
    #     Convert mortality and recruitment so it is scaled between 0 and 100%.             #
    #---------------------------------------------------------------------------------------#
-   szpft$mort          = 100. * (1.0 - exp(- szpft$mort         )      )
-   szpft$dimort        = 100. * (1.0 - exp(- szpft$dimort       )      )
-   szpft$ncbmort       = 100. * (1.0 - exp(- szpft$ncbmort      )      )
-   szpft$recrpft       = 100. * (      exp(  szpft$recr         ) - 1.0)
-   szpft$agb.mort      = 100. * (1.0 - exp(- szpft$agb.mort     )      )
-   szpft$agb.dimort    = 100. * (1.0 - exp(- szpft$agb.dimort   )      )
-   szpft$agb.ncbmort   = 100. * (1.0 - exp(- szpft$agb.ncbmort  )      )
-   szpft$agb.recrpft   = 100. * (      exp(  szpft$agb.recr     ) - 1.0)
-   szpft$bsa.mort      = 100. * (1.0 - exp(- szpft$bsa.mort     )      )
-   szpft$bsa.dimort    = 100. * (1.0 - exp(- szpft$bsa.dimort   )      )
-   szpft$bsa.ncbmort   = 100. * (1.0 - exp(- szpft$bsa.ncbmort  )      )
-   szpft$bsa.recrpft   = 100. * (      exp(  szpft$bsa.recr     ) - 1.0)
+   struct    = c("szpft","emean","mmean","ymean")
+   struct    = struct[struct %in% ls()]
+   nstruct   = length(struct)
+   mort.list = c(    "mort",    "dimort",    "ncbmort",    "hydmort","fire.lethal"
+                 ,"agb.mort","agb.dimort","agb.ncbmort","agb.hydmort"
+                 ,"bsa.mort","bsa.dimort","bsa.ncbmort","bsa.hydmort"
+                 )#end c
+   recr.list = c(    "recr","agb.recr","bsa.recr")
+   for (s in sequence(nstruct)){
+      #----- Copy structure to a temporary variable. --------------------------------------#
+      stnow = struct[s]
+      xmean = get(struct[s])
+      #------------------------------------------------------------------------------------#
+
+
+      #----- Select mortality and recruitment variables to update. ------------------------#
+      mort.check  = mort.list[mort.list %in% names(xmean)]
+      nmort.check = length(mort.check)
+      recr.check  = recr.list[recr.list %in% names(xmean)]
+      nrecr.check = length(recr.check)
+      #------------------------------------------------------------------------------------#
+
+
+      #------------------------------------------------------------------------------------#
+      #     Loop through mortality variables, make them "interest rates".                  #
+      #------------------------------------------------------------------------------------#
+      for (m in sequence(nmort.check)){
+         mort.now = mort.check[m]
+         xmean[[mort.now]] = 100. * ( 1.0 - exp( - xmean[[mort.now]]) )
+      }#end for (m in sequence(nmort.check))
+      #------------------------------------------------------------------------------------#
+
+
+      #------------------------------------------------------------------------------------#
+      #     Loop through recruitment variables, make them "interest rates".                #
+      #------------------------------------------------------------------------------------#
+      for (r in sequence(nrecr.check)){
+         recr.now = recr.check[r]
+         xmean[[recr.now]] = 100. * ( exp( + xmean[[recr.now]] ) - 1.0)
+      }#end for (m in sequence(nmort.check))
+      #------------------------------------------------------------------------------------#
+
+
+      #------ Update structure. -----------------------------------------------------------#
+      dummy = assign(x=stnow,value=xmean)
+      #------------------------------------------------------------------------------------#
+   }#end for (s in seq_along(struct))
    #---------------------------------------------------------------------------------------#
 
 

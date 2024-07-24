@@ -198,10 +198,19 @@ subroutine ed1_fileinfo(text,nfiles,full_list,ntype,type_list,tlon_list,tlat_lis
    select case(text)
    case ('.site')
       okdot = 4
-   case ('.pss','.css','.txt')
+   case ('.sss','.pss','.css','.txt')
       okdot = 3
    case ('.lu')
       okdot = 2
+   case default
+      write (unit=*,fmt='(a)'       ) '----------------------------------------------'
+      write (unit=*,fmt='(a)'       ) '   Unrecognised extension for ED1 file style! '
+      write (unit=*,fmt='(a)'       ) '----------------------------------------------'
+      write (unit=*,fmt='(a,1x,a)'  ) ' TEXT           = ',trim(text)
+      write (unit=*,fmt='(a,1x,i12)') ' NFILES         = ',nfiles
+      write (unit=*,fmt='(a,1x,a)'  ) ' FULL_LIST(1st) = ',trim(full_list(1))
+      write (unit=*,fmt='(a)'       ) '----------------------------------------------'
+      call fatal_error('Invalid file extension','ed1_fileinfo','ed_filelist.F90')
    end select
 
 

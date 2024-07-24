@@ -137,6 +137,9 @@ optim.gbm <<- function( formula
       if (is.null (boot.class)){
          idx         = sample.int(n=n.data,replace=TRUE)
          ixval       = which(! (sequence(n.data) %in% idx))
+      }else if (n.uniq.class == 1L){
+         idx         = sample.int(n=n.data,replace=TRUE)
+         ixval       = which(! (sequence(n.data) %in% idx))
       }else{
          use.class   = lit.sample(x=uniq.class,size=n.uniq.class,replace=TRUE)
          use.sample  = mapply( FUN      = function(x,y) which(y %in% x)
