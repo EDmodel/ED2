@@ -67,7 +67,7 @@ fill.bg <<- function(pch,col,bg="white",dial=0.0){
 
 
    #----- Discard colours for those points without background support. --------------------#
-   rgb.bg  = ifelse(test=pch %>% 20,yes=rgb.bg,no="transparent")
+   rgb.bg  = ifelse(test=pch %gt% 20,yes=rgb.bg,no="transparent")
    #---------------------------------------------------------------------------------------#
 
    return(rgb.bg)

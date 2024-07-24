@@ -633,6 +633,8 @@ module ed_state_vars
       real, pointer, dimension(:) :: wflux_wl
       !<Water flux from wood to leaf [kg H2O/s], corresponding to sapflow in field
       !! measurement
+      real, pointer, dimension(:,:) :: root_frac
+      !< Root fraction, by layer
       !------------------------------------------------------------------------------------!
 
 
@@ -1869,6 +1871,7 @@ module ed_state_vars
       real,pointer,dimension(:)   :: fmean_sfcw_mass       !<TPSL water mass    [    kg/m2]
       real,pointer,dimension(:)   :: fmean_sfcw_temp       !<TPSL temperature   [        K]
       real,pointer,dimension(:)   :: fmean_sfcw_fliq       !<TPSL liquid frac.  [       --]
+      real,pointer,dimension(:)   :: fmean_snowfac         !<TPSL sfc. frac.    [       --]
       real,pointer,dimension(:,:) :: fmean_soil_energy     !<Soil int. energy   [     J/m3]
       real,pointer,dimension(:,:) :: fmean_soil_mstpot     !<Soil matric potl.  [        m]
       real,pointer,dimension(:,:) :: fmean_soil_water      !<Soil water content [    m3/m3]
@@ -1971,6 +1974,7 @@ module ed_state_vars
       real,pointer,dimension(:,:)   :: dmean_soil_water
       real,pointer,dimension(:,:)   :: dmean_soil_temp
       real,pointer,dimension(:,:)   :: dmean_soil_fliq
+      real,pointer,dimension(:)     :: dmean_snowfac
       real,pointer,dimension(:)     :: dmean_rshort_gnd
       real,pointer,dimension(:)     :: dmean_par_gnd
       real,pointer,dimension(:)     :: dmean_rlong_gnd
@@ -2038,6 +2042,7 @@ module ed_state_vars
       real,pointer,dimension(:,:)   :: mmean_soil_water
       real,pointer,dimension(:,:)   :: mmean_soil_temp
       real,pointer,dimension(:,:)   :: mmean_soil_fliq
+      real,pointer,dimension(:)     :: mmean_snowfac
       real,pointer,dimension(:)     :: mmean_rshort_gnd
       real,pointer,dimension(:)     :: mmean_par_gnd
       real,pointer,dimension(:)     :: mmean_rlong_gnd
@@ -2130,6 +2135,7 @@ module ed_state_vars
       real,pointer,dimension(:,:)   :: qmean_sfcw_mass
       real,pointer,dimension(:,:)   :: qmean_sfcw_temp
       real,pointer,dimension(:,:)   :: qmean_sfcw_fliq
+      real,pointer,dimension(:,:)   :: qmean_snowfac
       real,pointer,dimension(:,:,:) :: qmean_soil_energy
       real,pointer,dimension(:,:,:) :: qmean_soil_mstpot
       real,pointer,dimension(:,:,:) :: qmean_soil_water
@@ -2430,7 +2436,8 @@ module ed_state_vars
       !<total fuel in the dry patches
 
       real,pointer, dimension(:,:) :: lambda_fire ! initialized in create_site !(12,nsites)
-      real,pointer,dimension(:,:)  :: avg_monthly_pcpg
+
+      real, pointer,dimension(:,:)  :: avg_monthly_accp
       !<Monthly rainfall [mm/month] for each month over the past 12 months.
 
       type(prescribed_phen),pointer, dimension(:) :: phen_pars
@@ -2979,6 +2986,7 @@ module ed_state_vars
       real,pointer,dimension(:)   :: fmean_sfcw_mass       !<TPSL water mass    [     kg/m2]
       real,pointer,dimension(:)   :: fmean_sfcw_temp       !<TPSL temperature   [         K]
       real,pointer,dimension(:)   :: fmean_sfcw_fliq       !<TPSL liquid frac.  [        --]
+      real,pointer,dimension(:)   :: fmean_snowfac         !<TPSL sfc. frac.    [        --]
       real,pointer,dimension(:,:) :: fmean_soil_energy     !<Soil int. energy   [      J/m3]
       real,pointer,dimension(:,:) :: fmean_soil_mstpot     !<Soil matric potl.  [         m]
       real,pointer,dimension(:,:) :: fmean_soil_water      !<Soil water content [     m3/m3]
@@ -3193,6 +3201,7 @@ module ed_state_vars
       real,pointer,dimension(:)     :: dmean_sfcw_mass
       real,pointer,dimension(:)     :: dmean_sfcw_temp
       real,pointer,dimension(:)     :: dmean_sfcw_fliq
+      real,pointer,dimension(:)     :: dmean_snowfac
       real,pointer,dimension(:,:)   :: dmean_soil_energy
       real,pointer,dimension(:,:)   :: dmean_soil_mstpot
       real,pointer,dimension(:,:)   :: dmean_soil_water
@@ -3341,6 +3350,7 @@ module ed_state_vars
       real,pointer,dimension(:)     :: mmean_sfcw_mass
       real,pointer,dimension(:)     :: mmean_sfcw_temp
       real,pointer,dimension(:)     :: mmean_sfcw_fliq
+      real,pointer,dimension(:)     :: mmean_snowfac
       real,pointer,dimension(:,:)   :: mmean_soil_energy
       real,pointer,dimension(:,:)   :: mmean_soil_mstpot
       real,pointer,dimension(:,:)   :: mmean_soil_water
@@ -3537,6 +3547,7 @@ module ed_state_vars
       real,pointer,dimension(:,:)   :: qmean_sfcw_mass
       real,pointer,dimension(:,:)   :: qmean_sfcw_temp
       real,pointer,dimension(:,:)   :: qmean_sfcw_fliq
+      real,pointer,dimension(:,:)   :: qmean_snowfac
       real,pointer,dimension(:,:,:) :: qmean_soil_energy
       real,pointer,dimension(:,:,:) :: qmean_soil_mstpot
       real,pointer,dimension(:,:,:) :: qmean_soil_water
@@ -4019,6 +4030,7 @@ module ed_state_vars
       allocate(cgrid%fmean_sfcw_mass            (                    npolygons))
       allocate(cgrid%fmean_sfcw_temp            (                    npolygons))
       allocate(cgrid%fmean_sfcw_fliq            (                    npolygons))
+      allocate(cgrid%fmean_snowfac              (                    npolygons))
       allocate(cgrid%fmean_soil_energy          (                nzg,npolygons))
       allocate(cgrid%fmean_soil_mstpot          (                nzg,npolygons))
       allocate(cgrid%fmean_soil_water           (                nzg,npolygons))
@@ -4194,6 +4206,7 @@ module ed_state_vars
          allocate(cgrid%dmean_sfcw_mass         (                     npolygons))
          allocate(cgrid%dmean_sfcw_temp         (                     npolygons))
          allocate(cgrid%dmean_sfcw_fliq         (                     npolygons))
+         allocate(cgrid%dmean_snowfac           (                     npolygons))
          allocate(cgrid%dmean_soil_energy       (                 nzg,npolygons))
          allocate(cgrid%dmean_soil_mstpot       (                 nzg,npolygons))
          allocate(cgrid%dmean_soil_water        (                 nzg,npolygons))
@@ -4390,6 +4403,7 @@ module ed_state_vars
          allocate(cgrid%mmean_sfcw_mass         (                     npolygons)) 
          allocate(cgrid%mmean_sfcw_temp         (                     npolygons)) 
          allocate(cgrid%mmean_sfcw_fliq         (                     npolygons)) 
+         allocate(cgrid%mmean_snowfac           (                     npolygons)) 
          allocate(cgrid%mmean_soil_energy       (                 nzg,npolygons)) 
          allocate(cgrid%mmean_soil_mstpot       (                 nzg,npolygons)) 
          allocate(cgrid%mmean_soil_water        (                 nzg,npolygons)) 
@@ -4595,6 +4609,7 @@ module ed_state_vars
          allocate(cgrid%qmean_sfcw_mass         (             ndcycle,npolygons))
          allocate(cgrid%qmean_sfcw_temp         (             ndcycle,npolygons))
          allocate(cgrid%qmean_sfcw_fliq         (             ndcycle,npolygons))
+         allocate(cgrid%qmean_snowfac           (             ndcycle,npolygons))
          allocate(cgrid%qmean_soil_energy       (     nzg,    ndcycle,npolygons))
          allocate(cgrid%qmean_soil_mstpot       (     nzg,    ndcycle,npolygons))
          allocate(cgrid%qmean_soil_water        (     nzg,    ndcycle,npolygons))
@@ -4772,7 +4787,7 @@ module ed_state_vars
       allocate(cpoly%secondary_harvest_memory      (                          nsites))
       allocate(cpoly%ignition_rate                 (                          nsites))
       allocate(cpoly%lambda_fire                   (                       12,nsites))
-      allocate(cpoly%avg_monthly_pcpg              (                       12,nsites))
+      allocate(cpoly%avg_monthly_accp              (                       12,nsites))
       allocate(cpoly%phen_pars                     (                          nsites))
       allocate(cpoly%disturbance_memory            (n_dist_types,n_dist_types,nsites))
       allocate(cpoly%disturbance_rates             (n_dist_types,n_dist_types,nsites))
@@ -5181,6 +5196,7 @@ module ed_state_vars
       allocate(csite%fmean_sfcw_mass               (              npatches))
       allocate(csite%fmean_sfcw_temp               (              npatches))
       allocate(csite%fmean_sfcw_fliq               (              npatches))
+      allocate(csite%fmean_snowfac                 (              npatches))
       allocate(csite%fmean_soil_energy             (          nzg,npatches))
       allocate(csite%fmean_soil_mstpot             (          nzg,npatches))
       allocate(csite%fmean_soil_water              (          nzg,npatches))
@@ -5256,6 +5272,7 @@ module ed_state_vars
          allocate(csite%dmean_sfcw_mass            (              npatches))
          allocate(csite%dmean_sfcw_temp            (              npatches))
          allocate(csite%dmean_sfcw_fliq            (              npatches))
+         allocate(csite%dmean_snowfac              (              npatches))
          allocate(csite%dmean_soil_energy          (          nzg,npatches))
          allocate(csite%dmean_soil_mstpot          (          nzg,npatches))
          allocate(csite%dmean_soil_water           (          nzg,npatches))
@@ -5349,6 +5366,7 @@ module ed_state_vars
          allocate(csite%mmean_sfcw_mass            (              npatches))
          allocate(csite%mmean_sfcw_temp            (              npatches))
          allocate(csite%mmean_sfcw_fliq            (              npatches))
+         allocate(csite%mmean_snowfac              (              npatches))
          allocate(csite%mmean_soil_energy          (          nzg,npatches))
          allocate(csite%mmean_soil_mstpot          (          nzg,npatches))
          allocate(csite%mmean_soil_water           (          nzg,npatches))
@@ -5446,6 +5464,7 @@ module ed_state_vars
          allocate(csite%qmean_sfcw_mass            (      ndcycle,npatches))
          allocate(csite%qmean_sfcw_temp            (      ndcycle,npatches))
          allocate(csite%qmean_sfcw_fliq            (      ndcycle,npatches))
+         allocate(csite%qmean_snowfac              (      ndcycle,npatches))
          allocate(csite%qmean_soil_energy          (  nzg,ndcycle,npatches))
          allocate(csite%qmean_soil_mstpot          (  nzg,ndcycle,npatches))
          allocate(csite%qmean_soil_water           (  nzg,ndcycle,npatches))
@@ -5714,6 +5733,7 @@ module ed_state_vars
       allocate(cpatch%wflux_gw                     (                    ncohorts))
       allocate(cpatch%wflux_gw_layer               (                nzg,ncohorts))
       allocate(cpatch%wflux_wl                     (                    ncohorts))
+      allocate(cpatch%root_frac                    (                nzg,ncohorts))
 
       allocate(cpatch%high_leaf_psi_days           (                    ncohorts))
       allocate(cpatch%low_leaf_psi_days            (                    ncohorts))
@@ -6349,6 +6369,7 @@ module ed_state_vars
       nullify(cgrid%fmean_sfcw_mass         )
       nullify(cgrid%fmean_sfcw_temp         )
       nullify(cgrid%fmean_sfcw_fliq         )
+      nullify(cgrid%fmean_snowfac           )
       nullify(cgrid%fmean_soil_energy       )
       nullify(cgrid%fmean_soil_mstpot       )
       nullify(cgrid%fmean_soil_water        )
@@ -6516,6 +6537,7 @@ module ed_state_vars
       nullify(cgrid%dmean_sfcw_mass         )
       nullify(cgrid%dmean_sfcw_temp         )
       nullify(cgrid%dmean_sfcw_fliq         )
+      nullify(cgrid%dmean_snowfac           )
       nullify(cgrid%dmean_soil_energy       )
       nullify(cgrid%dmean_soil_mstpot       )
       nullify(cgrid%dmean_soil_water        )
@@ -6701,6 +6723,7 @@ module ed_state_vars
       nullify(cgrid%mmean_sfcw_mass         )
       nullify(cgrid%mmean_sfcw_temp         )
       nullify(cgrid%mmean_sfcw_fliq         )
+      nullify(cgrid%mmean_snowfac           )
       nullify(cgrid%mmean_soil_energy       )
       nullify(cgrid%mmean_soil_mstpot       )
       nullify(cgrid%mmean_soil_water        )
@@ -6895,6 +6918,7 @@ module ed_state_vars
       nullify(cgrid%qmean_sfcw_mass         )
       nullify(cgrid%qmean_sfcw_temp         )
       nullify(cgrid%qmean_sfcw_fliq         )
+      nullify(cgrid%qmean_snowfac           )
       nullify(cgrid%qmean_soil_energy       )
       nullify(cgrid%qmean_soil_mstpot       )
       nullify(cgrid%qmean_soil_water        )
@@ -7047,7 +7071,7 @@ module ed_state_vars
       nullify(cpoly%secondary_harvest_memory   )
       nullify(cpoly%ignition_rate              )
       nullify(cpoly%lambda_fire                )
-      nullify(cpoly%avg_monthly_pcpg           )
+      nullify(cpoly%avg_monthly_accp           )
       nullify(cpoly%phen_pars                  )
       nullify(cpoly%disturbance_memory         )
       nullify(cpoly%disturbance_rates          )
@@ -7408,6 +7432,7 @@ module ed_state_vars
       nullify(csite%fmean_sfcw_mass            )
       nullify(csite%fmean_sfcw_temp            )
       nullify(csite%fmean_sfcw_fliq            )
+      nullify(csite%fmean_snowfac              )
       nullify(csite%fmean_soil_energy          )
       nullify(csite%fmean_soil_mstpot          )
       nullify(csite%fmean_soil_water           )
@@ -7481,6 +7506,7 @@ module ed_state_vars
       nullify(csite%dmean_sfcw_mass            )
       nullify(csite%dmean_sfcw_temp            )
       nullify(csite%dmean_sfcw_fliq            )
+      nullify(csite%dmean_snowfac              )
       nullify(csite%dmean_soil_energy          )
       nullify(csite%dmean_soil_mstpot          )
       nullify(csite%dmean_soil_water           )
@@ -7572,6 +7598,7 @@ module ed_state_vars
       nullify(csite%mmean_sfcw_mass            )
       nullify(csite%mmean_sfcw_temp            )
       nullify(csite%mmean_sfcw_fliq            )
+      nullify(csite%mmean_snowfac              )
       nullify(csite%mmean_soil_energy          )
       nullify(csite%mmean_soil_mstpot          )
       nullify(csite%mmean_soil_water           )
@@ -7667,6 +7694,7 @@ module ed_state_vars
       nullify(csite%qmean_sfcw_mass            )
       nullify(csite%qmean_sfcw_temp            )
       nullify(csite%qmean_sfcw_fliq            )
+      nullify(csite%qmean_snowfac              )
       nullify(csite%qmean_soil_energy          )
       nullify(csite%qmean_soil_mstpot          )
       nullify(csite%qmean_soil_water           )
@@ -7911,6 +7939,7 @@ module ed_state_vars
       nullify(cpatch%wflux_gw                )
       nullify(cpatch%wflux_gw_layer          )
       nullify(cpatch%wflux_wl                )
+      nullify(cpatch%root_frac               )
       nullify(cpatch%high_leaf_psi_days      )
       nullify(cpatch%low_leaf_psi_days       )
 
@@ -8573,6 +8602,7 @@ module ed_state_vars
       if(associated(csite%fmean_sfcw_mass            )) deallocate(csite%fmean_sfcw_mass            )
       if(associated(csite%fmean_sfcw_temp            )) deallocate(csite%fmean_sfcw_temp            )
       if(associated(csite%fmean_sfcw_fliq            )) deallocate(csite%fmean_sfcw_fliq            )
+      if(associated(csite%fmean_snowfac              )) deallocate(csite%fmean_snowfac              )
       if(associated(csite%fmean_soil_energy          )) deallocate(csite%fmean_soil_energy          )
       if(associated(csite%fmean_soil_mstpot          )) deallocate(csite%fmean_soil_mstpot          )
       if(associated(csite%fmean_soil_water           )) deallocate(csite%fmean_soil_water           )
@@ -8646,6 +8676,7 @@ module ed_state_vars
       if(associated(csite%dmean_sfcw_mass            )) deallocate(csite%dmean_sfcw_mass            )
       if(associated(csite%dmean_sfcw_temp            )) deallocate(csite%dmean_sfcw_temp            )
       if(associated(csite%dmean_sfcw_fliq            )) deallocate(csite%dmean_sfcw_fliq            )
+      if(associated(csite%dmean_snowfac              )) deallocate(csite%dmean_snowfac              )
       if(associated(csite%dmean_soil_energy          )) deallocate(csite%dmean_soil_energy          )
       if(associated(csite%dmean_soil_mstpot          )) deallocate(csite%dmean_soil_mstpot          )
       if(associated(csite%dmean_soil_water           )) deallocate(csite%dmean_soil_water           )
@@ -8737,6 +8768,7 @@ module ed_state_vars
       if(associated(csite%mmean_sfcw_mass            )) deallocate(csite%mmean_sfcw_mass            )
       if(associated(csite%mmean_sfcw_temp            )) deallocate(csite%mmean_sfcw_temp            )
       if(associated(csite%mmean_sfcw_fliq            )) deallocate(csite%mmean_sfcw_fliq            )
+      if(associated(csite%mmean_snowfac              )) deallocate(csite%mmean_snowfac              )
       if(associated(csite%mmean_soil_energy          )) deallocate(csite%mmean_soil_energy          )
       if(associated(csite%mmean_soil_mstpot          )) deallocate(csite%mmean_soil_mstpot          )
       if(associated(csite%mmean_soil_water           )) deallocate(csite%mmean_soil_water           )
@@ -8832,6 +8864,7 @@ module ed_state_vars
       if(associated(csite%qmean_sfcw_mass            )) deallocate(csite%qmean_sfcw_mass            )
       if(associated(csite%qmean_sfcw_temp            )) deallocate(csite%qmean_sfcw_temp            )
       if(associated(csite%qmean_sfcw_fliq            )) deallocate(csite%qmean_sfcw_fliq            )
+      if(associated(csite%qmean_snowfac              )) deallocate(csite%qmean_snowfac              )
       if(associated(csite%qmean_soil_energy          )) deallocate(csite%qmean_soil_energy          )
       if(associated(csite%qmean_soil_mstpot          )) deallocate(csite%qmean_soil_mstpot          )
       if(associated(csite%qmean_soil_water           )) deallocate(csite%qmean_soil_water           )
@@ -9081,6 +9114,7 @@ module ed_state_vars
       if(associated(cpatch%wflux_gw                )) deallocate(cpatch%wflux_gw                )
       if(associated(cpatch%wflux_gw_layer          )) deallocate(cpatch%wflux_gw_layer          )
       if(associated(cpatch%wflux_wl                )) deallocate(cpatch%wflux_wl                )
+      if(associated(cpatch%root_frac               )) deallocate(cpatch%root_frac               )
 
       if(associated(cpatch%high_leaf_psi_days      )) deallocate(cpatch%high_leaf_psi_days      )
       if(associated(cpatch%low_leaf_psi_days       )) deallocate(cpatch%low_leaf_psi_days       )
@@ -9759,6 +9793,7 @@ module ed_state_vars
          osite%fmean_sfcw_mass            (opa) = isite%fmean_sfcw_mass            (ipa)
          osite%fmean_sfcw_temp            (opa) = isite%fmean_sfcw_temp            (ipa)
          osite%fmean_sfcw_fliq            (opa) = isite%fmean_sfcw_fliq            (ipa)
+         osite%fmean_snowfac              (opa) = isite%fmean_snowfac              (ipa)
          osite%fmean_rshort_gnd           (opa) = isite%fmean_rshort_gnd           (ipa)
          osite%fmean_par_gnd              (opa) = isite%fmean_par_gnd              (ipa)
          osite%fmean_rlong_gnd            (opa) = isite%fmean_rlong_gnd            (ipa)
@@ -9887,6 +9922,7 @@ module ed_state_vars
             osite%dmean_sfcw_mass      (opa) = isite%dmean_sfcw_mass      (ipa)
             osite%dmean_sfcw_temp      (opa) = isite%dmean_sfcw_temp      (ipa)
             osite%dmean_sfcw_fliq      (opa) = isite%dmean_sfcw_fliq      (ipa)
+            osite%dmean_snowfac        (opa) = isite%dmean_snowfac        (ipa)
             osite%dmean_rshort_gnd     (opa) = isite%dmean_rshort_gnd     (ipa)
             osite%dmean_par_gnd        (opa) = isite%dmean_par_gnd        (ipa)
             osite%dmean_rlong_gnd      (opa) = isite%dmean_rlong_gnd      (ipa)
@@ -9995,6 +10031,7 @@ module ed_state_vars
             osite%mmean_sfcw_mass      (opa) = isite%mmean_sfcw_mass      (ipa)
             osite%mmean_sfcw_temp      (opa) = isite%mmean_sfcw_temp      (ipa)
             osite%mmean_sfcw_fliq      (opa) = isite%mmean_sfcw_fliq      (ipa)
+            osite%mmean_snowfac        (opa) = isite%mmean_snowfac        (ipa)
             osite%mmean_rshort_gnd     (opa) = isite%mmean_rshort_gnd     (ipa)
             osite%mmean_par_gnd        (opa) = isite%mmean_par_gnd        (ipa)
             osite%mmean_rlong_gnd      (opa) = isite%mmean_rlong_gnd      (ipa)
@@ -10108,6 +10145,7 @@ module ed_state_vars
                osite%qmean_sfcw_mass      (n,opa) = isite%qmean_sfcw_mass      (n,ipa)
                osite%qmean_sfcw_temp      (n,opa) = isite%qmean_sfcw_temp      (n,ipa)
                osite%qmean_sfcw_fliq      (n,opa) = isite%qmean_sfcw_fliq      (n,ipa)
+               osite%qmean_snowfac        (n,opa) = isite%qmean_snowfac        (n,ipa)
                osite%qmean_rshort_gnd     (n,opa) = isite%qmean_rshort_gnd     (n,ipa)
                osite%qmean_par_gnd        (n,opa) = isite%qmean_par_gnd        (n,ipa)
                osite%qmean_rlong_gnd      (n,opa) = isite%qmean_rlong_gnd      (n,ipa)
@@ -10601,6 +10639,7 @@ module ed_state_vars
       osite%fmean_sfcw_mass           (1:z) = pack(isite%fmean_sfcw_mass           ,lmask)
       osite%fmean_sfcw_temp           (1:z) = pack(isite%fmean_sfcw_temp           ,lmask)
       osite%fmean_sfcw_fliq           (1:z) = pack(isite%fmean_sfcw_fliq           ,lmask)
+      osite%fmean_snowfac             (1:z) = pack(isite%fmean_snowfac             ,lmask)
       osite%fmean_rshort_gnd          (1:z) = pack(isite%fmean_rshort_gnd          ,lmask)
       osite%fmean_par_gnd             (1:z) = pack(isite%fmean_par_gnd             ,lmask)
       osite%fmean_rlong_gnd           (1:z) = pack(isite%fmean_rlong_gnd           ,lmask)
@@ -10716,6 +10755,7 @@ module ed_state_vars
       osite%dmean_sfcw_mass      (1:z) = pack(isite%dmean_sfcw_mass      (:),lmask)
       osite%dmean_sfcw_temp      (1:z) = pack(isite%dmean_sfcw_temp      (:),lmask)
       osite%dmean_sfcw_fliq      (1:z) = pack(isite%dmean_sfcw_fliq      (:),lmask)
+      osite%dmean_snowfac        (1:z) = pack(isite%dmean_snowfac        (:),lmask)
       osite%dmean_rshort_gnd     (1:z) = pack(isite%dmean_rshort_gnd     (:),lmask)
       osite%dmean_par_gnd        (1:z) = pack(isite%dmean_par_gnd        (:),lmask)
       osite%dmean_rlong_gnd      (1:z) = pack(isite%dmean_rlong_gnd      (:),lmask)
@@ -10851,6 +10891,7 @@ module ed_state_vars
       osite%mmean_sfcw_mass      (1:z) = pack(isite%mmean_sfcw_mass      (:),lmask)
       osite%mmean_sfcw_temp      (1:z) = pack(isite%mmean_sfcw_temp      (:),lmask)
       osite%mmean_sfcw_fliq      (1:z) = pack(isite%mmean_sfcw_fliq      (:),lmask)
+      osite%mmean_snowfac        (1:z) = pack(isite%mmean_snowfac        (:),lmask)
       osite%mmean_rshort_gnd     (1:z) = pack(isite%mmean_rshort_gnd     (:),lmask)
       osite%mmean_par_gnd        (1:z) = pack(isite%mmean_par_gnd        (:),lmask)
       osite%mmean_rlong_gnd      (1:z) = pack(isite%mmean_rlong_gnd      (:),lmask)
@@ -10991,6 +11032,7 @@ module ed_state_vars
          osite%qmean_sfcw_mass      (n,1:z) = pack(isite%qmean_sfcw_mass      (n,:),lmask)
          osite%qmean_sfcw_temp      (n,1:z) = pack(isite%qmean_sfcw_temp      (n,:),lmask)
          osite%qmean_sfcw_fliq      (n,1:z) = pack(isite%qmean_sfcw_fliq      (n,:),lmask)
+         osite%qmean_snowfac        (n,1:z) = pack(isite%qmean_snowfac        (n,:),lmask)
          osite%qmean_rshort_gnd     (n,1:z) = pack(isite%qmean_rshort_gnd     (n,:),lmask)
          osite%qmean_par_gnd        (n,1:z) = pack(isite%qmean_par_gnd        (n,:),lmask)
          osite%qmean_rlong_gnd      (n,1:z) = pack(isite%qmean_rlong_gnd      (n,:),lmask)
@@ -11389,6 +11431,7 @@ module ed_state_vars
 
          !------ Water absorption from each soil layer ------------------------------------!
          do m=1,nzg
+            opatch%root_frac             (m,oco) = ipatch%root_frac             (m,ico)
             opatch%wflux_gw_layer        (m,oco) = ipatch%wflux_gw_layer        (m,ico)
             opatch%fmean_wflux_gw_layer  (m,oco) = ipatch%fmean_wflux_gw_layer  (m,ico)
          end do
@@ -12027,6 +12070,7 @@ module ed_state_vars
 
       !------ Water absorption from each soil layer ---------------------------------------!
       do m=1,nzg
+         opatch%root_frac       (m,1:z) = pack(ipatch%root_frac         (m,:),lmask)
          opatch%wflux_gw_layer  (m,1:z) = pack(ipatch%wflux_gw_layer    (m,:),lmask)
       end do
       !------------------------------------------------------------------------------------!
@@ -12763,6 +12807,7 @@ module ed_state_vars
                               , var_table                & ! intent(inout)
                               , reset_vt_vector_pointers ! ! sub-routine
 #if defined(RAMS_MPI)
+      use mpi
       use ed_node_coms , only : mynum                    & ! intent(in)
                               , nnodetot                 & ! intent(in)
                               , machs                    & ! intent(in)
@@ -12775,10 +12820,6 @@ module ed_state_vars
       use ed_max_dims  , only : maxgrds                  & ! intent(in)
                               , maxmach                  ! ! intent(in)
       implicit none
-
-#if defined(RAMS_MPI)
-      include 'mpif.h'
-#endif
       !----- Local variables. -------------------------------------------------------------!
       type(edtype)                                 , pointer   :: cgrid
       type(polygontype)                            , pointer   :: cpoly
@@ -13089,17 +13130,20 @@ module ed_state_vars
    subroutine filltab_globtype(igr)
 
       use ed_var_tables, only : vtable_edio_r       & ! sub-routine
+                              , vtable_edio_i       & ! sub-routine
                               , vtable_edio_r_sca   & ! sub-rouitne
                               , vtable_edio_i_sca   ! ! sub-rouitne
       use soil_coms    , only : slz                 & ! intent(in)
-                              , slxclay             & ! intent(in)
-                              , slxsand             & ! intent(in)
-                              , slsoc               & ! intent(in)
-                              , slph                & ! intent(in)
-                              , slcec               & ! intent(in)
-                              , sldbd               & ! intent(in)
-                              , isoilflg            & ! intent(in)
+                              , slhydro_ref         & ! intent(in)
+                              , slxclay_ref         & ! intent(in)
+                              , slxsilt_ref         & ! intent(in)
+                              , slxsand_ref         & ! intent(in)
+                              , slsoc_ref           & ! intent(in)
+                              , slph_ref            & ! intent(in)
+                              , slcec_ref           & ! intent(in)
+                              , sldbd_ref           & ! intent(in)
                               , islcolflg           ! ! intent(in)
+      use ed_max_dims  , only : ed_nstyp            ! ! intent(in)
 
 
       implicit none
@@ -13189,14 +13233,6 @@ module ed_state_vars
                             ,'NDCYCLE :90:hist:anal:dail:mont:dcyc:year')
 
       nvar=nvar+1
-      call vtable_edio_i_sca(isoilflg(igr),nvar,igr,0,0                                    &
-                            ,var_len,var_len_global,max_ptrs                               &
-                            ,'ISOILFLG :90:hist:anal:dail:mont:dcyc:year')
-      call vtable_edio_i_sca(isoilflg(igr),nvar,igr,1,0                                    &
-                            ,var_len,var_len_global,max_ptrs                               &
-                            ,'ISOILFLG :90:hist:anal:dail:mont:dcyc:year')
-
-      nvar=nvar+1
       call vtable_edio_i_sca(islcolflg(igr),nvar,igr,0,0                                   &
                             ,var_len,var_len_global,max_ptrs                               &
                             ,'ISLCOLFLG :90:hist:anal:dail:mont:dcyc:year')
@@ -13204,53 +13240,76 @@ module ed_state_vars
                             ,var_len,var_len_global,max_ptrs                               &
                             ,'ISLCOLFLG :90:hist:anal:dail:mont:dcyc:year')
 
-      nvar=nvar+1
-      call vtable_edio_r_sca(slxsand,nvar,igr,0,0                                          &
-                            ,var_len,var_len_global,max_ptrs                               &
-                            ,'SLXSAND :90:hist:anal:dail:mont:dcyc:year')
-      call vtable_edio_r_sca(slxsand,nvar,igr,1,0                                          &
-                            ,var_len,var_len_global,max_ptrs                               &
-                            ,'SLXSAND :90:hist:anal:dail:mont:dcyc:year')
+
+      !------------------------------------------------------------------------------------!
+      !    1-D variables, soil types.                                                      !
+      !------------------------------------------------------------------------------------!
+      var_len        = ed_nstyp
+      var_len_global = ed_nstyp
 
       nvar=nvar+1
-      call vtable_edio_r_sca(slxclay,nvar,igr,0,0                                          &
-                            ,var_len,var_len_global,max_ptrs                               &
-                            ,'SLXCLAY :90:hist:anal:dail:mont:dcyc:year')
-      call vtable_edio_r_sca(slxclay,nvar,igr,1,0                                          &
-                            ,var_len,var_len_global,max_ptrs                               &
-                            ,'SLXCLAY :90:hist:anal:dail:mont:dcyc:year')
+      call vtable_edio_i(ed_nstyp,slhydro_ref,nvar,igr,0,0                                 &
+                        ,var_len,var_len_global,max_ptrs                                   &
+                        ,'SLHYDRO_REF :980:hist:anal:dail:mont:dcyc:year')
+      call vtable_edio_i(ed_nstyp,slhydro_ref,nvar,igr,1,0                                 &
+                        ,var_len,var_len_global,max_ptrs                                   &
+                        ,'SLHYDRO_REF :980:hist:anal:dail:mont:dcyc:year')
 
       nvar=nvar+1
-      call vtable_edio_r_sca(slsoc,nvar,igr,0,0                                            &
-                            ,var_len,var_len_global,max_ptrs                               &
-                            ,'SLSOC   :90:hist:anal:dail:mont:dcyc:year')
-      call vtable_edio_r_sca(slsoc,nvar,igr,1,0                                            &
-                            ,var_len,var_len_global,max_ptrs                               &
-                            ,'SLSOC   :90:hist:anal:dail:mont:dcyc:year')
+      call vtable_edio_r(ed_nstyp,slxsand_ref,nvar,igr,0,0                                 &
+                        ,var_len,var_len_global,max_ptrs                                   &
+                        ,'SLXSAND_REF :98:hist:anal:dail:mont:dcyc:year')
+      call vtable_edio_r(ed_nstyp,slxsand_ref,nvar,igr,1,0                                 &
+                        ,var_len,var_len_global,max_ptrs                                   &
+                        ,'SLXSAND_REF :98:hist:anal:dail:mont:dcyc:year')
 
       nvar=nvar+1
-      call vtable_edio_r_sca(slph,nvar,igr,0,0                                             &
-                            ,var_len,var_len_global,max_ptrs                               &
-                            ,'SLPH    :90:hist:anal:dail:mont:dcyc:year')
-      call vtable_edio_r_sca(slph,nvar,igr,1,0                                             &
-                            ,var_len,var_len_global,max_ptrs                               &
-                            ,'SLPH    :90:hist:anal:dail:mont:dcyc:year')
+      call vtable_edio_r(ed_nstyp,slxsilt_ref,nvar,igr,0,0                                 &
+                        ,var_len,var_len_global,max_ptrs                                   &
+                        ,'SLXSILT_REF :98:hist:anal:dail:mont:dcyc:year')
+      call vtable_edio_r(ed_nstyp,slxsilt_ref,nvar,igr,1,0                                 &
+                        ,var_len,var_len_global,max_ptrs                                   &
+                        ,'SLXSILT_REF :98:hist:anal:dail:mont:dcyc:year')
 
       nvar=nvar+1
-      call vtable_edio_r_sca(slcec,nvar,igr,0,0                                            &
-                            ,var_len,var_len_global,max_ptrs                               &
-                            ,'SLCEC   :90:hist:anal:dail:mont:dcyc:year')
-      call vtable_edio_r_sca(slcec,nvar,igr,1,0                                            &
-                            ,var_len,var_len_global,max_ptrs                               &
-                            ,'SLCEC   :90:hist:anal:dail:mont:dcyc:year')
+      call vtable_edio_r(ed_nstyp,slxclay_ref,nvar,igr,0,0                                 &
+                        ,var_len,var_len_global,max_ptrs                                   &
+                        ,'SLXCLAY_REF :98:hist:anal:dail:mont:dcyc:year')
+      call vtable_edio_r(ed_nstyp,slxclay_ref,nvar,igr,1,0                                 &
+                        ,var_len,var_len_global,max_ptrs                                   &
+                        ,'SLXCLAY_REF :98:hist:anal:dail:mont:dcyc:year')
 
       nvar=nvar+1
-      call vtable_edio_r_sca(sldbd,nvar,igr,0,0                                            &
-                            ,var_len,var_len_global,max_ptrs                               &
-                            ,'SLDBD   :90:hist:anal:dail:mont:dcyc:year')
-      call vtable_edio_r_sca(sldbd,nvar,igr,1,0                                            &
-                            ,var_len,var_len_global,max_ptrs                               &
-                            ,'SLDBD   :90:hist:anal:dail:mont:dcyc:year')
+      call vtable_edio_r(ed_nstyp,slsoc_ref,nvar,igr,0,0                                   &
+                        ,var_len,var_len_global,max_ptrs                                   &
+                        ,'SLSOC_REF   :98:hist:anal:dail:mont:dcyc:year')
+      call vtable_edio_r(ed_nstyp,slsoc_ref,nvar,igr,1,0                                   &
+                        ,var_len,var_len_global,max_ptrs                                   &
+                        ,'SLSOC_REF   :98:hist:anal:dail:mont:dcyc:year')
+
+      nvar=nvar+1
+      call vtable_edio_r(ed_nstyp,slph_ref,nvar,igr,0,0                                    &
+                        ,var_len,var_len_global,max_ptrs                                   &
+                        ,'SLPH_REF    :98:hist:anal:dail:mont:dcyc:year')
+      call vtable_edio_r(ed_nstyp,slph_ref,nvar,igr,1,0                                    &
+                        ,var_len,var_len_global,max_ptrs                                   &
+                        ,'SLPH_REF    :98:hist:anal:dail:mont:dcyc:year')
+
+      nvar=nvar+1
+      call vtable_edio_r(ed_nstyp,slcec_ref,nvar,igr,0,0                                   &
+                        ,var_len,var_len_global,max_ptrs                                   &
+                        ,'SLCEC_REF   :98:hist:anal:dail:mont:dcyc:year')
+      call vtable_edio_r(ed_nstyp,slcec_ref,nvar,igr,1,0                                   &
+                        ,var_len,var_len_global,max_ptrs                                   &
+                        ,'SLCEC_REF   :98:hist:anal:dail:mont:dcyc:year')
+
+      nvar=nvar+1
+      call vtable_edio_r(ed_nstyp,sldbd_ref,nvar,igr,0,0                                   &
+                        ,var_len,var_len_global,max_ptrs                                   &
+                        ,'SLDBD_REF   :98:hist:anal:dail:mont:dcyc:year')
+      call vtable_edio_r(ed_nstyp,sldbd_ref,nvar,igr,1,0                                   &
+                        ,var_len,var_len_global,max_ptrs                                   &
+                        ,'SLDBD_REF   :98:hist:anal:dail:mont:dcyc:year')
 
 
       !------------------------------------------------------------------------------------!
@@ -13262,10 +13321,10 @@ module ed_state_vars
 
 
       nvar=nvar+1
-      call vtable_edio_r(nzg,slz,nvar,igr,0,0                                              &
+      call vtable_edio_r(nzg,slz(1:nzg),nvar,igr,0,0                                       &
                         ,var_len,var_len_global,max_ptrs                                   &
                         ,'SLZ :92:hist:anal:dail:mont:dcyc:year')
-      call vtable_edio_r(nzg,slz,nvar,igr,1,0                                              &
+      call vtable_edio_r(nzg,slz(1:nzg),nvar,igr,1,0                                       &
                         ,var_len,var_len_global,max_ptrs                                   &
                         ,'SLZ :92:hist:anal:dail:mont:dcyc:year')
       !------------------------------------------------------------------------------------!
@@ -14856,6 +14915,15 @@ module ed_state_vars
                            ,'Sub-daily mean - Liquid fraction - temporary water layer'     &
                            ,'[         --]','(ipoly)'            )
       end if
+      if (associated(cgrid%fmean_snowfac         )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%fmean_snowfac                                       &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'FMEAN_SNOWFAC_PY           :11:'//trim(fast_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Sub-daily mean - Snow/flood cover fraction'                   &
+                           ,'[         --]','(ipoly)'            )
+      end if
       if (associated(cgrid%fmean_rshort_gnd      )) then
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_rshort_gnd                                    &
@@ -16344,6 +16412,15 @@ module ed_state_vars
                            ,'Daily mean - Liquid fraction - temporary water layer'         &
                            ,'[         --]','(ipoly)'            )
       end if
+      if (associated(cgrid%dmean_snowfac         )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%dmean_snowfac                                       &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'DMEAN_SNOWFAC_PY           :11:'//trim(dail_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Daily mean - Snow/flood cover fraction'                       &
+                           ,'[         --]','(ipoly)'            )
+      end if
       if (associated(cgrid%dmean_rshort_gnd      )) then
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_rshort_gnd                                    &
@@ -17651,6 +17728,15 @@ module ed_state_vars
                            ,'MMEAN_SFCW_FLIQ_PY         :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Liquid fraction - temporary water layer'       &
+                           ,'[         --]','(ipoly)'            )
+      end if
+      if (associated(cgrid%mmean_snowfac         )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%mmean_snowfac                                       &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'MMEAN_SNOWFAC_PY           :11:'//trim(eorq_keys))
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly mean - Snow/flood cover fraction'                     &
                            ,'[         --]','(ipoly)'            )
       end if
       if (associated(cgrid%mmean_rshort_gnd      )) then
@@ -19526,6 +19612,15 @@ module ed_state_vars
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Liquid fraction - temporary water layer'          &
                            ,'[         --]','(ndcycle,ipoly)'    )
+      end if
+      if (associated(cgrid%qmean_snowfac         )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%qmean_snowfac                                       &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'QMEAN_SNOWFAC_PY          :-11:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Mean diel - Snow/flood cover fraction'                        &
+                           ,'[         --]','(ndcycle,ipoly)'            )
       end if
       if (associated(cgrid%qmean_rshort_gnd      )) then
          nvar = nvar+1
@@ -22910,10 +23005,10 @@ module ed_state_vars
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 
-      if (associated(cpoly%avg_monthly_pcpg)) then
+      if (associated(cpoly%avg_monthly_accp)) then
          nvar=nvar+1
-         call vtable_edio_r(npts,cpoly%avg_monthly_pcpg,nvar,igr,init,cpoly%siglob_id      &
-                           ,var_len,var_len_global,max_ptrs,'AVG_MONTHLY_PCPG :29:hist')     
+         call vtable_edio_r(npts,cpoly%avg_monthly_accp,nvar,igr,init,cpoly%siglob_id      &
+                           ,var_len,var_len_global,max_ptrs,'AVG_MONTHLY_ACCP :29:hist')     
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 
@@ -25133,6 +25228,15 @@ module ed_state_vars
                            ,'Sub-daily mean - Liquid fraction - temporary water layer'     &
                            ,'[         --]','(ipatch)'            )
       end if
+      if (associated(csite%fmean_snowfac         )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,csite%fmean_snowfac                                       &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'FMEAN_SNOWFAC_PA           :31:'//trim(fast_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Sub-daily mean - Snow/flood cover fraction'                   &
+                           ,'[         --]','(ipatch)'            )
+      end if
       if (associated(csite%fmean_rshort_gnd      )) then
          nvar = nvar+1
          call vtable_edio_r(npts,csite%fmean_rshort_gnd                                    &
@@ -25791,6 +25895,15 @@ module ed_state_vars
                            ,'Daily mean - Liquid fraction - temporary water layer'         &
                            ,'[         --]','(ipatch)'            )
       end if
+      if (associated(csite%dmean_snowfac         )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,csite%dmean_snowfac                                       &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'DMEAN_SNOWFAC_PA           :31:'//trim(dail_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Daily mean - Snow/flood cover fraction'                       &
+                           ,'[         --]','(ipatch)'            )
+      end if
       if (associated(csite%dmean_rshort_gnd      )) then
          nvar = nvar+1
          call vtable_edio_r(npts,csite%dmean_rshort_gnd                                    &
@@ -26379,6 +26492,15 @@ module ed_state_vars
                            ,'MMEAN_SFCW_FLIQ_PA         :31:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Liquid fraction - temporary water layer'       &
+                           ,'[         --]','(ipatch)'            )
+      end if
+      if (associated(csite%mmean_snowfac         )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,csite%mmean_snowfac                                       &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'MMEAN_SNOWFAC_PA           :31:'//trim(eorq_keys))
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly mean - Snow/flood cover fraction'                     &
                            ,'[         --]','(ipatch)'            )
       end if
       if (associated(csite%mmean_rshort_gnd      )) then
@@ -27397,6 +27519,15 @@ module ed_state_vars
                            ,'QMEAN_SFCW_FLIQ_PA        :-31:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Liquid fraction - temporary water layer'          &
+                           ,'[         --]','(ndcycle,ipatch)'    )
+      end if
+      if (associated(csite%qmean_snowfac         )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,csite%qmean_snowfac                                       &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'QMEAN_SNOWFAC_PA          :-31:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Mean diel - Snow/flood cover fraction'                        &
                            ,'[         --]','(ndcycle,ipatch)'    )
       end if
       if (associated(csite%qmean_rshort_gnd      )) then
@@ -33620,6 +33751,14 @@ module ed_state_vars
       !  Notice that they all use the same npts.                                           !
       !------------------------------------------------------------------------------------!
       npts = cpatch%ncohorts * nzg
+
+      if (associated(cpatch%root_frac)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cpatch%root_frac                                          &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'ROOT_FRAC :42:hist') 
+         call metadata_edio(nvar,igr,'Fraction of roots by layer','[--]','(nzg,icohort)') 
+      end if
 
       if (associated(cpatch%wflux_gw_layer)) then
          nvar=nvar+1

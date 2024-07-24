@@ -830,9 +830,9 @@ module disturbance
                   ! canopy air temperature.                                                !
                   !------------------------------------------------------------------------!
                   call update_patch_thermo_props(csite,onsp+new_lu,onsp+new_lu,nzg,nzs     &
-                                                ,cpoly%ntext_soil(:,isi))
+                                                ,cpoly%lsl(isi),cpoly%ntext_soil(:,isi))
                   call update_patch_thermo_fmean(csite,onsp+new_lu,onsp+new_lu,nzg         &
-                                                ,cpoly%ntext_soil(:,isi))
+                                                ,cpoly%lsl(isi),cpoly%ntext_soil(:,isi))
                   !------------------------------------------------------------------------!
 
 
@@ -1563,7 +1563,7 @@ module disturbance
                !---------------------------------------------------------------------------!
             case default
                !------ Read anthropogenic disturbance from external data set. -------------!
-               if (clutime%landuse(12) < 0 .or. clutime%landuse(14) < 0) then
+               if (clutime%landuse(12) < 0. .or. clutime%landuse(14) < 0.) then
                   find_target                         = .true.
                   cpoly%primary_harvest_target  (isi) = 0.
                   cpoly%secondary_harvest_target(isi) = 0.
@@ -2265,6 +2265,9 @@ module disturbance
       csite%fmean_sfcw_mass      (np) = csite%fmean_sfcw_mass      (np)                    &
                                       + csite%fmean_sfcw_mass      (cp)                    &
                                       * area_fac
+      csite%fmean_snowfac        (np) = csite%fmean_snowfac        (np)                    &
+                                      + csite%fmean_snowfac        (cp)                    &
+                                      * area_fac
       csite%fmean_rshort_gnd     (np) = csite%fmean_rshort_gnd     (np)                    &
                                       + csite%fmean_rshort_gnd     (cp)                    &
                                       * area_fac
@@ -2486,6 +2489,9 @@ module disturbance
                                              * area_fac
          csite%dmean_sfcw_fliq      (    np) = csite%dmean_sfcw_fliq      (    np)         &
                                              + csite%dmean_sfcw_fliq      (    cp)         &
+                                             * area_fac
+         csite%dmean_snowfac        (    np) = csite%dmean_snowfac        (    np)         &
+                                             + csite%dmean_snowfac        (    cp)         &
                                              * area_fac
          csite%dmean_rshort_gnd     (    np) = csite%dmean_rshort_gnd     (    np)         &
                                              + csite%dmean_rshort_gnd     (    cp)         &
@@ -2769,6 +2775,9 @@ module disturbance
                                              * area_fac
          csite%mmean_sfcw_fliq      (    np) = csite%mmean_sfcw_fliq      (    np)         &
                                              + csite%mmean_sfcw_fliq      (    cp)         &
+                                             * area_fac
+         csite%mmean_snowfac        (    np) = csite%mmean_snowfac        (    np)         &
+                                             + csite%mmean_snowfac        (    cp)         &
                                              * area_fac
          csite%mmean_rshort_gnd     (    np) = csite%mmean_rshort_gnd     (    np)         &
                                              + csite%mmean_rshort_gnd     (    cp)         &
@@ -3064,6 +3073,9 @@ module disturbance
                                              * area_fac
          csite%qmean_sfcw_fliq      (  :,np) = csite%qmean_sfcw_fliq      (  :,np)         &
                                              + csite%qmean_sfcw_fliq      (  :,cp)         &
+                                             * area_fac
+         csite%qmean_snowfac        (  :,np) = csite%qmean_snowfac        (  :,np)         &
+                                             + csite%qmean_snowfac        (  :,cp)         &
                                              * area_fac
          csite%qmean_soil_energy    (:,:,np) = csite%qmean_soil_energy    (:,:,np)         &
                                              + csite%qmean_soil_energy    (:,:,cp)         &
@@ -4098,7 +4110,8 @@ module disturbance
                                 , h2dbh                    & ! function
                                 , size2bl                  & ! function
                                 , size2bd                  & ! function
-                                , size2krdepth             ! ! function
+                                , size2krdepth             & ! function
+                                , distrib_root             ! ! subroutine
       use pft_coms,        only : qsw                      & ! intent(in)
                                 , qbark                    & ! intent(in)
                                 , agf_bs                   & ! intent(in)
@@ -4222,6 +4235,13 @@ module disturbance
             !----- Update rooting depth ---------------------------------------------------!
             cpatch%krdepth(ico) = size2krdepth(cpatch%hite(ico),cpatch%dbh(ico),ipft,lsl)
             !if new root depth is smaller keep the old one
+            !------------------------------------------------------------------------------!
+
+
+            !----- Update the vertical distribution of roots. -----------------------------!
+            call distrib_root(cpatch%krdepth(ico),ipft,cpatch%root_frac(:,ico))
+            !------------------------------------------------------------------------------!
+
 
             !------------------------------------------------------------------------------!
             !     It is likely that biomass has changed, therefore, update                 !

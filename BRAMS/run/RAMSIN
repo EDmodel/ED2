@@ -1552,14 +1552,17 @@ $MODEL_OPTIONS
       ! ISOILBC -- This controls the soil moisture boundary condition at the bottom.       !
       !            For regional runs, it is wise to use options 1 or 2, especially for     !
       !            long runs.                                                              !
-      !            0.  Flat bedrock.  Flux from the bottom of the bottommost layer is 0.   !
-      !            1.  Gravitational flow (free drainage).  The flux from the bottom of    !
+      !            -1. Hybrid. If the depth to bedrock is shorter than the deepest layer,  !
+      !                use flat bedrock, otherwise assume free drainage. This option is    !
+      !                morerelevant when initialising ED2 with multiple sites per polygon. !
+      !             0. Flat bedrock.  Zero flux from the bottom of the bottommost layer.   !
+      !             1. Gravitational flow (free drainage).  The flux from the bottom of    !
       !                the bottommost layer is due to gradient of height only.             !
-      !            2.  Lateral drainage.  Similar to free drainage, but the gradient is    !
+      !             2. Lateral drainage.  Similar to free drainage, but the gradient is    !
       !                reduced by the slope not being completely vertical.  The reduction  !
       !                is controlled by variable SLDRAIN.  In the future options 0, 1, and !
       !                2 may be combined into a single option.                             !
-      !            3.  Aquifer.  Soil moisture of the ficticious layer beneath the bottom  !
+      !             3. Aquifer.  Soil moisture of the ficticious layer beneath the bottom  !
       !                is always at saturation.                                            !
       !------------------------------------------------------------------------------------!
       ISOILBC  =   1,
@@ -2050,7 +2053,7 @@ $ED2_INFO
    !        /mypath/P1000-S-1687-01-01-000000-g01.h5:                                      !
    !        SFILIN = '/mypath/P'                                                           !
    !                                                                                       !
-   !    6 - Initialize with ED-2 style files without multiple sites, exactly like option   !
+   !    6.  Initialize with ED-2 style files without multiple sites, similar to option     !
    !        2, except that the PFT types are preserved.                                    !
    !                                                                                       !
    !    7.  Initialize from a list of both POI and gridded ED2.1 state files, organized    !
@@ -2058,6 +2061,10 @@ $ED2_INFO
    !        takes the soil texture and soil moisture information from the initializing     !
    !        ED2.1 state file.  It allows for different layering, and assigns via nearest   !
    !        neighbor.                                                                      !
+   !                                                                                       !
+   !    8.  Initialise ED-2.2 style files with multiple sites that may vary in soil depth, !
+   !        texture, and other properties (e.g., colour, pH, cation exchange capacity) but !
+   !        without forcing TOPMODEL.                                                      !
    !---------------------------------------------------------------------------------------!
    IED_INIT_MODE   = 5,
    !---------------------------------------------------------------------------------------!
@@ -2365,13 +2372,19 @@ $ED2_INFO
    !                  a few genera in Costa Rica.  References:                             !
    !                  Cole and Ewel (2006, Forest Ecol. Manag.), and Calvo-Alvarado et al. !
    !                  (2008, Tree Physiol.).                                               !
-   !           3. (Beta) Updated allometric for tropical PFTs based on data from           !
-   !              Sustainable Landscapes Brazil (Height and crown area), Chave et al.      !
-   !              (2014, Glob. Change Biol.) (biomass) and the BAAD data base, Falster et  !
-   !               al. (2015, Ecology) (leaf area).  Both leaf and structural biomass take !
-   !               DBH and Height as dependent variables, and DBH-Height takes a simpler   !
-   !               log-linear form fitted using SMA so it can be inverted (useful for      !
-   !               airborne lidar initialisation).                                         !
+   !           3. (Beta) Revised tropical PFT allometric (Longo et al. 2020, JGR-B).       !
+   !              a. Height -> DBH and DBH^2*H -> CA. Model fitting using the Sustainable  !
+   !                 Landscapes Dataset (Longo et al. 2016, Glob. Biogeochem. Cycles).     !
+   !                 DBH-Height takes a simpler log-linear form fitted using SMA so it can !
+   !                 be inverted (useful for airborne lidar initialisation).               !
+   !              b. DBH^2*H -> AGB. Based on Chave et al. (2014, Glob. Change Biol.)      !
+   !              c. DBH^2*H -> Leaf area based on the BAAD data base:                     !
+   !                 Falster et al. (2015, Ecology).                                       !
+   !           4. (Under Development) Similar to 3 but (a) leaf and height allometric      !
+   !               equations depend on wood density; (b) use height-based root allometry   !
+   !               from Smith-Martin et al. (2020, New Phyt.).                             !
+   !           5. (Under Development) Similar to IALLOM = 3 but using the rooting          !
+   !              allometry from IALLOM = 4.                                               !
    !---------------------------------------------------------------------------------------!
    IALLOM          = 3,
    !---------------------------------------------------------------------------------------!
