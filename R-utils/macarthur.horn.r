@@ -64,15 +64,15 @@ macarthur.horn <<- function( pt.cloud
    #      Make sure the settings make sense.                                               #
    #---------------------------------------------------------------------------------------#
    #----- Check additional values. --------------------------------------------------------#
-   if (! ( zh  %>%  0                                                              &&
-           nz  %>%  0                                                              &&
-           zh  %>%  zo                                                             &&
-           zo  %>=% 0                                                              &&
-           ( is.na(rvorg) || rvorg %>% 0 )                                         &&
-           ( out.lai %>% 0 )                                                       &&
+   if (! ( zh  %gt%  0                                                             &&
+           nz  %gt%  0                                                             &&
+           zh  %gt%  zo                                                            &&
+           zo  %ge% 0                                                              &&
+           ( is.na(rvorg) || rvorg %gt% 0 )                                        &&
+           ( out.lai %gt% 0 )                                                      &&
            ( is.logical(tall.at.zh)      )                                         &&
-           ( (sigma.z %>% 0) || (! wfsim) )                                        &&
-           Gmu %>%0
+           ( (sigma.z %gt% 0) || (! wfsim) )                                       &&
+           Gmu %gt%0
          ) ){
       cat0("------------------------------------------------------------------")
       cat0(" MacArthur and Horn won't run due to problems with your settings:" )
@@ -191,12 +191,12 @@ macarthur.horn <<- function( pt.cloud
 
 
    #----- Assume that everything with height zero is ground. ------------------------------#
-   pt.cloud$pt.class[pt.cloud$z %<=% 0] = 2
+   pt.cloud$pt.class[pt.cloud$z %le% 0] = 2
    #---------------------------------------------------------------------------------------#
 
 
    #----- Keep only the points that are within bounds. ------------------------------------#
-   keep     = pt.cloud$z %>=% 0 & pt.cloud$z %<% zh & pt.cloud$pt.class %in% c(0,1,2,3,4,5)
+   keep     = pt.cloud$z %ge% 0 & pt.cloud$z %lt% zh & pt.cloud$pt.class %in% c(0,1,2,3,4,5)
    pt.cloud = pt.cloud[keep,,drop=FALSE]
    #---------------------------------------------------------------------------------------#
 
@@ -460,7 +460,7 @@ macarthur.horn <<- function( pt.cloud
 
    }else{
       #----- Create a pseudo-point cloud with the MH-corrected distribution. --------------#
-      nzmah = ceiling(3.*Rv0/min(veg.cloud$intensity[veg.cloud$intensity %>% 0]))
+      nzmah = ceiling(3.*Rv0/min(veg.cloud$intensity[veg.cloud$intensity %gt% 0]))
       zmah  = jitter(x= sample(x=zmid,size=nzmah,replace=TRUE,prob=lad),amount=0.5*deltaz)
       #------------------------------------------------------------------------------------#
 

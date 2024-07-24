@@ -327,21 +327,21 @@ pretty.elapsed <<- function(x,base,n=5,...){
    #---------------------------------------------------------------------------------------#
    #      Re-scale data based on the pretty limits.                                        #
    #---------------------------------------------------------------------------------------#
-   if (diff.base %<=% 0.075 || diff.base %>=% 0.75){
+   if (diff.base %le% 0.075 || diff.base %ge% 0.75){
       dbase = diff.base * base
-   }else if (diff.base %<% 0.15){
+   }else if (diff.base %lt% 0.15){
       if (base == 30){
          dbase = base / 15
       }else{
          dbase = base / 12
       }#end if (base == 30)
-   }else if (diff.base %<% 0.35){
+   }else if (diff.base %lt% 0.35){
       if (base == 30){
          dbase = base / 6
       }else{
          dbase = base / 4
       }#end if (base == 30)
-   }else if (diff.base %<% 0.50){
+   }else if (diff.base %lt% 0.50){
       dbase = base / 3
    }else{
       dbase = base / 2

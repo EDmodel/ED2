@@ -12800,6 +12800,7 @@ module ed_state_vars
                               , var_table                & ! intent(inout)
                               , reset_vt_vector_pointers ! ! sub-routine
 #if defined(RAMS_MPI)
+      use mpi
       use ed_node_coms , only : mynum                    & ! intent(in)
                               , nnodetot                 & ! intent(in)
                               , machs                    & ! intent(in)
@@ -12812,10 +12813,6 @@ module ed_state_vars
       use ed_max_dims  , only : maxgrds                  & ! intent(in)
                               , maxmach                  ! ! intent(in)
       implicit none
-
-#if defined(RAMS_MPI)
-      include 'mpif.h'
-#endif
       !----- Local variables. -------------------------------------------------------------!
       type(edtype)                                 , pointer   :: cgrid
       type(polygontype)                            , pointer   :: cpoly

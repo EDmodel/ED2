@@ -47,19 +47,14 @@ epolygon <<- function(x, y = NULL, density = NULL, angle = 45, border = NULL
          if (end > start) {
             den = density[i]
             if (is.na(den) || den < 0){
-               if (R.Version()$major == "3"){
-                  polygon( x       = xy$x[start:(end - 1)]
-                         , y       = xy$y[start:(end - 1)]
-                         , col     = col[i]
-                         , border  = NA
-                         , density = den
-                         , lty     = lty[i]
-                         , ...
-                         )#end polygon
-               }else{
-                  .Internal(polygon( xy$x[start:(end - 1)]
-                                   , xy$y[start:(end - 1)], col[i], NA, lty[i], ...))
-               }#end if
+               polygon( x       = xy$x[start:(end - 1)]
+                      , y       = xy$y[start:(end - 1)]
+                      , col     = col[i]
+                      , border  = NA
+                      , density = den
+                      , lty     = lty[i]
+                      , ...
+                      )#end polygon
             }else if (den > 0) {
                epolygon.fullhatch( x           = xy$x[start:(end - 1)]
                                  , y           = xy$y[start:(end - 1)]
@@ -77,18 +72,16 @@ epolygon <<- function(x, y = NULL, density = NULL, angle = 45, border = NULL
          }#end if
          start = end + 1
       }#end for
-      if (R.Version()$major == "3"){
-         polygon( x       = xy$x
-                , y       = xy$y
-                , density = 0
-                , col     = NA
-                , border  = border
-                , lty     = lty
-                , ...
-                )#end polygon
-      }else{
-         .Internal(polygon(xy$x, xy$y, NA, border, lty, ...))
-      }#end if
+
+      polygon( x       = xy$x
+             , y       = xy$y
+             , density = 0
+             , col     = NA
+             , border  = border
+             , lty     = lty
+             , ...
+             )#end polygon
+
    }else{
       if (is.logical(border)) {
          if (!is.na(border) && border){
@@ -98,18 +91,15 @@ epolygon <<- function(x, y = NULL, density = NULL, angle = 45, border = NULL
          }#end if
       }#end if
       
-      if (R.Version()$major == "3"){
-         polygon( x       = xy$x
-                , y       = xy$y
-                , density = NULL
-                , col     = col
-                , border  = border
-                , lty     = lty
-                , ...
-                )#end polygon
-      }else{
-         .Internal(polygon(xy$x, xy$y, col, border, lty, ...))
-      }#end if
+      polygon( x       = xy$x
+             , y       = xy$y
+             , density = NULL
+             , col     = col
+             , border  = border
+             , lty     = lty
+             , ...
+             )#end polygon
+
    }#end if
 }#end function
 #==========================================================================================#
