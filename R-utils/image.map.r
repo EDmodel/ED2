@@ -506,8 +506,8 @@ image.map <<- function( x
          zzz     = tapply(X=zzz,INDEX=iii,FUN=mean,na.rm=TRUE)
          sss     = tapply(X=sss,INDEX=iii,FUN=any ,na.rm=TRUE)
          #----- Generate output mesh. -----------------------------------------------------#
-         if (! (nx.interp %>% 0)) nx.interp = 10*length(unique(xx))
-         if (! (ny.interp %>% 0)) ny.interp = 10*length(unique(yy))
+         if (! (nx.interp %gt% 0)) nx.interp = 10*length(unique(xx))
+         if (! (ny.interp %gt% 0)) ny.interp = 10*length(unique(yy))
          xo        = seq(from=0,to=1,length.out=nx.interp)
          yo        = seq(from=0,to=1,length.out=ny.interp)
          xoyo      = expand.grid(xo,yo)

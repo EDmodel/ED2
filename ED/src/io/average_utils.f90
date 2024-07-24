@@ -493,6 +493,9 @@ module average_utils
                cgrid%fmean_sfcw_mass      (ipy) = cgrid%fmean_sfcw_mass      (ipy)         &
                                                 + csite%fmean_sfcw_mass      (ipa)         &
                                                 * patch_wgt
+               cgrid%fmean_snowfac        (ipy) = cgrid%fmean_snowfac        (ipy)         &
+                                                + csite%fmean_snowfac        (ipa)         &
+                                                * patch_wgt
                cgrid%fmean_rshort_gnd     (ipy) = cgrid%fmean_rshort_gnd     (ipy)         &
                                                 + csite%fmean_rshort_gnd     (ipa)         &
                                                 * patch_wgt
@@ -1425,11 +1428,13 @@ module average_utils
          cgrid%fmean_sfcw_mass         (  ipy) = 0.0
          cgrid%fmean_sfcw_temp         (  ipy) = 0.0
          cgrid%fmean_sfcw_fliq         (  ipy) = 0.0
+         cgrid%fmean_snowfac           (  ipy) = 0.0
          cgrid%fmean_soil_energy       (:,ipy) = 0.0
          cgrid%fmean_soil_mstpot       (:,ipy) = 0.0
          cgrid%fmean_soil_water        (:,ipy) = 0.0
          cgrid%fmean_soil_temp         (:,ipy) = 0.0
          cgrid%fmean_soil_fliq         (:,ipy) = 0.0
+         cgrid%fmean_snowfac           (  ipy) = 0.0
          cgrid%fmean_rshort_gnd        (  ipy) = 0.0
          cgrid%fmean_par_gnd           (  ipy) = 0.0
          cgrid%fmean_rlong_gnd         (  ipy) = 0.0
@@ -1574,6 +1579,7 @@ module average_utils
                csite%fmean_sfcw_mass      (  ipa) = 0.0
                csite%fmean_sfcw_temp      (  ipa) = 0.0
                csite%fmean_sfcw_fliq      (  ipa) = 0.0
+               csite%fmean_snowfac        (  ipa) = 0.0
                csite%fmean_soil_energy    (:,ipa) = 0.0
                csite%fmean_soil_mstpot    (:,ipa) = 0.0
                csite%fmean_soil_water     (:,ipa) = 0.0
@@ -2059,6 +2065,9 @@ module average_utils
          cgrid%dmean_sfcw_mass      (ipy) = cgrid%dmean_sfcw_mass      (ipy)               &
                                           + cgrid%fmean_sfcw_mass      (ipy)               &
                                           * frqsum_o_daysec
+         cgrid%dmean_snowfac        (ipy) = cgrid%dmean_snowfac        (ipy)               &
+                                          + cgrid%fmean_snowfac        (ipy)               &
+                                          * frqsum_o_daysec
          cgrid%dmean_rshort_gnd     (ipy) = cgrid%dmean_rshort_gnd     (ipy)               &
                                           + cgrid%fmean_rshort_gnd     (ipy)               &
                                           * frqsum_o_daysec
@@ -2362,6 +2371,9 @@ module average_utils
                                                    * frqsum_o_daysec
                csite%dmean_sfcw_mass         (ipa) = csite%dmean_sfcw_mass         (ipa)   &
                                                    + csite%fmean_sfcw_mass         (ipa)   &
+                                                   * frqsum_o_daysec
+               csite%dmean_snowfac           (ipa) = csite%dmean_snowfac           (ipa)   &
+                                                   + csite%fmean_snowfac           (ipa)   &
                                                    * frqsum_o_daysec
                csite%dmean_rshort_gnd        (ipa) = csite%dmean_rshort_gnd        (ipa)   &
                                                    + csite%fmean_rshort_gnd        (ipa)   &
@@ -2812,10 +2824,11 @@ module average_utils
 
    !=======================================================================================!
    !=======================================================================================!
-   !  SUBROUTINE: NORMALIZE_ED_TODAYNPP_VARS
-   !> \brief This subroutine will scale the daily NPP allocation terms
+   !  SUBROUTINE: COPY_TODAY_TO_DMEAN_VARS
+   !> \brief This subroutine scales the daily NPP allocation terms and transfer today 
+   !! variables to dmean.
    !---------------------------------------------------------------------------------------!
-   subroutine normalize_ed_todayNPP_vars(cgrid)
+   subroutine copy_today_to_dmean_vars(cgrid)
       use ed_state_vars , only : edtype        & ! structure
                                , polygontype   & ! structure
                                , sitetype      & ! structure
@@ -2833,47 +2846,70 @@ module average_utils
       integer                                                    :: isi
       integer                                                    :: ipa
       integer                                                    :: ico
+      !------------------------------------------------------------------------------------!
 
+
+      !------ Skip sub-routine and do nothing in case we are not writing daily averages. --!
+      if (.not. writing_long) return
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !     Loop through polygons.                                                         !
+      !------------------------------------------------------------------------------------!
       polyloop: do ipy=1,cgrid%npolygons
          cpoly => cgrid%polygon(ipy)
+
+         !---------------------------------------------------------------------------------!
+         !     Loop through sites.                                                         !
+         !---------------------------------------------------------------------------------!
          siteloop: do isi=1,cpoly%nsites
             csite => cpoly%site(isi)
-            patchloop: do ipa=1,csite%npatches
 
+            !------------------------------------------------------------------------------!
+            !     Loop through patches.                                                    !
+            !------------------------------------------------------------------------------!
+            patchloop: do ipa=1,csite%npatches
                cpatch => csite%patch(ipa)
-               
-               !----- Included a loop so it won't crash with empty cohorts... -------------!
+
+               !---------------------------------------------------------------------------!
+               !     Loop through cohorts. This must be a loop, so it won't crash with     !
+               ! empty patches.                                                            !
+               !---------------------------------------------------------------------------!
                cohortloop: do ico=1,cpatch%ncohorts
 
                   !------------------------------------------------------------------------!
                   !    We now update the daily means of NPP allocation terms               !
                   ! and we convert them to kgC/plant/yr                                    !
                   !------------------------------------------------------------------------!
-                  if (writing_long) then
-                     cpatch%dmean_nppleaf   (ico) = cpatch%today_nppleaf   (ico)           &
-                                                  * yr_day / cpatch%nplant (ico)
-                     cpatch%dmean_nppfroot  (ico) = cpatch%today_nppfroot  (ico)           &
-                                                  * yr_day / cpatch%nplant (ico)
-                     cpatch%dmean_nppsapwood(ico) = cpatch%today_nppsapwood(ico)           &
-                                                  * yr_day / cpatch%nplant (ico)
-                     cpatch%dmean_nppbark   (ico) = cpatch%today_nppbark   (ico)           &
-                                                  * yr_day / cpatch%nplant (ico)
-                     cpatch%dmean_nppcroot  (ico) = cpatch%today_nppcroot  (ico)           &
-                                                  * yr_day / cpatch%nplant (ico)
-                     cpatch%dmean_nppseeds  (ico) = cpatch%today_nppseeds  (ico)           &
-                                                  * yr_day / cpatch%nplant (ico)
-                     cpatch%dmean_nppwood   (ico) = cpatch%today_nppwood   (ico)           &
-                                                  * yr_day / cpatch%nplant (ico)
-                     cpatch%dmean_nppdaily  (ico) = cpatch%today_nppdaily  (ico)           &
-                                                  * yr_day / cpatch%nplant (ico)
-                  end if
+                  cpatch%dmean_nppleaf   (ico) = cpatch%today_nppleaf   (ico)              &
+                                               * yr_day / cpatch%nplant (ico)
+                  cpatch%dmean_nppfroot  (ico) = cpatch%today_nppfroot  (ico)              &
+                                               * yr_day / cpatch%nplant (ico)
+                  cpatch%dmean_nppsapwood(ico) = cpatch%today_nppsapwood(ico)              &
+                                               * yr_day / cpatch%nplant (ico)
+                  cpatch%dmean_nppbark   (ico) = cpatch%today_nppbark   (ico)              &
+                                               * yr_day / cpatch%nplant (ico)
+                  cpatch%dmean_nppcroot  (ico) = cpatch%today_nppcroot  (ico)              &
+                                               * yr_day / cpatch%nplant (ico)
+                  cpatch%dmean_nppseeds  (ico) = cpatch%today_nppseeds  (ico)              &
+                                               * yr_day / cpatch%nplant (ico)
+                  cpatch%dmean_nppwood   (ico) = cpatch%today_nppwood   (ico)              &
+                                               * yr_day / cpatch%nplant (ico)
+                  cpatch%dmean_nppdaily  (ico) = cpatch%today_nppdaily  (ico)              &
+                                               * yr_day / cpatch%nplant (ico)
+                  !------------------------------------------------------------------------!
                end do cohortloop
+               !---------------------------------------------------------------------------!
             end do patchloop
+            !------------------------------------------------------------------------------!
          end do siteloop
+         !---------------------------------------------------------------------------------!
       end do polyloop
+      !------------------------------------------------------------------------------------!
 
       return
-   end subroutine normalize_ed_todayNPP_vars
+   end subroutine copy_today_to_dmean_vars
    !=======================================================================================!
    !=======================================================================================!
 
@@ -3702,6 +3738,7 @@ module average_utils
          cgrid%dmean_sfcw_mass          (ipy) = 0.0
          cgrid%dmean_sfcw_temp          (ipy) = 0.0
          cgrid%dmean_sfcw_fliq          (ipy) = 0.0
+         cgrid%dmean_snowfac            (ipy) = 0.0
          cgrid%dmean_soil_energy      (:,ipy) = 0.0
          cgrid%dmean_soil_mstpot      (:,ipy) = 0.0
          cgrid%dmean_soil_water       (:,ipy) = 0.0
@@ -3824,6 +3861,7 @@ module average_utils
                csite%dmean_sfcw_mass        (ipa) = 0.0
                csite%dmean_sfcw_temp        (ipa) = 0.0
                csite%dmean_sfcw_fliq        (ipa) = 0.0
+               csite%dmean_snowfac          (ipa) = 0.0
                csite%dmean_soil_energy    (:,ipa) = 0.0
                csite%dmean_soil_mstpot    (:,ipa) = 0.0
                csite%dmean_soil_water     (:,ipa) = 0.0
@@ -4426,6 +4464,9 @@ module average_utils
          cgrid%mmean_sfcw_mass        (ipy) = cgrid%mmean_sfcw_mass        (ipy)           &
                                             + cgrid%dmean_sfcw_mass        (ipy)           &
                                             * ndaysi
+         cgrid%mmean_snowfac          (ipy) = cgrid%mmean_snowfac          (ipy)           &
+                                            + cgrid%dmean_snowfac          (ipy)           &
+                                            * ndaysi
          cgrid%mmean_soil_energy    (:,ipy) = cgrid%mmean_soil_energy    (:,ipy)           &
                                             + cgrid%dmean_soil_energy    (:,ipy)           &
                                             * ndaysi
@@ -4950,6 +4991,9 @@ module average_utils
                                                   * ndaysi
                csite%mmean_sfcw_mass        (ipa) = csite%mmean_sfcw_mass        (ipa)     &
                                                   + csite%dmean_sfcw_mass        (ipa)     &
+                                                  * ndaysi
+               csite%mmean_snowfac          (ipa) = csite%mmean_snowfac          (ipa)     &
+                                                  + csite%dmean_snowfac          (ipa)     &
                                                   * ndaysi
                csite%mmean_soil_energy    (:,ipa) = csite%mmean_soil_energy    (:,ipa)     &
                                                   + csite%dmean_soil_energy    (:,ipa)     &
@@ -6086,6 +6130,7 @@ module average_utils
          cgrid%mmean_sfcw_mass            (ipy) = 0.0
          cgrid%mmean_sfcw_temp            (ipy) = 0.0
          cgrid%mmean_sfcw_fliq            (ipy) = 0.0
+         cgrid%mmean_snowfac              (ipy) = 0.0
          cgrid%mmean_soil_energy        (:,ipy) = 0.0
          cgrid%mmean_soil_mstpot        (:,ipy) = 0.0
          cgrid%mmean_soil_water         (:,ipy) = 0.0
@@ -6274,6 +6319,7 @@ module average_utils
                csite%mmean_sfcw_mass        (ipa) = 0.0
                csite%mmean_sfcw_temp        (ipa) = 0.0
                csite%mmean_sfcw_fliq        (ipa) = 0.0
+               csite%mmean_snowfac          (ipa) = 0.0
                csite%mmean_soil_energy    (:,ipa) = 0.0
                csite%mmean_soil_mstpot    (:,ipa) = 0.0
                csite%mmean_soil_water     (:,ipa) = 0.0
@@ -6838,6 +6884,9 @@ module average_utils
          cgrid%qmean_sfcw_mass        (t,ipy) = cgrid%qmean_sfcw_mass        (t,ipy)       &
                                               + cgrid%fmean_sfcw_mass          (ipy)       &
                                               * ndaysi
+         cgrid%qmean_snowfac          (t,ipy) = cgrid%qmean_snowfac          (t,ipy)       &
+                                              + cgrid%fmean_snowfac            (ipy)       &
+                                              * ndaysi
          cgrid%qmean_soil_energy    (:,t,ipy) = cgrid%qmean_soil_energy    (:,t,ipy)       &
                                               + cgrid%fmean_soil_energy      (:,ipy)       &
                                               * ndaysi
@@ -7229,6 +7278,9 @@ module average_utils
                                                     * ndaysi
                csite%qmean_sfcw_mass        (t,ipa) = csite%qmean_sfcw_mass        (t,ipa) &
                                                     + csite%fmean_sfcw_mass          (ipa) &
+                                                    * ndaysi
+               csite%qmean_snowfac          (t,ipa) = csite%qmean_snowfac          (t,ipa) &
+                                                    + csite%fmean_snowfac            (ipa) &
                                                     * ndaysi
                csite%qmean_soil_energy    (:,t,ipa) = csite%qmean_soil_energy    (:,t,ipa) &
                                                     + csite%fmean_soil_energy      (:,ipa) &
@@ -7797,6 +7849,25 @@ module average_utils
 
 
                !---------------------------------------------------------------------------!
+               !      Find the derived properties for the canopy air space.                !
+               !---------------------------------------------------------------------------!
+               do t=1,ndcycle
+                  can_exner                   = press2exner ( csite%qmean_can_prss (t,ipa))
+                  csite%qmean_can_temp(t,ipa) = extheta2temp( can_exner                    &
+                                                            , csite%qmean_can_theta(t,ipa))
+                  csite%qmean_can_rhos(t,ipa) = idealdenssh ( csite%qmean_can_prss (t,ipa) &
+                                                            , csite%qmean_can_temp (t,ipa) &
+                                                            , csite%qmean_can_shv  (t,ipa))
+                  csite%qmean_can_dmol(t,ipa) = idealdmolsh ( csite%qmean_can_prss (t,ipa) &
+                                                            , csite%qmean_can_temp (t,ipa) &
+                                                            , csite%qmean_can_shv  (t,ipa))
+               end do
+               !---------------------------------------------------------------------------!
+
+
+
+
+               !---------------------------------------------------------------------------!
                !     Soil matric potential, temperature, and liquid water.                 !
                !---------------------------------------------------------------------------!
                do k=lsl,nzg
@@ -8163,6 +8234,7 @@ module average_utils
          cgrid%qmean_sfcw_mass          (:,ipy) = 0.0
          cgrid%qmean_sfcw_temp          (:,ipy) = 0.0
          cgrid%qmean_sfcw_fliq          (:,ipy) = 0.0
+         cgrid%qmean_snowfac            (:,ipy) = 0.0
          cgrid%qmean_soil_energy      (:,:,ipy) = 0.0
          cgrid%qmean_soil_mstpot      (:,:,ipy) = 0.0
          cgrid%qmean_soil_water       (:,:,ipy) = 0.0
@@ -8309,6 +8381,7 @@ module average_utils
                csite%qmean_sfcw_mass              (:,ipa) = 0.0
                csite%qmean_sfcw_temp              (:,ipa) = 0.0
                csite%qmean_sfcw_fliq              (:,ipa) = 0.0
+               csite%qmean_snowfac                (:,ipa) = 0.0
                csite%qmean_soil_energy          (:,:,ipa) = 0.0
                csite%qmean_soil_mstpot          (:,:,ipa) = 0.0
                csite%qmean_soil_water           (:,:,ipa) = 0.0

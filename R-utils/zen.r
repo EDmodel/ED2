@@ -143,21 +143,131 @@ ed.zen <<- function (lon,lat,when,ed21=TRUE,zeronight=FALSE,meanval=FALSE,imetav
 
 
    #------ Find the cosine of the zenith angle, the zenith angle, and day/night flag. -----#
-   COSZ   = SLAT * SDEC + CLAT * CDEC * CHRA
-   cosz   = rowMeans(COSZ,...)
-   zen    = acos(cosz) / pio180
-   hgt    = 90. - zen
-   declin = rowMeans(DECLIN,...) / pio180
-   night  = cosz <  cosz.twilight
-   day    = cosz >= cosz.min
+   COSZ     = SLAT * SDEC + CLAT * CDEC * CHRA
+   cosz     = rowMeans(COSZ,...)
+   zen      = acos(cosz) / pio180
+   hgt      = 90. - zen
+   declin   = rowMeans(DECLIN,...) / pio180
+   night    = cosz <  cosz.twilight
+   day      = cosz >= cosz.min
+   twilight = (! day) & (! night)
 
    if (zeronight){
       cosz[night] =  0.
       hgt [night] =  0.
       zen [night] = 90.
    }#end if
-   ans = data.frame(cosz=cosz,zen=zen,hgt=hgt,declin=declin,day=day,night=night)
+   ans = data.frame( cosz     = cosz
+                   , zen      = zen
+                   , hgt      = hgt
+                   , declin   = declin
+                   , day      = day
+                   , night    = night
+                   , twilight = twilight
+                   )#end data.frame
    return(ans)
 }#end function ed.zen
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
+#    Fast version to obtain the cosine of zenith angle, when no averaging is needed.  This #
+# accepts either one entry for longitude/latitude, and multiple times, or it takes the     #
+# same number of longitudes, latitudes and times.                                          #
+#                                                                                          #
+# Input variables:                                                                         #
+#    - lon, lat  - Longitudes and latitudes.  Either single values or vectors with the     #
+#                  the same length as when (see below).                                    #
+#    - when      - time.  Mandatory, one point only or a vector.                           #
+#    - ed21      - I shall use ED-2.1 method (TRUE/FALSE).  Default is TRUE                #
+#    - zeronight - The cosine of zenith angle shall be set to zero at night.               #
+#                  Default is FALSE                                                        #
+#                                                                                          #
+# The output is going to be a vector with cosines of  with the following values:                              #
+#------------------------------------------------------------------------------------------#
+fast.zen <<- function (lon,lat,when,ed21=TRUE,zeronight=FALSE){
+   #------ Constants. ---------------------------------------------------------------------#
+   dcoeff   = c( 0.006918, -0.399912,  0.070257, -0.006758,  0.000907, -0.002697,  0.001480)
+   #---------------------------------------------------------------------------------------#
+
+
+   #------ Ensure longitude and latitude sizes are compatible with times. -----------------#
+   nlon  = length(lon)
+   nlat  = length(lat)
+   nwhen = length(when)
+   if (! ( (nlon %in% c(1,nwhen)) && (nlat %in% c(1,nwhen)) ) ){
+      cat0(" - Longitude size:",nlon )
+      cat0(" - Latitude size: ",nlat )
+      cat0(" - Time size:     ",nwhen)
+      stop(" Longitude/latidude should be either scalars of vectors consistent with when!")
+   }#end if (length(unique(c(nlon,lat,nwhen))) != 1)
+   if (nlon == 1) lon  = rep(lon,times=nwhen)
+   if (nlat == 1) lat  = rep(lat,times=nwhen)
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #------ Find the day of year, list of leap year times, and sun hour. -------------------#
+   doy     = dayofyear(when)
+   leap    = is.leap  (when)
+   fracday = hms2frac (when)
+   sunhr   = (fracday * day.hr + lon / 15. + day.hr) %% day.hr
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #------ Find the hour angle and its cosine. --------------------------------------------#
+   hrangle = 15 * (sunhr - 12) * pio180
+   chra    = cos(hrangle)
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #------ Find the declination. ----------------------------------------------------------#
+   if (ed21){
+      doyfun = ifelse( test = leap
+                     , yes  = 2 * pi * (doy - shsummer) / 366.
+                     , no   = 2 * pi * (doy - shsummer) / 365.
+                     )#end ifelse
+      declin = capri * cos(doyfun)
+   }else{
+      doyfun = ifelse( test = leap
+                     , yes  = 2 * pi * (doy - 1) / 366.
+                     , no   = 2 * pi * (doy - 1) / 365
+                     )#end ifelse
+
+      declin = ( dcoeff[1]
+               + dcoeff[2] * cos(1.*doyfun) + dcoeff[3] * sin(1.*doyfun)
+               + dcoeff[4] * cos(2.*doyfun) + dcoeff[5] * sin(2.*doyfun)
+               + dcoeff[6] * cos(3.*doyfun) + dcoeff[7] * sin(3.*doyfun) )
+   }#end if
+   #---------------------------------------------------------------------------------------#
+
+
+   #------ Find the cosine and sine of latitude and declination. --------------------------#
+   clat = cos(pio180*lat)
+   slat = sin(pio180*lat)
+   cdec = cos(declin)
+   sdec = sin(declin)
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #------ Find the cosine of the zenith angle, the zenith angle, and day/night flag. -----#
+   cosz   = slat * sdec + clat * cdec * chra
+   if (zeronight){
+      cosz = 0. * cosz + pmax(0.,cosz)
+   }#end if
+   #---------------------------------------------------------------------------------------#
+
+   rm(clat,slat,cdec,sdec,doy,leap,fracday,sunhr,hrangle,chra,doyfun,declin)
+   return(cosz)
+}#end function fast.zen
 #==========================================================================================#
 #==========================================================================================#

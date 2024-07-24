@@ -169,7 +169,7 @@ xy.density <<- function( x
       zdens   = 100. * zdens[[3]] / sum(zdens[[3]])
    }#end if (method %in% "table")
    zlwr    = zignore * max(zdens,na.rm=TRUE)
-   zdens   = 0. * zdens + ifelse(test=zdens %>=% zlwr,yes=zdens,no=0.)
+   zdens   = 0. * zdens + ifelse(test=zdens %ge% zlwr,yes=zdens,no=0.)
    #---------------------------------------------------------------------------------------#
 
 
@@ -436,7 +436,7 @@ xy.density <<- function( x
       plot.new()
       plot.window(xlim=xlim,ylim=ylim,log=plog,xaxs=xaxs,yaxs=yaxs,...)
       zupr  = zlim[1] + (1.-sqrt(.Machine$double.eps))*diff(zlim)
-      zdens = pmin(zupr,zdens) + ifelse(zdens %>% 0,0,NA) + 0. * zdens
+      zdens = pmin(zupr,zdens) + ifelse(zdens %gt% 0,0,NA) + 0. * zdens
       xyz   = list(x=xdens,y=ydens,z=zdens)
       image(x=xyz,zlim=zlim,col=ccolours,breaks=clevels,add=TRUE,useRaster=useRaster)
       #====================================================================================#
@@ -447,7 +447,7 @@ xy.density <<- function( x
       #     Plot the main panel on existing box.                                           #
       #------------------------------------------------------------------------------------#
       zupr  = zlim[1] + (1.-sqrt(.Machine$double.eps))*diff(zlim)
-      zdens = pmin(zupr,zdens) + ifelse(zdens %>% 0,0,NA) + 0. * zdens
+      zdens = pmin(zupr,zdens) + ifelse(zdens %gt% 0,0,NA) + 0. * zdens
       xyz   = list(x=xdens,y=ydens,z=zdens)
       image(x=xyz,zlim=zlim,col=ccolours,breaks=clevels,add=TRUE,useRaster=useRaster)
       #====================================================================================#

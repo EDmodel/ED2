@@ -12,7 +12,7 @@ wapply <<- function(X,W,FUN,cyclic=FALSE,...){
 
    #----- Additional sanity checks. -------------------------------------------------------#
    if (! is.vector(X)) stop ("X must be a vector!")
-   if (W %>=% length(X)) stop ("W must be less than the length of X")
+   if (W %ge% length(X)) stop ("W must be less than the length of X")
    #---------------------------------------------------------------------------------------#
 
 

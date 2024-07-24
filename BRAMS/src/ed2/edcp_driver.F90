@@ -47,6 +47,9 @@ subroutine ed_coup_driver()
    use budget_utils         , only : ed_init_budget        ! ! sub-routine
    use ed_type_init         , only : ed_init_viable        ! ! sub-routine
    use soil_respiration     , only : zero_litter_inputs    ! ! sub-routine
+#if defined(RAMS_MPI)
+   use mpi
+#endif
 
    implicit none
    !----- Local variables. ----------------------------------------------------------------!
@@ -63,17 +66,14 @@ subroutine ed_coup_driver()
    integer                     :: jd2
    integer                     :: ierr
    integer                     :: igr
-   integer                     :: ping 
+   integer                     :: ping
+   logical                     :: new_day
    real                        :: wtime1
    real                        :: wtime2
    real                        :: wtime_start     ! wall time
    real                        :: cputime1
    !----- External function. --------------------------------------------------------------!
    real             , external :: walltime    ! wall time
-   !----- MPI header. ---------------------------------------------------------------------!
-#if defined(RAMS_MPI)
-   include 'mpif.h'
-#endif
    !---------------------------------------------------------------------------------------!
    
    

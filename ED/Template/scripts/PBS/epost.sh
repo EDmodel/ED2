@@ -62,39 +62,47 @@ global_queue=""               # Queue
 sim_memory=0                  # Memory per simulation.  If zero, then it will be 
                               #    automatically determined by the maximum number of tasks
                               #    per node.
+skip_end=true                 # Skip processing in case the R script has already loaded
+                              #    all files through the end of the simulation
+                              #    (true/false).  This is only used for "monthly"-based
+                              #    scripts (those marked with (*) in the table below).
 #------------------------------------------------------------------------------------------#
 
 
 #------------------------------------------------------------------------------------------#
 #     Which scripts to run.                                                                #
 #                                                                                          #
-#   - read_monthly.r - This reads the monthly mean files (results can then be used for     #
-#                      plot_monthly.r, plot_yearly.r, and others, but it doesn't plot any- #
-#                      thing.)                                                             #
-#   - yearly_ascii.r - This creates three ascii (csv) files with annual averages of        #
-#                      various variables.  It doesn't have all possible variables as it is #
-#                      intended to simplify the output for learning purposes.              #
-#   - plot_monthly.r - This creates several plots based on the monthly mean output.        #
-#   - plot_yearly.r  - This creates plots with year time series.                           #
-#   - plot_ycomp.r   - This creates yearly comparisons based on the monthly mean output.   #
-#   - plot_povray.r  - This creates yearly plots of the polygon using POV-Ray.             #
-#   - plot_rk4.r     - This creates plots from the detailed output for Runge-Kutta.        #
-#                      (patch-level only).                                                 #
-#   - plot_photo.r   - This creates plots from the detailed output for Farquhar-Leuning.   #
-#   - plot_rk4pc.r   - This creates plots from the detailed output for Runge-Kutta.        #
-#                      (patch- and cohort-level).                                          #
-#   - plot_budget.r  - This creates plots from the detailed budget for Runge-Kutta.        #
-#                      (patch-level only).                                                 #
-#   - plot_eval_ed.r - This creates plots comparing model with eddy flux observations.     #
-#   - plot_census.r  - This creates plots comparing model with biometric data.             #
-#   - whichrun.r     - This checks the run status.                                         #
+#   - read_monthly.r  - (*) This reads the monthly mean files (results can then be used    #
+#                       for plot_monthly.r, plot_yearly.r, and others, but it doesn't plot #
+#                       anything.)                                                         #
+#   - yearly_ascii.r  - (*) This creates three ascii (csv) files with annual averages of   #
+#                       various variables.  It doesn't have all possible variables as it   #
+#                       is intended to simplify the output for learning purposes.          #
+#   - monthly_ascii.r - (*) This creates three ascii (csv) files with annual averages of   #
+#                       various variables.  It doesn't have all possible variables as it   #
+#                       is intended to simplify the output for learning purposes.          #
+#   - plot_monthly.r  - (*) This creates several plots based on the monthly mean output.   #
+#   - plot_yearly.r   - (*) This creates plots with year time series.                      #
+#   - plot_ycomp.r    - (*) This creates yearly comparisons based on the monthly mean      #
+#                       output.                                                            #
+#   - plot_povray.r   - (*) This creates yearly plots of the polygon using POV-Ray.        #
+#   - plot_rk4.r      - This creates plots from the detailed output for Runge-Kutta.       #
+#                       (patch-level only).                                                #
+#   - plot_photo.r    - This creates plots from the detailed output for Farquhar-Leuning.  #
+#   - plot_rk4pc.r    - This creates plots from the detailed output for Runge-Kutta.       #
+#                       (patch- and cohort-level).                                         #
+#   - plot_budget.r   - This creates plots from the detailed budget for Runge-Kutta.       #
+#                       (patch-level only).                                                #
+#   - plot_eval_ed.r  - This creates plots comparing model with eddy flux observations.    #
+#   - plot_census.r   - This creates plots comparing model with biometric data.            #
+#   - whichrun.r      - This checks the run status.                                        #
 #                                                                                          #
 #   The following scripts should work too, but I haven't tested them.                      #
-#   - plot_daily.r   - This creates plots from the daily mean output.                      #
-#   - plot_fast.r    - This creates plots from the analysis files.                         #
-#   - patchprops.r   - This creates simple plots showing the patch structure.              #
-#   - reject_ed.r    - This tracks the number of steps that were rejected, and what caused #
-#                      the step to be rejected.                                            #
+#   - plot_daily.r    - This creates plots from the daily mean output.                     #
+#   - plot_fast.r     - This creates plots from the analysis files.                        #
+#   - patchprops.r    - This creates simple plots showing the patch structure.             #
+#   - reject_ed.r     - This tracks the number of steps that were rejected, and what       #
+#                       caused the step to be rejected.                                    #
 #------------------------------------------------------------------------------------------#
 rscripts="plot_yearly.r"
 #rscripts="yearly_ascii.r"
@@ -159,7 +167,7 @@ monthsdrought="c(12,1,2,3)" # List of months that get drought, if it starts late
 #------------------------------------------------------------------------------------------#
 #       First check that the main path and e-mail have been set.  If not, don't run.       #
 #------------------------------------------------------------------------------------------#
-if [ "x${here}" == "x" ] || [ "x${global_queue}" == "x" ] || [ "x${rscript}" == "x" ]
+if [[ "x${here}" == "x" ]] || [[ "x${global_queue}" == "x" ]] || [[ "x${rscript}" == "x" ]]
 then
    echo " You must set some variables before running the script:"
    echo " Check variables \"here\", \"global_queue\" and \"rscript\"!"
@@ -169,7 +177,7 @@ fi
 
 
 #----- Load settings. ---------------------------------------------------------------------#
-if [ -s ${initrc} ]
+if [[ -s ${initrc} ]]
 then
    . ${initrc}
 fi
@@ -237,7 +245,7 @@ au*|ha*)
    #---------------------------------------------------------------------------------------#
    ;;
 esac
-if [ ${n_cpt} -gt ${n_cpt_max} ]
+if [[ ${n_cpt} -gt ${n_cpt_max} ]]
 then
    echo " Too many CPUs per task requested:"
    echo " Queue                   = ${global_queue}"
@@ -275,6 +283,9 @@ read_monthly.r)
    ;;
 yearly_ascii.r)
    epostkey="yasc"
+   ;;
+monthly_ascii.r)
+   epostkey="masc"
    ;;
 r10_monthly.r)
    epostkey="rm10"
@@ -329,7 +340,7 @@ plot_fast.r)
    #     If the script is here, then it could not find the script... And this should never #
    # happen, so interrupt the script!                                                      #
    #---------------------------------------------------------------------------------------#
-   echo " Script ${script} is not recognised by epost.sh!"
+   echo " Script ${rscript} is not recognised by epost.sh!"
    exit 1
    #---------------------------------------------------------------------------------------#
    ;;
@@ -342,18 +353,18 @@ esac
 #------------------------------------------------------------------------------------------#
 #   Make sure memory does not exceed maximum amount that can be requested.                 #
 #------------------------------------------------------------------------------------------#
-if [ ${sim_memory} -eq 0 ]
+if [[ ${sim_memory} -eq 0 ]]
 then
    let sim_memory=${node_memory}/${n_tpn}
    let node_memory=${n_tpn}*${sim_memory}
-elif [ ${sim_memory} -gt ${node_memory} ]
+elif [[ ${sim_memory} -gt ${node_memory} ]]
 then 
    echo "Simulation memory ${sim_memory} cannot exceed node memory ${node_memory}!"
    exit 99
 else
    #------ Set memory and number of CPUs per task. ----------------------------------------#
    let n_tpn_try=${node_memory}/${sim_memory}
-   if [ ${n_tpn_try} -le ${n_tpn} ]
+   if [[ ${n_tpn_try} -le ${n_tpn} ]]
    then
       n_tpn=${n_tpn_try}
       let sim_memory=${node_memory}/${n_tpn}
@@ -367,13 +378,13 @@ fi
 
 #----- Determine the number of polygons to run. -------------------------------------------#
 let npolys=$(wc -l ${joborder} | awk '{print $1 }')-3
-if [ ${npolys} -lt 100 ]
+if [[ ${npolys} -lt 100 ]]
 then
    ndig=2
-elif [ ${npolys} -lt 1000 ]
+elif [[ ${npolys} -lt 1000 ]]
 then
    ndig=3
-elif [ ${npolys} -lt 10000 ]
+elif [[ ${npolys} -lt 10000 ]]
 then
    ndig=4
 else
@@ -390,7 +401,7 @@ echo "Number of polygons: ${npolys}..."
 #      Loop over all polygons.                                                             #
 #------------------------------------------------------------------------------------------#
 ff=0
-while [ ${ff} -lt ${npolys} ]
+while [[ ${ff} -lt ${npolys} ]]
 do
 
    #---------------------------------------------------------------------------------------#
@@ -410,128 +421,144 @@ do
    # latitude.                                                                             #
    #---------------------------------------------------------------------------------------#
    oi=$(head -${line} ${joborder} | tail -1)
-   polyname=$(echo ${oi}     | awk '{print $1  }')
-   polyiata=$(echo ${oi}     | awk '{print $2  }')
-   polylon=$(echo ${oi}      | awk '{print $3  }')
-   polylat=$(echo ${oi}      | awk '{print $4  }')
-   yeara=$(echo ${oi}        | awk '{print $5  }')
-   montha=$(echo ${oi}       | awk '{print $6  }')
-   datea=$(echo ${oi}        | awk '{print $7  }')
-   timea=$(echo ${oi}        | awk '{print $8  }')
-   yearz=$(echo ${oi}        | awk '{print $9  }')
-   monthz=$(echo ${oi}       | awk '{print $10 }')
-   datez=$(echo ${oi}        | awk '{print $11 }')
-   timez=$(echo ${oi}        | awk '{print $12 }')
-   initmode=$(echo ${oi}     | awk '{print $13 }')
-   iscenario=$(echo ${oi}    | awk '{print $14 }')
-   isizepft=$(echo ${oi}     | awk '{print $15 }')
-   iage=$(echo ${oi}         | awk '{print $16 }')
-   imaxcohort=$(echo ${oi}   | awk '{print $17 }')
-   polyisoil=$(echo ${oi}    | awk '{print $18 }')
-   polyntext=$(echo ${oi}    | awk '{print $19 }')
-   polysand=$(echo ${oi}     | awk '{print $20 }')
-   polyclay=$(echo ${oi}     | awk '{print $21 }')
-   polyslsoc=$(echo ${oi}    | awk '{print $22 }')
-   polyslph=$(echo ${oi}     | awk '{print $23 }')
-   polyslcec=$(echo ${oi}    | awk '{print $24 }')
-   polysldbd=$(echo ${oi}    | awk '{print $25 }')
-   polydepth=$(echo ${oi}    | awk '{print $26 }')
-   polyslhydro=$(echo ${oi}  | awk '{print $27 }')
-   polysoilbc=$(echo ${oi}   | awk '{print $28 }')
-   polysldrain=$(echo ${oi}  | awk '{print $29 }')
-   polycol=$(echo ${oi}      | awk '{print $30 }')
-   slzres=$(echo ${oi}       | awk '{print $31 }')
-   queue=$(echo ${oi}        | awk '{print $32 }')
-   metdriver=$(echo ${oi}    | awk '{print $33 }')
-   dtlsm=$(echo ${oi}        | awk '{print $34 }')
-   monyrstep=$(echo ${oi}    | awk '{print $35 }')
-   iphysiol=$(echo ${oi}     | awk '{print $36 }')
-   vmfactc3=$(echo ${oi}     | awk '{print $37 }')
-   vmfactc4=$(echo ${oi}     | awk '{print $38 }')
-   mphototrc3=$(echo ${oi}   | awk '{print $39 }')
-   mphototec3=$(echo ${oi}   | awk '{print $40 }')
-   mphotoc4=$(echo ${oi}     | awk '{print $41 }')
-   bphotoblc3=$(echo ${oi}   | awk '{print $42 }')
-   bphotonlc3=$(echo ${oi}   | awk '{print $43 }')
-   bphotoc4=$(echo ${oi}     | awk '{print $44 }')
-   kwgrass=$(echo ${oi}      | awk '{print $45 }')
-   kwtree=$(echo ${oi}       | awk '{print $46 }')
-   gammac3=$(echo ${oi}      | awk '{print $47 }')
-   gammac4=$(echo ${oi}      | awk '{print $48 }')
-   d0grass=$(echo ${oi}      | awk '{print $49 }')
-   d0tree=$(echo ${oi}       | awk '{print $50 }')
-   alphac3=$(echo ${oi}      | awk '{print $51 }')
-   alphac4=$(echo ${oi}      | awk '{print $52 }')
-   klowco2=$(echo ${oi}      | awk '{print $53 }')
-   decomp=$(echo ${oi}       | awk '{print $54 }')
-   rrffact=$(echo ${oi}      | awk '{print $55 }')
-   growthresp=$(echo ${oi}   | awk '{print $56 }')
-   lwidthgrass=$(echo ${oi}  | awk '{print $57 }')
-   lwidthbltree=$(echo ${oi} | awk '{print $58 }')
-   lwidthnltree=$(echo ${oi} | awk '{print $59 }')
-   q10c3=$(echo ${oi}        | awk '{print $60 }')
-   q10c4=$(echo ${oi}        | awk '{print $61 }')
-   h2olimit=$(echo ${oi}     | awk '{print $62 }')
-   imortscheme=$(echo ${oi}  | awk '{print $63 }')
-   ddmortconst=$(echo ${oi}  | awk '{print $64 }')
-   cbrscheme=$(echo ${oi}    | awk '{print $65 }')
-   isfclyrm=$(echo ${oi}     | awk '{print $66 }')
-   icanturb=$(echo ${oi}     | awk '{print $67 }')
-   ubmin=$(echo ${oi}        | awk '{print $68 }')
-   ugbmin=$(echo ${oi}       | awk '{print $69 }')
-   ustmin=$(echo ${oi}       | awk '{print $70 }')
-   gamm=$(echo ${oi}         | awk '{print $71 }')
-   gamh=$(echo ${oi}         | awk '{print $72 }')
-   tprandtl=$(echo ${oi}     | awk '{print $73 }')
-   ribmax=$(echo ${oi}       | awk '{print $74 }')
-   atmco2=$(echo ${oi}       | awk '{print $75 }')
-   thcrit=$(echo ${oi}       | awk '{print $76 }')
-   smfire=$(echo ${oi}       | awk '{print $77 }')
-   ifire=$(echo ${oi}        | awk '{print $78 }')
-   fireparm=$(echo ${oi}     | awk '{print $79 }')
-   ipercol=$(echo ${oi}      | awk '{print $80 }')
-   runoff=$(echo ${oi}       | awk '{print $81 }')
-   imetrad=$(echo ${oi}      | awk '{print $82 }')
-   ibranch=$(echo ${oi}      | awk '{print $83 }')
-   icanrad=$(echo ${oi}      | awk '{print $84 }')
-   ihrzrad=$(echo ${oi}      | awk '{print $85 }')
-   crown=$(echo   ${oi}      | awk '{print $86 }')
-   ltransvis=$(echo ${oi}    | awk '{print $87 }')
-   lreflectvis=$(echo ${oi}  | awk '{print $88 }')
-   ltransnir=$(echo ${oi}    | awk '{print $89 }')
-   lreflectnir=$(echo ${oi}  | awk '{print $90 }')
-   orienttree=$(echo ${oi}   | awk '{print $91 }')
-   orientgrass=$(echo ${oi}  | awk '{print $92 }')
-   clumptree=$(echo ${oi}    | awk '{print $93 }')
-   clumpgrass=$(echo ${oi}   | awk '{print $94 }')
-   igoutput=$(echo ${oi}     | awk '{print $95 }')
-   ivegtdyn=$(echo ${oi}     | awk '{print $96 }')
-   ihydro=$(echo ${oi}       | awk '{print $97 }')
-   istemresp=$(echo ${oi}    | awk '{print $98 }')
-   istomata=$(echo ${oi}     | awk '{print $99 }')
-   iplastic=$(echo ${oi}     | awk '{print $100}')
-   icarbonmort=$(echo ${oi}  | awk '{print $101}')
-   ihydromort=$(echo ${oi}   | awk '{print $102}')
-   igndvap=$(echo ${oi}      | awk '{print $103}')
-   iphen=$(echo ${oi}        | awk '{print $104}')
-   iallom=$(echo ${oi}       | awk '{print $105}')
-   ieconomics=$(echo ${oi}   | awk '{print $106}')
-   igrass=$(echo ${oi}       | awk '{print $107}')
-   ibigleaf=$(echo ${oi}     | awk '{print $108}')
-   integscheme=$(echo ${oi}  | awk '{print $109}')
-   nsubeuler=$(echo ${oi}    | awk '{print $110}')
-   irepro=$(echo ${oi}       | awk '{print $111}')
-   treefall=$(echo ${oi}     | awk '{print $112}')
-   ianthdisturb=$(echo ${oi} | awk '{print $113}')
-   ianthdataset=$(echo ${oi} | awk '{print $114}')
-   slscale=$(echo ${oi}      | awk '{print $115}')
-   slyrfirst=$(echo ${oi}    | awk '{print $116}')
-   slnyrs=$(echo ${oi}       | awk '{print $117}')
-   bioharv=$(echo ${oi}      | awk '{print $118}')
-   skidarea=$(echo ${oi}     | awk '{print $119}')
-   skidsmall=$(echo ${oi}    | awk '{print $120}')
-   skidlarge=$(echo ${oi}    | awk '{print $121}')
-   fellingsmall=$(echo ${oi} | awk '{print $122}')
+   polyname=$(echo ${oi}      | awk '{print $1  }')
+   polyiata=$(echo ${oi}      | awk '{print $2  }')
+   polylon=$(echo ${oi}       | awk '{print $3  }')
+   polylat=$(echo ${oi}       | awk '{print $4  }')
+   yeara=$(echo ${oi}         | awk '{print $5  }')
+   montha=$(echo ${oi}        | awk '{print $6  }')
+   datea=$(echo ${oi}         | awk '{print $7  }')
+   timea=$(echo ${oi}         | awk '{print $8  }')
+   yearz=$(echo ${oi}         | awk '{print $9  }')
+   monthz=$(echo ${oi}        | awk '{print $10 }')
+   datez=$(echo ${oi}         | awk '{print $11 }')
+   timez=$(echo ${oi}         | awk '{print $12 }')
+   initmode=$(echo ${oi}      | awk '{print $13 }')
+   iscenario=$(echo ${oi}     | awk '{print $14 }')
+   isizepft=$(echo ${oi}      | awk '{print $15 }')
+   iage=$(echo ${oi}          | awk '{print $16 }')
+   imaxcohort=$(echo ${oi}    | awk '{print $17 }')
+   polyisoil=$(echo ${oi}     | awk '{print $18 }')
+   polyntext=$(echo ${oi}     | awk '{print $19 }')
+   polysand=$(echo ${oi}      | awk '{print $20 }')
+   polyclay=$(echo ${oi}      | awk '{print $21 }')
+   polyslsoc=$(echo ${oi}     | awk '{print $22 }')
+   polyslph=$(echo ${oi}      | awk '{print $23 }')
+   polyslcec=$(echo ${oi}     | awk '{print $24 }')
+   polysldbd=$(echo ${oi}     | awk '{print $25 }')
+   polydepth=$(echo ${oi}     | awk '{print $26 }')
+   polyslhydro=$(echo ${oi}   | awk '{print $27 }')
+   polysoilbc=$(echo ${oi}    | awk '{print $28 }')
+   polysldrain=$(echo ${oi}   | awk '{print $29 }')
+   polycol=$(echo ${oi}       | awk '{print $30 }')
+   slzres=$(echo ${oi}        | awk '{print $31 }')
+   queue=$(echo ${oi}         | awk '{print $32 }')
+   metdriver=$(echo ${oi}     | awk '{print $33 }')
+   dtlsm=$(echo ${oi}         | awk '{print $34 }')
+   monyrstep=$(echo ${oi}     | awk '{print $35 }')
+   iphysiol=$(echo ${oi}      | awk '{print $36 }')
+   vmfactc3=$(echo ${oi}      | awk '{print $37 }')
+   vmfactc4=$(echo ${oi}      | awk '{print $38 }')
+   mphototrc3=$(echo ${oi}    | awk '{print $39 }')
+   mphototec3=$(echo ${oi}    | awk '{print $40 }')
+   mphotoc4=$(echo ${oi}      | awk '{print $41 }')
+   bphotoblc3=$(echo ${oi}    | awk '{print $42 }')
+   bphotonlc3=$(echo ${oi}    | awk '{print $43 }')
+   bphotoc4=$(echo ${oi}      | awk '{print $44 }')
+   kwgrass=$(echo ${oi}       | awk '{print $45 }')
+   kwtree=$(echo ${oi}        | awk '{print $46 }')
+   gammac3=$(echo ${oi}       | awk '{print $47 }')
+   gammac4=$(echo ${oi}       | awk '{print $48 }')
+   d0grass=$(echo ${oi}       | awk '{print $49 }')
+   d0tree=$(echo ${oi}        | awk '{print $50 }')
+   alphac3=$(echo ${oi}       | awk '{print $51 }')
+   alphac4=$(echo ${oi}       | awk '{print $52 }')
+   klowco2=$(echo ${oi}       | awk '{print $53 }')
+   decomp=$(echo ${oi}        | awk '{print $54 }')
+   rrffact=$(echo ${oi}       | awk '{print $55 }')
+   growthresp=$(echo ${oi}    | awk '{print $56 }')
+   lwidthgrass=$(echo ${oi}   | awk '{print $57 }')
+   lwidthbltree=$(echo ${oi}  | awk '{print $58 }')
+   lwidthnltree=$(echo ${oi}  | awk '{print $59 }')
+   q10c3=$(echo ${oi}         | awk '{print $60 }')
+   q10c4=$(echo ${oi}         | awk '{print $61 }')
+   h2olimit=$(echo ${oi}      | awk '{print $62 }')
+   imortscheme=$(echo ${oi}   | awk '{print $63 }')
+   ddmortconst=$(echo ${oi}   | awk '{print $64 }')
+   cbrscheme=$(echo ${oi}     | awk '{print $65 }')
+   isfclyrm=$(echo ${oi}      | awk '{print $66 }')
+   icanturb=$(echo ${oi}      | awk '{print $67 }')
+   ubmin=$(echo ${oi}         | awk '{print $68 }')
+   ugbmin=$(echo ${oi}        | awk '{print $69 }')
+   ustmin=$(echo ${oi}        | awk '{print $70 }')
+   gamm=$(echo ${oi}          | awk '{print $71 }')
+   gamh=$(echo ${oi}          | awk '{print $72 }')
+   tprandtl=$(echo ${oi}      | awk '{print $73 }')
+   ribmax=$(echo ${oi}        | awk '{print $74 }')
+   atmco2=$(echo ${oi}        | awk '{print $75 }')
+   thcrit=$(echo ${oi}        | awk '{print $76 }')
+   smfire=$(echo ${oi}        | awk '{print $77 }')
+   ifire=$(echo ${oi}         | awk '{print $78 }')
+   fireparm=$(echo ${oi}      | awk '{print $79 }')
+   ipercol=$(echo ${oi}       | awk '{print $80 }')
+   runoff=$(echo ${oi}        | awk '{print $81 }')
+   imetrad=$(echo ${oi}       | awk '{print $82 }')
+   ibranch=$(echo ${oi}       | awk '{print $83 }')
+   icanrad=$(echo ${oi}       | awk '{print $84 }')
+   ihrzrad=$(echo ${oi}       | awk '{print $85 }')
+   crown=$(echo   ${oi}       | awk '{print $86 }')
+   ltransvis=$(echo ${oi}     | awk '{print $87 }')
+   lreflectvis=$(echo ${oi}   | awk '{print $88 }')
+   ltransnir=$(echo ${oi}     | awk '{print $89 }')
+   lreflectnir=$(echo ${oi}   | awk '{print $90 }')
+   orienttree=$(echo ${oi}    | awk '{print $91 }')
+   orientgrass=$(echo ${oi}   | awk '{print $92 }')
+   clumptree=$(echo ${oi}     | awk '{print $93 }')
+   clumpgrass=$(echo ${oi}    | awk '{print $94 }')
+   igoutput=$(echo ${oi}      | awk '{print $95 }')
+   ivegtdyn=$(echo ${oi}      | awk '{print $96 }')
+   ihydro=$(echo ${oi}        | awk '{print $97 }')
+   istemresp=$(echo ${oi}     | awk '{print $98 }')
+   istomata=$(echo ${oi}      | awk '{print $99 }')
+   iplastic=$(echo ${oi}      | awk '{print $100}')
+   icarbonmort=$(echo ${oi}   | awk '{print $101}')
+   ihydromort=$(echo ${oi}    | awk '{print $102}')
+   igndvap=$(echo ${oi}       | awk '{print $103}')
+   iphen=$(echo ${oi}         | awk '{print $104}')
+   iallom=$(echo ${oi}        | awk '{print $105}')
+   ieconomics=$(echo ${oi}    | awk '{print $106}')
+   igrass=$(echo ${oi}        | awk '{print $107}')
+   ibigleaf=$(echo ${oi}      | awk '{print $108}')
+   integscheme=$(echo ${oi}   | awk '{print $109}')
+   nsubeuler=$(echo ${oi}     | awk '{print $110}')
+   irepro=$(echo ${oi}        | awk '{print $111}')
+   treefall=$(echo ${oi}      | awk '{print $112}')
+   ianthdisturb=$(echo ${oi}  | awk '{print $113}')
+   ianthdataset=$(echo ${oi}  | awk '{print $114}')
+   slscale=$(echo ${oi}       | awk '{print $115}')
+   slyrfirst=$(echo ${oi}     | awk '{print $116}')
+   slnyrs=$(echo ${oi}        | awk '{print $117}')
+   bioharv=$(echo ${oi}       | awk '{print $118}')
+   skidarea=$(echo ${oi}      | awk '{print $119}')
+   skiddbhthresh=$(echo ${oi} | awk '{print $120}')
+   skidsmall=$(echo ${oi}     | awk '{print $121}')
+   skidlarge=$(echo ${oi}     | awk '{print $122}')
+   fellingsmall=$(echo ${oi}  | awk '{print $123}')
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #------ Last month and year for monthly-based scripts. ---------------------------------#
+   if [[ ${monthz} -eq 1 ]]
+   then
+      rm_monthz=12
+      let rm_yearz=${yearz}-1
+   else
+      let rm_monthz=${monthz}-1
+      rm_yearz=${yearz}
+   fi
+   #------ Update the time. ---------------------------------------------------------------#
+   let rm_whenz=12*${rm_yearz}+${rm_monthz}
    #---------------------------------------------------------------------------------------#
 
 
@@ -667,11 +694,11 @@ do
 
 
    #---- Cheat and force the met cycle to be the tower cycle. -----------------------------#
-   if [ ${useperiod} == "f" ]
+   if [[ ${useperiod} == "f" ]]
    then
       metcyca=${eftyeara}
       metcycz=${eftyearz}
-   elif [ ${useperiod} == "b" ]
+   elif [[ ${useperiod} == "b" ]]
    then
       metcyca=${bioyeara}
       metcycz=${bioyearz}
@@ -683,21 +710,10 @@ do
    #---------------------------------------------------------------------------------------#
    #     Switch years in case this is a specific drought run.                              #
    #---------------------------------------------------------------------------------------#
-   if [ ${droughtmark} == "TRUE" ]
+   if [[ ${droughtmark} == "TRUE" ]]
    then 
       let yeara=${droughtyeara}-1
       let yearz=${droughtyearz}+1
-   fi
-   #---------------------------------------------------------------------------------------#
-
-
-
-   #----- Print a banner. -----------------------------------------------------------------#
-   if [ ${rscript} == "plot_census.r" ] && [ ${subcens} -eq 0 ]
-   then
-      echo "${ffout} - Skipping submission of ${rscript} for polygon: ${polyname}..."
-   else
-      echo "${ffout} - Copying script ${rscript} to polygon: ${polyname}..."
    fi
    #---------------------------------------------------------------------------------------#
 
@@ -707,17 +723,17 @@ do
    #     Set up the time and output variables according to the script.                     #
    #---------------------------------------------------------------------------------------#
    case ${rscript} in
-   read_monthly.r|yearly_ascii.r|plot_monthly.r|plot_yearly.r|plot_ycomp.r|plot_census.r|plot_povray.r|r10_monthly.r)
+   read_monthly.r|yearly_ascii.r|monthly_ascii.r|plot_monthly.r|plot_yearly.r|plot_ycomp.r|plot_census.r|plot_povray.r|r10_monthly.r)
       #------------------------------------------------------------------------------------#
       #     Scripts that are based on monthly means.  The set up is the same, the only     #
       # difference is in the output names.                                                 #
       #------------------------------------------------------------------------------------#
       #------ Check which period to use. --------------------------------------------------#
-      if [ ${useperiod} == "t" ]
+      if [[ ${useperiod} == "t" ]]
       then
          #------ One meteorological cycle.  Check the type of meteorological driver. ------#
          case ${metdriver} in
-         Sheffield|WFDEI*|ERAINT*|MERRA2*|PGMF3*)
+         ERA5*|ERAINT*|MERRA2*|PGMF3*|Sheffield|WFDE5*|WFDEI*)
             thisyeara=${metcyca}
             thisyearz=${metcycz}
             ;;
@@ -730,34 +746,34 @@ do
             thisyearz=${metcycz}
             for i in ${shiftiata}
             do
-               if [ "x${i}" == "x${polyiata}" ]
+               if [[ "x${i}" == "x${polyiata}" ]]
                then
                   echo "     -> Shifting met cycle"
                   let metcycle=${metcycz}-${metcyca}+1
                   let deltayr=${shiftcycle}*${metcycle}
                   let thisyeara=${metcyca}+${deltayr}
                   let thisyearz=${metcycz}+${deltayr}
-               fi # end [ ${i} == ${iata} ]
+               fi # end [[ ${i} == ${iata} ]]
             done #end for i in ${shiftiata}
             ;;
          esac #  ${metdriver} in
          #---------------------------------------------------------------------------------#
 
-      elif [ ${useperiod} == "u" ]
+      elif [[ ${useperiod} == "u" ]]
       then
          #----- The user said which period to use. ----------------------------------------#
          thisyeara=${yusera}
          thisyearz=${yuserz}
          #---------------------------------------------------------------------------------#
 
-      elif [ ${useperiod} == "f" ]
+      elif [[ ${useperiod} == "f" ]]
       then
          #----- The user said to use the eddy flux period. --------------------------------#
          thisyeara=${eftyeara}
          thisyearz=${eftyearz}
          #---------------------------------------------------------------------------------#
 
-      elif [ ${useperiod} == "b" ]
+      elif [[ ${useperiod} == "b" ]]
       then
          #----- The user said to use the eddy flux period. --------------------------------#
          thisyeara=${bioyeara}
@@ -769,7 +785,7 @@ do
          thisyeara=${yeara}
          thisyearz=${yearz}
          #---------------------------------------------------------------------------------#
-      fi # end [ ${useperiod} == "t" ]
+      fi # end [[ ${useperiod} == "t" ]]
       #------------------------------------------------------------------------------------#
 
 
@@ -779,6 +795,53 @@ do
       thismonthz=${monthz}
       thisdatea=${datea}
       #------------------------------------------------------------------------------------#
+
+
+
+      #----- Check whether or not to submit the task. -------------------------------------#
+      if [[ ${rscript} == "plot_census.r" ]] && [[ ${subcens} -eq 0 ]]
+      then
+         #---- No need to submit the job if plot_census.r and place doesn't have census. --#
+         submit_now=false
+         #---------------------------------------------------------------------------------#
+      elif ${skip_end}
+      then
+         status="${here}/${polyname}/rdata_month/status_${polyname}.txt"
+         if [[ -s ${status} ]]
+         then
+            #----- Retrieve current status of the post-processing. ------------------------#
+            st_yearz=$(cat ${status}  | awk '{print $1}')
+            st_monthz=$(cat ${status} | awk '{print $2}')
+            let st_whenz=12*${st_yearz}+${st_monthz}
+            #------------------------------------------------------------------------------#
+
+            #------------------------------------------------------------------------------#
+            #    Compare the processed time with the last time needed for processing.      #
+            #------------------------------------------------------------------------------#
+            if [[ ${st_whenz} -ge ${rm_whenz} ]]
+            then
+               #----- Skip submission because it has reached the end. ---------------------#
+               submit_now=false
+               #---------------------------------------------------------------------------#
+            else
+               #----- Run script as it has not reached the end yet. -----------------------#
+               submit_now=true
+               #---------------------------------------------------------------------------#
+            fi
+            #------------------------------------------------------------------------------#
+
+         else
+            #----- File not find, run the script. -----------------------------------------#
+            submit_now=true
+            #------------------------------------------------------------------------------#
+         fi
+         #---------------------------------------------------------------------------------#
+      else
+         #----- Submit job. ---------------------------------------------------------------#
+         submit_now=true
+         #---------------------------------------------------------------------------------#
+      fi
+      #------------------------------------------------------------------------------------#
       ;;
    plot_eval_ed.r)
       #------------------------------------------------------------------------------------#
@@ -786,7 +849,7 @@ do
       # Petrolina (output variables exist only for 2004, so we don't need to process       #
       # all years).                                                                        #
       #------------------------------------------------------------------------------------#
-      if [ ${metdriver} == "Petrolina" ]
+      if [[ ${metdriver} == "Petrolina" ]]
       then 
          thismetcyca=2004
          thismetcycz=2004
@@ -806,7 +869,7 @@ do
       thisyearz=${thismetcycz}
       for i in ${shiftiata}
       do
-         if [ "x${i}" == "x${polyiata}" ]
+         if [[ "x${i}" == "x${polyiata}" ]]
          then
             #----- Always use the true met driver to find the cycle shift. ----------------#
             echo "     -> Shifting met cycle"
@@ -815,7 +878,7 @@ do
             let thisyeara=${thismetcyca}+${deltayr}
             let thisyearz=${thismetcycz}+${deltayr}
             #------------------------------------------------------------------------------#
-         fi # end [ ${i} == ${iata} ]
+         fi # end [[ ${i} == ${iata} ]]
       done #end for i in ${shiftiata}
       #------------------------------------------------------------------------------------#
 
@@ -826,6 +889,12 @@ do
       thismonthz=12
       thisdatea=${datea}
       #------------------------------------------------------------------------------------#
+
+
+
+      #----- Assume this should be submitted. ---------------------------------------------#
+      submit_now=true
+      #------------------------------------------------------------------------------------#
       ;;
 
    plot_budget.r|plot_rk4.r|plot_rk4pc.r|plot_photo.r|reject_ed.r)
@@ -835,7 +904,7 @@ do
       # at the first time step), so we normally skip the first day.                        #
       #------------------------------------------------------------------------------------#
       #----- Check whether to use the user choice of year or the default. -----------------#
-      if [ ${useperiod} == "u" ]
+      if [[ ${useperiod} == "u" ]]
       then
          thisyeara=${yusera}
          thisyearz=${yuserz}
@@ -852,6 +921,12 @@ do
       thismonthz=${monthz}
       let thisdatea=${datea}+1
       #------------------------------------------------------------------------------------#
+
+
+
+      #----- Assume this should be submitted. ---------------------------------------------#
+      submit_now=true
+      #------------------------------------------------------------------------------------#
       ;;
 
 
@@ -860,7 +935,7 @@ do
       #     Script with time-independent patch properties.  No need to skip anything.      #
       #------------------------------------------------------------------------------------#
       #----- Check whether to use the user choice of year or the default. -----------------#
-      if [ ${useperiod} == "u" ]
+      if [[ ${useperiod} == "u" ]]
       then
          thisyeara=${yusera}
          thisyearz=${yuserz}
@@ -876,6 +951,12 @@ do
       thismontha=${montha}
       thismonthz=${monthz}
       thisdatea=${datea}
+      #------------------------------------------------------------------------------------#
+
+
+
+      #----- Assume this should be submitted. ---------------------------------------------#
+      submit_now=true
       #------------------------------------------------------------------------------------#
       ;;
    plot_daily.r)
@@ -883,7 +964,7 @@ do
       #     Script with daily means.  No need to skip anything.                            #
       #------------------------------------------------------------------------------------#
       #----- Check whether to use the user choice of year or the default. -----------------#
-      if [ ${useperiod} == "u" ]
+      if [[ ${useperiod} == "u" ]]
       then
          thisyeara=${yusera}
          thisyearz=${yuserz}
@@ -899,6 +980,12 @@ do
       thismontha=${montha}
       thismonthz=${monthz}
       thisdatea=${datea}
+      #------------------------------------------------------------------------------------#
+
+
+
+      #----- Assume this should be submitted. ---------------------------------------------#
+      submit_now=true
       #------------------------------------------------------------------------------------#
       ;;
 
@@ -907,7 +994,7 @@ do
       #     Script with short-term averages (usually hourly).  No need to skip any-        #
       # thing.                                                                             #
       #------------------------------------------------------------------------------------#
-      if [ ${useperiod} == "u" ]
+      if [[ ${useperiod} == "u" ]]
       then
          thisyeara=${yusera}
          thisyearz=${yuserz}
@@ -923,6 +1010,12 @@ do
       thismontha=${montha}
       thismonthz=${monthz}
       thisdatea=${datea}
+      #------------------------------------------------------------------------------------#
+
+
+
+      #----- Assume this should be submitted. ---------------------------------------------#
+      submit_now=true
       #------------------------------------------------------------------------------------#
       ;;
    esac
@@ -984,8 +1077,14 @@ do
 
 
    #----- Make sure this is not the census script for a site we don't have census. --------#
-   if [ ${rscript} != "plot_census.r" ] || [ ${subcens} -ne 0 ]
+   if ${submit_now}
    then
+      #----- Submit script. ---------------------------------------------------------------#
+      echo "${ffout} - Copying script ${rscript} to polygon: ${polyname}..."
+      #------------------------------------------------------------------------------------#
+
+
+
       #----- Set script- and site-specific variables. -------------------------------------#
       epostjob="${epostkey}-${desc}-${polyname}"
       epostnow="${here}/${polyname}/${epostkey}_epost.sh"
@@ -1017,7 +1116,7 @@ do
       case ${rscript} in
       plot_eval_ed.r)
          echo "/bin/rm -fr ${complete}"    >> ${epostnow}
-         echo "while [ ! -s ${complete} ]" >> ${epostnow}
+         echo "while [[ ! -s ${complete} ]" >> ${epostnow}
          echo "do"                         >> ${epostnow}
          echo "   sleep 3"                 >> ${epostnow}
          echo "   ${epostexe}"             >> ${epostnow}
@@ -1065,7 +1164,7 @@ do
             if [[ ${nfail} -gt 0 ]] && [[ ${attempt} -eq ${nsubtry_max} ]]
             then
                echo "  Failed.  Giving up, check for errors in your script."
-            elif [ ${nfail} -eq 0 ]
+            elif [[ ${nfail} -eq 0 ]]
             then
                echo "  Success."
             else
@@ -1077,6 +1176,10 @@ do
 
          ;;
       esac
+      #------------------------------------------------------------------------------------#
+   else
+      #----- Skip submission. -------------------------------------------------------------#
+      echo "${ffout} - Skipping submission of ${rscript} for polygon: ${polyname}..."
       #------------------------------------------------------------------------------------#
    fi
    #---------------------------------------------------------------------------------------#

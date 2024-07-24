@@ -325,6 +325,9 @@ subroutine master_putdxt(master_num)
   use rpara, only : &
        nmachs,      &    ! INTENT(IN)
        machnum           ! INTENT(IN)
+#if defined(RAMS_MPI)
+  use mpi
+#endif
 
   implicit none
 
@@ -332,10 +335,6 @@ subroutine master_putdxt(master_num)
   integer :: ifm, nn2, nn3
   real    :: dxtmax(maxgrds)
   integer :: master_num,ierr
-
-#if defined(RAMS_MPI)
-  include 'mpif.h'
-#endif
 
   ! Calculating DXTMAX
   do ifm = 1,ngrids
@@ -367,10 +366,10 @@ subroutine master_putcflmax(master_num)
        nmachs,      &    ! INTENT(IN)
        machnum,     &    ! INTENT(IN)
        mainnum           ! intent(in)
-       
 #if defined(RAMS_MPI)
-  include 'mpif.h'
+  use mpi
 #endif
+  implicit none
   integer :: master_num,ierr
 
 #if defined(RAMS_MPI)
@@ -387,11 +386,11 @@ subroutine node_getdxt(dxtmax_local)
   use io_params, only : &
        maxgrds           ! INTENT(IN)
   use node_mod, only: master_num
+#if defined(RAMS_MPI)
+  use mpi
+#endif
   implicit none
 
-#if defined(RAMS_MPI)
-  include 'mpif.h'
-#endif
   real, intent(out) :: dxtmax_local(maxgrds)
   integer :: ierr
 #if defined(RAMS_MPI)
@@ -413,12 +412,12 @@ subroutine node_getcflmax()
        cflxy,          & ! INTENT(OUT)
        cflz              ! INTENT(OUT)
   use node_mod, only : master_num
+#if defined(RAMS_MPI)
+  use mpi
+#endif
 
   implicit none
 
-#if defined(RAMS_MPI)
-  include 'mpif.h'
-#endif
   integer :: ierr
 
 #if defined(RAMS_MPI)
