@@ -972,10 +972,25 @@ $ED_NL
    !     conifers  - evergreen;                                                            !
    !     hardwoods - cold-deciduous;                                                       !
    !                                                                                       !
+   !  4: (Beta).                                                                           !
+   !     grasses   - drought-deciduous (hydraulics scheme);                                !
+   !     tropical  - drought-deciduous (hydraulics scheme);                                !
+   !     conifers  - evergreen;                                                            !
+   !     hardwoods - cold-deciduous;                                                       !
+   !                                                                                       !
+   !  5: (Beta).                                                                           !
+   !     grasses   - drought-deciduous (hydraulics scheme);                                !
+   !     tropical  - drought-deciduous (hydraulics scheme + light phenology);              !
+   !     conifers  - evergreen;                                                            !
+   !     hardwoods - cold-deciduous;                                                       !
+   !                                                                                       !
+   !                                                                                       !
    !  Old scheme: plants shed their leaves once instantaneous amount of available water    !
    !              becomes less than a critical value.                                      !
    !  New scheme: plants shed their leaves once a 10-day running average of available      !
    !              water becomes less than a critical value.                                !
+   !  Hydraulics scheme: plants shed their leaves once predawn leaf water potential is     !
+   !              lower than tugor loss point for 10 consecutive days                      !
    !---------------------------------------------------------------------------------------!
    NL%IPHEN_SCHEME    = myiphen
    !---------------------------------------------------------------------------------------!

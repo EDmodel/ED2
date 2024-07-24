@@ -624,7 +624,7 @@ module ed_init_history
 
 
       !----- Load phenology in case it is prescribed (or set them with defaults). ---------!
-      write(unit=*,fmt='(a,i2.2)') ' Checking prescribed phenology.  Node: ',mynum
+      write(unit=*,fmt='(a,i2.2)') ' Loading prescribed phenology.  Node: ',mynum
       call phenology_init()
 
       return
