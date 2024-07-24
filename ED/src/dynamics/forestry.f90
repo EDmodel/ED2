@@ -24,7 +24,7 @@ module forestry
    !     This subroutine finds the disturbance rates associated with logging, when biomass !
    ! demands are provided instead of actual disturbance rates.                             !
    !---------------------------------------------------------------------------------------!
-   subroutine find_lambda_harvest(cpoly,isi,onsp,lambda_harvest)
+   subroutine find_lambda_harvest(cpoly,isi,onsp,lambda_harv_og_max,lambda_harvest)
       use ed_state_vars        , only : polygontype                & ! structure
                                       , sitetype                   & ! structure
                                       , patchtype                  & ! structure
@@ -32,7 +32,6 @@ module forestry
                                       , deallocate_sitetype        & ! subroutine
                                       , copy_sitetype              ! ! subroutine
       use disturb_coms         , only : ianth_disturb              & ! intent(in)
-                                      , lutime                     & ! intent(in)
                                       , min_patch_area             & ! intent(in)
                                       , plantation_rotation        & ! intent(in)
                                       , min_harvest_biomass        & ! intent(in)
@@ -47,6 +46,7 @@ module forestry
       type(polygontype)             , target        :: cpoly
       integer                       , intent(in)    :: isi
       integer                       , intent(in)    :: onsp
+      real                          , intent(inout) :: lambda_harv_og_max
       real, dimension(onsp)         , intent(inout) :: lambda_harvest
       !----- Local variables --------------------------------------------------------------!
       type(sitetype)                , pointer       :: csite
@@ -245,7 +245,8 @@ module forestry
                                 ,hvmax_mature_secondary,hvpot_mature_secondary             &
                                 ,hvmax_mature_plantation,hvpot_mature_plantation           &
                                 ,primary_harvest_target,secondary_harvest_target           &
-                                ,pat_hvmax_btimber,lambda_harvest,harvest_deficit)
+                                ,pat_hvmax_btimber,lambda_harv_og_max,lambda_harvest       &
+                                ,harvest_deficit)
       !------------------------------------------------------------------------------------!
 
 
@@ -255,7 +256,7 @@ module forestry
       ! biomass demands.                                                                   !
       !------------------------------------------------------------------------------------!
       call young_forest_harvest(cpoly,isi,onsp,pat_hvmax_btimber,pat_hvpot_btimber         &
-                               ,lambda_harvest,harvest_deficit)
+                               ,lambda_harv_og_max,lambda_harvest,harvest_deficit)
       !------------------------------------------------------------------------------------!
 
 
@@ -291,14 +292,18 @@ module forestry
                                                          , hvpot_mature_secondary
          write (unit=*,fmt='(a,1x,es12.5)') ' HVPOT BIOMASS (PLANTATION)    = '            &
                                                          , hvpot_mature_plantation
-         write (unit=*,fmt='(a,1x,es12.5)') ' HV AREA (PRIMARY)      = '                   &
+         write (unit=*,fmt='(a,1x,es12.5)') ' HARVEST AREA (PRIMARY)        = '            &
                                                          , area_mature_primary
-         write (unit=*,fmt='(a,1x,es12.5)') ' HV AREA (SECONDARY)    = '                   &
+         write (unit=*,fmt='(a,1x,es12.5)') ' HARVEST AREA (SECONDARY)      = '            &
                                                          , area_mature_secondary
-         write (unit=*,fmt='(a,1x,es12.5)') ' HV AREA (PLANTATION)   = '                   &
+         write (unit=*,fmt='(a,1x,es12.5)') ' HARVEST AREA (PLANTATION)     = '            &
                                                          , area_mature_plantation
          write (unit=*,fmt='(a)'          ) ' '
-         write (unit=*,fmt='(a,1x,es12.5)') ' HARVEST DEFICIT = ', harvest_deficit
+         write (unit=*,fmt='(a,1x,es12.5)') ' HARVEST DEFICIT               = '            &
+                                                         , harvest_deficit
+         write (unit=*,fmt='(a)'          ) ' '
+         write (unit=*,fmt='(a,1x,es12.5)') ' MAXIMUM LAMBDA (OLD-GROWTH)   = '            &
+                                                         , lambda_harv_og_max
          write (unit=*,fmt='(a)'          ) ' '
          write (unit=*,fmt='(a)'          ) '---------------------------------------------'
          write (unit=*,fmt='(9(a,1x))'    ) '  IPA','   LU','         AGE','        AREA'  &
@@ -505,7 +510,8 @@ module forestry
                                    ,hvmax_mature_secondary,hvpot_mature_secondary          &
                                    ,hvmax_mature_plantation,hvpot_mature_plantation        &
                                    ,primary_harvest_target,secondary_harvest_target        &
-                                   ,pat_hvmax_btimber,lambda_harvest,harvest_deficit)
+                                   ,pat_hvmax_btimber,lambda_harv_og_max,lambda_harvest    &
+                                   ,harvest_deficit)
       use ed_state_vars , only : polygontype         & ! structure
                                , sitetype            ! ! structure
       use disturb_coms  , only : plantation_rotation & ! intent(in)
@@ -513,7 +519,8 @@ module forestry
                                , min_harvest_biomass & ! intent(in)
                                , min_oldgrowth       ! ! intent(in)
       use consts_coms   , only : lnexp_max           & ! intent(in)
-                               , almost_one          ! ! intent(in)
+                               , almost_one          & ! intent(in)
+                               , tiny_num            ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(polygontype)    , target        :: cpoly
@@ -528,6 +535,7 @@ module forestry
       real                 , intent(in)    :: primary_harvest_target
       real                 , intent(inout) :: secondary_harvest_target
       real, dimension(onsp), intent(in)    :: pat_hvmax_btimber
+      real                 , intent(in)    :: lambda_harv_og_max
       real, dimension(onsp), intent(inout) :: lambda_harvest
       real                 , intent(out)   :: harvest_deficit
       !----- Local variables --------------------------------------------------------------!
@@ -538,74 +546,158 @@ module forestry
       logical                              :: is_mature
       logical                              :: is_rotation
       real                                 :: f_harvest
+      real                                 :: f_harv_prim_max
+      real                                 :: harvest_actual
       real                                 :: lambda_mature_primary
       real                                 :: lambda_mature_plantation
       real                                 :: lambda_mature_secondary
       !------------------------------------------------------------------------------------!
 
 
+
       !------------------------------------------------------------------------------------!
-      !    Find harvesting rate in mature primary vegetation.  In case there is not enough !
-      ! biomass harvest, harvest all primary vegetation then add the unmet biomass to the  !
-      ! target for secondary vegetation.                                                   !
+      !     Make sure the disturbance rate for primary forests doesn't exceed the maximum  !
+      ! disturbance taken from the land use instructions for this year.                    !
       !------------------------------------------------------------------------------------!
-      if (almost_one * hvmax_mature_primary > primary_harvest_target) then
-         f_harvest                = primary_harvest_target / hvpot_mature_primary
-         lambda_mature_primary    = log(1./(1.-f_harvest))
-      elseif (almost_one * hvpot_mature_primary > hvmax_mature_primary) then
-         f_harvest                = hvmax_mature_primary / hvpot_mature_primary
-         lambda_mature_primary    = log(1./(1.-f_harvest))
-         harvest_deficit          = primary_harvest_target   - hvmax_mature_primary
-         secondary_harvest_target = secondary_harvest_target + harvest_deficit
+      f_harv_prim_max = 1. - exp (-lambda_harv_og_max)
+      !------------------------------------------------------------------------------------!
+
+
+      !---- Find harvesting rate in mature primary vegetation. ----------------------------!
+      if ( hvpot_mature_primary > tiny_num ) then
+         !---------------------------------------------------------------------------------!
+         !    Find the total biomass to be harvested from mature primary vegetation.  The  !
+         ! actual harvest cannot exceed the target, cannot exceed the actual biomass, and  !
+         ! must be bounded by the disturbance rate target.                                 !
+         !---------------------------------------------------------------------------------!
+         harvest_actual = min( f_harv_prim_max * hvpot_mature_primary                      &
+                             , hvmax_mature_primary, primary_harvest_target )
+         f_harvest      = harvest_actual / hvpot_mature_primary
+         !---------------------------------------------------------------------------------!
+
+
+         !---------------------------------------------------------------------------------!
+         !    Check fraction to be harvest, to avoid floating point exceptions.            !
+         !---------------------------------------------------------------------------------!
+         if (f_harvest > almost_one) then
+            !---- Apply sweeping logging disturbance across primary forests. --------------!
+            f_harvest                = 1.0
+            harvest_actual           = hvpot_mature_primary
+            lambda_mature_primary    = lnexp_max
+            harvest_deficit          = primary_harvest_target   - harvest_actual
+            secondary_harvest_target = secondary_harvest_target + harvest_deficit
+            !------------------------------------------------------------------------------!
+         else
+            !---- Find the disturbance rate from the fraction of biomass to be harvested. -!
+            lambda_mature_primary    = log(1./(1.-f_harvest))
+            harvest_deficit          = primary_harvest_target   - harvest_actual
+            secondary_harvest_target = secondary_harvest_target + harvest_deficit
+            !------------------------------------------------------------------------------!
+         end if
+         !---------------------------------------------------------------------------------!
       else
-         lambda_mature_primary    = lnexp_max
-         harvest_deficit          = primary_harvest_target   - hvmax_mature_primary
-         secondary_harvest_target = secondary_harvest_target + harvest_deficit
+         !---------------------------------------------------------------------------------!
+         !     No mature primary forest to harvest. Do not log from any primary forest and !
+         ! try to harvest secondary forest instead.                                        !
+         !---------------------------------------------------------------------------------!
+         f_harvest                = 0.0
+         harvest_actual           = 0.0
+         lambda_mature_primary    = 0.0
+         secondary_harvest_target = secondary_harvest_target + primary_harvest_target
+         !---------------------------------------------------------------------------------!
       end if
       !------------------------------------------------------------------------------------!
 
 
 
       !------------------------------------------------------------------------------------!
-      !      Find harvesting rate for mature plantations and mature secondary forests.     !
-      ! First try to remove all biomass from plantations.  In case there isn't sufficient  !
-      ! biomass, harvest all plantations then remove the unmet biomass from mature         !
-      ! secondary vegetation.  In case there isn't enough biomass, leave the remaining     !
-      ! target in harvest_deficit, which will be used to determine harvesting from young   !
-      !  forests.                                                                          !
+      !      Find harvest disturbance rates for mature forest plantations.  We always give !
+      ! preference for logging plantations over second-growth forests.                     !
       !------------------------------------------------------------------------------------!
-      if (almost_one * hvmax_mature_plantation > secondary_harvest_target) then
-         f_harvest                = secondary_harvest_target / hvpot_mature_plantation
-         lambda_mature_plantation = log(1./(1.-f_harvest))
-         harvest_deficit          = 0.0
-      elseif (almost_one * hvpot_mature_plantation > hvmax_mature_plantation) then
-         f_harvest                = hvmax_mature_plantation / hvpot_mature_plantation
-         lambda_mature_plantation = log(1./(1.-f_harvest))
-         harvest_deficit          = secondary_harvest_target - hvmax_mature_plantation
+      if ( hvpot_mature_plantation > tiny_num ) then
+         !---------------------------------------------------------------------------------!
+         !    Find the total biomass to be harvested from mature forest plantation.  The   !
+         ! actual harvest cannot exceed the target or the actual biomass.                  !
+         !---------------------------------------------------------------------------------!
+         harvest_actual = min( secondary_harvest_target, hvmax_mature_plantation           &
+                             , hvpot_mature_plantation                           )
+         f_harvest      = harvest_actual / hvpot_mature_plantation
+         !---------------------------------------------------------------------------------!
+
+
+         !---------------------------------------------------------------------------------!
+         !    Check fraction to be harvest, to avoid floating point exceptions.            !
+         !---------------------------------------------------------------------------------!
+         if (f_harvest > almost_one) then
+            !---- Apply sweeping logging disturbance across primary forests. --------------!
+            f_harvest                = 1.0
+            harvest_actual           = hvpot_mature_plantation
+            lambda_mature_plantation = lnexp_max
+            harvest_deficit          = max(0.,secondary_harvest_target - harvest_actual)
+            !------------------------------------------------------------------------------!
+         else
+            !---- Find the disturbance rate from the fraction of biomass to be harvested. -!
+            lambda_mature_plantation = log(1./(1.-f_harvest))
+            harvest_deficit          = max(0.,secondary_harvest_target - harvest_actual)
+            !------------------------------------------------------------------------------!
+         end if
+         !---------------------------------------------------------------------------------!
       else
-         lambda_mature_plantation = lnexp_max
-         harvest_deficit          = secondary_harvest_target - hvmax_mature_plantation
+         !---------------------------------------------------------------------------------!
+         !     No forest plantation to harvest. Do not log from any plantation and try to  !
+         ! harvest secondary forest instead.                                               !
+         !---------------------------------------------------------------------------------!
+         f_harvest                = 0.0
+         harvest_actual           = 0.0
+         lambda_mature_plantation = 0.0
+         harvest_deficit          = secondary_harvest_target
+         !---------------------------------------------------------------------------------!
       end if
       !------------------------------------------------------------------------------------!
-
-
 
 
 
       !------------------------------------------------------------------------------------!
       !      Find disturbance rates for secondary forests other than forest plantation.    !
       !------------------------------------------------------------------------------------!
-      if (almost_one * hvmax_mature_secondary > harvest_deficit) then
-         f_harvest                = harvest_deficit / hvpot_mature_secondary
-         lambda_mature_plantation = log(1./(1.-f_harvest))
-         harvest_deficit          = 0.0
-      elseif (almost_one * hvpot_mature_secondary > hvmax_mature_secondary) then
-         f_harvest               = hvmax_mature_secondary / hvpot_mature_secondary
-         lambda_mature_secondary = log(1./(1.-f_harvest))
-         harvest_deficit         = harvest_deficit - hvmax_mature_secondary
+      if ( hvpot_mature_secondary > tiny_num ) then
+         !---------------------------------------------------------------------------------!
+         !    Find the total biomass to be harvested from mature second-growth forest.     !
+         ! The actual harvest cannot exceed the target or the actual biomass.              !
+         !---------------------------------------------------------------------------------!
+         harvest_actual = min( harvest_deficit, hvmax_mature_secondary                     &
+                             , hvpot_mature_secondary                  )
+         f_harvest      = harvest_actual / hvpot_mature_secondary
+         !---------------------------------------------------------------------------------!
+
+
+         !---------------------------------------------------------------------------------!
+         !    Check fraction to be harvest, to avoid floating point exceptions.            !
+         !---------------------------------------------------------------------------------!
+         if (f_harvest > almost_one) then
+            !---- Apply sweeping logging disturbance across primary forests. --------------!
+            f_harvest               = 1.0
+            harvest_actual          = hvpot_mature_secondary
+            lambda_mature_secondary = lnexp_max
+            harvest_deficit         = max(0.,harvest_deficit - harvest_actual)
+            !------------------------------------------------------------------------------!
+         else
+            !---- Find the disturbance rate from the fraction of biomass to be harvested. -!
+            lambda_mature_secondary = log(1./(1.-f_harvest))
+            harvest_deficit         = max(0.,harvest_deficit - harvest_actual)
+            !------------------------------------------------------------------------------!
+         end if
+         !---------------------------------------------------------------------------------!
       else
-         lambda_mature_secondary = lnexp_max
-         harvest_deficit         = harvest_deficit - hvmax_mature_secondary
+         !---------------------------------------------------------------------------------!
+         !     No mature second-growth forest to harvest. Do not log from any plantation   !
+         ! and try to harvest secondary forest instead.                                    !
+         !---------------------------------------------------------------------------------!
+         f_harvest               = 0.0
+         harvest_actual          = 0.0
+         lambda_mature_secondary = 0.0
+         ! harvest_deficit       = harvest_deficit
+         !---------------------------------------------------------------------------------!
       end if
       !------------------------------------------------------------------------------------!
 
@@ -664,6 +756,9 @@ module forestry
             !------------------------------------------------------------------------------!
          end select
          !---------------------------------------------------------------------------------!
+
+
+
       end do patch_loop
       !------------------------------------------------------------------------------------!
 
@@ -683,7 +778,7 @@ module forestry
    ! the demand for biomass.                                                               !
    !---------------------------------------------------------------------------------------!
    subroutine young_forest_harvest(cpoly,isi,onsp,pat_hvmax_btimber,pat_hvpot_btimber      &
-                                  ,lambda_harvest,harvest_deficit)
+                                  ,lambda_harv_og_max,lambda_harvest,harvest_deficit)
       use ed_state_vars     , only : polygontype          & ! structure
                                    , sitetype             & ! structure
                                    , patchtype            ! ! structure
@@ -692,7 +787,8 @@ module forestry
                                    , min_harvest_biomass  & ! intent(in)
                                    , min_oldgrowth        ! ! intent(in)
       use consts_coms       , only : lnexp_max            & ! intent(in)
-                                   , almost_one           ! ! intent(in)
+                                   , almost_one           & ! intent(in)
+                                   , tiny_num             ! ! intent(in)
       implicit none
 
       !----- Arguments --------------------------------------------------------------------!
@@ -702,6 +798,7 @@ module forestry
       real, dimension(onsp)              , intent(in)    :: pat_hvmax_btimber
       real, dimension(onsp)              , intent(in)    :: pat_hvpot_btimber
       real, dimension(onsp)              , intent(inout) :: lambda_harvest
+      real                               , intent(in)    :: lambda_harv_og_max
       real                               , intent(inout) :: harvest_deficit
       !----- Local variables --------------------------------------------------------------!
       type(sitetype)                     , pointer       :: csite
@@ -713,6 +810,8 @@ module forestry
       logical                                            :: is_primary
       logical                                            :: is_young
       real                                               :: f_harvest
+      real                                               :: f_harv_prim_max
+      real                                               :: harvest_actual
       real                                               :: site_hvmax_btimber
       real                                               :: site_hvpot_btimber
       !------------------------------------------------------------------------------------!
@@ -724,10 +823,19 @@ module forestry
       !------------------------------------------------------------------------------------!
 
 
+
+      !------------------------------------------------------------------------------------!
+      !     Make sure the disturbance rate for primary forests doesn't exceed the maximum  !
+      ! disturbance taken from the land use instructions for this year.                    !
+      !------------------------------------------------------------------------------------!
+      f_harv_prim_max = 1. - exp (-lambda_harv_og_max)
+      !------------------------------------------------------------------------------------!
+
+
       !------------------------------------------------------------------------------------!
       !      First loop, try to obtain the biomass from young forest plantations.          !
       !------------------------------------------------------------------------------------!
-      patch_loop_fopl: do ipa=1,onsp
+      patch_loop_fypl: do ipa=1,onsp
          !----- Check whether we can harvest this patch. ----------------------------------!
          is_harvestable = pat_hvmax_btimber(ipa) >= min_harvest_biomass
          is_plantation  = csite%dist_type(ipa)   == 2
@@ -744,39 +852,52 @@ module forestry
             !------------------------------------------------------------------------------!
 
 
-            !----- Immature patch is harvestable.  Check how much to harvest. -------------!
-            if (almost_one * site_hvmax_btimber > harvest_deficit) then
+
+            !------------------------------------------------------------------------------!
+            !     Check if there is enough biomass to harvest in this patch.               !
+            !------------------------------------------------------------------------------!
+            if ( site_hvpot_btimber > tiny_num ) then
                !---------------------------------------------------------------------------!
-               !      Biomass target has been met, harvest the patch, then quit the sub-   !
-               ! -routine.                                                                 !
+               !     Check how much biomass can be extracted from this patch, up to the    !
+               ! target biomass.                                                           !
                !---------------------------------------------------------------------------!
-               f_harvest           = harvest_deficit / site_hvpot_btimber
-               lambda_harvest(ipa) = log(1./ (1. - f_harvest))
-               harvest_deficit     = 0.0
-               return
+               harvest_actual = min(harvest_deficit,site_hvmax_btimber,site_hvpot_btimber)
+               f_harvest      = harvest_actual / site_hvpot_btimber
                !---------------------------------------------------------------------------!
-            else if (almost_one * site_hvpot_btimber > site_hvmax_btimber) then
+
+
                !---------------------------------------------------------------------------!
-               !      Biomass target has not been met, harvest the entire patch, and keep  !
-               ! searching for biomass.                                                    !
+               !    Check fraction to be harvest, to avoid floating point exceptions.      !
                !---------------------------------------------------------------------------!
-               f_harvest           = site_hvmax_btimber / site_hvpot_btimber
-               lambda_harvest(ipa) = log(1./ (1. - f_harvest))
-               harvest_deficit     = harvest_deficit - site_hvmax_btimber
+               if (f_harvest > almost_one) then
+                  !---- Apply sweeping logging disturbance across primary forests. --------!
+                  f_harvest            = 1.0
+                  harvest_actual       = site_hvpot_btimber
+                  lambda_harvest(ipa)  = lnexp_max
+                  harvest_deficit      = max(0.,harvest_deficit - harvest_actual)
+                  !------------------------------------------------------------------------!
+               else
+                  !---- Find the disturbance rate. ----------------------------------------!
+                  lambda_harvest(ipa)  = log(1./(1.-f_harvest))
+                  harvest_deficit      = max(0.,harvest_deficit - harvest_actual)
+                  !------------------------------------------------------------------------!
+               end if
+               !---------------------------------------------------------------------------!
+
+               !---- If we successfully met harvest demands, quit routine. ----------------!
+               if ( harvest_deficit == 0. ) return
                !---------------------------------------------------------------------------!
             else
-               !---------------------------------------------------------------------------!
-               !      Biomass target has not been met, harvest the entire patch, and keep  !
-               ! searching for biomass.                                                    !
-               !---------------------------------------------------------------------------!
-               lambda_harvest(ipa) = lnexp_max
-               harvest_deficit     = harvest_deficit - site_hvmax_btimber
+               !----- Patch does not have enough biomass. ---------------------------------!
+               f_harvest         = 0.0
+               harvest_actual    = 0.0
+               ! harvest_deficit = harvest_deficit
                !---------------------------------------------------------------------------!
             end if
             !------------------------------------------------------------------------------!
          end if
          !---------------------------------------------------------------------------------!
-      end do patch_loop_fopl
+      end do patch_loop_fypl
       !------------------------------------------------------------------------------------!
 
 
@@ -810,33 +931,46 @@ module forestry
             !------------------------------------------------------------------------------!
 
 
-            !----- Immature patch is harvestable.  Check how much to harvest. -------------!
-            if (almost_one * site_hvmax_btimber > harvest_deficit) then
+
+            !------------------------------------------------------------------------------!
+            !     Check if there is enough biomass to harvest in this patch.               !
+            !------------------------------------------------------------------------------!
+            if ( site_hvpot_btimber > tiny_num ) then
                !---------------------------------------------------------------------------!
-               !      Biomass target has been met, harvest the patch, then quit the sub-   !
-               ! -routine.                                                                 !
+               !     Check how much biomass can be extracted from this patch, up to the    !
+               ! target biomass.                                                           !
                !---------------------------------------------------------------------------!
-               f_harvest           = harvest_deficit / site_hvpot_btimber
-               lambda_harvest(ipa) = log(1./ (1. - f_harvest))
-               harvest_deficit     = 0.0
-               return
+               harvest_actual = min(harvest_deficit,site_hvmax_btimber,site_hvpot_btimber)
+               f_harvest      = harvest_actual / site_hvpot_btimber
                !---------------------------------------------------------------------------!
-            else if (almost_one * site_hvpot_btimber > site_hvmax_btimber) then
+
+
                !---------------------------------------------------------------------------!
-               !      Biomass target has not been met, harvest the entire patch, and keep  !
-               ! searching for biomass.                                                    !
+               !    Check fraction to be harvest, to avoid floating point exceptions.      !
                !---------------------------------------------------------------------------!
-               f_harvest           = site_hvmax_btimber / site_hvpot_btimber
-               lambda_harvest(ipa) = log(1./ (1. - f_harvest))
-               harvest_deficit     = harvest_deficit - site_hvmax_btimber
+               if (f_harvest > almost_one) then
+                  !---- Apply sweeping logging disturbance across primary forests. --------!
+                  f_harvest            = 1.0
+                  harvest_actual       = site_hvpot_btimber
+                  lambda_harvest(ipa)  = lnexp_max
+                  harvest_deficit      = max(0.,harvest_deficit - harvest_actual)
+                  !------------------------------------------------------------------------!
+               else
+                  !---- Find the disturbance rate. ----------------------------------------!
+                  lambda_harvest(ipa)  = log(1./(1.-f_harvest))
+                  harvest_deficit      = max(0.,harvest_deficit - harvest_actual)
+                  !------------------------------------------------------------------------!
+               end if
+               !---------------------------------------------------------------------------!
+
+               !---- If we successfully met harvest demands, quit routine. ----------------!
+               if ( harvest_deficit == 0. ) return
                !---------------------------------------------------------------------------!
             else
-               !---------------------------------------------------------------------------!
-               !      Biomass target has not been met, harvest the entire patch, and keep  !
-               ! searching for biomass.                                                    !
-               !---------------------------------------------------------------------------!
-               lambda_harvest(ipa) = lnexp_max
-               harvest_deficit     = harvest_deficit - site_hvmax_btimber
+               !----- Patch does not have enough biomass. ---------------------------------!
+               f_harvest         = 0.0
+               harvest_actual    = 0.0
+               ! harvest_deficit = harvest_deficit
                !---------------------------------------------------------------------------!
             end if
             !------------------------------------------------------------------------------!
@@ -874,6 +1008,56 @@ module forestry
             site_hvmax_btimber = pat_hvmax_btimber(ipa) * csite%area(ipa)
             site_hvpot_btimber = pat_hvpot_btimber(ipa) * csite%area(ipa)
             !------------------------------------------------------------------------------!
+
+
+
+
+
+            !------------------------------------------------------------------------------!
+            !     Check if there is enough biomass to harvest in this patch.               !
+            !------------------------------------------------------------------------------!
+            if ( site_hvpot_btimber > tiny_num ) then
+               !---------------------------------------------------------------------------!
+               !     Check how much biomass can be extracted from this patch, up to the    !
+               ! target biomass.                                                           !
+               !---------------------------------------------------------------------------!
+               harvest_actual = min( harvest_deficit, site_hvmax_btimber                   &
+                                   , f_harv_prim_max * site_hvpot_btimber )
+               f_harvest      = harvest_actual / site_hvpot_btimber
+               !---------------------------------------------------------------------------!
+
+
+               !---------------------------------------------------------------------------!
+               !    Check fraction to be harvest, to avoid floating point exceptions.      !
+               !---------------------------------------------------------------------------!
+               if (f_harvest > almost_one) then
+                  !---- Apply sweeping logging disturbance across primary forests. --------!
+                  f_harvest            = 1.0
+                  harvest_actual       = site_hvpot_btimber
+                  lambda_harvest(ipa)  = lnexp_max
+                  harvest_deficit      = max(0.,harvest_deficit - harvest_actual)
+                  !------------------------------------------------------------------------!
+               else
+                  !---- Find the disturbance rate. ----------------------------------------!
+                  lambda_harvest(ipa)  = log(1./(1.-f_harvest))
+                  harvest_deficit      = max(0.,harvest_deficit - harvest_actual)
+                  !------------------------------------------------------------------------!
+               end if
+               !---------------------------------------------------------------------------!
+
+               !---- If we successfully met harvest demands, quit routine. ----------------!
+               if ( harvest_deficit == 0. ) return
+               !---------------------------------------------------------------------------!
+            else
+               !----- Patch does not have enough biomass. ---------------------------------!
+               f_harvest         = 0.0
+               harvest_actual    = 0.0
+               ! harvest_deficit = harvest_deficit
+               !---------------------------------------------------------------------------!
+            end if
+            !------------------------------------------------------------------------------!
+
+
 
 
             !----- Immature patch is harvestable.  Check how much to harvest. -------------!

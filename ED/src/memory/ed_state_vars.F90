@@ -2364,7 +2364,10 @@ module ed_state_vars
 
 
 
-      !------------------------------------------------------------------------------------!
+
+      !-----------------------------------
+      ! ANTHROPOGENIC DISTURBANCES (DEFORESTATION, CROPLANDS, FORESTRY)
+      !-----------------------------------
       integer     ,pointer ,dimension(:)    :: num_landuse_years
       !<    The number of years of landuse data calculated at read-in of data during       !
       !<landuse_init.                                                                      !
@@ -2372,15 +2375,33 @@ module ed_state_vars
       type(lutime), pointer,dimension(:,:)  :: clutimes !(luyears,nsites)
       !<The vectorized landuse matrix is allocated in landuse_init.
 
+      real        , pointer, dimension(:) :: skid_rel_area
+      !< Area of collateral damage disturbance in logged areas due to skid trails and 
+      !< roads.
+
       real        , pointer, dimension(:,:) :: mindbh_harvest
+      !<Minimum DBH for selective logging.  If stand clearing logging, this can be set to
+      !<zero.
+
       real        , pointer, dimension(:,:) :: prob_harvest
-      !<Minimum DBH and probability of being harvest when selective logging happens.
-      !------------------------------------------------------------------------------------!
+      !<Probability of being harvest when selective logging happens.
 
+      real        , pointer, dimension(:,:) :: felling_s_gtharv
+      !< Survivorship of large trees (DBH > mindbh_harvest) in patches with tree felling.
 
-      !-----------------------------------
-      ! FORESTRY
-      !-----------------------------------
+      real        , pointer, dimension(:,:) :: felling_s_ltharv
+      !< Survivorship of small trees (DBH < mindbh_harvest) in patches with tree felling.
+
+      real        , pointer, dimension(:,:) :: skid_dbh_thresh
+      !< DBH threshold for survivorship to logging collateral damage (skid trails and 
+      !< roads). Typically skid/road damage affect small trees more than large trees.
+
+      real        , pointer, dimension(:,:) :: skid_s_gtharv
+      !< Survivorship of large trees (DBH > skid_dbh_thresh) to logging collateral damage.
+
+      real        , pointer, dimension(:,:) :: skid_s_ltharv
+      !< Survivorship of small trees (DBH < skid_dbh_thresh) to logging collateral damage.
+
       integer,pointer,dimension(:) :: plantation  
       !<is the site under plantation management? (1=yes, 0=no)
       !<initialized to zero in site creation
@@ -4772,8 +4793,14 @@ module ed_state_vars
       allocate(cpoly%qrunoff                       (                          nsites))
       allocate(cpoly%min_monthly_temp              (                          nsites))
       allocate(cpoly%num_landuse_years             (                          nsites))
+      allocate(cpoly%skid_rel_area                 (                          nsites))
       allocate(cpoly%mindbh_harvest                (                    n_pft,nsites))
       allocate(cpoly%prob_harvest                  (                    n_pft,nsites))
+      allocate(cpoly%felling_s_gtharv              (                    n_pft,nsites))
+      allocate(cpoly%felling_s_ltharv              (                    n_pft,nsites))
+      allocate(cpoly%skid_dbh_thresh               (                    n_pft,nsites))
+      allocate(cpoly%skid_s_gtharv                 (                    n_pft,nsites))
+      allocate(cpoly%skid_s_ltharv                 (                    n_pft,nsites))
       allocate(cpoly%plantation                    (                          nsites))
       allocate(cpoly%pasture_stocking_pft          (                          nsites))
       allocate(cpoly%pasture_stocking_density      (                          nsites))
@@ -7056,8 +7083,14 @@ module ed_state_vars
       nullify(cpoly%qrunoff                    )
       nullify(cpoly%min_monthly_temp           )
       nullify(cpoly%num_landuse_years          )
+      nullify(cpoly%skid_rel_area              )
       nullify(cpoly%mindbh_harvest             )
       nullify(cpoly%prob_harvest               )
+      nullify(cpoly%felling_s_gtharv           )
+      nullify(cpoly%felling_s_ltharv           )
+      nullify(cpoly%skid_dbh_thresh            )
+      nullify(cpoly%skid_s_gtharv              )
+      nullify(cpoly%skid_s_ltharv              )
       nullify(cpoly%plantation                 )
       nullify(cpoly%pasture_stocking_pft       )
       nullify(cpoly%pasture_stocking_density   )
@@ -21788,6 +21821,16 @@ module ed_state_vars
          call metadata_edio(nvar,igr,'Initial density (pasture)','[pl/m2]','(isite)') 
       end if
 
+      if (associated(cpoly%skid_rel_area)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cpoly%skid_rel_area,nvar,igr,init                         &
+                           ,cpoly%siglob_id,var_len,var_len_global,max_ptrs                &
+                           ,'SKID_REL_AREA :21:hist') 
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Area of collateral damage relative to tree felling'           &
+                           ,'[0-1]','(isite)') 
+      end if
+
       if (associated(cpoly%agri_stocking_density)) then
          nvar=nvar+1
          call vtable_edio_r(npts,cpoly%agri_stocking_density,nvar,igr,init                 &
@@ -22729,6 +22772,76 @@ module ed_state_vars
          call metadata_edio(nvar,igr                                                       &
                            ,'Top-of-canopy specific leaf area (light-modulated phenology)' &
                            ,'[m2_leaf/kgC]','(n_pft,isite)')
+      end if
+
+      if (associated(cpoly%mindbh_harvest)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cpoly%mindbh_harvest                                      &
+                           ,nvar,igr,init,cpoly%siglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'MINDBH_HARVEST :24:hist')
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Minimum DBH for harvesting in selective logging'              &
+                           ,'[cm]','(n_pft,isite)')
+      end if
+
+      if (associated(cpoly%prob_harvest)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cpoly%prob_harvest                                        &
+                           ,nvar,igr,init,cpoly%siglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'PROB_HARVEST :24:hist')
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Harvesting probability in selective logging'                  &
+                           ,'[0-1]','(n_pft,isite)')
+      end if
+
+      if (associated(cpoly%felling_s_gtharv)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cpoly%felling_s_gtharv                                    &
+                           ,nvar,igr,init,cpoly%siglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'FELLING_S_GTHARV :24:hist')
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Survivorship to felling for trees with DBH > MINDBH_HARVEST'  &
+                           ,'[0-1]','(n_pft,isite)')
+      end if
+
+      if (associated(cpoly%felling_s_ltharv)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cpoly%felling_s_ltharv                                    &
+                           ,nvar,igr,init,cpoly%siglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'FELLING_S_LTHARV :24:hist')
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Survivorship to felling for trees with DBH < MINDBH_HARVEST'  &
+                           ,'[0-1]','(n_pft,isite)')
+      end if
+
+      if (associated(cpoly%skid_dbh_thresh)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cpoly%skid_dbh_thresh                                     &
+                           ,nvar,igr,init,cpoly%siglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'SKID_DBH_THRESH :24:hist')
+         call metadata_edio(nvar,igr                                                       &
+                           ,'DBH threshold for collateral logging damage survivorship'     &
+                           ,'[cm]','(n_pft,isite)')
+      end if
+
+      if (associated(cpoly%skid_s_gtharv)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cpoly%skid_s_gtharv                                       &
+                           ,nvar,igr,init,cpoly%siglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'SKID_S_GTHARV :24:hist')
+         call metadata_edio(nvar,igr                                                       &
+                     ,'Survivorship to collateral logging damage (DBH > SKID_DBH_THRESH)'  &
+                     ,'[0-1]','(n_pft,isite)')
+      end if
+
+      if (associated(cpoly%skid_s_ltharv)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cpoly%skid_s_ltharv                                       &
+                           ,nvar,igr,init,cpoly%siglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'SKID_S_LTHARV :24:hist')
+         call metadata_edio(nvar,igr                                                       &
+                     ,'Survivorship to collateral logging damage (DBH < SKID_DBH_THRESH)'  &
+                     ,'[0-1]','(n_pft,isite)')
       end if
       !------------------------------------------------------------------------------------!
 

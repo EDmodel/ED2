@@ -1561,6 +1561,7 @@ $ED_NL
    ! The following variables are used when IANTH_DISTURB is 1 or 2.                        !
    !                                                                                       !
    ! SL_SKID_REL_AREA    -- area damaged by skid trails (relative to felled area).         !
+   ! SL_SKID_DBH_THRESH  -- DBH threshold for damage caused in skid trails.                !
    ! SL_SKID_S_GTHARV    -- survivorship of trees with DBH > MINDBH in skid trails.        !
    ! SL_SKID_S_LTHARV    -- survivorship of trees with DBH < MINDBH in skid trails.        !
    ! SL_FELLING_S_LTHARV -- survivorship of trees with DBH < MINDBH in felling gaps.       !
