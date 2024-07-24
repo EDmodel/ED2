@@ -139,7 +139,7 @@ module rk4_driver
             !     Update the monthly rainfall.                                             !
             !------------------------------------------------------------------------------!
             imon                             = current_time%month
-            cpoly%avg_monthly_pcpg(imon,isi) = cpoly%avg_monthly_pcpg(imon,isi)            &
+            cpoly%avg_monthly_accp(imon,isi) = cpoly%avg_monthly_accp(imon,isi)            &
                                              + cmet%pcpg * dtlsm
             !------------------------------------------------------------------------------!
 

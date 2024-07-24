@@ -32,12 +32,14 @@ subroutine master_sendinit()
    use io_params
    use rpara
    use mem_aerad, only: nwave
+#if defined(RAMS_MPI)
+   use mpi
+#endif
 
    implicit none
 
    !----- External variable declaration ---------------------------------------------------!
 #if defined(RAMS_MPI)
-   include 'mpif.h'
    include 'interface.h'
 #endif
    !----- Local constants. ----------------------------------------------------------------!
@@ -194,12 +196,14 @@ subroutine node_getinit()
    use mem_grid
    use io_params
    use mem_aerad, only: nwave
+#if defined(RAMS_MPI)
+   use mpi
+#endif
 
    implicit none
 
    !----- External variable declaration ---------------------------------------------------!
 #if defined(RAMS_MPI)
-   include 'mpif.h'
    include 'interface.h'
 #endif
    !----- Local constants. ----------------------------------------------------------------!
@@ -407,11 +411,13 @@ subroutine node_sendall()
    use grid_dims
    use mem_cuparm , only : nclouds ! ! intent(in)
    use mem_aerad  , only : nwave   ! ! intent(in)
+#if defined(RAMS_MPI)
+   use mpi
+#endif
 
    implicit none
    !----- External variable declaration ---------------------------------------------------!
 #if defined(RAMS_MPI)
-   include 'mpif.h'
    include 'interface.h'
 #endif
    !----- Local constants -----------------------------------------------------------------!
@@ -534,11 +540,13 @@ subroutine master_getall()
    use mem_cuparm , only: nclouds ! ! intent(in)
    use mem_aerad  , only: nwave   ! ! intent(in)
    use grid_dims
+#if defined(RAMS_MPI)
+   use mpi
+#endif
   
    implicit none
    !----- External variable declaration ---------------------------------------------------!
 #if defined(RAMS_MPI)
-   include 'mpif.h'
    include 'interface.h'
 #endif
    !----- Local constants -----------------------------------------------------------------!

@@ -24,6 +24,9 @@ subroutine masterput_oda(master_num)
   use grid_dims
   use mem_oda
   use rpara
+#if defined(RAMS_MPI)
+   use mpi
+#endif
 
   implicit none
 
@@ -33,7 +36,6 @@ subroutine masterput_oda(master_num)
   !   +------------------------------------------------------------------
 #if defined(RAMS_MPI)
   include 'interface.h'
-  include 'mpif.h'
 #endif
   integer :: ns
   integer :: master_num
@@ -137,11 +139,13 @@ subroutine nodeget_oda()
 
   use node_mod
   use mem_oda
+#if defined(RAMS_MPI)
+   use mpi
+#endif
 
   implicit none
 #if defined(RAMS_MPI)
   include 'interface.h'
-  include 'mpif.h'
 #endif
   integer :: ierr
   integer :: ns

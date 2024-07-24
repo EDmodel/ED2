@@ -167,7 +167,7 @@ cci.lieberman <<- function( xyz, dxy = 1, radius  = 10, undef = -9999., closure 
       }else{
          #----- Not an error.  Check whether this has been called by a friend function. ---#
          wcm[[n]] = paste(wcm[[n]],collapse="")
-         top      = substring(wcm[[n]],1,4) %==% "NULL"
+         top      = substring(wcm[[n]],1,4) %eq% "NULL"
          mess     = mess && ! grepl("^cci.lieberman",wcm[[n]])
          #---------------------------------------------------------------------------------#
       }#end if

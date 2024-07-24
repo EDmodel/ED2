@@ -33,6 +33,7 @@ subroutine ed_driver()
                                    , nnodetot                      & ! intent(in)
                                    , sendnum                       ! ! intent(in)
 #if defined(RAMS_MPI)
+   use mpi
    use ed_node_coms         , only : recvnum                       ! ! intent(in)
 #endif
    use detailed_coms        , only : idetailed                     & ! intent(in)
@@ -43,10 +44,6 @@ subroutine ed_driver()
    use random_utils         , only : init_random_seed              ! ! subroutine
    use budget_utils         , only : ed_init_budget                ! ! subroutine
    implicit none
-   !----- Included variables. -------------------------------------------------------------!
-#if defined(RAMS_MPI)
-   include 'mpif.h' ! MPI commons
-#endif
    !----- Local variables. ----------------------------------------------------------------!
    character(len=12)           :: c0
    character(len=12)           :: c1
@@ -227,7 +224,6 @@ subroutine ed_driver()
 
 
 
-
       !------------------------------------------------------------------------------------!
       !      Initialize state properties of polygons/sites/patches/cohorts.                !
       !------------------------------------------------------------------------------------!
@@ -236,6 +232,7 @@ subroutine ed_driver()
       !------------------------------------------------------------------------------------!
    end select
    !---------------------------------------------------------------------------------------!
+
 
    !---------------------------------------------------------------------------------------!
    !      In case the runs is going to produce detailed output, we eliminate all patches   !

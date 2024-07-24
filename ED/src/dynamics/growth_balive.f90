@@ -1379,46 +1379,49 @@ module growth_balive
             !        net growth (i.e. increment from the value of btissue before           !
             !        maintenance was applied) is the same every day.                       !
             !------------------------------------------------------------------------------!
-            if ( (iallom == 3 .or. iallom == 4)                                            &
-                .and. (.not. (is_grass(ipft) .and. igrass == 1)) ) then
-               if (delta_bleaf >= tiny_num) then
-                  gtf_bleaf = ( cpatch%leaf_maintenance(ico)                               &
-                              + gr_tfact0 * (delta_bleaf - cpatch%leaf_maintenance(ico)) ) &
-                            / delta_bleaf
-               else
-                  gtf_bleaf = gr_tfact0
+            select case (iallom)
+            case (3,4,5)
+               if (.not. (is_grass(ipft) .and. igrass == 1) ) then
+                  if (delta_bleaf >= tiny_num) then
+                     gtf_bleaf = ( cpatch%leaf_maintenance(ico)                            &
+                                 + gr_tfact0 * (delta_bleaf-cpatch%leaf_maintenance(ico))) &
+                               / delta_bleaf
+                  else
+                     gtf_bleaf = gr_tfact0
+                  end if
+                  if (delta_broot >= tiny_num) then
+                     gtf_broot = ( cpatch%root_maintenance(ico)                            &
+                                 + gr_tfact0 * (delta_broot-cpatch%root_maintenance(ico))) &
+                               / delta_broot
+                  else
+                     gtf_broot = gr_tfact0
+                  end if
+                  if (delta_bbarka >= tiny_num) then
+                     gtf_bbarka = ( cpatch%barka_maintenance(ico)                          &
+                                  + gr_tfact0                                              &
+                                  * (delta_bbarka - cpatch%barka_maintenance(ico)) )       &
+                               / delta_bbarka
+                  else
+                     gtf_bbarka = gr_tfact0
+                  end if
+                  if (delta_bbarkb >= tiny_num) then
+                     gtf_bbarkb = ( cpatch%barkb_maintenance(ico)                          &
+                                  + gr_tfact0                                              &
+                                  * (delta_bbarkb - cpatch%barkb_maintenance(ico)) )       &
+                               / delta_bbarkb
+                  else
+                     gtf_bbarkb = gr_tfact0
+                  end if
+                  !----- Correct deltas based on the time of the month and turnover. ------!
+                  delta_bleaf     = delta_bleaf     * gtf_bleaf
+                  delta_broot     = delta_broot     * gtf_broot
+                  delta_bsapwooda = delta_bsapwooda * gr_tfact0 ! sapwood turnover is zero.
+                  delta_bsapwoodb = delta_bsapwoodb * gr_tfact0 ! sapwood turnover is zero.
+                  delta_bbarka    = delta_bbarka    * gtf_bbarka
+                  delta_bbarkb    = delta_bbarkb    * gtf_bbarkb
                end if
-               if (delta_broot >= tiny_num) then
-                  gtf_broot = ( cpatch%root_maintenance(ico)                               &
-                              + gr_tfact0 * (delta_broot - cpatch%root_maintenance(ico)) ) &
-                            / delta_broot
-               else
-                  gtf_broot = gr_tfact0
-               end if
-               if (delta_bbarka >= tiny_num) then
-                  gtf_bbarka = ( cpatch%barka_maintenance(ico)                             &
-                               + gr_tfact0                                                 &
-                               * (delta_bbarka - cpatch%barka_maintenance(ico)) )          &
-                            / delta_bbarka
-               else
-                  gtf_bbarka = gr_tfact0
-               end if
-               if (delta_bbarkb >= tiny_num) then
-                  gtf_bbarkb = ( cpatch%barkb_maintenance(ico)                             &
-                               + gr_tfact0                                                 &
-                               * (delta_bbarkb - cpatch%barkb_maintenance(ico)) )          &
-                            / delta_bbarkb
-               else
-                  gtf_bbarkb = gr_tfact0
-               end if
-               !----- Correct deltas based on the time of the month and turnover. ---------!
-               delta_bleaf     = delta_bleaf     * gtf_bleaf
-               delta_broot     = delta_broot     * gtf_broot
-               delta_bsapwooda = delta_bsapwooda * gr_tfact0 ! sapwood turnover is zero.
-               delta_bsapwoodb = delta_bsapwoodb * gr_tfact0 ! sapwood turnover is zero.
-               delta_bbarka    = delta_bbarka    * gtf_bbarka
-               delta_bbarkb    = delta_bbarkb    * gtf_bbarkb
-            end if
+               !---------------------------------------------------------------------------!
+            end select
             !------------------------------------------------------------------------------!
 
 

@@ -889,13 +889,19 @@ $ED_NL
    !                  a few genera in Costa Rica.  References:                             !
    !                  Cole and Ewel (2006, Forest Ecol. Manag.), and Calvo-Alvarado et al. !
    !                  (2008, Tree Physiol.).                                               !
-   !           3. (Beta) Updated allometric for tropical PFTs based on data from           !
-   !              Sustainable Landscapes Brazil (Height and crown area), Chave et al.      !
-   !              (2014, Glob. Change Biol.) (biomass) and the BAAD data base, Falster et  !
-   !               al. (2015, Ecology) (leaf area).  Both leaf and structural biomass take !
-   !               DBH and Height as dependent variables, and DBH-Height takes a simpler   !
-   !               log-linear form fitted using SMA so it can be inverted (useful for      !
-   !               airborne lidar initialisation).                                         !
+   !           3. (Beta) Revised tropical PFT allometric (Longo et al. 2020, JGR-B).       !
+   !              a. Height -> DBH and DBH^2*H -> CA. Model fitting using the Sustainable  !
+   !                 Landscapes Dataset (Longo et al. 2016, Glob. Biogeochem. Cycles).     !
+   !                 DBH-Height takes a simpler log-linear form fitted using SMA so it can !
+   !                 be inverted (useful for airborne lidar initialisation).               !
+   !              b. DBH^2*H -> AGB. Based on Chave et al. (2014, Glob. Change Biol.)      !
+   !              c. DBH^2*H -> Leaf area based on the BAAD data base:                     !
+   !                 Falster et al. (2015, Ecology).                                       !
+   !           4. (Under Development) Similar to 3 but (a) leaf and height allometric      !
+   !               equations depend on wood density; (b) use height-based root allometry   !
+   !               from Smith-Martin et al. (2020, New Phyt.).                             !
+   !           5. (Under Development) Similar to IALLOM = 3 but using the rooting          !
+   !              allometry from IALLOM = 4.                                               !
    !---------------------------------------------------------------------------------------!
    NL%IALLOM          = myallom
    !---------------------------------------------------------------------------------------!

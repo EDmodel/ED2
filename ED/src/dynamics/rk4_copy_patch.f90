@@ -2093,6 +2093,8 @@ module rk4_copy_patch
                                     + csite%ground_shv        (ipa) * dtlsm_o_frqsum
       csite%fmean_can_ggnd    (ipa) = csite%fmean_can_ggnd    (ipa)                        &
                                     + csite%ggnet             (ipa) * dtlsm_o_frqsum
+      csite%fmean_snowfac     (ipa) = csite%fmean_snowfac     (ipa)                        &
+                                    + csite%snowfac           (ipa) * dtlsm_o_frqsum
       !------------------------------------------------------------------------------------!
       !       Snow/pounding layers.  We keep track of the total, not individual layers.    !
       ! Energy will be integrated as an extensive variable, we will convert it by the      !

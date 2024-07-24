@@ -22,13 +22,12 @@ subroutine ed_1st_master (ipara, nnodestotal,nslaves, headnode_num, max_threads,
    use ed_misc_coms , only : runtype              ! ! intent(inout)
    use ed_state_vars, only : allocate_edglobals   & ! subroutine
                            , filltab_alltypes     ! ! subroutine
+#if defined(RAMS_MPI)
+   use mpi
+#endif
 
    implicit none
 
-   !----- Pre-compiled variables from MPI. ------------------------------------------------!
-#if defined(RAMS_MPI)
-   include 'mpif.h'
-#endif
    !----- Arguments. ----------------------------------------------------------------------!
    integer         , intent(in) :: ipara        ! 0 if sequential run; 1 if parallel run
    integer         , intent(in) :: nnodestotal  ! total number of nodes on any run
@@ -170,10 +169,10 @@ end subroutine ed_1st_master
 !------------------------------------------------------------------------------------------!
 subroutine ed_1st_node()
    use ed_mem_alloc, only : ed_memory_allocation ! ! subroutine
-   implicit none
-   !----- Pre-compiled variables from MPI. ------------------------------------------------!
 #if defined(RAMS_MPI)
-   include 'mpif.h'
+   use mpi
+#endif
+   implicit none
    !----- Local variable (MPI only). ------------------------------------------------------!
    integer             :: ierr
 #endif

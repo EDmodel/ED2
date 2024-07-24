@@ -27,10 +27,12 @@ subroutine node_sendnbc(ifm,icm)
   use var_tables
   use mem_basic
   use grid_dims, only: maxgrds
+#if defined(RAMS_MPI)
+   use mpi
+#endif
   implicit none
 #if defined(RAMS_MPI)
   include 'interface.h'
-  include 'mpif.h'
 #endif
   integer :: ierr,ipos
   integer :: nm,i1,i2,j1,j2,k1,k2,ng,itype,mtp,iptr,nv
@@ -249,11 +251,13 @@ subroutine node_getnbc(ifm,icm)
   use mem_scratch
   use mem_basic
   use mem_nestb
+#if defined(RAMS_MPI)
+   use mpi
+#endif
 
   implicit none
 #if defined(RAMS_MPI)
   include 'interface.h'
-  include 'mpif.h'
 #endif
   integer :: ierr,ipos
 #if defined(RAMS_MPI)

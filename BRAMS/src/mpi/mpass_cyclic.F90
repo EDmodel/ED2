@@ -49,10 +49,10 @@ subroutine node_cycinit(nzp,nxp,nyp,npvar,nmachs,ibnd,jbnd,mynum)
   use mem_cuparm, only : nclouds
   use mem_aerad , only : nwave
   use grid_dims, only : ndim_types
-  implicit none
 #if defined(RAMS_MPI)
-  include 'mpif.h'
+  use mpi
 #endif
+  implicit none
   integer :: nmachs,mynum,icypts,nzp,nxp,nyp,icycpts,iadd,mdn,msn,ndn,nsn  &
      ,ibnd,jbnd,nm,maxijrecv_cyc
   integer, dimension(ndim_types) :: npvar
@@ -282,12 +282,14 @@ subroutine node_sendcyclic(isflag)
    use grid_dims
    use mem_cuparm, only: nclouds
    use mem_aerad , only : nwave    ! ! intent(in)
+#if defined(RAMS_MPI)
+   use mpi
+#endif
 
    implicit none
    !----- Included variables --------------------------------------------------------------!
 #if defined(RAMS_MPI)
    include 'interface.h'
-   include 'mpif.h'
 #endif
    !----- Arguments -----------------------------------------------------------------------!
    integer, intent(in) :: isflag
@@ -479,13 +481,13 @@ subroutine node_getcyclic(isflag)
    use grid_dims
    use mem_cuparm, only : nclouds
    use mem_aerad , only : nwave    ! ! intent(in)
+#if defined(RAMS_MPI)
+   use mpi
+#endif
 
    implicit none
    !----- Included variables --------------------------------------------------------------!
    include 'interface.h'
-#if defined(RAMS_MPI)
-   include 'mpif.h'
-#endif
    !----- Arguments -----------------------------------------------------------------------!
    integer                            , intent(in) :: isflag
    !----- Local variables -----------------------------------------------------------------!

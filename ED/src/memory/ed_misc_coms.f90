@@ -265,17 +265,40 @@ module ed_misc_coms
 
 
    !----- Namelist option for allometry scheme. -------------------------------------------!
-   integer :: iallom ! 0 -- Original ED-2.1 allometry
-                     ! 1 -- DBH -> AGB Tree allometry based on Baker et al. (2004)
-                     !      keep original ED-2.1 Bl/Bd ratio
-                     ! 2 -- DBH -> AGB Tree allometry based on Baker et al. (2004)
-                     !      keep original ED-2.1 Bl
-                     ! 3 -- Updated allometric and trait-based parameters for tropical
-                     !      PFTs.  When available, parameters came from regional data
-                     !      sets and regional studies, or from local studies when regional
-                     !      ones were not found. Check ed_params.f90 for details and 
-                     !      references.
-   !---------------------------------------------------------------------------------------!
+   integer :: iallom ! 0 -- (Legacy) Original ED-1.0, included for back compatibility.
+                     ! 1 -- (Legacy) ED-2.1 allometry, included for back compatibility.
+                     !      a. The coefficients for structural biomass are set so the
+                     !         total AGB is similar to Baker et al. (2004, Glob. Change
+                     !         Biol.), equation 2.
+                     !      b. Experimental root depth that makes canopy trees to have
+                     !         root depths of 5m and grasses/seedlings at 0.5 to have root
+                     !         depth of 0.5 m.
+                     !      c. Crown area defined as in Poorter et al. (2006, Ecology),
+                     !         imposing maximum crown area.
+                     ! 2 -- (ED-2.2 default) Similar to 1, but with a few extra changes.
+                     !      a. Height -> DBH allometry as in Poorter et al. (2006)
+                     !      b. Balive is retuned, using a few leaf biomass allometric
+                     !         equations for a few genera in Costa Rica.  References:
+                     !         Cole and Ewel (2006, Forest Ecol. Manag.), and
+                     !         Calvo-Alvarado et al. (2008, Tree Physiol.).
+                     ! 3 -- (Beta) Revised tropical PFT allometric (Longo et al. 2020, 
+                     !      J. Geophys. Res.-Biogeosci.).
+                     !      a. Height -> DBH and DBH^2*H -> CA. Model fitting using the 
+                     !         Sustainable Landscapes Dataset (Longo et al. 2016, Glob. 
+                     !         Biogeochem. Cycles). DBH-Height takes a simpler log-linear 
+                     !         form fitted using SMA so it can be inverted (useful for 
+                     !         airborne lidar initialisation).
+                     !      b. DBH^2*H -> AGB. Based on Chave et al. (2014, Glob. Change 
+                     !         Biol.)
+                     !      c. DBH^2*H -> Leaf area based on the BAAD data base:
+                     !         Falster et al. (2015, Ecology).
+                     ! 4 -- (Under Development) Similar to 3 but (a) leaf and height
+                     !      allometric equations depend on wood density; (b) use
+                     !      height-based root allometry from Smith-Martin et al. (2020, 
+                     !      New Phyt.).
+                     ! 5 -- (Under Development) Similar to IALLOM = 3 but using the 
+                     !      rooting allometry from IALLOM = 4.
+    !---------------------------------------------------------------------------------------!
 
 
 

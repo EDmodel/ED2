@@ -16,11 +16,13 @@ do
          ;;
       *)
          echo -n "   - Directory ${dir}: "
-         files=$(/bin/ls -1 ${model}/src/${dir})
+         files=$(/bin/ls -1 ${model}/src/${dir}/*.F90 2> /dev/null)
+         files="${files} $(/bin/ls -1 ${model}/src/${dir}/*.f90 2> /dev/null)"
+         files="${files} $(/bin/ls -1 ${model}/src/${dir}/*.c 2> /dev/null)"
          dirlines=0
          for file in ${files}
          do
-            nlines=$(sed '/^ *$/ d' ${model}/src/${dir}/${file} | wc -l)
+            nlines=$(sed '/^ *$/ d' ${file} | wc -l | awk '{print $1}')
             let dirlines=${dirlines}+${nlines}
          done
          echo "${dirlines} lines"

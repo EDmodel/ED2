@@ -30,6 +30,7 @@ subroutine h5_output(vtype)
                            , stride                & ! intent(in)
                            , globdims              ! ! intent(in)
 #if defined(RAMS_MPI)
+   use mpi
    use ed_node_coms , only : mynum                 & ! intent(in)
                            , nnodetot              & ! intent(in)
                            , recvnum               & ! intent(in)
@@ -50,10 +51,6 @@ subroutine h5_output(vtype)
                            , gdpy                  ! ! intent(in)
    implicit none
 
-   !------ Include standard common blocks. ------------------------------------------------!
-#if defined(RAMS_MPI)
-   include 'mpif.h'
-#endif
    !------ Arguments. ---------------------------------------------------------------------!
    character(len=*)                                 , intent(in) :: vtype
    !------ Local variables. ---------------------------------------------------------------!
