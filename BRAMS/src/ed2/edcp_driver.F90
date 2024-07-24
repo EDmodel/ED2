@@ -66,7 +66,8 @@ subroutine ed_coup_driver()
    integer                     :: jd2
    integer                     :: ierr
    integer                     :: igr
-   integer                     :: ping 
+   integer                     :: ping
+   logical                     :: new_day
    real                        :: wtime1
    real                        :: wtime2
    real                        :: wtime_start     ! wall time

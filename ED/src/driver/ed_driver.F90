@@ -182,7 +182,8 @@ subroutine ed_driver()
 
 
    !---------------------------------------------------------------------------------------!
-   if (trim(runtype) == 'HISTORY' ) then
+   select case (trim(runtype))
+   case ('HISTORY')
       !------------------------------------------------------------------------------------!
       !      Initialize the model state as a replicate image of a previous  state.         !
       !------------------------------------------------------------------------------------!
@@ -207,7 +208,7 @@ subroutine ed_driver()
       if (nnodetot /= 1 ) call MPI_Barrier(MPI_COMM_WORLD,ierr)
 #endif
       !------------------------------------------------------------------------------------!
-   else
+   case default
 
       !------------------------------------------------------------------------------------!
       !      Initialize state properties of polygons/sites/patches/cohorts.                !
@@ -215,7 +216,7 @@ subroutine ed_driver()
       if (mynum == nnodetot) write (unit=*,fmt='(a)') ' [+] Load_Ecosystem_State...'
       call load_ecosystem_state()
       !------------------------------------------------------------------------------------!
-   end if
+   end select
 
    !---------------------------------------------------------------------------------------!
    !      In case the runs is going to produce detailed output, we eliminate all patches   !
@@ -291,11 +292,14 @@ subroutine ed_driver()
    !      Initialise some derived variables.  Skip this in case the simulation is resuming !
    ! from HISTORY.                                                                         !
    !---------------------------------------------------------------------------------------!
-   if (trim(runtype) /= 'HISTORY' ) then
+   select case (trim(runtype))
+   case ('HISTORY')
+      continue
+   case default
       do ifm=1,ngrids
          call update_derived_props(edgrid_g(ifm))
       end do
-   end if
+   end select
    !---------------------------------------------------------------------------------------!
 
 
@@ -304,11 +308,14 @@ subroutine ed_driver()
    !      Initialise drought phenology.  This should be done after the soil moisture has   !
    ! been set up.                                                                          !
    !---------------------------------------------------------------------------------------!
-   if (runtype /= 'HISTORY') then
+   select case (trim(runtype))
+   case ('HISTORY')
+      continue
+   case default
       do ifm=1,ngrids
          call first_phenology(edgrid_g(ifm))
       end do
-   end if
+   end select
    !---------------------------------------------------------------------------------------!
 
 
