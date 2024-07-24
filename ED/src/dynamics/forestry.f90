@@ -142,6 +142,10 @@ module forestry
          ! croplands and pastures.                                                         !
          !---------------------------------------------------------------------------------!
          select case(ilu)
+         case (1,8)
+            !---- Pasture or cropland. Do nothing. ----------------------------------------!
+            continue
+            !------------------------------------------------------------------------------!
          case (2:7)
             hcoh_loop: do ico=1,cpatch%ncohorts
                ipft = cpatch%pft(ico)

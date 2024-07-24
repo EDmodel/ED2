@@ -122,8 +122,85 @@ nstext.polygon <<- nstext.polygon
 #==========================================================================================#
 #     This function finds the soil parameters.                                             #
 #------------------------------------------------------------------------------------------#
-soil.params <<- function(ntext,isoilflg,slxsand,slxclay,slsoc,slph,slcec,sldbd
-                        ,out.dfr=FALSE){
+soil.params <<- function( ntext    = NA_integer_
+                        , isoilflg = 1
+                        , slxsand  = NA_real_
+                        , slxclay  = NA_real_
+                        , slsoc    = NA_real_
+                        , slph     = NA_real_
+                        , slcec    = NA_real_
+                        , sldbd    = NA_real_
+                        , slhydro  = ifelse( test = ntext %in% c(12,13)
+                                           , yes  = ntext
+                                           , no   = isoil.hydro
+                                           )#end ifelse
+                        , out.dfr  = FALSE
+                        ){
+
+   #----- Decide whether to call function recursively. ------------------------------------#
+   ulen = unique( c(length(ntext),length(isoilflg),length(slxsand),length(slsoc)
+                   ,length(slph),length(slcec),length(sldbd),length(slhydro)
+                   )#end c
+                )#end unique
+   if (any(ulen > 1)){
+      #----- There are vectors. Ensure all data are either scalar or same-sized vector. ---#
+      if (any(! ulen %in% c(1,max(ulen)))){
+         #----- Stop the execution, the data are inconsistent. ----------------------------#
+         cat0("---------------------------------------------------------------------")
+         cat0("   Input data must be either scalars or vectors with the same size.")
+         cat0("---------------------------------------------------------------------")
+         cat0(" Length(ntext)    = ",length(ntext)   ,".")
+         cat0(" Length(isoilflg) = ",length(isoilflg),".")
+         cat0(" Length(slxsand)  = ",length(slxsand) ,".")
+         cat0(" Length(slxclay)  = ",length(slxclay) ,".")
+         cat0(" Length(slsoc)    = ",length(slsoc)   ,".")
+         cat0(" Length(slph)     = ",length(slph)    ,".")
+         cat0(" Length(slcec)    = ",length(slcec)   ,".")
+         cat0(" Length(sldbd)    = ",length(sldbd)   ,".")
+         cat0(" Length(slhydro)  = ",length(slhydro) ,".")
+         cat0("---------------------------------------------------------------------")
+         stop(" Dimension mismatch of input variables.")
+         #---------------------------------------------------------------------------------#
+      }#end if (any(! ulen %in% c(1,max(ulen))))
+      #------------------------------------------------------------------------------------#
+
+
+      #----- At this point we are clear.  Turn data into vectors. -------------------------#
+      mxlen = max(ulen)
+      if (length(ntext   ) %in% c(1)) ntext    = rep(x=ntext   ,times=mxlen)
+      if (length(isoilflg) %in% c(1)) isoilflg = rep(x=isoilflg,times=mxlen)
+      if (length(slxsand ) %in% c(1)) slxsand  = rep(x=slxsand ,times=mxlen)
+      if (length(slxclay ) %in% c(1)) slxclay  = rep(x=slxclay ,times=mxlen)
+      if (length(slsoc   ) %in% c(1)) slsoc    = rep(x=slsoc   ,times=mxlen)
+      if (length(slph    ) %in% c(1)) slph     = rep(x=slph    ,times=mxlen)
+      if (length(slcec   ) %in% c(1)) slcec    = rep(x=slcec   ,times=mxlen)
+      if (length(sldbd   ) %in% c(1)) sldbd    = rep(x=sldbd   ,times=mxlen)
+      if (length(slhydro ) %in% c(1)) slhydro  = rep(x=slhydro ,times=mxlen)
+      #------------------------------------------------------------------------------------#
+
+
+      #----- Use mapply to run the function. ----------------------------------------------#
+      ans = mapply( FUN      = soil.params
+                  , ntext    = as.list(ntext   )
+                  , isoilflg = as.list(isoilflg)
+                  , slxsand  = as.list(slxsand )
+                  , slxclay  = as.list(slxclay )
+                  , slsoc    = as.list(slsoc   )
+                  , slph     = as.list(slph    )
+                  , slcec    = as.list(slcec   )
+                  , sldbd    = as.list(sldbd   )
+                  , slhydro  = as.list(slhydro )
+                  , MoreArgs = list(out.dfr=out.dfr)
+                  , SIMPLIFY = FALSE
+                  )#end mapply
+      if (out.dfr) ans = do.call(what="rbind",args=ans)
+      return(ans)
+      #------------------------------------------------------------------------------------#
+   }#end if (any(ulen > 1))
+   #---------------------------------------------------------------------------------------#
+
+
+
    #----- Define some prescribed fractions. -----------------------------------------------#
    xsand.def = c( 0.920, 0.825, 0.660, 0.200, 0.410, 0.590
                 , 0.100, 0.320, 0.520, 0.060, 0.200, 0.200
@@ -142,6 +219,7 @@ soil.params <<- function(ntext,isoilflg,slxsand,slxclay,slsoc,slph,slcec,sldbd
    slpotst.MPa = 5.e-4 # "saturated" soil approximation for van Genuchten         [    MPa]
    slpotth.MPa = 0.01  # soil-water potential: field capacity (Tomasella-Hodnett) [    MPa]
    slpotsr.MPa = 0.033 # soil-water potential: field capacity (Saxton-Rawls)      [    MPa]
+   slpotdg.MPa = 5.0   # soil-water potential: air dry soil (van Genuchten)       [    MPa]
    slpotcp.MPa = 3.1   # soil-water potential: air dry soil                       [    MPa]
    slpotwp.MPa = 1.5   # soil-water potential: wilting point                      [    MPa]
    slpotld.MPa = 0.75  # soil-water potential that plants start dropping leaves   [    MPa]
@@ -228,7 +306,7 @@ soil.params <<- function(ntext,isoilflg,slxsand,slxclay,slsoc,slph,slcec,sldbd
    #---------------------------------------------------------------------------------------#
    #     Find soil class and sand, silt, and clay fractions.                               #
    #---------------------------------------------------------------------------------------#
-   if (missing(slxsand) || missing(slxclay) || missing(isoilflg)){
+   if (is.na(slxsand) || is.na(slxclay) || is.na(isoilflg)){
       mysoil$ntext = ntext
       mysoil$name  = soil.name[mysoil$ntext]
       mysoil$key   = soil.key [mysoil$ntext]
@@ -236,9 +314,9 @@ soil.params <<- function(ntext,isoilflg,slxsand,slxclay,slsoc,slph,slcec,sldbd
       mysoil$xclay = xclay.def[ntext]
       mysoil$xsilt = 1. - mysoil$xsand - mysoil$xclay
    }else if (isoilflg == 2 & slxsand > 0 & slxclay > 0 & (slxsand + slxclay) < 1 ){
-      mysoil$ntext = sclass(slxsand,slxclay)
-      mysoil$name  = soil.name[mysoil$ntext]
-      mysoil$key   = soil.key [mysoil$ntext]
+      mysoil$ntext = if(is.na(ntext)){sclass(sandfrac=slxsand,clayfrac=slxclay)}else{ntext}
+      mysoil$name  = "User"
+      mysoil$key   = "User"
       mysoil$xsand = slxsand
       mysoil$xclay = slxclay
       mysoil$xsilt = 1. - mysoil$xsand - mysoil$xclay
@@ -255,11 +333,11 @@ soil.params <<- function(ntext,isoilflg,slxsand,slxclay,slsoc,slph,slcec,sldbd
 
 
    #----- Decide which method to use. -----------------------------------------------------#
-   if ( mysoil$ntext %in% 13){
+   if ( slhydro %in% 13){
       mysoil$method = "BDRK"
-   }else if ( (mysoil$ntext %in% c(12)) || isoil.hydro %in% c(0,1)){
+   }else if ( slhydro %in% c(0,1,12)){
       mysoil$method = "BC64"
-   }else if (isoil.hydro %in% 2){
+   }else if (slhydro %in% 2){
       mysoil$method = "vG80"
    }else{
       mysoil$method = "SR06"
@@ -272,7 +350,7 @@ soil.params <<- function(ntext,isoilflg,slxsand,slxclay,slsoc,slph,slcec,sldbd
    #---------------------------------------------------------------------------------------#
    if (mysoil$method %in% "vG80"){
       #----- Make sure all required variables are provided. -------------------------------#
-      fine = ! (missing(slsoc) || missing(slph) || missing(slcec) || missing(sldbd))
+      fine = ! (is.na(slsoc) || is.na(slph) || is.na(slcec) || is.na(sldbd))
       if (fine){
          #----- Copy values from inputs. --------------------------------------------------#
          mysoil$slsoc = slsoc
@@ -284,10 +362,10 @@ soil.params <<- function(ntext,isoilflg,slxsand,slxclay,slsoc,slph,slcec,sldbd
          #----- Missing data, issue an error message. -------------------------------------#
          cat0("---------------------------------------------------------------------------")
          cat0(" Missing parameters for isoil.hydro = 2 (Hodnett and Tomasella 2002)! ")
-         cat0(" Missing \"slsoc\" = ",missing(slsoc),".")
-         cat0(" Missing \"slph\"  = ",missing(slph) ,".")
-         cat0(" Missing \"slcec\" = ",missing(slcec),".")
-         cat0(" Missing \"sldbd\" = ",missing(sldbd),".")
+         cat0(" Missing \"slsoc\" = ",is.na(slsoc),".")
+         cat0(" Missing \"slph\"  = ",is.na(slph) ,".")
+         cat0(" Missing \"slcec\" = ",is.na(slcec),".")
+         cat0(" Missing \"sldbd\" = ",is.na(sldbd),".")
          cat0("---------------------------------------------------------------------------")
          stop(" Invalid settings for soil.params.")
          #---------------------------------------------------------------------------------#
@@ -295,7 +373,7 @@ soil.params <<- function(ntext,isoilflg,slxsand,slxclay,slsoc,slph,slcec,sldbd
       #------------------------------------------------------------------------------------#
    }else if (mysoil$method %in% "SR06"){
       #----- Make sure all required variables are provided. -------------------------------#
-      fine = ! (missing(slsoc) || missing(slph) || missing(slcec) || missing(sldbd))
+      fine = ! is.na(slsoc)
       if (fine){
          #----- Copy values from inputs. --------------------------------------------------#
          mysoil$slsoc = slsoc
@@ -311,16 +389,16 @@ soil.params <<- function(ntext,isoilflg,slxsand,slxclay,slsoc,slph,slcec,sldbd
       #------------------------------------------------------------------------------------#
 
       #----- Variables are dummy but we honour the input variables if provided. -----------#
-      if (! missing(slph )) mysoil$slph  = slph
-      if (! missing(slcec)) mysoil$slcec = slcec
-      if (! missing(sldbd)) mysoil$sldbd = sldbd
+      mysoil$slph  = slph
+      mysoil$slcec = slcec
+      mysoil$sldbd = sldbd
       #------------------------------------------------------------------------------------#
    }else{
       #----- Variables are dummy but we honour the input variables if provided. -----------#
-      if (! missing(slsoc)) mysoil$slsoc = slsoc
-      if (! missing(slph )) mysoil$slph  = slph
-      if (! missing(slcec)) mysoil$slcec = slcec
-      if (! missing(sldbd)) mysoil$sldbd = sldbd
+      mysoil$slsoc = slsoc
+      mysoil$slph  = slph
+      mysoil$slcec = slcec
+      mysoil$sldbd = sldbd
       #------------------------------------------------------------------------------------#
    }#end if (mysoil$method %in% "vG1980")
    #---------------------------------------------------------------------------------------#
@@ -330,11 +408,11 @@ soil.params <<- function(ntext,isoilflg,slxsand,slxclay,slsoc,slph,slcec,sldbd
    #---------------------------------------------------------------------------------------#
    #       Set up primary properties.                                                      #
    #---------------------------------------------------------------------------------------#
-   if (mysoil$ntext == 13){
+   if (slhydro == 13){
       #----- Bedrock.  Most things are zero, because it is an impermeable soil. -----------#
       mysoil$slcpd     =  2130000.
       #------------------------------------------------------------------------------------#
-   }else if (mysoil$ntext == 12){
+   }else if (slhydro == 12){
       #------------------------------------------------------------------------------------#
       #      Peat.  High concentration of organic matter.  Mineral soil equations don't    #
       # apply here.                                                                        #
@@ -358,7 +436,7 @@ soil.params <<- function(ntext,isoilflg,slxsand,slxclay,slsoc,slph,slcec,sldbd
       mysoil$slpotwp = - slpotwp.MPa * 1.e6 / ( grav * wdns )
       mysoil$soilwp  = mpot2smoist(mysoil$slpotwp, mysoil)
       #------------------------------------------------------------------------------------#
-   }else if (isoil.hydro == 0){
+   }else if (slhydro == 0){
       #------------------------------------------------------------------------------------#
       #      Mineral soil.  Use the standard ED-2.2 equations.                             #
       #------------------------------------------------------------------------------------#
@@ -386,7 +464,7 @@ soil.params <<- function(ntext,isoilflg,slxsand,slxclay,slsoc,slph,slcec,sldbd
       mysoil$slpotfc = smoist2mpot(mysoil$sfldcap, mysoil)
       mysoil$slpotwp = - slpotwp.MPa * 1.e6 / ( grav * wdns )
       mysoil$soilwp  = mpot2smoist(mysoil$slpotwp, mysoil)
-   }else if (isoil.hydro == 1){
+   }else if (slhydro == 1){
       #------------------------------------------------------------------------------------#
       #      Use Tomasella and Hodnett (1998).                                             #
       #------------------------------------------------------------------------------------#
@@ -431,7 +509,8 @@ soil.params <<- function(ntext,isoilflg,slxsand,slxclay,slsoc,slph,slcec,sldbd
       mysoil$slpotwp = - slpotwp.MPa * 1.e6 / ( grav * wdns )
       mysoil$soilwp  = mpot2smoist(mysoil$slpotwp, mysoil)
       #------------------------------------------------------------------------------------#
-   }else if (isoil.hydro == 2){
+   }else if (slhydro == 2){
+
       #------------------------------------------------------------------------------------#
       #     Use Hodnett and Tomasella (2002).                                              #
       #------------------------------------------------------------------------------------#
@@ -483,7 +562,7 @@ soil.params <<- function(ntext,isoilflg,slxsand,slxclay,slsoc,slph,slcec,sldbd
       mysoil$slpotwp = - slpotwp.MPa * 1.e6 / ( grav * wdns )
       mysoil$soilwp  = mpot2smoist(mysoil$slpotwp, mysoil)
       #------------------------------------------------------------------------------------#
-   }else if (isoil.hydro == 3){
+   }else if (slhydro == 3){
       #------------------------------------------------------------------------------------#
       #     Use Saxton and Rawls (2006).                                                   #
       #------------------------------------------------------------------------------------#
@@ -542,9 +621,13 @@ soil.params <<- function(ntext,isoilflg,slxsand,slxclay,slsoc,slph,slcec,sldbd
    #---------------------------------------------------------------------------------------#
    #      Calculate the derived properties in case this is not bedrock.                    #
    #---------------------------------------------------------------------------------------#
-   if (mysoil$ntext != 13){
+   if (slhydro != 13){
       mysoil$fhydraul  = 2.0
-      mysoil$slpotcp   = - slpotcp.MPa * 1.e6 / ( wdns * grav )
+      if (mysoil$method %in% "vG80"){
+         mysoil$slpotcp   = - slpotdg.MPa * 1.e6 / ( wdns * grav )
+      }else{
+         mysoil$slpotcp   = - slpotcp.MPa * 1.e6 / ( wdns * grav )
+      }#end if (mysoil$method %in% "vG80")
       mysoil$slpotld   = - slpotld.MPa * 1.e6 / ( wdns * grav )
       mysoil$slpotfr   = - slpotfr.MPa * 1.e6 / ( wdns * grav )
       mysoil$soilcp    = mpot2smoist(mysoil$slpotcp, mysoil)
@@ -584,16 +667,16 @@ soil.params <<- function(ntext,isoilflg,slxsand,slxclay,slsoc,slph,slcec,sldbd
    #---------------------------------------------------------------------------------------#
    #     Make sure everything makes sense.  In case it doesn't, check.                     #
    #---------------------------------------------------------------------------------------#
-   cp.fine = all(mysoil$soilre  %<=% mysoil$soilcp )
-   wp.fine = all(mysoil$soilcp  %<=% mysoil$soilwp )
-   fc.fine = all(mysoil$soilwp  %<=% mysoil$sfldcap)
-   po.fine = all(mysoil$sfldcap %<=% mysoil$slmsts )
+   cp.fine = all(mysoil$soilre  %le% mysoil$soilcp )
+   wp.fine = all(mysoil$soilcp  %le% mysoil$soilwp )
+   fc.fine = all(mysoil$soilwp  %le% mysoil$sfldcap)
+   po.fine = all(mysoil$sfldcap %le% mysoil$slmsts )
    if (! (cp.fine && wp.fine && fc.fine && po.fine) ) browser()
    #---------------------------------------------------------------------------------------#
 
 
    #----- Select the output format according to the users' choice. ------------------------#
-   if (out.dfr) mysoil = as.data.frame(mysoil,stringsAsFactors=FALSE)
+   if (out.dfr) mysoil = as.data.table(mysoil,stringsAsFactors=FALSE)
    #---------------------------------------------------------------------------------------#
 
    return(mysoil)
@@ -618,12 +701,28 @@ sclass <<- function(sandfrac,clayfrac){
    silt = 100. - sand - clay
    #---------------------------------------------------------------------------------------#
 
+
+   #----- If the fractions are vectors, use mapply to get the answer. ---------------------#
+   if (length(sand) > 1){
+      l.sand = as.list(0.01*sand)
+      l.clay = as.list(0.01*clay)
+      ans    = mapply( FUN      = sclass
+                     , sandfrac = l.sand
+                     , clayfrac = l.clay
+                     , SIMPLIFY = TRUE
+                     )#end mapply
+      return(ans)
+   }#end if
+   #---------------------------------------------------------------------------------------#
+
+
    #---------------------------------------------------------------------------------------#
    #     Here there is not much we can do other than explore where in the triangle space   #
    # we are.                                                                               #
    #---------------------------------------------------------------------------------------#
-
-   if (silt > 100. | silt < 0. | sand > 100. | sand < 0. | clay > 100. | clay < 0. ) {
+   if ( is.na(silt) || is.na(sand) || is.na(clay) ){
+      mysoil = NA_integer_
+   }else if (silt > 100. | silt < 0. | sand > 100. | sand < 0. | clay > 100. | clay < 0. ) {
       print("---------------------------------------------------")
       print(" At least one of your percentages is screwy...")
       print(paste0("SAND = ",sprintf("%.2f",sand),"%"))
@@ -755,30 +854,77 @@ soil.idx2water <<- function(soil.index,soil){
 #     Function that converts matric potential (m) into soil moisture (m3/m3).              #
 #------------------------------------------------------------------------------------------#
 smoist2mpot <<- function(smoist,mysoil){
-   #----- Pick method. --------------------------------------------------------------------#
-   if (mysoil$method %in% "BDRK"){
-      #----- Bedrock, ignore. -------------------------------------------------------------#
-      mpot = 0.
-      #------------------------------------------------------------------------------------#
-   }else if (mysoil$method %in% "vG80"){
-      #----- van Genuchten (1980). --------------------------------------------------------#
-      smfrac = (smoist - mysoil$soilre) / (mysoil$soilpo - mysoil$soilre)
-      smfrac = 0. * smfrac + pmax(0.,pmin(1.,smfrac))
-      mpot   = mysoil$slpotbp * (smfrac^mysoil$slmu - 1.)^(1.-mysoil$slmm)
-      #------------------------------------------------------------------------------------#
-   }else if (mysoil$method %in% "SR06"){
-      #----- Saxton and Rawls (2006). -----------------------------------------------------#
-      smbelow = pmin(1.,smoist/mysoil$sfldcap)
-      smabove = pmax(0.,smoist - mysoil$sfldcap)
-      mpot    = with(mysoil, slpotfc / smbelow^slbs + slas * smabove)
-      #------------------------------------------------------------------------------------#
-   }else{
-      #----- Brooks and Corey (1964). -----------------------------------------------------#
-      smfrac = (smoist - mysoil$soilre) / (mysoil$slmsts - mysoil$soilre)
-      smfrac = 0. * smfrac + pmax(0.,pmin(1.,smfrac))
-      mpot   = mysoil$slpots / smfrac ^ mysoil$slbs
-      #------------------------------------------------------------------------------------#
-   }#end if (mysoil$method %in% "vG80")
+
+
+   #----- Select the output format according to the users' choice. ------------------------#
+   if (! is.data.table(mysoil)) mysoil = as.data.table(mysoil,stringsAsFactors=FALSE)
+   #---------------------------------------------------------------------------------------#
+
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #     Count the number of rows and make sure it either matches smoist or it's a single  #
+   # line.                                                                                 #
+   #---------------------------------------------------------------------------------------#
+   nmysoil = nrow  (mysoil)
+   nsmoist = length(smoist)
+   if (nmysoil == 1){
+      idx    = rep(1,times=nsmoist)
+      mysoil = mysoil[idx,]
+   }else if (nmysoil != nsmoist){
+      cat0("----------------------------------------------------------------------")
+      cat0(" Size mismatch between smoist and mysoil!"                             )
+      cat0(" - length(smoist): ",nsmoist                                           )
+      cat0(" - size  (mysoil): ",nmysoil                                           )
+      cat0("----------------------------------------------------------------------")
+      stop(" Variable \"mysoil\" should have a single soil or match smoist length.")
+   }#end if (nmysoil == 1)
+   #---------------------------------------------------------------------------------------#
+
+
+   #------ Initialise matric potential and ancillary variables. ---------------------------#
+   mpot    = NA_real_ * smoist
+   smbelow = NA_real_ * smoist
+   smabove = NA_real_ * smoist
+   smfrac  = NA_real_ * smoist
+   bdrk    = mysoil$method %in% "BDRK"
+   vg80    = mysoil$method %in% "vG80"
+   sr06    = mysoil$method %in% "SR06"
+   bc64    = mysoil$method %in% "BC64"
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #     Check methods.                                                                    #
+   #---------------------------------------------------------------------------------------#
+   #----- Bedrock, ignore. ----------------------------------------------------------------#
+   mpot[bdrk] = 0.
+   #---------------------------------------------------------------------------------------#
+   #----- van Genuchten (1980). -----------------------------------------------------------#
+   smfrac[vg80] = with( mysoil
+                      , (smoist[vg80] - soilre[vg80]) / (soilpo[vg80] - soilre[vg80])
+                      )#end with
+   smfrac[vg80] = 0. * smfrac[vg80] + pmax(0.,pmin(1.,smfrac[vg80]))
+   mpot  [vg80] = with( mysoil
+                      , slpotbp[vg80] * (smfrac[vg80]^slmu[vg80] - 1.)^(1.-slmm[vg80])
+                      )#end with
+   #----- Saxton and Rawls (2006). --------------------------------------------------------#
+   smbelow[sr06] = pmin(1.,smoist[sr06] / mysoil$sfldcap[sr06])
+   smabove[sr06] = pmax(0.,smoist[sr06] - mysoil$sfldcap[sr06])
+   mpot   [sr06] = with(mysoil
+                       , slpotfc[sr06]
+                       / smbelow[sr06]^slbs[sr06] + slas[sr06] * smabove[sr06]
+                       )#end with
+   #---------------------------------------------------------------------------------------#
+   #----- Brooks and Corey (1964). --------------------------------------------------------#
+   smfrac[bc64] = with( mysoil
+                      , (smoist[bc64] - soilre[bc64]) / (slmsts[bc64] - soilre[bc64])
+                      )#end with
+   smfrac[bc64] = 0. * smfrac[bc64] + pmax(0.,pmin(1.,smfrac[bc64]))
+   mpot  [bc64] = mysoil$slpots[bc64] / smfrac[bc64] ^ mysoil$slbs[bc64]
+   #---------------------------------------------------------------------------------------#
    #---------------------------------------------------------------------------------------#
 
    return(mpot)
@@ -796,33 +942,73 @@ smoist2mpot <<- function(smoist,mysoil){
 #     Function that converts soil moisture (m3/m3) into matric potential (m).              #
 #------------------------------------------------------------------------------------------#
 mpot2smoist <<- function(mpot,mysoil){
-   #----- Pick method. --------------------------------------------------------------------#
-   if (mysoil$method %in% "BDRK"){
-      #----- Bedrock, ignore. -------------------------------------------------------------#
-      smoist = 0.
-      #------------------------------------------------------------------------------------#
-   }else if (mysoil$method %in% "vG80"){
-      #----- van Genuchten (1980). --------------------------------------------------------#
-      smfrac = ( 1. / ( 1. + (mysoil$malpha*mpot)^mysoil$slnm) )^mysoil$slmm
-      smfrac = 0. * smfrac + pmax(0.,pmin(1.,smfrac))
-      smoist = (1. - smfrac) * mysoil$soilre + smfrac * mysoil$soilpo
-      #------------------------------------------------------------------------------------#
-   }else if (mysoil$method %in% "SR06"){
-      #----- Saxton and Rawls (2006). -----------------------------------------------------#
-      smoist = with( mysoil
-                   , ifelse( test = mpot %<% slpotfc
-                           , yes  = sfldcap * ( slpotfc / mpot  ) ^ (1. / slbs )
-                           , no   = sfldcap + ( slpotfc - slpots) / slas
-                           )#end ifelse
-                   )#end with
-      #------------------------------------------------------------------------------------#
-   }else{
-      #----- Brooks and Corey (1964). -----------------------------------------------------#
-      smfrac = ( mysoil$slpots / mpot ) ^ mysoil$slnm
-      smfrac = 0. * smfrac + pmax(0.,pmin(1.,smfrac))
-      smoist = (1. - smfrac) * mysoil$soilre + smfrac * mysoil$slmsts
-      #------------------------------------------------------------------------------------#
-   }#end if (mysoil$method %in% "vG80")
+
+
+   #----- Select the output format according to the users' choice. ------------------------#
+   if (! is.data.table(mysoil)) mysoil = as.data.table(mysoil,stringsAsFactors=FALSE)
+   #---------------------------------------------------------------------------------------#
+
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #     Count the number of rows and make sure it either matches smoist or it's a single  #
+   # line.                                                                                 #
+   #---------------------------------------------------------------------------------------#
+   nmysoil = nrow  (mysoil)
+   nmpot   = length(mpot  )
+   if (nmysoil == 1){
+      idx    = rep(1,times=nmpot)
+      mysoil = mysoil[idx,]
+   }else if (nmysoil != nmpot){
+      cat0("----------------------------------------------------------------------")
+      cat0(" Size mismatch between mpot and mysoil!"                               )
+      cat0(" - length(mpot):   ",nmpot                                             )
+      cat0(" - size  (mysoil): ",nmysoil                                           )
+      cat0("----------------------------------------------------------------------")
+      stop(" Variable \"mysoil\" should have a single soil or match mpot length."  )
+   }#end if (nmysoil == 1)
+   #---------------------------------------------------------------------------------------#
+
+
+   #------ Initialise matric potential and ancillary variables. ---------------------------#
+   smoist  = NA_real_ * mpot
+   smfrac  = NA_real_ * mpot
+   bdrk    = mysoil$method %in% "BDRK"
+   vg80    = mysoil$method %in% "vG80"
+   sr06    = mysoil$method %in% "SR06"
+   bc64    = mysoil$method %in% "BC64"
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #     Check methods.                                                                    #
+   #---------------------------------------------------------------------------------------#
+   #----- Bedrock, ignore. ----------------------------------------------------------------#
+   smoist[bdrk] = 0.
+   #----- van Genuchten (1980). -----------------------------------------------------------#
+   smfrac[vg80] = with( mysoil
+                      , ( 1. / ( 1. + (malpha[vg80]*mpot[vg80])^slnm[vg80]) )^slmm[vg80]
+                      )#end with
+   smfrac[vg80] = 0. * smfrac + pmax(0.,pmin(1.,smfrac))
+   smoist[vg80] = (1. - smfrac) * mysoil$soilre + smfrac * mysoil$soilpo
+   #---------------------------------------------------------------------------------------#
+   #----- Saxton and Rawls (2006). --------------------------------------------------------#
+   smoist[sr06] = with( mysoil
+                      , ifelse( test = mpot[sr06] %lt% slpotfc[sr06]
+                              , yes  = sfldcap[sr06]
+                                     * ( slpotfc[sr06] / mpot[sr06]  ) ^ (1. / slbs[sr06] )
+                              , no   = sfldcap[sr06]
+                                     + ( slpotfc[sr06] - slpots[sr06]) / slas[sr06]
+                              )#end ifelse
+                      )#end with
+   #----- Brooks and Corey (1964). --------------------------------------------------------#
+   smfrac[bc64] = ( mysoil$slpots[bc64] / mpot[bc64] ) ^ mysoil$slnm[bc64]
+   smfrac[bc64] = 0. * smfrac[bc64] + pmax(0.,pmin(1.,smfrac[bc64]))
+   smoist[bc64] = with( mysoil
+                      , (1. - smfrac[bc64]) * soilre[bc64] + smfrac[bc64] * slmsts[bc64]
+                      )#end with
    #---------------------------------------------------------------------------------------#
 
 
@@ -844,21 +1030,66 @@ mpot2smoist <<- function(mpot,mysoil){
 smoist2hydcond <<- function(smoist,mysoil){
 
 
-   #----- Pick method. --------------------------------------------------------------------#
-   if (mysoil$method %in% "vG80"){
-      #----- van Genuchten (1980). --------------------------------------------------------#
-      smfrac  = (smoist - mysoil$soilre) / (mysoil$soilpo - mysoil$soilre)
-      smfrac  = 0. * smfrac + pmax(0.,pmin(1.,smfrac))
-      fibf    = 1. - (1. - smfrac^(1./mysoil$slmm))^mysoil$slmm
-      hydcond = mysoil$slcons * smfrac ^ mysoil$sltt * fibf * fibf
-      #------------------------------------------------------------------------------------#
-   }else{
-      #----- Saxton and Rawls (2006) or Brooks and Corey (1964). --------------------------#
-      smfrac  = (smoist - mysoil$soilre) / (mysoil$slmsts - mysoil$soilre)
-      smfrac  = 0. * smfrac + pmax(0.,pmin(1.,smfrac))
-      hydcond = mysoil$slcons * smfrac ^ mysoil$slmm
-      #------------------------------------------------------------------------------------#
-   }#end if
+   #----- Select the output format according to the users' choice. ------------------------#
+   if (! is.data.table(mysoil)) mysoil = as.data.table(mysoil,stringsAsFactors=FALSE)
+   #---------------------------------------------------------------------------------------#
+
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #     Count the number of rows and make sure it either matches smoist or it's a single  #
+   # line.                                                                                 #
+   #---------------------------------------------------------------------------------------#
+   nmysoil = nrow  (mysoil)
+   nsmoist = length(smoist)
+   if (nmysoil == 1){
+      idx    = rep(1,times=nsmoist)
+      mysoil = mysoil[idx,]
+   }else if (nmysoil != nsmoist){
+      cat0("----------------------------------------------------------------------")
+      cat0(" Size mismatch between smoist and mysoil!"                             )
+      cat0(" - length(smoist): ",nsmoist                                           )
+      cat0(" - size  (mysoil): ",nmysoil                                           )
+      cat0("----------------------------------------------------------------------")
+      stop(" Variable \"mysoil\" should have a single soil or match smoist length.")
+   }#end if (nmysoil == 1)
+   #---------------------------------------------------------------------------------------#
+
+
+   #------ Initialise matric potential and ancillary variables. ---------------------------#
+   mpot    = NA_real_ * smoist
+   smfrac  = NA_real_ * smoist
+   hydcond = NA_real_ * smoist
+   fibf    = NA_real_ * smoist
+   bdrk    = mysoil$method %in% "BDRK"
+   vg80    = mysoil$method %in% "vG80"
+   cm76    = mysoil$method %in% c("SR06","BC64")
+   #---------------------------------------------------------------------------------------#
+
+
+   #---------------------------------------------------------------------------------------#
+   #     Check methods.                                                                    #
+   #---------------------------------------------------------------------------------------#
+   #----- Bedrock, ignore. ----------------------------------------------------------------#
+   hydcond[bdrk] = 0.
+   #----- van Genuchten (1980). -----------------------------------------------------------#
+   smfrac [vg80] = with( mysoil
+                       , (smoist[vg80] - soilre[vg80]) / (soilpo[vg80] - soilre[vg80])
+                       )#end with
+   smfrac [vg80] = 0. * smfrac[vg80] + pmax(0.,pmin(1.,smfrac[vg80]))
+   fibf   [vg80] = with( mysoil
+                       , 1. - (1. - smfrac[vg80]^(1./slmm[vg80]))^slmm[vg80]
+                       )#end with
+   hydcond[vg80] = with( mysoil
+                       , slcons[vg80] * smfrac[vg80] ^ sltt[vg80] * fibf[vg80] * fibf[vg80]
+                       )#end with
+   #----- Saxton and Rawls (2006) or Brooks and Corey (1964). -----------------------------#
+   smfrac [cm76] = with( mysoil
+                        , (smoist[cm76] - soilre[cm76]) / (soilpo[cm76] - soilre[cm76])
+                        )#end with
+   smfrac [cm76] = 0. * smfrac[cm76] + pmax(0.,pmin(1.,smfrac[cm76]))
+   hydcond[cm76] = with(mysoil,slcons[cm76] * smfrac[cm76] ^ slmm[cm76])
    #---------------------------------------------------------------------------------------#
 
    hydcond = 0. * hydcond + pmax(hydcond.min,hydcond)

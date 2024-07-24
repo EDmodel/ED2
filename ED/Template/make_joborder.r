@@ -29,6 +29,9 @@ lonlat     = NULL                                     # NULL - define runs local
                                                       #        (varrun/varlabel)
 #lonlat  = file.path(here,"lonlat_input.txt")         # Not NULL - read lon/lat from file,
                                                       #    and finish up settings below
+add.coord  = TRUE                                     # Add coordinates to names
+varalways  = "ifire"                                  # Variables to always appear in the
+                                                      #    jobname
 #------------------------------------------------------------------------------------------#
 
 
@@ -132,128 +135,129 @@ if (! defjob && is.null(lonlat)){
 #------------------------------------------------------------------------------------------#
 #     Default properties.                                                                  #
 #------------------------------------------------------------------------------------------#
-default = list( run           = "unnamed"
-              , iata          = "xxx"
-              , lon           = 0.00
-              , lat           = 0.00
-              , yeara         = "1967"
-              , montha        = "01"
-              , daya          = "01"
-              , timea         = "0000"
-              , yearz         = "2013"
-              , monthz        = "01"
-              , dayz          = "01"
-              , timez         = "0000"
-              , init.mode     = 6
-              , iscenario     = "default"
-              , isizepft      = 0
-              , iage          = 30
-              , imaxcohort    = 50
-              , isoilflg      = 1
-              , istext        = 1
-              , sand          = -1.0
-              , clay          = -1.0
-              , slsoc         = 0.0266
-              , slph          = 4.7
-              , slcec         = 0.124
-              , sldbd         = 1192.
-              , depth         = "F"
-              , isoil.hydro   = 2
-              , isoilbc       = 1
-              , sldrain       = 90.
-              , scolour       = 16
-              , slzres        = 0
-              , queue         = "linux.q"
-              , met.driver    = "tower"
-              , dtlsm         = 600.
-              , month.yrstep  = 1
-              , iphysiol      = 3
-              , vmfact.c3     = 1.00
-              , vmfact.c4     = 1.00
-              , mphoto.trc3   = 8.0
-              , mphoto.tec3   = 7.2
-              , mphoto.c4     = 4.0
-              , bphoto.blc3   = 10000.
-              , bphoto.nlc3   = 1000.
-              , bphoto.c4     = 10000.
-              , kw.grass      = 25.
-              , kw.tree       = 20.
-              , gamma.c3      = 0.015
-              , gamma.c4      = 0.025
-              , d0.grass      = 0.016
-              , d0.tree       = 0.016
-              , alpha.c3      = 0.080
-              , alpha.c4      = 0.040
-              , klowco2       = round(0.7/39 * 1.e6)
-              , decomp.scheme = 5
-              , rrffact       = 1.000
-              , growthresp    = 0.300
-              , lwidth.grass  = 0.05
-              , lwidth.bltree = 0.05
-              , lwidth.nltree = 0.05
-              , q10.c3        = 2.21
-              , q10.c4        = 2.21
-              , h2o.limit     = 5
-              , imort.scheme  = 1
-              , ddmort.const  = 0.8
-              , cbr.scheme    = 0
-              , isfclyrm      = 4
-              , icanturb      = 0
-              , ubmin         = 1.00
-              , ugbmin        = 0.40
-              , ustmin        = 0.10
-              , gamm          = 13.0
-              , gamh          = 13.0
-              , tprandtl      = 1.00
-              , ribmax        = 0.50
-              , atmco2        = 400.
-              , thcrit        = -1.20
-              , sm.fire       = -1.40
-              , ifire         = 0
-              , fire.parm     = 0.5
-              , ipercol       = 0
-              , runoff.time   = 3600.
-              , imetrad       = 5
-              , ibranch       = 1 
-              , icanrad       = 2
-              , ihrzrad       = 0
-              , crown.mod     = 0
-              , ltrans.vis    = 0.05
-              , lreflect.vis  = 0.10
-              , ltrans.nir    = 0.200
-              , lreflect.nir  = 0.400
-              , orient.tree   = +0.100
-              , orient.grass  = -0.300
-              , clump.tree    = 0.80
-              , clump.grass   = 0.80
-              , igoutput      = 0
-              , ivegtdyn      = 1
-              , ihydro        = 0
-              , istemresp     = 1
-              , istomata      = 0
-              , iplastic      = 2
-              , icarbonmort   = 2
-              , ihydromort    = 0
-              , igndvap       = 0
-              , iphen         = -1
-              , iallom        = 3
-              , ieconomics    = 1
-              , igrass        = 1
-              , ibigleaf      = 0
-              , integ.scheme  = 1
-              , nsub.euler    = 50
-              , irepro        = 3
-              , treefall      = 0.0100
-              , ianth.disturb = 0
-              , ianth.dataset = "glu-331"
-              , sl.scale      = 0
-              , sl.yr.first   = 1992
-              , sl.nyrs       = 50.
-              , biomass.harv  = 0.
-              , skid.area     = 1.0
-              , skid.small    = 0.60
-              , skid.large    = 1.00
-              , felling.small = 0.35
+default = list( run             = "unnamed"
+              , iata            = "xxx"
+              , lon             = 0.00
+              , lat             = 0.00
+              , yeara           = "1967"
+              , montha          = "01"
+              , daya            = "01"
+              , timea           = "0000"
+              , yearz           = "2013"
+              , monthz          = "01"
+              , dayz            = "01"
+              , timez           = "0000"
+              , init.mode       = 6
+              , iscenario       = "default"
+              , isizepft        = 0
+              , iage            = 30
+              , imaxcohort      = 50
+              , isoilflg        = 1
+              , istext          = 1
+              , sand            = -1.0
+              , clay            = -1.0
+              , slsoc           = 0.0266
+              , slph            = 4.7
+              , slcec           = 0.124
+              , sldbd           = 1192.
+              , depth           = "F"
+              , isoil.hydro     = 2
+              , isoilbc         = 1
+              , sldrain         = 90.
+              , scolour         = 16
+              , slzres          = 0
+              , queue           = "linux.q"
+              , met.driver      = "tower"
+              , dtlsm           = 600.
+              , month.yrstep    = 1
+              , iphysiol        = 3
+              , vmfact.c3       = 1.00
+              , vmfact.c4       = 1.00
+              , mphoto.trc3     = 8.0
+              , mphoto.tec3     = 7.2
+              , mphoto.c4       = 4.0
+              , bphoto.blc3     = 10000.
+              , bphoto.nlc3     = 1000.
+              , bphoto.c4       = 10000.
+              , kw.grass        = 25.
+              , kw.tree         = 20.
+              , gamma.c3        = 0.015
+              , gamma.c4        = 0.025
+              , d0.grass        = 0.016
+              , d0.tree         = 0.016
+              , alpha.c3        = 0.080
+              , alpha.c4        = 0.040
+              , klowco2         = round(0.7/39 * 1.e6)
+              , decomp.scheme   = 5
+              , rrffact         = 1.000
+              , growthresp      = 0.300
+              , lwidth.grass    = 0.05
+              , lwidth.bltree   = 0.05
+              , lwidth.nltree   = 0.05
+              , q10.c3          = 2.21
+              , q10.c4          = 2.21
+              , h2o.limit       = 5
+              , imort.scheme    = 1
+              , ddmort.const    = 0.8
+              , cbr.scheme      = 0
+              , isfclyrm        = 3
+              , icanturb        = 0
+              , ubmin           = 1.00
+              , ugbmin          = 0.40
+              , ustmin          = 0.10
+              , gamm            = 13.0
+              , gamh            = 13.0
+              , tprandtl        = 1.00
+              , ribmax          = 0.50
+              , atmco2          = 400.
+              , thcrit          = -1.20
+              , sm.fire         = -1.40
+              , ifire           = 0
+              , fire.parm       = 0.5
+              , ipercol         = 0
+              , runoff.time     = 3600.
+              , imetrad         = 5
+              , ibranch         = 1 
+              , icanrad         = 2
+              , ihrzrad         = 0
+              , crown.mod       = 0
+              , ltrans.vis      = 0.05
+              , lreflect.vis    = 0.10
+              , ltrans.nir      = 0.200
+              , lreflect.nir    = 0.400
+              , orient.tree     = +0.100
+              , orient.grass    = -0.300
+              , clump.tree      = 0.80
+              , clump.grass     = 0.80
+              , igoutput        = 0
+              , ivegtdyn        = 1
+              , ihydro          = 0
+              , istemresp       = 1
+              , istomata        = 0
+              , iplastic        = 2
+              , icarbonmort     = 2
+              , ihydromort      = 0
+              , igndvap         = 0
+              , iphen           = -1
+              , iallom          = 3
+              , ieconomics      = 1
+              , igrass          = 1
+              , ibigleaf        = 0
+              , integ.scheme    = 1
+              , nsub.euler      = 50
+              , irepro          = 3
+              , treefall        = 0.0100
+              , ianth.disturb   = 0
+              , ianth.dataset   = "glu-331"
+              , sl.scale        = 0
+              , sl.yr.first     = 1992
+              , sl.nyrs         = 50.
+              , biomass.harv    = 0.
+              , skid.area       = 1.0
+              , skid.dbh.thresh = 30.
+              , skid.small      = 0.60
+              , skid.large      = 1.00
+              , felling.small   = 0.35
               ) #end list
 #------------------------------------------------------------------------------------------#
 
@@ -302,17 +306,17 @@ for (n in sequence(nvars)){
       joborder$felling.small = sapply(myruns$sl.type,FUN=switch,ril=0.35,cvl=0.10,NA)
    }else if (name.now %in% "ihydrodyn"){
       idx                  = myruns$ihydrodyn + 1
-      joborder$ihydro      = c(0,0,1)[idx]
-      joborder$istemresp   = c(0,1,1)[idx]
-      joborder$istomata    = c(0,0,1)[idx]
-      joborder$growthresp  = c(0.30,0.45,0.45)[idx]
-      joborder$iphen       = c(3,3,4)[idx]
-      joborder$iplastic    = c(2,3,3)[idx]
-      joborder$icarbonmort = c(1,2,2)[idx]
-      joborder$ihydromort  = c(0,0,1)[idx]
-      joborder$iallom      = c(3,4,4)[idx]
-      joborder$h2o.limit   = c(5,5,4)[idx]
-      joborder$igrass      = c(1,1,0)[idx]
+      joborder$ihydro      = c(   0,   1,   1,   1,   1,   1)[idx]
+      joborder$istemresp   = c(   0,   0,   1,   1,   0,   0)[idx]
+      joborder$istomata    = c(   0,   1,   1,   1,   1,   1)[idx]
+      joborder$growthresp  = c(0.30,0.45,0.45,0.40,0.40,0.40)[idx]
+      joborder$iphen       = c(   2,   2,   4,   4,   3,   5)[idx]
+      joborder$iplastic    = c(   2,   2,   3,   3,   2,   2)[idx]
+      joborder$icarbonmort = c(   1,   1,   2,   2,   1,   1)[idx]
+      joborder$ihydromort  = c(   0,   0,   1,   1,   0,   0)[idx]
+      joborder$iallom      = c(   3,   3,   4,   3,   3,   5)[idx]
+      joborder$h2o.limit   = c(   5,   3,   4,   3,   3,   3)[idx]
+      joborder$igrass      = c(   1,   0,   0,   0,   0,   0)[idx]
    }else if (name.now %in% names(joborder)){
       joborder[[name.now]] = myruns[[name.now]]
    }else{
@@ -344,6 +348,11 @@ if ( "biomass.harv" %in% names(varrun)){
                )#end redundant
    forbidden = forbidden | redundant
 }#end if ("biomass.harv" %in% names(varrun))
+if ( all(c("ifire","sm.fire") %in% names(varrun))){
+   smf.min   = min(varrun$sm.fire)
+   redundant = joborder$ifire == 0 & joborder$sm.fire != smf.min
+   forbidden = forbidden | redundant
+}#end if ( "ifire" %in% names(varrun))
 joborder     = joborder[! forbidden,]
 myruns       = myruns[! forbidden,]
 nruns        = nrow(myruns)
@@ -421,6 +430,18 @@ if (is.null(lonlat)){
    #---------------------------------------------------------------------------------------#
 
 
+   #---------------------------------------------------------------------------------------#
+   #   In case coordinates are sought, add them right after iata.                          #
+   #---------------------------------------------------------------------------------------#
+   if (add.coord){
+      idx           = match(varrun$iata,poilist$iata)
+      lonlab        = sprintf("lon%+06.2f",poilist$lon[idx])
+      latlab        = sprintf("lat%+06.2f",poilist$lat[idx])
+      varlabel$iata = paste(varlabel$iata,lonlab,latlab,sep="_")
+   }#end if
+   #---------------------------------------------------------------------------------------#
+
+
 
    #---------------------------------------------------------------------------------------#
    #    Build the name of the simulations.  The polygon name always stays, even if the run #
@@ -430,7 +451,7 @@ if (is.null(lonlat)){
       runname = defname[! forbidden]
       metname = ""
    }else{
-      stay     = which(names(varlabel) %in% c("iata"))
+      stay     = which(names(varlabel) %in% c("iata",varalways))
       bye      = which(sapply(X=varlabel,FUN=length) == 1)
       bye      = bye[! bye %in% stay]
       if (length(bye) > 0) for (b in sort(bye,decreasing=TRUE)) varlabel[[b]] = NULL
@@ -452,11 +473,10 @@ if (is.null(lonlat)){
    #---------------------------------------------------------------------------------------#
    #     Job name by appending longitude and latitude.                                     #
    #---------------------------------------------------------------------------------------#
-   joborder$run = paste( joborder$iata
-                       , "_lon",sprintf("%+06.2f",joborder$lon)
-                       , "_lat",sprintf("%+06.2f",joborder$lat)
-                       , sep = ""
-                       )#end paste
+   joborder$run = paste0( joborder$iata
+                        , "_lon",sprintf("%+06.2f",joborder$lon)
+                        , "_lat",sprintf("%+06.2f",joborder$lat)
+                        )#end paste0
    #---------------------------------------------------------------------------------------#
 }#end if
 #------------------------------------------------------------------------------------------#

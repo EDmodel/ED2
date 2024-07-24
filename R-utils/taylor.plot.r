@@ -152,8 +152,8 @@ taylor.plot <<- function ( obs
    #---------------------------------------------------------------------------------------#
    R      = sapply(X = mod, FUN = cor, x = obs, use = "pairwise")
    if (is.na(pos.corr)){
-      pos.corr = ! any(R %<% 0.)
-   }else if (pos.corr && any(R %<% 0)){
+      pos.corr = ! any(R %lt% 0.)
+   }else if (pos.corr && any(R %lt% 0)){
       warning(" There are negative correlations, but you've asked positive side only!")
    }#end if
    #---------------------------------------------------------------------------------------#

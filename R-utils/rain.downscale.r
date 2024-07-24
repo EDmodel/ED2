@@ -63,7 +63,7 @@ rain.downscale <<- function(lon,when.in,prate.in,mu.in.lut,nsub,rain.min=0.2/360
 
 
    #----- Find the ratio following Ryan's thesis. -----------------------------------------#
-   g.mu.lut         = ifelse(test=g.rho.lut %>% 0,yes=g.rbar.lut/g.rho.lut,no=0.)
+   g.mu.lut         = ifelse(test=g.rho.lut %gt% 0,yes=g.rbar.lut/g.rho.lut,no=0.)
    #---------------------------------------------------------------------------------------#
 
 
@@ -72,7 +72,7 @@ rain.downscale <<- function(lon,when.in,prate.in,mu.in.lut,nsub,rain.min=0.2/360
    mu.in  = mu.in.lut [idx]
    g.rbar = g.rbar.lut[idx]
    g.mu   = g.mu.lut  [idx]
-   sg.mu  = ifelse(test = g.mu %>% 0., yes = mu.in / g.mu, no = 0.)
+   sg.mu  = ifelse(test = g.mu %gt% 0., yes = mu.in / g.mu, no = 0.)
    #---------------------------------------------------------------------------------------#
 
 
@@ -102,7 +102,7 @@ rain.downscale <<- function(lon,when.in,prate.in,mu.in.lut,nsub,rain.min=0.2/360
    SG.MU     = matrix( data = sg.mu   , nrow = ndat.in, ncol = nsub)
    G.RBAR    = matrix( data = g.rbar  , nrow = ndat.in, ncol = nsub)
    PRATE.IN  = matrix( data = prate.in, nrow = ndat.in, ncol = nsub)
-   WGT.OUT   = ifelse( test = SG.MU %>% 0. & PRATE.IN %>% 0.
+   WGT.OUT   = ifelse( test = SG.MU %gt% 0. & PRATE.IN %gt% 0.
                      , yes  = PRATE.IN / SG.MU * log(1.0/(1.0 - CDF.MAT))
                      , no   = 1 / nsub
                      )#end ifelse
@@ -126,21 +126,21 @@ rain.downscale <<- function(lon,when.in,prate.in,mu.in.lut,nsub,rain.min=0.2/360
    #---------------------------------------------------------------------------------------#
    if (mask.low){
       ptotal.out = sum(prate.out)
-      prate.mask  = ifelse(prate.out %>=% rain.min, prate.out, 0.)
+      prate.mask  = ifelse(prate.out %ge% rain.min, prate.out, 0.)
       ptotal.mask = sum(prate.mask)
-      if (ptotal.mask %>=% rain.min){
+      if (ptotal.mask %ge% rain.min){
           prate.out = prate.mask * ptotal.out / ptotal.mask
-      }#end if (ptotal.mask %>=% rain.min)
+      }#end if (ptotal.mask %ge% rain.min)
    }#end if (mask.low)
    #---------------------------------------------------------------------------------------#
 
 
    #------ Make sure the average output rainfall matches the average input rainfall. ------#
    prate.out.bar = mean(prate.out,na.rm=TRUE)
-   if (prate.out.bar %>=% rain.min){
+   if (prate.out.bar %ge% rain.min){
       prate.in.bar = mean(prate.in,na.rm=TRUE)
       prate.out    = prate.out * prate.in.bar / prate.out.bar
-   }#end if (prate.out.bar %>=% rain.min)
+   }#end if (prate.out.bar %ge% rain.min)
    #---------------------------------------------------------------------------------------#
 
    return(prate.out)

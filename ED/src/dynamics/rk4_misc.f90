@@ -3707,8 +3707,8 @@ module rk4_misc
 
       write(unit=*,fmt='(80a)') ('-',k=1,80)
 
-      write (unit=*,fmt='(a,1x,2(i2.2,a),i4.4,1x,3(i2.2,a))')                              &
-            'Time:',current_time%month,'/',current_time%date,'/',current_time%year         &
+      write (unit=*,fmt='(a,1x,i4.4,2(a,i2.2),1x,3(i2.2,a))')                              &
+            'Time:',current_time%year,'-',current_time%month,'-',current_time%date         &
                    ,current_time%hour,':',current_time%min,':',current_time%sec,' UTC'
       write(unit=*,fmt='(a,1x,es12.4)') 'Attempted step size:',csite%htry(ipa)
       write (unit=*,fmt='(a,1x,i6)')    'Ncohorts: ',cpatch%ncohorts

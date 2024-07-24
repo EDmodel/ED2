@@ -693,6 +693,32 @@ idealdenssh <<- function(pres,temp,qvpr,qtot=NULL){
 
 #==========================================================================================#
 #==========================================================================================#
+#     This function finds the dry-air molar density (mol/m3), using the ideal gas law.     #
+#------------------------------------------------------------------------------------------#
+idealdmolsh <<- function(pres,temp,qvpr,qtot=NULL){
+
+
+   #----- Find the partial pressure of water vapour. --------------------------------------#
+   pdry = pres * (1.0 - qvpr / (ep + (1.0 - ep) * qvpr))
+   #---------------------------------------------------------------------------------------#
+
+
+   #----- Convert using a generalised function. -------------------------------------------#
+   dmol = pdry / (rmol * temp)
+   #---------------------------------------------------------------------------------------#
+
+   return(dmol)
+}#end if
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
 #     This function computes the pressure at the top of the tower using hydrostatic and    #
 # average temperature and vapour pressure.                                                 #
 #------------------------------------------------------------------------------------------#
@@ -753,10 +779,69 @@ tower.press <<- function(p0,e0,t0,z0,t1,e1,z1,hum="pvap"){
    #---------------------------------------------------------------------------------------#
 
    return(p1)
-}#end function reducedpress
+}#end function tower.press
 #==========================================================================================#
 #==========================================================================================#
 
+
+
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
+#     This function computes reduces the pressure from the reference height to the canopy  #
+# height by assuming hydrostatic equilibrium.  For simplicity, we assume that R and cp are #
+# constants (in reality they are dependent on humidity).                                   #
+#------------------------------------------------------------------------------------------#
+reducedpress <<- function(pres,thetaref,shvref,zref,thetacan,shvcan,zcan,fthva_rp=0.5){
+
+
+   #---------------------------------------------------------------------------------------#
+   #     Missing data points.                                                              #
+   #---------------------------------------------------------------------------------------#
+   any.miss = c(missing(pres),missing(thetaref),missing(shvref),missing(zref)
+                             ,missing(thetacan),missing(shvcan),missing(zcan))
+   if (any(any.miss)){
+      cat0(" Variable \"pres\" is provided: "    ,! missing(pres    ),".")
+      cat0(" Variable \"thetaref\" is provided: ",! missing(thetaref),".")
+      cat0(" Variable \"shvref\" is provided:   ",! missing(shvref  ),".")
+      cat0(" Variable \"zref\" is provided:     ",! missing(zrefref ),".")
+      cat0(" Variable \"thetacan\" is provided: ",! missing(thetacan),".")
+      cat0(" Variable \"shvcan\" is provided:   ",! missing(shvcan  ),".")
+      cat0(" Variable \"zcan\" is provided:     ",! missing(zcancan ),".")
+      stop("All variables above must be provided.")
+   }#end if (any.miss)
+   #---------------------------------------------------------------------------------------#
+
+   #---------------------------------------------------------------------------------------#
+   #      First we compute the average virtual potential temperature between the canopy    #
+   # top and the reference level.  Because of the equation below, we average the inverse   #
+   # of the potential temperature.                                                         #
+   #---------------------------------------------------------------------------------------#
+   thvref = thetaref * (1.0 + epim1 * shvref)
+   thvcan = thetacan * (1.0 + epim1 * shvcan)
+   thvbar = thvref * thvcan / ( ( 1.0 - fthva_rp ) * thvref + fthva_rp * thvcan )
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #----- Then, we find the pressure gradient scale. --------------------------------------#
+   pinc = grav * p00k * (zref - zcan) / (cpdry * thvbar)
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #----- And we can find the reduced pressure. -------------------------------------------#
+   ans = (pres**rocp + pinc ) ** cpor
+   #---------------------------------------------------------------------------------------#
+
+
+   return(ans)
+}#end function reducedpress
+#==========================================================================================#
+#==========================================================================================#
 
 
 
@@ -1146,5 +1231,32 @@ uextcm2tl <<- function(uext,wmass,dryhcap){
    ans = list(temp=temp,fliq=fliq)
    return(ans)
 }#end function uextcm2tl
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
+#     Functions that convert between pressure and Exner function.                          #
+#------------------------------------------------------------------------------------------#
+press2exner <<- function(pres ){ cpdry * (pres  * p00i  ) ^ rocp}
+exner2press <<- function(exner){ p00   * (exner * cpdryi) ^ cpor}
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
+#     Functions that convert between temperature and potential temperature using Exner.    #
+#------------------------------------------------------------------------------------------#
+extemp2theta <<- function(exner,temp ){ cpdry  * temp  / exner }
+extheta2temp <<- function(exner,theta){ cpdryi * theta * exner }
 #==========================================================================================#
 #==========================================================================================#

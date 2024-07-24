@@ -51,6 +51,7 @@ subroutine ed_opspec_grid
                           , ed_reg_lonmin       & ! intent(in)
                           , ed_reg_lonmax       ! ! intent(in)
    use soil_coms   , only : slz                 ! ! intent(in)
+   use ed_misc_coms, only : runtype             ! ! intent(in)
 
    implicit none
    !----- Local variables. ----------------------------------------------------------------!
@@ -285,60 +286,67 @@ subroutine ed_opspec_grid
    end if
 
    !---------------------------------------------------------------------------------------!
-   !      Check whether ED soil layers are reasonable, i.e, enough layers, sorted from the !
-   ! deepest to the shallowest.                                                            !
+   !      The checks on surface and snow settings should be made only for INITIAL runs.    !
    !---------------------------------------------------------------------------------------!
-   if (nzg < 2) then
-      write (reason,'(a,1x,i4,a)')                                                         &
-            'Too few soil layers.  Set it to at least 2. Your nzg is currently set to'     &
-           ,nzg,'...'
-      call opspec_fatal(reason,'opspec_grid')  
-      ifaterr=ifaterr+1        
-   elseif (nzg > nzgmax) then 
-      write (reason,'(2(a,1x,i5,a))')                                                      &
-            'The number of soil layers cannot be greater than ',nzgmax,'.'                 &
-           ,' Your nzg is currently set to',nzg,'.'
-      call opspec_fatal(reason,'opspec_grid') 
-      ifaterr=ifaterr+1 
-   end if
-   do k=1,nzg
-      if (slz(k) > -.001) then
-         write (reason,'(a,1x,i4,1x,a,1x,es14.7,a)')                                       &
-               'Your soil level #',k,'is not enough below ground. It is currently set to'  &
-               ,slz(k),', make it deeper than -0.001...'
+   select case (trim(runtype))
+   case ('INITIAL')
+      !------------------------------------------------------------------------------------!
+      !      Check whether ED soil layers are reasonable, i.e, enough layers, sorted from  !
+      ! the deepest to the shallowest.                                                     !
+      !------------------------------------------------------------------------------------!
+      if (nzg < 2) then
+         write (reason,'(a,1x,i4,a)')                                                      &
+               'Too few soil layers.  Set it to at least 2. Your nzg is currently set to'  &
+              ,nzg,'...'
          call opspec_fatal(reason,'opspec_grid')  
          ifaterr=ifaterr+1        
+      elseif (nzg > nzgmax) then 
+         write (reason,'(2(a,1x,i5,a))')                                                   &
+               'The number of soil layers cannot be greater than ',nzgmax,'.'              &
+              ,' Your nzg is currently set to',nzg,'.'
+         call opspec_fatal(reason,'opspec_grid') 
+         ifaterr=ifaterr+1 
       end if
-   end do
+      do k=1,nzg
+         if (slz(k) > -.001) then
+            write (reason,'(a,1x,i4,1x,a,1x,es14.7,a)')                                    &
+                  'Your soil level #',k,'is too thin. It is currently set to',slz(k)       &
+                 ,', make it deeper than -0.001...'
+            call opspec_fatal(reason,'opspec_grid')  
+            ifaterr=ifaterr+1        
+         end if
+      end do
 
-   do k=1,nzg-1
-      if (slz(k)-slz(k+1) > .001) then
-         write (reason,'(2(a,1x,i4,1x),a,2x,a,1x,es14.7,1x,a,1x,es14.7,a)')                &
-               'Soil layers #',k,'and',k+1,'are not enough apart (i.e. > 0.001).'          &
-              ,'They are currently set as ',slz(k),'and',slz(k+1),'...'
+      do k=1,nzg-1
+         if (slz(k)-slz(k+1) > .001) then
+            write (reason,'(2(a,1x,i4,1x),a,2x,a,1x,es14.7,1x,a,1x,es14.7,a)')             &
+                  'Soil layers #',k,'and',k+1,'are not enough apart (i.e. > 0.001).'       &
+                 ,'They are currently set as ',slz(k),'and',slz(k+1),'...'
+            call opspec_fatal(reason,'opspec_grid')  
+            ifaterr=ifaterr+1        
+         end if
+      end do
+
+
+      !------------------------------------------------------------------------------------!
+      !     Check whether ED snow layers are well set, i.e., the number of soil levels is  !
+      ! within the allowed range.                                                          !
+      !------------------------------------------------------------------------------------!
+      if (nzs < 1) then
+         write (reason,'(a,2x,a,1x,i4,a)')                                                 &
+               'Too few maximum # of snow layers. Set it to at least 1.'                   &
+              ,'Your nzs is currently set to',nzs,'.'
          call opspec_fatal(reason,'opspec_grid')  
          ifaterr=ifaterr+1        
+      elseif (nzs > nzsmax) then 
+         write (reason,'(2(a,1x,i5,a))')                                                   &
+               'The number of snow layers cannot be greater than ',nzsmax,'.'              &
+              ,' Your nzs is currently set to',nzs,'.'
+         call opspec_fatal(reason,'opspec_grid') 
+         ifaterr=ifaterr+1 
       end if
-   end do
-
-
-   !---------------------------------------------------------------------------------------!
-   !     Check whether ED snow layers are well set, i.e., the number of soil levels is     !
-   ! within the allowed range.                                                             !
-   !---------------------------------------------------------------------------------------!
-   if (nzs < 1) then
-      write (reason,'(a,2x,a,1x,i4,a)')                                                    &
-            'Too few maximum # of snow layers. Set it to at least 1.'                      &
-           ,'Your nzs is currently set to',nzs,'.'
-      call opspec_fatal(reason,'opspec_grid')  
-      ifaterr=ifaterr+1        
-   elseif (nzs > nzsmax) then 
-      write (reason,'(2(a,1x,i5,a))')                                                      &
-            'The number of snow layers cannot be greater than ',nzsmax,'.'                 &
-           ,' Your nzs is currently set to',nzs,'.'
-      call opspec_fatal(reason,'opspec_grid') 
-      ifaterr=ifaterr+1 
-   end if
+      !------------------------------------------------------------------------------------!
+   end select
    !---------------------------------------------------------------------------------------!
 
 
@@ -1145,6 +1153,8 @@ end subroutine ed_opspec_times
 !------------------------------------------------------------------------------------------!
 subroutine ed_opspec_misc
    use ed_max_dims           , only : n_pft                        & ! intent(in)
+                                    , ed_nstyp                     & ! intent(in)
+                                    , ed_nscol                     & ! intent(in)
                                     , str_len                      & ! intent(in)
                                     , skip_integer                 & ! intent(in)
                                     , skip_real                    ! ! intent(in)
@@ -1189,9 +1199,7 @@ subroutine ed_opspec_misc
                                     , lwidth_nltree                & ! intent(in)
                                     , ribmax                       & ! intent(in)
                                     , leaf_maxwhc                  ! ! intent(in)
-   use soil_coms             , only : ed_nstyp                     & ! intent(in)
-                                    , ed_nscol                     & ! intent(in)
-                                    , isoilflg                     & ! intent(in)
+   use soil_coms             , only : isoilflg                     & ! intent(in)
                                     , islcolflg                    & ! intent(in)
                                     , nslcon                       & ! intent(in)
                                     , isoilcol                     & ! intent(in)
@@ -1440,7 +1448,8 @@ subroutine ed_opspec_misc
       ifaterr = ifaterr +1
    end if
 
-   if (ied_init_mode == -8) then 
+   select case (ied_init_mode)
+   case (-8)
       !------------------------------------------------------------------------------------!
       !     The special 8-layer model works only in size- and age-structured runs.         !
       !------------------------------------------------------------------------------------!
@@ -1471,20 +1480,22 @@ subroutine ed_opspec_misc
       write (unit=*,fmt='(a)') ' simulations only.  If that''s not what you wanted, change '
       write (unit=*,fmt='(a)') ' your IED_INIT_MODE variable on your ED2IN.                '
       write (unit=*,fmt='(a)') '==========================================================='
-   elseif ((ied_init_mode < -1 .or. ied_init_mode > 7) .and. &
-           (ied_init_mode /= 99 )) then
+   case (-1:8,99)
+      !----- Valid options, do nothing. ---------------------------------------------------!
+      continue
+      !------------------------------------------------------------------------------------!
+   case default
       write (reason,fmt='(a,1x,i4,a)')                                                     &
-                     'Invalid IED_INIT_MODE, it must be between -1 and 7. Yours is set to' &
+                     'Invalid IED_INIT_MODE, it must be between -1 and 8. Yours is set to' &
                     ,ied_init_mode,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
-   end if
+   end select
 
 
 
-   if (ied_init_mode == 7 .and. isoilstateinit>0 ) then
-      write (reason,fmt='(a)')                                                   &
-           'Please set ISOILSTATEINIT=0 if using IED_INIT_MODE=7'
+   if (ied_init_mode == 7 .and. isoilstateinit > 0) then
+      write (reason,fmt='(a)') 'Please set ISOILSTATEINIT = 0 if using IED_INIT_MODE = 7.'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if
@@ -1631,9 +1642,9 @@ end do
       ifaterr = ifaterr +1
    end if
 
-   if (isoilbc < 0 .or. isoilbc > 3) then
+   if (isoilbc < -1 .or. isoilbc > 3) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
-        'Invalid ISOILBC, it must be between 0 and 3.  Yours is set to',isoilbc,'...'
+        'Invalid ISOILBC, it must be between -1 and 3.  Yours is set to',isoilbc,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    else if(isoilbc == 2 .and. (sldrain < 0. .or. sldrain > 90.)) then
@@ -1841,9 +1852,9 @@ end do
       ifaterr = ifaterr +1
    end if
 
-   if (iallom < 0 .or. iallom > 4) then
+   if (iallom < 0 .or. iallom > 5) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
-                    'Invalid IALLOM, it must be between 0 and 4. Yours is set to'          &
+                    'Invalid IALLOM, it must be between 0 and 5. Yours is set to'          &
                     ,iallom,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
@@ -1872,9 +1883,9 @@ end do
    
    end if
 
-   if (iphen_scheme < -1 .or. iphen_scheme > 4) then
+   if (iphen_scheme < -1 .or. iphen_scheme > 5) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
-                    'Invalid IPHEN_SCHEME, it must be between -1 and 4. Yours is set to'   &
+                    'Invalid IPHEN_SCHEME, it must be between -1 and 5. Yours is set to'   &
                     ,iphen_scheme,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
@@ -1893,7 +1904,7 @@ end do
    ! model may be linear or log-linear.  Don't bother checking if IPHEN_SCHEME is not 3.   !
    !---------------------------------------------------------------------------------------!
    select case (iphen_scheme)
-   case (3)
+   case (3,5)
       !----- Light-driven phenology is enabled.  Check settings. --------------------------!
       select case (economics_scheme)
       case (1)
