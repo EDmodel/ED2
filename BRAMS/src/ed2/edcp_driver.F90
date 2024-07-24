@@ -11,6 +11,7 @@ subroutine ed_coup_driver()
                                    , edgrid_g              ! ! subroutine
    use ed_init              , only : read_obstime          ! ! subroutine
    use ed_misc_coms         , only : fast_diagnostics      & ! intent(in)
+                                   , current_time          & ! intent(in)
                                    , iyeara                & ! intent(in)
                                    , imontha               & ! intent(in)
                                    , idatea                & ! intent(in)

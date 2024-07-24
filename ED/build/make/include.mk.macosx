@@ -51,9 +51,9 @@ USE_INTERF=1
 #################################### COMPILER SETTINGS #####################################
 CMACH=MAC_OS_X
 FC_TYPE=GNU
-F_COMP=/usr/local/bin/gfortran-12
-C_COMP=/usr/local/bin/gcc-12
-LOADER=/usr/local/bin/gfortran-12
+F_COMP=/usr/local/bin/gfortran-14
+C_COMP=/usr/local/bin/gcc-14
+LOADER=/usr/local/bin/gfortran-14
 LIBS=
 MOD_EXT=mod
 ############################################################################################

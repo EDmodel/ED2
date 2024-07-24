@@ -34,6 +34,12 @@ module ed_init
             cgrid%lat (ipy) = work_v(ifm)%glat   (ipy)
             cgrid%xatm(ipy) = work_v(ifm)%xid    (ipy)
             cgrid%yatm(ipy) = work_v(ifm)%yid    (ipy)
+
+
+
+            !----- Initialise load adjacency with dummy value. ----------------------------!
+            cgrid%load_adjacency(ipy) = 0
+            !------------------------------------------------------------------------------!
          end do polyloop
          !---------------------------------------------------------------------------------!
       end do gridloop
@@ -94,9 +100,6 @@ module ed_init
          cgrid => edgrid_g(ifm)
 
          polyloop: do ipy=1,cgrid%npolygons
-         
-            !----- Initialise load adjacency with dummy value. ----------------------------!
-            cgrid%load_adjacency(ipy) = 0
 
             !----- Alias to current polygon. ----------------------------------------------!
             cpoly => cgrid%polygon(ipy)
@@ -351,7 +354,7 @@ module ed_init
          do igr = 1,ngrids
             call read_site_file(edgrid_g(igr),igr)
          end do
-      case (4,7)
+      case (4,7,8)
          continue
       case default
          call set_site_defprops()
@@ -445,6 +448,30 @@ module ed_init
             end do
          end select
          
+
+
+      case (8)
+         !---------------------------------------------------------------------------------!
+         !    Initialise model with ED-2 initial conditions file.   This is somewhat       !
+         ! similar to option 6, but it allows multiple sites, and these files do not       !
+         ! require any transformation of PFTs and disturbance type flags.                  !
+         !---------------------------------------------------------------------------------!
+         write(unit=*,fmt='(a,i3.3)')                                                      &
+             ' + Initialise from ED2 initial conditions file. Node: ',mynum
+         call read_ed22_initial_file()
+         !---------------------------------------------------------------------------------!
+
+
+
+         !----- In case this is a big-leaf simulation, convert initial conditions. --------!
+         select case (ibigleaf)
+         case (1)
+            do igr=1,ngrids
+               call sas_to_bigleaf(edgrid_g(igr))
+            end do
+         end select
+         !---------------------------------------------------------------------------------!
+
       end select
 
 
@@ -527,7 +554,8 @@ module ed_init
       use rk4_coms    , only : ipercol           ! ! intent(in)
       use grid_coms   , only : nzg               & ! intent(in)
                              , nzs               ! ! intent(in)
-      use soil_coms   , only : ed_nstyp          & ! intent(in)
+      use ed_max_dims , only : ed_nstyp          ! ! intent(in)
+      use soil_coms   , only : soil_hydro_scheme & ! intent(in)
                              , slz               & ! intent(in)
                              , dslz              & ! intent(out)
                              , dslzo2            & ! intent(out)
@@ -550,7 +578,8 @@ module ed_init
                              , slcons18          & ! intent(out)
                              , soil              & ! intent(in)
                              , thicknet          & ! intent(out)
-                             , thick             ! ! intent(out)
+                             , thick             & ! intent(out)
+                             , ed_gen_soil_table ! ! subroutine
       use consts_coms , only : wdns              & ! intent(in)
                              , wdnsi8            ! ! intent(in)
       use rk4_coms    , only : rk4min_sfcw_moist & ! intent(in)
@@ -558,11 +587,14 @@ module ed_init
                              , rk4min_sfcw_mass  & ! intent(out)
                              , rk4min_virt_water ! ! intent(out)
       use ed_misc_coms, only : dtlsm             ! ! intent(in)
+      use decomp_coms , only : rh_active_depth   & ! intent(in)
+                             , k_rh_active       ! ! intent(out)
       implicit none
       !----- Local variables --------------------------------------------------------------!
       integer                :: k
       integer                :: nnn
       integer                :: kzs
+      logical                :: is_hydr_decay
       real                   :: thik
       real                   :: stretch
       real                   :: slz0
@@ -623,15 +655,19 @@ module ed_init
       end do
 
 
+
+      !------------------------------------------------------------------------------------!
+      !       Generate the look-up table for soil properties.                              !
+      !------------------------------------------------------------------------------------!
+      call ed_gen_soil_table()
+      !------------------------------------------------------------------------------------!
+
+
       !----- Find layer-dependent hydraulic conductivity. ---------------------------------!
+      is_hydr_decay = (ipercol == 2) .or. (soil_hydro_scheme == 2)
       do nnn = 1,ed_nstyp
          do k = 0,nzg
-            select case (ipercol)
-            case (0,1)
-               !----- Original form, constant with depth.  --------------------------------!
-               slcons1(k,nnn) = soil(nnn)%slcons
-               !---------------------------------------------------------------------------!
-            case (2)
+            if (is_hydr_decay) then
                !---------------------------------------------------------------------------!
                !    Define conductivity using the SIMTOP approach (N05).                   !
                !                                                                           !
@@ -643,7 +679,12 @@ module ed_init
                !---------------------------------------------------------------------------!
                slcons1(k,nnn) = soil(nnn)%slcons * exp ( soil(nnn)%fhydraul * slzt(k))
                !---------------------------------------------------------------------------!
-            end select
+            else
+               !----- Original form, constant with depth.  --------------------------------!
+               slcons1(k,nnn) = soil(nnn)%slcons
+               !---------------------------------------------------------------------------!
+            end if
+            !------------------------------------------------------------------------------!
 
             !------ Find the double precision. --------------------------------------------!
             slcons18(k,nnn) = dble(slcons1(k,nnn))
@@ -674,6 +715,20 @@ module ed_init
       !----- Assigning some soil grid-dependent RK4 variables -----------------------------!
       rk4min_sfcw_mass  = rk4min_sfcw_moist * wdns   * dslz(nzg)
       rk4min_virt_water = rk4min_virt_moist * wdns   * dslz(nzg)
+      !------------------------------------------------------------------------------------!
+
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Determine the bottommost layer to consider for environmental regulation of     !
+      ! heterotrophic respiration.                                                         !
+      !------------------------------------------------------------------------------------!
+      k_rh_loop: do k_rh_active=nzg-1,1,-1
+         if (slz(k_rh_active) < rh_active_depth) exit k_rh_loop
+      end do k_rh_loop
+      k_rh_active = k_rh_active + 1
+      !------------------------------------------------------------------------------------!
 
       return
    end subroutine sfcdata_ed

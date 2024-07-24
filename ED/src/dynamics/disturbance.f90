@@ -830,9 +830,9 @@ module disturbance
                   ! canopy air temperature.                                                !
                   !------------------------------------------------------------------------!
                   call update_patch_thermo_props(csite,onsp+new_lu,onsp+new_lu,nzg,nzs     &
-                                                ,cpoly%ntext_soil(:,isi))
+                                                ,cpoly%lsl(isi),cpoly%ntext_soil(:,isi))
                   call update_patch_thermo_fmean(csite,onsp+new_lu,onsp+new_lu,nzg         &
-                                                ,cpoly%ntext_soil(:,isi))
+                                                ,cpoly%lsl(isi),cpoly%ntext_soil(:,isi))
                   !------------------------------------------------------------------------!
 
 

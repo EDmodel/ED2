@@ -245,25 +245,32 @@ module ed_max_dims
    !      For restart runs, this is the maximum number of certain variables that can be    !
    ! read.                                                                                 !
    !  HUGE_POLYGON - maximum number of input polygons.                                     !
+   !  HUGE_SITE    - maximum number of input sites.                                        !
    !  HUGE_PATCH   - maximum number of input patches.                                      !
    !  HUGE_COHORT  - maximum number of input cohorts.                                      !
    !  MAX_WATER    - maximum number of soil water levels (not assigned to polygons).       !
    !---------------------------------------------------------------------------------------!
    integer, parameter :: huge_polygon = nxpmax * nypmax
+   integer, parameter :: huge_site    = ed_nstyp
 #if defined(MAC_OS_X)
    integer, parameter :: huge_patch   = 200
-   integer, parameter :: huge_cohort  = 8000
+   integer, parameter :: huge_cohort  = 20000
+   integer, parameter :: max_water    = 5
 #else
-   integer, parameter :: huge_patch   = 10000
-   integer, parameter :: huge_cohort  = 250000
-#endif
+   integer, parameter :: huge_patch   = 20000
+   integer, parameter :: huge_cohort  = 800000
    integer, parameter :: max_water    = 100
+#endif
    !---------------------------------------------------------------------------------------!
 
 
 
    !----- Maximum number of land use polygons that can be read by filelist. ---------------!
+#if defined(MAC_OS_X)
+   integer, parameter :: huge_lu = 999
+#else
    integer, parameter :: huge_lu = 99999
+#endif
    !---------------------------------------------------------------------------------------!
 
 

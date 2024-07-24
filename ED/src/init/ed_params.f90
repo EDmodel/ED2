@@ -1525,12 +1525,15 @@ end subroutine init_hydro_coms
 !==========================================================================================!
 !==========================================================================================!
 !    Subroutine that initialises most of the soil parameters.                              !
+!                                                                                          !
+! MLO: This sub-routine formerly initiliased the soil and soil8 tables, but this creates   !
+!      a problem for some HISTORY runs (especially those with multiple sites that modify   !
+!      the default parameters).  The soil table is now initialised in a separate sub-      !
+!      routine (ed_gen_soil_table), after loading HISTORY variables, or right before or    !
+!      right after reading the initial conditions.                                         !
 !------------------------------------------------------------------------------------------!
 subroutine init_soil_coms
-   use detailed_coms  , only : idetailed             ! ! intent(in)
-   use ed_max_dims    , only : str_len               ! ! intent(in)
-   use soil_coms      , only : ed_nstyp              & ! intent(in)
-                             , isoilflg              & ! intent(in)
+   use soil_coms      , only : isoilflg              & ! intent(in)
                              , nslcon                & ! intent(in)
                              , soil_hydro_scheme     & ! intent(in)
                              , slxclay               & ! intent(in)
@@ -1539,11 +1542,17 @@ subroutine init_soil_coms
                              , slph                  & ! intent(in)
                              , slcec                 & ! intent(in)
                              , sldbd                 & ! intent(in)
-                             , soil                  & ! intent(in)
-                             , soil_class            & ! type
+                             , slxkey_ref            & ! intent(out)
+                             , slhydro_ref           & ! intent(out)
+                             , slxclay_ref           & ! intent(out)
+                             , slxsilt_ref           & ! intent(out)
+                             , slxsand_ref           & ! intent(out)
+                             , slsoc_ref             & ! intent(out)
+                             , slph_ref              & ! intent(out)
+                             , slcec_ref             & ! intent(out)
+                             , sldbd_ref             & ! intent(out)
                              , soilcol               & ! intent(in)
                              , soilcol_class         & ! type
-                             , soil8                 & ! intent(out)
                              , water_stab_thresh     & ! intent(out)
                              , snowmin               & ! intent(out)
                              , dewmax                & ! intent(out)
@@ -1564,68 +1573,18 @@ subroutine init_soil_coms
                              , sin_sldrain           & ! intent(out)
                              , sin_sldrain8          & ! intent(out)
                              , hydcond_min           & ! intent(out)
-                             , hydcond_min8          & ! intent(out)
-                             , ed_init_soil          & ! subroutine
-                             , matric_potential      & ! function
-                             , soil_moisture         ! ! function
-   use phenology_coms , only : thetacrit             ! ! intent(in)
-   use disturb_coms   , only : sm_fire               ! ! intent(in)
+                             , hydcond_min8          ! ! intent(out)
    use grid_coms      , only : ngrids                ! ! intent(in)
-   use consts_coms    , only : grav                  & ! intent(in)
-                             , wdns                  & ! intent(in)
-                             , hr_sec                & ! intent(in)
+   use consts_coms    , only : wdns                  & ! intent(in)
                              , day_sec               & ! intent(in)
                              , pio180                & ! intent(in)
                              , pio1808               ! ! intent(in)
 
    implicit none
    !----- Local variables. ----------------------------------------------------------------!
-   integer      :: s                                 ! Soil texture flag
    logical      :: update_slx                        ! Update texture fractions?  [    T|F]
-   logical      :: print_soil_table                  ! Print parameter table?     [    T|F]
-   real(kind=4) :: soilep                            ! Effective porosity (O19)   [  m3/m3]
-   real(kind=4) :: slpot33                           ! Potential for EP   (O19)   [      m]
-   real(kind=4) :: slcons_mmhr                       ! Sat. hydraulic conduct.    [  mm/hr]
-   real(kind=4) :: slcpd_mjm3k                       ! Soil heat capacity         [MJ/m3/K]
-   real(kind=4) :: ksand                             ! k-factor for sand (de Vries model)
-   real(kind=4) :: ksilt                             ! k-factor for silt (de Vries model)
-   real(kind=4) :: kclay                             ! k-factor for clay (de Vries model)
-   real(kind=4) :: kair                              ! k-factor for air  (de Vries model)
-   !----- Initial sand and clay volumetric fractions. -------------------------------------!
-   real(kind=4)    , dimension(ed_nstyp) :: xsand_def ! Default sand fraction      [   0-1]
-   real(kind=4)    , dimension(ed_nstyp) :: xclay_def ! Default clay fraction      [   0-1]
-   !---- Soil texture acronym. ------------------------------------------------------------!
-   character(len=4), dimension(ed_nstyp) :: xkey_def  ! Acronym
    !----- Local constants. ----------------------------------------------------------------!
-   real(kind=4), parameter :: fieldcp_K   =  0.1     ! hydr. cond. at field cap.   [mm/day]
-   real(kind=4), parameter :: residual_K  =  1.e-5   ! minimum hydr. cond. (RS02)  [mm/day]
-   real(kind=4), parameter :: slpots_MPa  = -0.0005  ! Saturation for vG80         [   MPa]
-   real(kind=4), parameter :: slpot33_MPa = -0.033   ! Potential for soilep (O19)  [   MPa]
-   real(kind=4), parameter :: slpotfc_MPa = -0.010   ! Field capacity (TH98)       [   MPa]
-   real(kind=4), parameter :: slpotcp_MPa = -3.1     ! Matric pot. - air dry soil  [   MPa]
-   real(kind=4), parameter :: slpotwp_MPa = -1.5     ! Matric pot. - wilting point [   MPa]
-   real(kind=4), parameter :: sand_hcapv  =  2.128e6 ! Sand vol. heat capacity     [J/m3/K]
-   real(kind=4), parameter :: clay_hcapv  =  2.385e6 ! Clay vol. heat capacity     [J/m3/K]
-   real(kind=4), parameter :: silt_hcapv  =  2.256e6 ! Silt vol. heat capacity (*) [J/m3/K]
-   real(kind=4), parameter :: air_hcapv   =  1.212e3 ! Air vol. heat capacity      [J/m3/K]
-   real(kind=4), parameter :: sand_thcond = 8.80     ! Sand thermal conduct.       [ W/m/K]
-   real(kind=4), parameter :: clay_thcond = 2.92     ! Clay thermal conduct.       [ W/m/K]
-   real(kind=4), parameter :: silt_thcond = 5.87     ! Silt thermal conduct.   (*) [ W/m/K]
-   real(kind=4), parameter :: air_thcond  = 0.025    ! Air thermal conduct.        [ W/m/K]
-   real(kind=4), parameter :: h2o_thcond  = 0.57     ! Water thermal conduct.      [ W/m/K]
-   !------ Name for the parameter table. --------------------------------------------------!
-   character(len=str_len), parameter :: soil_table_fn = 'soil_properties.txt'
-   !---------------------------------------------------------------------------------------!
-   ! (*) If anyone has the heat capacity and thermal conductivity for silt, please feel    !
-   !     free to add it in here, I didn't find any.  Apparently no one knows, and I've     !
-   !     seen in other models that people just assume either the same as sand or the       !
-   !     average.  Here I'm just using halfway.  I think the most important thing is to    !
-   !     take into account the soil and the air, which are the most different.             !
-   !                                                                                       !
-   ! Sand (quartz), clay, air, and water heat capacities and thermal conductivities values !
-   ! are from:                                                                             !
-   !     Monteith and Unsworth, 2008: Environmental Physics.                               !
-   !         Academic Press, Third Edition. Table 15.1, p. 292                             !
+   real(kind=4), parameter :: residual_K  =  1.e-5   ! min. hydr. cond. (RS02)  [mm/day]
    !---------------------------------------------------------------------------------------!
 
 
@@ -1659,24 +1618,24 @@ subroutine init_soil_coms
    !---------------------------------------------------------------------------------------!
 
 
-
-   !---------------------------------------------------------------------------------------!
-   !    Initialise the soil and soil8 structures.                                          !
-   !---------------------------------------------------------------------------------------!
-   call ed_init_soil()
-   !---------------------------------------------------------------------------------------!
-
-
    !---------------------------------------------------------------------------------------!
    !    Removed the hardcoded initialisation of the entire structure.  Instead, we set the !
    ! texture for every class, then use the equations to populate the structure.            !
    !---------------------------------------------------------------------------------------!
-   xsand_def = (/ 0.920, 0.825, 0.660, 0.200, 0.410, 0.590, 0.100, 0.320                   &
-                , 0.520, 0.060, 0.200, 0.200, 0.333, 0.075, 0.100, 0.375, 0.125 /)
-   xclay_def = (/ 0.030, 0.060, 0.110, 0.160, 0.170, 0.270, 0.340, 0.340                   &
-                , 0.420, 0.470, 0.600, 0.200, 0.333, 0.050, 0.800, 0.525, 0.525 /)
-   xkey_def  = (/'  Sa',' LSa',' SaL',' SiL','   L','SaCL','SiCL','  CL'                   &
-                ,' SaC',' SiC','   C','Peat','BdRk','  Si','  CC',' CSa',' CSi' /)
+   slxkey_ref ( :) = (/'  Sa',' LSa',' SaL',' SiL','   L','SaCL','SiCL','  CL'             &
+                      ,' SaC',' SiC','   C','Peat','BdRk','  Si','  CC',' CSa',' CSi' /)
+   slxsand_ref( :) = (/ 0.920, 0.825, 0.660, 0.200, 0.410, 0.590, 0.100, 0.320             &
+                      , 0.520, 0.060, 0.200, 0.200, 0.333, 0.075, 0.100, 0.375, 0.125 /)
+   slxclay_ref( :) = (/ 0.030, 0.060, 0.110, 0.160, 0.170, 0.270, 0.340, 0.340             &
+                      , 0.420, 0.470, 0.600, 0.200, 0.333, 0.050, 0.800, 0.525, 0.525 /)
+   slxsilt_ref( :) = 1. - slxsand_ref(:) - slxclay_ref(:)
+   slhydro_ref( :) = soil_hydro_scheme
+   slhydro_ref(12) = 12
+   slhydro_ref(13) = 13
+   slsoc_ref  ( :) = slsoc
+   slph_ref   ( :) = slph
+   slcec_ref  ( :) = slcec
+   sldbd_ref  ( :) = sldbd
    !---------------------------------------------------------------------------------------!
 
 
@@ -1686,616 +1645,11 @@ subroutine init_soil_coms
    update_slx = any(isoilflg(1:ngrids) == 2) .and. slxclay > 0. .and. slxsand > 0. .and.   &
                 (slxclay + slxsand) <= 1.
    if (update_slx) then
-      xsand_def(nslcon) = slxsand
-      xclay_def(nslcon) = slxclay
-      xkey_def (nslcon) = 'User'
+      slxsand_ref(nslcon) = slxsand
+      slxclay_ref(nslcon) = slxclay
+      slxsilt_ref(nslcon) = 1. - slxsand - slxclay
+      slxkey_ref (nslcon) = 'User'
    end if
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !---------------------------------------------------------------------------------------!
-   !     Assign texture and silt fraction (method-independent).                                          !
-   !---------------------------------------------------------------------------------------!
-   do s=1,ed_nstyp
-      soil(s)%key   = xkey_def(s)
-      soil(s)%xsand = xsand_def(s)
-      soil(s)%xclay = xclay_def(s)
-      soil(s)%xsilt = 1. - xsand_def(s) - xclay_def(s)
-   end do
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !---------------------------------------------------------------------------------------!
-   !     Other soil properties (relevant only when SOIL_HYDRO_SCHEME = 2).                 !
-   !---------------------------------------------------------------------------------------!
-   do s=1,ed_nstyp
-      soil(s)%slsoc = slsoc
-      soil(s)%slph  = slph
-      soil(s)%slcec = slcec
-      soil(s)%sldbd = sldbd
-   end do
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !---------------------------------------------------------------------------------------!
-   !     Calculate method- and texture-dependent properties.  For a general overview,      !
-   ! check (M14).  Additional references correspond to specific parametrisations.          !
-   !                                                                                       !
-   ! References:                                                                           !
-   !                                                                                       !
-   ! Brooks RH , Corey AT. 1964. Hydraulic properties of porous media. Hydrology Papers 3, !
-   !    Colorado State University, Fort Collins, U.S.A (BC64).                             !
-   ! Marthews TR, Quesada CA, Galbraith DR, Malhi Y, Mullins CE, Hodnett MG , Dharssi I.   !
-   !    2014. High-resolution hydraulic parameter maps for surface soils in tropical South !
-   !    America. Geosci. Model Dev. 7: 711-723. doi:10.5194/gmd-7-711-2014 (M14).          !
-   ! Campbell GS. 1974. A simple method for determining unsaturated conductivity from      !
-   !    moisture retention data. Soil Science 117: 311-314.                                !
-   !    doi:10.1097/00010694-197406000-00001 (C74).                                        !
-   ! Cosby BJ, Hornberger GM, Clapp RB , Ginn TR. 1984. A statistical exploration of the   !
-   !    relationships of soil moisture characteristics to the physical properties of       !
-   !    soils. Water Resour. Res. 20: 682-690. doi:10.1029/WR020i006p00682 (C84).          !
-   ! van Genuchten MT. 1980. A closed-form equation for predicting the hydraulic           !
-   !    conductivity of unsaturated soils1. Soil Sci. Soc. Am. J. 44: 892-898.             !
-   !    doi:10.2136/sssaj1980.03615995004400050002x (vG80).                                !
-   ! Hodnett M , Tomasella J. 2002. Marked differences between van Genuchten soil          !
-   !    water-retention parameters for temperate and tropical soils: a new                 !
-   !    water-retention pedo-transfer functions developed for tropical soils. Geoderma     !
-   !    108: 155-180. doi:10.1016/S0016-7061(02)00105-2 (HT02).                            !
-   ! Montzka C, Herbst M, Weihermuller L, Verhoef A , Vereecken H. 2017. A global data set !
-   !    of soil hydraulic properties and sub-grid variability of soil water retention and  !
-   !    hydraulic conductivity curves. Earth Syst. Sci. Data, 9: 529-543.                  !
-   !    doi:10.5194/essd-9-529-2017 (M17).                                                 !
-   ! Mualem Y. 1976. A new model for predicting the hydraulic conductivity of unsaturated  !
-   !    porous media. Water Resour. Res., 12: 513-522. doi:10.1029/WR012i003p00513 (M76).  !
-   ! Ottoni MV, Ottoni Filho TB, Lopes-Assad MLR , Rotunno Filho OC. 2019. Pedotransfer    !
-   !    functions for saturated hydraulic conductivity using a database with temperate and !
-   !    tropical climate soils. J. Hydrol., 575: 1345-1358.                                !
-   !    doi:10.1016/j.jhydrol.2019.05.050 (O19).                                           !
-   ! Romano N , Santini A. 2002. Field. In: Methods of soil analysis: Part 4 physical      !
-   !    methods (eds. Dane JH. & Topp GC.). Soil Science Society of America, Madison, WI,  !
-   !    SSSA Book Series 5.4, chap. 3.3.3, pp. 721--738 (RS02).                            !
-   ! Schaap MG , Leij FJ. 2000. Improved prediction of unsaturated hydraulic conductivity  !
-   !    with the Mualem- van Genuchten model. Soil Sci. Soc. Am. J., 64: 843-851.          !
-   !    doi:10.2136/sssaj2000.643843x (SL00).                                              !
-   ! Tomasella J , Hodnett MG. 1998. Estimating soil water retention characteristics from  !
-   !    limited data in Brazilian Amazonia. Soil Sci. 163: 190-202.                        !
-   !    doi:10.1097/00010694-199803000-00003 (TH98).                                       !
-   !---------------------------------------------------------------------------------------!
-   do s=1,ed_nstyp
-
-      !----- Check soil texture.  Peat and bedrock must be handled separately. ------------!
-      select case (s)
-      case (12)
-         !---------------------------------------------------------------------------------!
-         !     Peat.  We always use BC64-M76 approach.  This modify hydraulic properties   !
-         ! to account for high soil organic content.  This class becomes obsolete for      !
-         ! SOIL_HYDRO_SCHEME=2 because we can account for SOC directly.                    !
-         !                                                                                 !
-         ! MLO - I noticed that most parameters do not correspond to what is implemented   !
-         !       in LEAF3 (as of RAMS-6.0).  I left the LEAF3 values as comments next to   !
-         !       the default values but someone running ED2 for peats should check. I      !
-         !       think the LEAF3 values intuitively make more sense for peat.              !
-         !---------------------------------------------------------------------------------!
-         soil(s)%method = 'BC64'
-
-         !----- Peat, use the default value from LEAF3. -----------------------------------!
-         soil(s)%slcons  =  8.0e-6    ! ED-2.2 2.357930e-6
-         !---------------------------------------------------------------------------------!
-
-         !---- Pore tortuosity factor. Assumed 1 to be consistent with BC64. --------------!
-         soil(s)%sltt = 1.0
-         !---------------------------------------------------------------------------------!
-
-
-         !---------------------------------------------------------------------------------!
-         !     Pore-size distribution factor (slnm, aka lambda) and its inverse (slbs, aka !
-         ! BC64's "b" factor).                                                             !
-         !---------------------------------------------------------------------------------!
-         soil(s)%slbs    =  7.75  ! ED-2.2 6.180000
-         soil(s)%slnm    = 1. / soil(s)%slbs
-         !---------------------------------------------------------------------------------!
-
-
-         !---------------------------------------------------------------------------------!
-         !     Ancillary parameters used for hydraulic conductivity.                       !
-         !---------------------------------------------------------------------------------!
-         soil(s)%slmm = 2. + soil(s)%sltt + 2. * soil(s)%slbs
-         soil(s)%slmu = -1. / soil(s)%slmm
-         !---------------------------------------------------------------------------------!
-
-
-         !----- Saturation potential [m]. -------------------------------------------------!
-         soil(s)%slpots  = -0.356                ! ED-2.2 -0.534564359
-         soil(s)%slpotbp = soil(s)%slpots        ! Bubbling point, assume saturation
-         soil(s)%slpotpo = soil(s)%slpots        ! Porosity, assume saturation
-         soil(s)%malpha  = 1. / soil(s)%slpotbp  ! Inverse of bubbling point (not used)
-         !---------------------------------------------------------------------------------!
-
-
-
-         !----- Soil moisture at saturation [m3/m3]. --------------------------------------!
-         soil(s)%slmsts  =  0.863          ! ED-2.2 0.469200
-         soil(s)%soilbp  =  soil(s)%slmsts ! Assume the same as saturation
-         soil(s)%soilpo  =  soil(s)%slmsts ! Assume the same as saturation
-         !---------------------------------------------------------------------------------!
-
-
-         !---- Field capacity [m3/m3] and potential at field capacity [m]. ----------------!
-         soil(s)%sfldcap = 0.535  ! ED-2.2 0.285709966
-         soil(s)%slpotfc = matric_potential(s,soil(s)%sfldcap)
-         !---------------------------------------------------------------------------------!
-
-
-         !----- Residual moisture [m3/m3].  Ignored in C74 and the default ED2 method. ----!
-         soil(s)%soilre  = 0.
-         !---------------------------------------------------------------------------------!
-
-
-         !----- Heat capacity. ------------------------------------------------------------!
-         soil(s)%slcpd   =  874000.
-         !---------------------------------------------------------------------------------!
-      case (13)
-         !----- Bedrock.  Hydraulics is disabled, only heat capacity is needed. -----------!
-         soil(s)%method  = 'BDRK'
-         soil(s)%slcons  = 0.0
-         soil(s)%sltt    = 0.0
-         soil(s)%slnm    = 1.0
-         soil(s)%slbs    = 1.0
-         soil(s)%slmm    = 1.0
-         soil(s)%slmu    = 1.0
-         soil(s)%malpha  = 0.0
-         soil(s)%slpots  = 0.0
-         soil(s)%slmsts  = 0.0
-         soil(s)%slpotbp = 0.0
-         soil(s)%soilbp  = 0.0
-         soil(s)%slpotpo = 0.0
-         soil(s)%soilpo  = 0.0
-         soil(s)%soilre  = 0.0
-         soil(s)%sfldcap = 0.0
-         soil(s)%slpotfc = 0.0
-         soil(s)%slcpd   = 2130000.
-         !---------------------------------------------------------------------------------!
-      case default
-         !---------------------------------------------------------------------------------!
-         !      Other soils.  Decide on hydraulic parameters based on the method.          !
-         !---------------------------------------------------------------------------------!
-         select case (soil_hydro_scheme)
-         case (0)
-            !------------------------------------------------------------------------------!
-            !     Pedotransfer functions from BC64/M76.  Unless noted otherwise, the       !
-            ! parameters for the functions are from C84, based on measurements in the      !
-            ! United States.                                                               !
-            !------------------------------------------------------------------------------!
-
-
-            !------------------------------------------------------------------------------!
-            !      Hydraulic conductivity at saturation [m/s].                             !
-            !------------------------------------------------------------------------------!
-            soil(s)%slcons  = (10.**(-0.60 + 1.26*soil(s)%xsand - 0.64*soil(s)%xclay))     &
-                            * 0.0254/hr_sec
-            !------------------------------------------------------------------------------!
-
-
-            !---- Flag for method. --------------------------------------------------------!
-            soil(s)%method = 'BC64'
-            !------------------------------------------------------------------------------!
-
-
-            !---- Pore tortuosity factor. Assumed 1 to be consistent with BC64. -----------!
-            soil(s)%sltt = 1.0
-            !------------------------------------------------------------------------------!
-
-
-            !------------------------------------------------------------------------------!
-            !     Pore-size distribution factor (slnm, aka lambda) and its inverse (slbs,  !
-            ! aka BC64's "b" factor).                                                      !
-            !------------------------------------------------------------------------------!
-            soil(s)%slnm = 1. / (3.10 + 15.7*soil(s)%xclay - 0.3*soil(s)%xsand)
-            soil(s)%slbs = 1. / soil(s)%slnm
-            !------------------------------------------------------------------------------!
-
-
-            !------------------------------------------------------------------------------!
-            !     Ancillary parameters used for hydraulic conductivity.                    !
-            !------------------------------------------------------------------------------!
-            soil(s)%slmm = 2. + soil(s)%sltt + 2. * soil(s)%slbs
-            soil(s)%slmu = -1. / soil(s)%slmm
-            !------------------------------------------------------------------------------!
-
-
-            !----- Saturation potential [m]. ----------------------------------------------!
-            soil(s)%slpots  = -1.                                                          &
-                            * (10.**(2.17 - 0.63*soil(s)%xclay - 1.58*soil(s)%xsand)) * 0.01
-            soil(s)%slpotbp = soil(s)%slpots       ! Bubbling point, assume saturation
-            soil(s)%slpotpo = soil(s)%slpots       ! Porosity, assume saturation
-            soil(s)%malpha  = 1. / soil(s)%slpotbp
-            !------------------------------------------------------------------------------!
-
-
-            !----- Soil moisture at saturation (porosity) [m3/m3]. ------------------------!
-            soil(s)%slmsts  = 0.01 * (50.5 - 14.2*soil(s)%xsand - 3.7*soil(s)%xclay)
-            !------------------------------------------------------------------------------!
-
-
-            !----- Bubbling point soil moisture and porosity, assume saturation [m3/m3]. --!
-            soil(s)%soilbp  = soil(s)%slmsts ! Bubbling point
-            soil(s)%soilpo  = soil(s)%slmsts ! Porosity
-            !------------------------------------------------------------------------------!
-
-
-            !----- Residual moisture [m3/m3].  Ignored in C74 and the default ED2 method. -!
-            soil(s)%soilre = 0.0
-            !------------------------------------------------------------------------------!
-
-
-            !------------------------------------------------------------------------------!
-            !      Field capacity is defined based on hydraulic conductivity of 0.1        !
-            ! mm/day, following RS02.                                                      !
-            !------------------------------------------------------------------------------!
-            soil(s)%sfldcap =  soil(s)%slmsts                                              &
-                            *  ( soil(s)%slcons / ( fieldcp_K / ( wdns * day_sec ) ) )     &
-                            ** soil(s)%slmu
-            soil(s)%slpotfc = matric_potential(s,soil(s)%sfldcap)
-            !------------------------------------------------------------------------------!
-
-         case (1)
-            !------------------------------------------------------------------------------!
-            !     Pedotransfer functions from BC64/M76.  Unless noted otherwise, the       !
-            ! parameters for the functions are from TH98, based on measurements in the     !
-            ! Brazilian Amazon.                                                            !
-            !------------------------------------------------------------------------------!
-
-
-
-            !---- Flag for method. --------------------------------------------------------!
-            soil(s)%method = 'BC64'
-            !------------------------------------------------------------------------------!
-
-
-            !------------------------------------------------------------------------------!
-            !      Hydraulic conductivity at saturation [m/s].  Use C84 settings, follow-  !
-            ! ing M14.                                                                     !
-            !------------------------------------------------------------------------------!
-            soil(s)%slcons  = (10.**(-0.60 + 1.26*soil(s)%xsand - 0.64*soil(s)%xclay))     &
-                            * 0.0254/hr_sec
-            !------------------------------------------------------------------------------!
-
-
-            !---- Pore tortuosity factor. Assumed 0.5, following M14. ---------------------!
-            soil(s)%sltt = 0.5
-            !------------------------------------------------------------------------------!
-
-
-            !------------------------------------------------------------------------------!
-            !     Pore-size distribution factor (slnm, aka lambda) and its inverse (slbs,  !
-            ! aka BC64's "b" factor).                                                      !
-            !------------------------------------------------------------------------------!
-            soil(s)%slnm = exp( - 1.197 - 0.417 * soil(s)%xsilt + 0.450 * soil(s)%xclay    &
-                                - 8.940 * soil(s)%xsilt * soil(s)%xclay                    &
-                                + 10.00 * soil(s)%xsilt * soil(s)%xsilt * soil(s)%xclay )
-            soil(s)%slbs = 1./ soil(s)%slnm
-            !------------------------------------------------------------------------------!
-
-
-            !------------------------------------------------------------------------------!
-            !     Ancillary parameters used for hydraulic conductivity.                    !
-            !------------------------------------------------------------------------------!
-            soil(s)%slmm = 2. + soil(s)%sltt + 2. * soil(s)%slbs
-            soil(s)%slmu = -1. / soil(s)%slmm
-            !------------------------------------------------------------------------------!
-
-
-            !----- Saturation potential [m]. ----------------------------------------------!
-            soil(s)%slpots  = -1. / grav                                                   &
-                            * ( 0.285 + 7.33 * soil(s)%xsilt * soil(s)%xsilt               &
-                              - 1.30 * soil(s)%xsilt * soil(s)%xclay                       &
-                              + 3.60 * soil(s)%xsilt * soil(s)%xsilt * soil(s)%xclay )
-            soil(s)%slpotbp = soil(s)%slpots       ! Bubbling point, assume saturation
-            soil(s)%slpotpo = soil(s)%slpots       ! Porosity, assume saturation
-            soil(s)%malpha  = 1. / soil(s)%slpotbp
-            !------------------------------------------------------------------------------!
-
-
-            !----- Soil moisture at saturation (porosity) [m3/m3]. ------------------------!
-            soil(s)%slmsts  = 0.4061  + 0.165 * soil(s)%xsilt + 0.162 * soil(s)%xclay      &
-                            + 1.37e-3 * soil(s)%xsilt * soil(s)%xsilt                      &
-                            + 1.80e-5 * soil(s)%xsilt * soil(s)%xsilt * soil(s)%xclay
-            !------------------------------------------------------------------------------!
-
-
-            !----- Bubbling point soil moisture and porosity, assume saturation [m3/m3]. --!
-            soil(s)%soilbp  = soil(s)%slmsts ! Bubbling point
-            soil(s)%soilpo  = soil(s)%slmsts ! Porosity
-            !------------------------------------------------------------------------------!
-
-
-
-            !----- Residual moisture [m3/m3].  --------------------------------------------!
-            soil(s)%soilre = max( 0.0                                                      &
-                                , - 0.02095 + 0.047 * soil(s)%xsilt                        &
-                                            + 0.431 * soil(s)%xclay                        &
-                                            - 0.00827 * soil(s)%xsilt * soil(s)%xclay )
-            !------------------------------------------------------------------------------!
-
-
-            !------------------------------------------------------------------------------!
-            !      Field capacity is defined based on hydraulic conductivity of 0.1        !
-            ! mm/day, following RS02.                                                      !
-            !------------------------------------------------------------------------------!
-            soil(s)%slpotfc = slpotfc_MPa * 1.e6 / (grav * wdns)
-            soil(s)%sfldcap = soil_moisture(s,soil(s)%slpotfc)
-            !------------------------------------------------------------------------------!
-
-         case (2)
-            !------------------------------------------------------------------------------!
-            !     Pedotransfer functions from vG80/M76.  Unless noted otherwise,           !
-            ! the parameters for the function are from HT02, based on measurements in the  !
-            ! Brazilian Amazon.                                                            !
-            !------------------------------------------------------------------------------!
-
-
-            !---- Flag for method. --------------------------------------------------------!
-            soil(s)%method = 'vG80'
-            !------------------------------------------------------------------------------!
-
-
-            !------------------------------------------------------------------------------!
-            !      Pore tortuosity factor. M14 assumed 0.5, but there is evidence that     !
-            ! this parameter should be regarded as empirical and some studies suggested    !
-            ! that it should be even negative (e.g., SL00 and M17).  We follow SL00 and    !
-            ! assume the parameter to be -1.0.                                             !
-            !------------------------------------------------------------------------------!
-            soil(s)%sltt = -1.0
-            !------------------------------------------------------------------------------!
-
-
-            !------------------------------------------------------------------------------!
-            !     Pore-size distribution factor (slnm, aka lambda) and its inverse (slbs,  !
-            ! aka BC64's "b" factor).                                                      !
-            !------------------------------------------------------------------------------!
-            soil(s)%slnm = exp( 0.62986 - 0.833 * soil(s)%xclay - 0.529 * soil(s)%slsoc    &
-                              + 0.00593 * soil(s)%slph                                     &
-                              + 0.700 * soil(s)%xclay * soil(s)%xclay                      &
-                              - 1.400 * soil(s)%xsand * soil(s)%xsilt                   )
-            soil(s)%slbs = 1./ soil(s)%slnm
-            !------------------------------------------------------------------------------!
-
-
-            !------------------------------------------------------------------------------!
-            !     Ancillary parameters used for hydraulic conductivity.                    !
-            !------------------------------------------------------------------------------!
-            soil(s)%slmm = 1. - 1. / soil(s)%slnm
-            soil(s)%slmu = soil(s)%slnm / (1. - soil(s)%slnm)
-            !------------------------------------------------------------------------------!
-
-
-            !----- Bubbling point potential [m].  Assume equivalent to saturation. --------!
-            soil(s)%slpotbp = -1. / grav                                                   &
-                            * exp(  0.02294 + 3.526 * soil(s)%xsilt                        &
-                                 - 2.440 * soil(s)%slsoc + 0.076 * soil(s)%slcec           &
-                                  + 0.11331 * soil(s)%slph                                 &
-                                  - 1.90000 * soil(s)%xsilt * soil(s)%xsilt      )
-            soil(s)%malpha  = 1. / soil(s)%slpotbp
-            !------------------------------------------------------------------------------!
-
-
-
-            !----- Soil moisture and potential at porosity [m3/m3]. -----------------------!
-            soil(s)%soilpo  = 0.81799 + 0.099 * soil(s)%xclay - 3.142e-4 * soil(s)%sldbd   &
-                            + 0.01800 * soil(s)%slcec + 0.00451 * soil(s)%slph             &
-                            - 0.050 * soil(s)%xsand * soil(s)%xclay
-            soil(s)%slpotpo = matric_potential(s,soil(s)%soilpo)
-            !------------------------------------------------------------------------------!
-
-
-
-            !----- Residual moisture [m3/m3].  --------------------------------------------!
-            soil(s)%soilre = max( 0.0                                                      &
-                                , 0.22733 - 0.164 * soil(s)%xsand + 0.235 * soil(s)%slcec  &
-                                - 0.00831 * soil(s)%slph                                   &
-                                + 0.18 * soil(s)%xclay * soil(s)%xclay                     &
-                                + 0.26 * soil(s)%xsand * soil(s)%xclay                    )
-            !------------------------------------------------------------------------------!
-
-
-
-            !------------------------------------------------------------------------------!
-            !     Soil moisture at "saturation".  The vG80 approach assumes that actual    !
-            ! saturation occurs when soil matric potential is zero, which causes           !
-            ! singularities in many applications.  To prevent FPE errors, we assume that   !
-            ! water potential zero corresponds to porosity (admittedly this is not         !
-            ! entirely accurate), and impose "saturation" for ED-2.2 purposes to be when   !
-            ! matric potential is -0.5 kPa, similar to the highest saturation potential    !
-            ! values obtained through Cosby et al. (1984) parametrisation.                 !
-            !------------------------------------------------------------------------------!
-            soil(s)%slpots = slpots_MPa * 1.e6 / (grav * wdns)
-            soil(s)%slmsts = soil_moisture(s,soil(s)%slpots)
-            !------------------------------------------------------------------------------!
-
-
-
-            !------------------------------------------------------------------------------!
-            !     Soil moisture at bubbling point.  Unlike other schemes, we account for   !
-            ! the differences between bubbling point and porosity.                         !
-            !------------------------------------------------------------------------------!
-            soil(s)%soilbp = soil_moisture(s,soil(s)%slpotbp)
-            !------------------------------------------------------------------------------!
-
-
-
-            !------------------------------------------------------------------------------!
-            !      Field capacity is defined based on hydraulic conductivity of 0.1        !
-            ! mm/day, following RS02.                                                      !
-            !------------------------------------------------------------------------------!
-            soil(s)%slpotfc = slpotfc_MPa * 1.e6 / (grav * wdns)
-            soil(s)%sfldcap = soil_moisture(s,soil(s)%slpotfc)
-            !------------------------------------------------------------------------------!
-
-
-            !------------------------------------------------------------------------------!
-            !      Hydraulic conductivity at saturation [m/s].  Here we follow O19, which  !
-            ! depends upon the "effective porosity" (or difference between actual porosity !
-            ! and soil moisture at -0.033 MPa).                                            !
-            !------------------------------------------------------------------------------!
-            slpot33         = slpot33_MPa * 1.e6 / (grav * wdns)
-            soilep          = max(0.,soil(s)%slmsts - soil_moisture(s,slpot33))
-            soil(s)%slcons  = 19.31 / day_sec * soilep ** 1.948
-            !------------------------------------------------------------------------------!
-         end select
-         !---------------------------------------------------------------------------------!
-
-      end select
-      !------------------------------------------------------------------------------------!
-
-
-
-      !------------------------------------------------------------------------------------!
-      !     Additional derived parameters.                                                 !
-      !------------------------------------------------------------------------------------!
-      select case (s)
-      case (13)
-         !----- Bedrock, do nothing. ------------------------------------------------------!
-         soil(s)%slpotcp  = 0.0
-         soil(s)%slpotwp  = 0.0
-         soil(s)%slpotfr  = 0.0
-         soil(s)%slpotld  = 0.0
-         soil(s)%slpotfc  = 0.0
-         soil(s)%slpotbp  = 0.0
-         soil(s)%slpots   = 0.0
-         soil(s)%slpotpo  = 0.0
-         soil(s)%soilcp   = 0.0
-         soil(s)%soilwp   = 0.0
-         soil(s)%soilfr   = 0.0
-         soil(s)%soilld   = 0.0
-         soil(s)%sfldcap  = 0.0
-         soil(s)%soilbp   = 0.0
-         soil(s)%slmsts   = 0.0
-         soil(s)%soilpo   = 0.0
-         soil(s)%fhydraul = 0.0
-         !---------------------------------------------------------------------------------!
-      case default
-         !----- First guess, use water potential. -----------------------------------------!
-         soil(s)%slpotwp = slpotwp_MPa * 1.e6 / ( grav * wdns )
-         soil(s)%slpotcp = slpotcp_MPa * wdns / grav
-         soil(s)%soilwp  = soil_moisture(s,soil(s)%slpotwp)
-         soil(s)%soilcp  = soil_moisture(s,soil(s)%slpotcp)
-         !----- In case soilcp is less than the residual (very unlikely), recalculate it. -!
-         if (soil(s)%soilcp < soil(s)%soilre) then
-            soil(s)%soilcp  = soil(s)%soilre
-            soil(s)%slpotcp = matric_potential(s,soil(s)%soilcp)
-         end if
-         !----- Because we may have artificially increased soilcp, check soilwp. ----------!
-         if (soil(s)%soilwp < soil(s)%soilcp) then
-            soil(s)%soilwp  = soil(s)%soilcp
-            soil(s)%slpotwp = soil(s)%slpotcp
-         end if
-         !---------------------------------------------------------------------------------!
-
-
-
-
-         !---------------------------------------------------------------------------------!
-         !     Find two remaining properties, that depend on the user choices.             !
-         !                                                                                 !
-         ! SOILLD/SLPOTLD.                                                                 !
-         !    The critical soil moisture below which drought deciduous plants start drop-  !
-         !    ping their leaves.  The sign of input variable THETACRIT matters here.  If   !
-         !    the user gave a positive number (or 0),  then the soil moisture is a         !
-         !    fraction above wilting point.  If it is negative, the value is the potential !
-         !    in MPa.                                                                      !
-         ! SOILFR/SLPOTFR.                                                                 !
-         !    The critical soil moisture below which fires may happen, provided that the   !
-         !    user wants fires, and that there is enough biomass to burn.  The sign of the !
-         !    input variable SM_FIRE matters here.  If the user gave a positive number     !
-         !    (or 0), then the soil moisture is a fraction above dry air soil.  If it is   !
-         !    negative, the value is the potential in MPa.                                 !
-         !---------------------------------------------------------------------------------!
-         !----- Leaf drop. ----------------------------------------------------------------!
-         if (thetacrit >= 0.0) then
-            soil(s)%soilld  = soil(s)%soilwp + thetacrit * (soil(s)%slmsts-soil(s)%soilwp)
-            soil(s)%slpotld = matric_potential(s,soil(s)%soilld)
-         else
-            soil(s)%slpotld = thetacrit * 1.e6 / (grav * wdns)
-            soil(s)%soilld  = soil_moisture(s,soil(s)%slpotld)
-         end if
-         !----- Fire. ---------------------------------------------------------------------!
-         if (sm_fire >= 0.0) then
-            soil(s)%soilfr  = soil(s)%soilcp + sm_fire * (soil(s)%slmsts-soil(s)%soilcp)
-            soil(s)%slpotfr = matric_potential(s,soil(s)%soilfr)
-         else
-            soil(s)%slpotfr = sm_fire * 1.e6 / (grav * wdns)
-            soil(s)%soilfr  = soil_moisture(s,soil(s)%slpotfr)
-         end if
-         !---------------------------------------------------------------------------------!
-
-
-
-
-         !---------------------------------------------------------------------------------!
-         !     Define hydraulic parameter decay, similar to TOPMODEL.  We currently use    !
-         ! the default value of 2.0, following N05's SIMTOP model.                         !
-         !                                                                                 !
-         ! Niu GY, Yang ZL, Dickinson RE , Gulden LE. 2005. A simple TOPMODEL-based runoff !
-         !    parameterization (SIMTOP) for use in global climate models. J. Geophys.      !
-         !    Res.-Atmos., 110: D21106. doi:10.1029/2005JD006111 (N05).                    !
-         !---------------------------------------------------------------------------------!
-         soil(s)%fhydraul = 2.0
-         !---------------------------------------------------------------------------------!
-      end select
-      !------------------------------------------------------------------------------------!
-
-
-
-      !------------------------------------------------------------------------------------!
-      !     Heat capacity (J/m3/K).  Here we take the volume average amongst silt, clay,   !
-      ! and sand, and consider the contribution of air sitting in.  In order to keep it    !
-      ! simple, we assume that the air fraction won't change, although in reality its      !
-      ! contribution should be a function of soil moisture.  Here we use the amount of air !
-      ! in case the soil moisture was halfway between dry air and saturated, so the        !
-      ! error is not too biased.                                                           !
-      !------------------------------------------------------------------------------------!
-      soil(s)%slcpd = (1. - soil(s)%slmsts)                                                &
-                    * ( soil(s)%xsand * sand_hcapv + soil(s)%xsilt * silt_hcapv            &
-                      + soil(s)%xclay * clay_hcapv )                                       &
-                    + 0.5 * ( soil(s)%slmsts - soil(s)%soilcp ) * air_hcapv
-      !------------------------------------------------------------------------------------!
-
-
-      !------------------------------------------------------------------------------------!
-      !      Thermal conductivity is the weighted average of thermal conductivities of all !
-      ! materials, although a further weighting factor due to thermal gradient of          !
-      ! different materials.  We use the de Vries model described at:                      !
-      !                                                                                    !
-      ! Camillo, P., T.J. Schmugge, 1981: A computer program for the simulation of heat    !
-      !     and moisture flow in soils, NASA-TM-82121, Greenbelt, MD, United States.       !
-      !                                                                                    !
-      ! Parlange, M.B., et al., 1998: Review of heat and water movement in field soils,    !
-      !    Soil Till. Res., 47(1-2), 5-10.                                                 !
-      !                                                                                    !
-      !------------------------------------------------------------------------------------!
-      !---- The k-factors, assuming spherical particles. ----------------------------------!
-      ksand = 3. * h2o_thcond / ( 2. * h2o_thcond + sand_thcond )
-      ksilt = 3. * h2o_thcond / ( 2. * h2o_thcond + silt_thcond )
-      kclay = 3. * h2o_thcond / ( 2. * h2o_thcond + clay_thcond )
-      kair  = 3. * h2o_thcond / ( 2. * h2o_thcond +  air_thcond )
-      !---- The conductivity coefficients. ------------------------------------------------!
-      soil(s)%thcond0 = (1. - soil(s)%slmsts )                                             &
-                      * ( ksand * soil(s)%xsand * sand_thcond                              &
-                        + ksilt * soil(s)%xsilt * silt_thcond                              &
-                        + kclay * soil(s)%xclay * clay_thcond )                            &
-                      + soil(s)%slmsts * kair * air_thcond
-      soil(s)%thcond1 = h2o_thcond - kair * air_thcond
-      soil(s)%thcond2 = (1. - soil(s)%slmsts )                                             &
-                      * ( ksand * soil(s)%xsand + ksilt * soil(s)%xsilt                    &
-                        + kclay * soil(s)%xclay                         )                  &
-                      + soil(s)%slmsts * kair
-      soil(s)%thcond3 = 1. - kair
-      !------------------------------------------------------------------------------------!
-
-   end do
    !---------------------------------------------------------------------------------------!
 
 
@@ -2335,52 +1689,6 @@ subroutine init_soil_coms
 
 
 
-   !----- Here we fill soil8, which will be used in Runge-Kutta (double precision). -------!
-   do s=1,ed_nstyp
-      soil8(s)%key      = soil(s)%key
-      soil8(s)%method   = soil(s)%method
-      soil8(s)%xsand    = dble(soil(s)%xsand   )
-      soil8(s)%xsilt    = dble(soil(s)%xsilt   )
-      soil8(s)%xclay    = dble(soil(s)%xclay   )
-      soil8(s)%slsoc    = dble(soil(s)%slsoc   )
-      soil8(s)%slph     = dble(soil(s)%slph    )
-      soil8(s)%slcec    = dble(soil(s)%slcec   )
-      soil8(s)%sldbd    = dble(soil(s)%sldbd   )
-      soil8(s)%soilre   = dble(soil(s)%soilre  )
-      soil8(s)%soilcp   = dble(soil(s)%soilcp  )
-      soil8(s)%soilwp   = dble(soil(s)%soilwp  )
-      soil8(s)%soilfr   = dble(soil(s)%soilfr  )
-      soil8(s)%soilld   = dble(soil(s)%soilld  )
-      soil8(s)%sfldcap  = dble(soil(s)%sfldcap )
-      soil8(s)%soilbp   = dble(soil(s)%soilbp  )
-      soil8(s)%slmsts   = dble(soil(s)%slmsts  )
-      soil8(s)%soilpo   = dble(soil(s)%soilpo  )
-      soil8(s)%slpotcp  = dble(soil(s)%slpotcp )
-      soil8(s)%slpotwp  = dble(soil(s)%slpotwp )
-      soil8(s)%slpotfr  = dble(soil(s)%slpotfr )
-      soil8(s)%slpotld  = dble(soil(s)%slpotld )
-      soil8(s)%slpotfc  = dble(soil(s)%slpotfc )
-      soil8(s)%slpotbp  = dble(soil(s)%slpotbp )
-      soil8(s)%slpots   = dble(soil(s)%slpots  )
-      soil8(s)%slpotpo  = dble(soil(s)%slpotpo )
-      soil8(s)%sltt     = dble(soil(s)%sltt    )
-      soil8(s)%slnm     = dble(soil(s)%slnm    )
-      soil8(s)%slbs     = dble(soil(s)%slbs    )
-      soil8(s)%slmm     = dble(soil(s)%slmm    )
-      soil8(s)%slmu     = dble(soil(s)%slmu    )
-      soil8(s)%malpha   = dble(soil(s)%malpha  )
-      soil8(s)%slcons   = dble(soil(s)%slcons  )
-      soil8(s)%fhydraul = dble(soil(s)%fhydraul)
-      soil8(s)%slcpd    = dble(soil(s)%slcpd   )
-      soil8(s)%thcond0  = dble(soil(s)%thcond0 )
-      soil8(s)%thcond1  = dble(soil(s)%thcond1 )
-      soil8(s)%thcond2  = dble(soil(s)%thcond2 )
-      soil8(s)%thcond3  = dble(soil(s)%thcond3 )
-   end do
-   !---------------------------------------------------------------------------------------!
-
-
-
    !----- Double precision of additional scalar variables. --------------------------------!
    soil_rough8  = dble(soil_rough )
    snow_rough8  = dble(snow_rough )
@@ -2399,70 +1707,6 @@ subroutine init_soil_coms
    sldrain8     = dble(sldrain)
    sin_sldrain  = sin(sldrain  * pio180 )
    sin_sldrain8 = sin(sldrain8 * pio1808)
-   !---------------------------------------------------------------------------------------!
-
-   !---------------------------------------------------------------------------------------!
-   !     Decide whether to write the table with the soil properties.                       !
-   !---------------------------------------------------------------------------------------!
-   print_soil_table = btest(idetailed,5)
-   !---------------------------------------------------------------------------------------!
-
-
-   !---------------------------------------------------------------------------------------!
-   !     Print the parameters in case the user wants it.                                   !
-   !---------------------------------------------------------------------------------------!
-   if (print_soil_table) then
-      !----- Open and write header. -------------------------------------------------------!
-      open (unit=26,file=trim(soil_table_fn),status='replace',action='write')
-      write(unit=26,fmt='(38(a,1x))')        'ISOIL',        ' KEY',        'TYPE'         &
-                                     ,'       XSAND','       XSILT','       XCLAY'         &
-                                     ,'       SLSOC','        SLPH','       SLCEC'         &
-                                     ,'       SLDBD','      SOILRE','      SOILCP'         &
-                                     ,'      SOILWP','      SOILFR','      SOILLD'         &
-                                     ,'      SOILFC','      SOILBP','      SOILPO'         &
-                                     ,'     SLPOTCP','     SLPOTWP','     SLPOTFR'         &
-                                     ,'     SLPOTLD','     SLPOTFC','     SLPOTBP'         &
-                                     ,'     SLPOTPO','        SLTT','        SLNM'         &
-                                     ,'        SLBS','        SLMM','        SLMU'         &
-                                     ,'      MALPHA',' SLCONS_MMHR','    FHYDRAUL'         &
-                                     ,' SLCPD_MJm3K','     THCOND0','     THCOND1'         &
-                                     ,'     THCOND2','     THCOND3'
-      !------------------------------------------------------------------------------------!
-
-
-      !------------------------------------------------------------------------------------!
-      !     Loop over soil texture types.                                                  !
-      !------------------------------------------------------------------------------------!
-      do s=1,ed_nstyp
-         !----- For some variables, we use different units to make them more legible. -----!
-         slcons_mmhr = soil(s)%slcons*1000.*hr_sec
-         slcpd_mjm3k = soil(s)%slcpd*0.001
-         !---------------------------------------------------------------------------------!
-
-         !----- Add soil characteristics. -------------------------------------------------!
-         write(unit=26,fmt='(i5,1x,2(a4,1x),35(f12.5,1x))')                                &
-                                      s,adjustr(soil(s)%key),adjustr(soil(s)%method)       &
-                                     ,soil(s)%xsand   ,soil(s)%xsilt   ,soil(s)%xclay      &
-                                     ,soil(s)%slsoc   ,soil(s)%slph    ,soil(s)%slcec      &
-                                     ,soil(s)%sldbd   ,soil(s)%soilre  ,soil(s)%soilcp     &
-                                     ,soil(s)%soilwp  ,soil(s)%soilfr  ,soil(s)%soilld     &
-                                     ,soil(s)%sfldcap ,soil(s)%soilbp  ,soil(s)%slmsts     &
-                                     ,soil(s)%slpotcp ,soil(s)%slpotwp ,soil(s)%slpotfr    &
-                                     ,soil(s)%slpotld ,soil(s)%slpotfc ,soil(s)%slpotbp    &
-                                     ,soil(s)%slpots  ,soil(s)%sltt    ,soil(s)%slnm       &
-                                     ,soil(s)%slbs    ,soil(s)%slmm    ,soil(s)%slmu       &
-                                     ,soil(s)%malpha  ,slcons_mmhr     ,soil(s)%fhydraul   &
-                                     ,slcpd_mjm3k     ,soil(s)%thcond0 ,soil(s)%thcond1    &
-                                     ,soil(s)%thcond2 ,soil(s)%thcond3 
-         !---------------------------------------------------------------------------------!
-      end do
-      !------------------------------------------------------------------------------------!
-
-
-      !----- Close table. -----------------------------------------------------------------!
-      close(unit=26,status='keep')
-      !------------------------------------------------------------------------------------!
-   end if
    !---------------------------------------------------------------------------------------!
 
    return
@@ -8469,7 +7713,7 @@ subroutine init_derived_params_after_xml()
    !------ Make sure the soil carbon fractions add up to one. -----------------------------!
    if (f0_msc < 0. .or. f0_psc < 0.0 .or. (f0_msc + f0_psc) > 1.0) then
       write (unit=*,fmt='(a)')          '-------------------------------------------------'
-      write (unit=*,fmt='(a)')          ' F0_MSC and F0_SSC must be fractions (0-1)'
+      write (unit=*,fmt='(a)')          ' F0_MSC and F0_PSC must be fractions (0-1)'
       write (unit=*,fmt='(a)')          '    and their sum cannot exceed 1.0'
       write (unit=*,fmt='(a)')          ''
       write (unit=*,fmt='(a)')          ' Current values: '

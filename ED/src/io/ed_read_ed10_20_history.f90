@@ -881,6 +881,7 @@ subroutine read_ed10_ed20_history_file
                         end select
                         !------------------------------------------------------------------!
 
+
                         !------------------------------------------------------------------!
                         !     Initialise SLA, Vm0, Rd0, and  with the look-up table value. !
                         ! These variables may be updated during phenology initialisation,  !

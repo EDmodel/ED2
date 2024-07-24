@@ -11,6 +11,7 @@
 !------------------------------------------------------------------------------------------!
 subroutine ed_model()
    use ed_misc_coms        , only : simtime                     & ! structure
+                                  , fmtrest                     & ! intent(in)
                                   , ivegt_dynamics              & ! intent(in)
                                   , integration_scheme          & ! intent(in)
                                   , current_time                & ! intent(in)
@@ -90,7 +91,7 @@ subroutine ed_model()
                                   , initialize_misc_stepvars    ! ! sub-routine
    use stable_cohorts      , only : flag_stable_cohorts         ! ! sub-routine
    use update_derived_utils, only : update_model_time_dm        ! ! sub-routine
-   use budget_utils        , only : ed_init_budget              ! ! intent(in)
+   use budget_utils        , only : ed_init_budget              ! ! sub-routine
    use vegetation_dynamics , only : veg_dynamics_driver         ! ! sub-routine
    use ed_type_init        , only : ed_init_viable              ! ! sub-routine
    use soil_respiration    , only : zero_litter_inputs          ! ! sub-routine
@@ -107,6 +108,7 @@ subroutine ed_model()
    integer            :: ndays
    integer            :: dbndays
    integer            :: obstime_idx
+   logical            :: last_step
    logical            :: analysis_time
    logical            :: observation_time
    logical            :: new_day
@@ -140,8 +142,6 @@ subroutine ed_model()
                                                     !    during synchronization, so you
                                                     !    can find out which node is the
                                                     !    slow one
-   !----- String for output format. -------------------------------------------------------!
-   character(len=26), parameter :: fmtrest = '(i4.4,2(1x,i2.2),1x,2i2.2)'
    !----- External functions. -------------------------------------------------------------!
    real    , external :: walltime ! Wall time
    integer , external :: num_days ! Number of days in the current month
@@ -373,6 +373,7 @@ subroutine ed_model()
       dcyc_analy_time = new_month .and. writing_dcyc
       reset_time      = mod(time,dble(frqsum)) < dble(dtlsm)
       annual_time     = new_year .and. writing_year
+      last_step       = time >= timmax
       !------------------------------------------------------------------------------------!
 
 
@@ -430,6 +431,14 @@ subroutine ed_model()
                           current_time%month == imontha .and.                              &
                           mod(real(current_time%year-iyeara),frqstate) == 0.
       end select
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !      If this is the last step, write the history even if it is not the a typical   !
+      ! time step to write history.                                                        !
+      !------------------------------------------------------------------------------------!
+      history_time      = history_time .or. last_step
       !------------------------------------------------------------------------------------!
 
 
