@@ -4110,7 +4110,8 @@ module disturbance
                                 , h2dbh                    & ! function
                                 , size2bl                  & ! function
                                 , size2bd                  & ! function
-                                , size2krdepth             ! ! function
+                                , size2krdepth             & ! function
+                                , distrib_root             ! ! subroutine
       use pft_coms,        only : qsw                      & ! intent(in)
                                 , qbark                    & ! intent(in)
                                 , agf_bs                   & ! intent(in)
@@ -4234,6 +4235,13 @@ module disturbance
             !----- Update rooting depth ---------------------------------------------------!
             cpatch%krdepth(ico) = size2krdepth(cpatch%hite(ico),cpatch%dbh(ico),ipft,lsl)
             !if new root depth is smaller keep the old one
+            !------------------------------------------------------------------------------!
+
+
+            !----- Update the vertical distribution of roots. -----------------------------!
+            call distrib_root(cpatch%krdepth(ico),ipft,cpatch%root_frac(:,ico))
+            !------------------------------------------------------------------------------!
+
 
             !------------------------------------------------------------------------------!
             !     It is likely that biomass has changed, therefore, update                 !

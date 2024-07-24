@@ -633,6 +633,8 @@ module ed_state_vars
       real, pointer, dimension(:) :: wflux_wl
       !<Water flux from wood to leaf [kg H2O/s], corresponding to sapflow in field
       !! measurement
+      real, pointer, dimension(:,:) :: root_frac
+      !< Root fraction, by layer
       !------------------------------------------------------------------------------------!
 
 
@@ -5731,6 +5733,7 @@ module ed_state_vars
       allocate(cpatch%wflux_gw                     (                    ncohorts))
       allocate(cpatch%wflux_gw_layer               (                nzg,ncohorts))
       allocate(cpatch%wflux_wl                     (                    ncohorts))
+      allocate(cpatch%root_frac                    (                nzg,ncohorts))
 
       allocate(cpatch%high_leaf_psi_days           (                    ncohorts))
       allocate(cpatch%low_leaf_psi_days            (                    ncohorts))
@@ -7936,6 +7939,7 @@ module ed_state_vars
       nullify(cpatch%wflux_gw                )
       nullify(cpatch%wflux_gw_layer          )
       nullify(cpatch%wflux_wl                )
+      nullify(cpatch%root_frac               )
       nullify(cpatch%high_leaf_psi_days      )
       nullify(cpatch%low_leaf_psi_days       )
 
@@ -9110,6 +9114,7 @@ module ed_state_vars
       if(associated(cpatch%wflux_gw                )) deallocate(cpatch%wflux_gw                )
       if(associated(cpatch%wflux_gw_layer          )) deallocate(cpatch%wflux_gw_layer          )
       if(associated(cpatch%wflux_wl                )) deallocate(cpatch%wflux_wl                )
+      if(associated(cpatch%root_frac               )) deallocate(cpatch%root_frac               )
 
       if(associated(cpatch%high_leaf_psi_days      )) deallocate(cpatch%high_leaf_psi_days      )
       if(associated(cpatch%low_leaf_psi_days       )) deallocate(cpatch%low_leaf_psi_days       )
@@ -11426,6 +11431,7 @@ module ed_state_vars
 
          !------ Water absorption from each soil layer ------------------------------------!
          do m=1,nzg
+            opatch%root_frac             (m,oco) = ipatch%root_frac             (m,ico)
             opatch%wflux_gw_layer        (m,oco) = ipatch%wflux_gw_layer        (m,ico)
             opatch%fmean_wflux_gw_layer  (m,oco) = ipatch%fmean_wflux_gw_layer  (m,ico)
          end do
@@ -12064,6 +12070,7 @@ module ed_state_vars
 
       !------ Water absorption from each soil layer ---------------------------------------!
       do m=1,nzg
+         opatch%root_frac       (m,1:z) = pack(ipatch%root_frac         (m,:),lmask)
          opatch%wflux_gw_layer  (m,1:z) = pack(ipatch%wflux_gw_layer    (m,:),lmask)
       end do
       !------------------------------------------------------------------------------------!
@@ -33726,6 +33733,14 @@ module ed_state_vars
       !  Notice that they all use the same npts.                                           !
       !------------------------------------------------------------------------------------!
       npts = cpatch%ncohorts * nzg
+
+      if (associated(cpatch%root_frac)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cpatch%root_frac                                          &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'ROOT_FRAC :42:hist') 
+         call metadata_edio(nvar,igr,'Fraction of roots by layer','[--]','(nzg,icohort)') 
+      end if
 
       if (associated(cpatch%wflux_gw_layer)) then
          nvar=nvar+1

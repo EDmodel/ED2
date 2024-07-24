@@ -5703,6 +5703,8 @@ module ed_init_history
       memdims (2) = int(cpatch%ncohorts,8)
       memsize (2) = int(cpatch%ncohorts,8)
       memoffs (2) = 0_8
+      call hdf_getslab_r(cpatch%root_frac                                                  &
+                        ,'ROOT_FRAC                  ',dsetrank,iparallel,.true. ,foundvar)
       call hdf_getslab_r(cpatch%wflux_gw_layer                                             &
                         ,'WFLUX_GW_LAYER             ',dsetrank,iparallel,.true. ,foundvar)
       if (writing_long) then

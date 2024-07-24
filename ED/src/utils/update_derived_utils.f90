@@ -65,7 +65,8 @@ module update_derived_utils
                                 , size2xb                 & ! function
                                 , ed_balive               & ! function
                                 , ed_biomass              & ! function
-                                , area_indices            ! ! subroutine
+                                , area_indices            & ! sub-routine
+                                , distrib_root            ! ! sub-routine
       use physiology_coms, only : trait_plasticity_scheme ! ! intent(in)
       use consts_coms    , only : pio4                    ! ! intent(in)
       use ed_misc_coms   , only : igrass                  & ! intent(in)
@@ -193,6 +194,13 @@ module update_derived_utils
       !----- Update rooting depth ---------------------------------------------------------!
       cpatch%krdepth(ico) = size2krdepth(cpatch%hite(ico),cpatch%dbh(ico),ipft,lsl)
       !if new root depth is smaller keep the old one
+      !------------------------------------------------------------------------------------!
+
+
+      !----- Update the vertical distribution of roots. -----------------------------------!
+      call distrib_root(cpatch%krdepth(ico),ipft,cpatch%root_frac(:,ico))
+      !------------------------------------------------------------------------------------!
+
       return
    end subroutine update_cohort_derived_props
    !=======================================================================================!
@@ -390,27 +398,45 @@ module update_derived_utils
       cpatch%sla       (ico) = new_sla
       cpatch%psi_open  (ico) = cpatch%psi_open  (ico) * sla_scaler
       cpatch%psi_closed(ico) = cpatch%psi_closed(ico) * sla_scaler
+      !------------------------------------------------------------------------------------!
 
-      ! Since SLA is changed, we might need to adjust leaf biomass if leaf area based 
-      ! allometry is used
+
+
+      !------------------------------------------------------------------------------------!
+      ! 6.  SLA may have changed, therefore we must adjust leaf biomass if we are using    !
+      !     the leaf-area based allometry.                                                     !
+      !------------------------------------------------------------------------------------!
       select case (iallom)
-      case (4)
-        bl_max = size2bl(cpatch%dbh(ico),cpatch%hite(ico),cpatch%sla(ico),cpatch%pft(ico))
+      case (3,4,5)
+         !---- Maximum leaf biomass. ------------------------------------------------------!
+         bl_max = size2bl(cpatch%dbh(ico),cpatch%hite(ico),cpatch%sla(ico),cpatch%pft(ico))
+         !---------------------------------------------------------------------------------!
 
-        if (cpatch%bleaf(ico) > bl_max) then
-            ! if the new bl_max is smaller than current bleaf, we need to dump
-            ! the extra carbon into bstorage and change phenology_status
-            cpatch%bstorage(ico) = cpatch%bstorage(ico)             &
-                                 + (cpatch%bleaf(ico) - bl_max)
 
-            ! Water content will be updated later in structural_growth
+
+         !---------------------------------------------------------------------------------!
+         !     Check that plasticity doesn't violate allometry.                            !
+         !---------------------------------------------------------------------------------!
+         if (cpatch%bleaf(ico) > bl_max) then
+            !------------------------------------------------------------------------------!
+            !     If the new bl_max is smaller than current bleaf, we need to dump the     !
+            ! extra carbon into bstorage and change phenology_status.                      !
+            !------------------------------------------------------------------------------!
+            cpatch%bstorage(ico) = cpatch%bstorage(ico) + (cpatch%bleaf(ico) - bl_max)
+
+            !----- Water content will be updated later in structural_growth. --------------!
             cpatch%bleaf(ico) = bl_max
+            !------------------------------------------------------------------------------!
 
-            ! we also update balive since bleaf changed
+            !----- We also update balive since bleaf changed. -----------------------------!
             cpatch%balive(ico) = ed_balive(cpatch,ico)
+            !------------------------------------------------------------------------------!
 
+            !----- Leaves are at maximum elongation, update phenology flag accordingly. ---!
             cpatch%phenology_status(ico) = 0
-        endif
+            !------------------------------------------------------------------------------!
+         end if
+         !---------------------------------------------------------------------------------!
       end select
       !------------------------------------------------------------------------------------!
 
