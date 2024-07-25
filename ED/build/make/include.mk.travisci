@@ -39,17 +39,27 @@ USE_COLLECTIVE_MPIO=0
 
 
 
+
+#------------------------------------------------------------------------------------------#
+#      This should be 1 unless you are running with -gen-interfaces.  Interfaces usually   #
+# make the compilation to crash when the -gen-interfaces option are on, so this flag       #
+# bypass all interfaces in the code.                                                       #
+#------------------------------------------------------------------------------------------#
+USE_INTERF=1
+#------------------------------------------------------------------------------------------#
+
+
+
 #################################### COMPILER SETTINGS #####################################
 CMACH=TRAVISCI
 FC_TYPE=GNU
-F_COMP=mpif90
-C_COMP=mpicc
-LOADER=mpif90
+F_COMP=gfortran
+C_COMP=gcc
+LOADER=gfortran
 LIBS=
 MOD_EXT=mod
 #------------------------------------------------------------------------------------------#
 
-USE_INTERF=1
 
 
 ##################################### COMPILER OPTIONS #####################################
@@ -62,19 +72,19 @@ ifeq ($(KIND_COMP),)
 endif
 #------------------------------------------------------------------------------------------#
 ifeq ($(KIND_COMP),$(filter $(KIND_COMP), A B C D))
-   F_OPTS= -O0 -ffree-line-length-none -g -fimplicit-none -Wall -finit-real=nan            \
-           -ffpe-trap=invalid,zero,overflow,underflow -fbacktrace -fbounds-check           \
-           -frecursive
-   C_OPTS= -O0 -DLITTLE  -g
-   LOADER_OPTS= -O0 -ffree-line-length-none -g -fimplicit-none -Wall -finit-real=nan       \
-           -ffpe-trap=invalid,zero,overflow,underflow -fbacktrace -fbounds-check           \
-           -frecursive
+   F_OPTS= -O0 -ffree-line-length-none -g -fimplicit-none -Wall -finit-real=snan           \
+           -finit-integer=-2147483648 -ffpe-trap=invalid,zero,overflow,underflow           \
+           -fcheck=all -frecursive -fsignaling-nans -Werror -fopenmp -fbacktrace -static
+   C_OPTS= -O0 -DLITTLE -g -fbacktrace -static
+   LOADER_OPTS= -O0 -ffree-line-length-none -g -fimplicit-none -Wall -finit-real=snan      \
+                -finit-integer=-2147483648 -ffpe-trap=invalid,zero,overflow,underflow      \
+                -fcheck=all -frecursive -fsignaling-nans -Werror -fopenmp -fbacktrace
    #---------------------------------------------------------------------------------------#
 endif
 ifeq ($(KIND_COMP),E)
-   F_OPTS= -O3 -ffree-line-length-none -frecursive -fno-whole-file -static
-   C_OPTS= -O0 -DLITTLE  -g -static
-   LOADER_OPTS= -O3 -ffree-line-length-none -frecursive -fno-whole-file
+   F_OPTS= -O3 -ffree-line-length-none -frecursive -fopenmp -fbacktrace -static
+   C_OPTS= -O3 -DLITTLE -g -fbacktrace -static
+   LOADER_OPTS= -O3 -ffree-line-length-none -frecursive -fopenmp -fbacktrace
    #---------------------------------------------------------------------------------------#
 endif
 #------------------------------------------------------------------------------------------#
@@ -91,7 +101,7 @@ endif
 MPI_PATH=
 PAR_INCS=
 PAR_LIBS=
-PAR_DEFS=-DRAMS_MPI
+PAR_DEFS=
 #------------------------------------------------------------------------------------------#
 
 

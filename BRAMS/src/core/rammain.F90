@@ -16,6 +16,9 @@ program main
   !   invoking master/slave processes or full model process
   !   destroy processes
   !
+#if defined(RAMS_MPI)
+  use mpi
+#endif
 
   implicit none
 
@@ -65,7 +68,6 @@ program main
   ! For MPI interface 
   integer :: ierr
 #if defined(RAMS_MPI)
-  include 'mpif.h'
   include 'interface.h'
 #endif
   ! Get input arguments (required by C interface of MPI_Init)

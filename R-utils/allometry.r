@@ -8,7 +8,7 @@ h2dbh <<- function(h,ipft){
      zpft = ipft
    }#end if
 
-   tropo = pft$tropical[zpft] & iallom %in% c(0,1,3,4)
+   tropo = pft$tropical[zpft] & iallom %in% c(0,1,3,4,5)
    tropn = pft$tropical[zpft] & iallom %in% c(2)
    tempe = ! pft$tropical[zpft]
 
@@ -54,7 +54,7 @@ dbh2h <<- function(dbh,ipft,use.crit=TRUE){
       dbhuse = dbh
    }#end if (use.crit)
 
-   tropo         = pft$tropical[zpft] & iallom %in% c(0,1,3,4)
+   tropo         = pft$tropical[zpft] & iallom %in% c(0,1,3,4,5)
    tropn         = pft$tropical[zpft] & iallom %in% c(2)
    tempe         = ! pft$tropical[zpft]
 
@@ -102,7 +102,7 @@ size2bl <<- function(dbh,hgt,sla,ipft,use.crit=TRUE){
 
 
    #----- Decide which variable to use as dependent variable (DBH or DBH^2*Hgt). ----------#
-   size     = ifelse( test = pft$tropical[zpft] & (! pft$liana[zpft]) & (iallom %in% c(3,4))
+   size     = ifelse( test = pft$ddh.allom[zpft]
                     , yes  = dbhuse * dbhuse * hgt
                     , no   = dbhuse
                     )#end ifelse
@@ -113,7 +113,7 @@ size2bl <<- function(dbh,hgt,sla,ipft,use.crit=TRUE){
    #      For iallom == 4 (tropical trees), b1Bl and b2Bl represents leaf area based       #
    # allometry, we need to convert it to biomass using cohort-level SLA.                   #
    #---------------------------------------------------------------------------------------#
-   bleaf = ifelse( test = pft$tropical[zpft] & (! pft$liana[zpft]) & (iallom %in% c(4))
+   bleaf = ifelse( test = pft$ddh.allom[zpft]
                  , yes  = pft$b1Bl[zpft] / sla * size ^ pft$b2Bl[zpft]
                  , no   = pft$b1Bl[zpft] / C2B * size ^ pft$b2Bl[zpft]
                  )#end ifelse
@@ -182,7 +182,7 @@ size2bd <<- function(dbh,hgt,ipft){
 
 
    #----- Decide which variable to use as dependent variable (DBH or DBH^2*Hgt). ----------#
-   size     = ifelse( test = pft$tropical[zpft] & (! pft$liana[zpft]) & (iallom %in% c(3,4))
+   size     = ifelse( test = pft$ddh.allom[zpft]
                     , yes  = dbh * dbh * dbh2h(dbh,ipft=zpft)
                     , no   = dbh
                     )#end ifelse
@@ -191,7 +191,7 @@ size2bd <<- function(dbh,hgt,ipft){
 
 
    #----- Select allometric parameters based on the size. ---------------------------------#
-   bdead = ifelse( test = dbh %<% pft$dbh.crit[zpft]
+   bdead = ifelse( test = dbh %lt% pft$dbh.crit[zpft]
                  , yes  = pft$b1Bs.small[zpft] / C2B * size ^ pft$b2Bs.small[zpft]
                  , no   = pft$b1Bs.large[zpft] / C2B * size ^ pft$b2Bs.large[zpft]
                  )#end ifelse
@@ -249,8 +249,8 @@ size2de <<- function(dbh,hgt,ipft,dbh.by=0.1,...){
 
 
    #----- Identify cohorts with size that outside resolvable height range. ----------------#
-   large = (dbh*dbh*hgt) %>=% (pft$dbh.crit[zpft]*pft$dbh.crit[zpft]*pft$hgt.max[zpft])
-   small = (dbh*dbh*hgt) %<=% (pft$dbh.min [zpft]*pft$dbh.min [zpft]*pft$hgt.min[zpft])
+   large = (dbh*dbh*hgt) %ge% (pft$dbh.crit[zpft]*pft$dbh.crit[zpft]*pft$hgt.max[zpft])
+   small = (dbh*dbh*hgt) %le% (pft$dbh.min [zpft]*pft$dbh.min [zpft]*pft$hgt.min[zpft])
    heq   = ifelse( test = large
                  , yes  = pft$hgt.max[zpft]
                  , no   = ifelse(test = small,yes=pft$hgt.min[zpft],no=NA_real_)
@@ -321,7 +321,7 @@ size2ca <<- function(dbh,hgt,sla,ipft,use.crit=TRUE){
 
 
    #----- Decide which variable to use as dependent variable (DBH or DBH^2*Hgt). ----------#
-   size     = ifelse( test = pft$tropical[zpft] & (! pft$liana[zpft]) & (iallom %in% c(3,4))
+   size     = ifelse( test = pft$ddh.allom[zpft]
                     , yes  = dbhuse * dbhuse * hgt
                     , no   = dbhuse
                     )#end ifelse
@@ -368,7 +368,7 @@ size2wai <<- function(dbh,hgt,ipft,use.crit=TRUE){
 
 
    #----- Decide which variable to use as dependent variable (DBH or DBH^2*Hgt). ----------#
-   size     = ifelse( test = pft$tropical[zpft] & (! pft$liana[zpft]) & (iallom %in% c(3,4))
+   size     = ifelse( test = pft$ddh.allom[zpft]
                     , yes  = dbhuse * dbhuse * hgt
                     , no   = dbhuse
                     )#end ifelse
@@ -505,7 +505,7 @@ size2rd <<- function(hgt,dbh,ipft){
       #------------------------------------------------------------------------------------#
       vol  = size2vol(hgt=hgt,dbh=dbh,ipft=zpft)
       rd   = pft$b1Rd[zpft] * (hgt * dbh * dbh) ^ pft$b2Rd[zpft]
-   }else if (iallom %in% c(1,2,4)){
+   }else if (iallom %in% c(1,2,4,5)){
       #------------------------------------------------------------------------------------#
       #    This is just a test allometry, that imposes root depth to be 0.5 m for          #
       # plants that are 0.15-m tall, and 5.0 m for plants that are 35-m tall.              #

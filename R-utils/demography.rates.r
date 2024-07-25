@@ -834,7 +834,7 @@ acc.recruitment.rate <<- function( property
       expected.tx = unlist(sapply(X=boot.tx,FUN=c)["t0",])
       q025.tx     = sapply(X= boot.tx ,FUN=boot.ci.lower,conf=0.95,type="perc")
       q975.tx     = sapply(X= boot.tx ,FUN=boot.ci.upper,conf=0.95,type="perc")
-      fine        = all(expected.tx %>=% q025.tx) && all(expected.tx %<=% q975.tx)
+      fine        = all(expected.tx %ge% q025.tx) && all(expected.tx %le% q975.tx)
    }#end while ((! fine) && (it < itb.max))
    if (it == itb.max) browser()
    #---------------------------------------------------------------------------------------#
@@ -886,7 +886,7 @@ acc.recruitment.rate <<- function( property
       expected.gb = boot.gb$t0
       q025.gb     = boot.ci.lower(boot.out=boot.gb,conf=0.95,type="perc")
       q975.gb     = boot.ci.upper(boot.out=boot.gb,conf=0.95,type="perc")
-      fine        = all(expected.gb %>=% q025.gb) && all(expected.gb %<=% q975.gb)
+      fine        = all(expected.gb %ge% q025.gb) && all(expected.gb %le% q975.gb)
    }#end while ((! fine) && (it < itb.max))
    if (it == itb.max) browser()
    #---------------------------------------------------------------------------------------#
@@ -1061,7 +1061,7 @@ acc.mortality.rate <<- function( property
       expected.tx = unlist(sapply(X=boot.tx,FUN=c)["t0",])
       q025.tx     = sapply(X= boot.tx ,FUN=boot.ci.lower,conf=0.95,type="perc")
       q975.tx     = sapply(X= boot.tx ,FUN=boot.ci.upper,conf=0.95,type="perc")
-      fine        = all(expected.tx %>=% q025.tx) && all(expected.tx %<=% q975.tx)
+      fine        = all(expected.tx %ge% q025.tx) && all(expected.tx %le% q975.tx)
    }#end while ((! fine) && (it < itb.max))
    if (it == itb.max) browser()
    #---------------------------------------------------------------------------------------#
@@ -1113,7 +1113,7 @@ acc.mortality.rate <<- function( property
       expected.gb = boot.gb$t0
       q025.gb     = boot.ci.lower(boot.out=boot.gb,conf=0.95,type="perc")
       q975.gb     = boot.ci.upper(boot.out=boot.gb,conf=0.95,type="perc")
-      fine        = all(expected.gb %>=% q025.gb) && all(expected.gb %<=% q975.gb)
+      fine        = all(expected.gb %ge% q025.gb) && all(expected.gb %le% q975.gb)
    }#end while ((! fine) && (it < itb.max))
    if (it == itb.max) browser()
    #---------------------------------------------------------------------------------------#
@@ -1188,7 +1188,7 @@ acc.growth.rate <<- function(nok,lok,pop,gpop=pop,dtime,taxon,R=100,itb.max=50){
       expected.tx = unlist(sapply(X=boot.tx,FUN=c)["t0",])
       q025.tx     = sapply(X= boot.tx ,FUN=boot.ci.lower,conf=0.95,type="perc")
       q975.tx     = sapply(X= boot.tx ,FUN=boot.ci.upper,conf=0.95,type="perc")
-      fine        = all(expected.tx %>=% q025.tx) && all(expected.tx %<=% q975.tx)
+      fine        = all(expected.tx %ge% q025.tx) && all(expected.tx %le% q975.tx)
    }#end while ((! fine) && (it < itb.max))
    if (it == itb.max) browser()
    #---------------------------------------------------------------------------------------#
@@ -1218,7 +1218,7 @@ acc.growth.rate <<- function(nok,lok,pop,gpop=pop,dtime,taxon,R=100,itb.max=50){
       expected.gb = boot.gb$t0
       q025.gb     = boot.ci.lower(boot.out=boot.gb,conf=0.95,type="perc")
       q975.gb     = boot.ci.upper(boot.out=boot.gb,conf=0.95,type="perc")
-      fine        = all(expected.gb %>=% q025.gb) && all(expected.gb %<=% q975.gb)
+      fine        = all(expected.gb %ge% q025.gb) && all(expected.gb %le% q975.gb)
    }#end while ((! fine) && (it < itb.max))
    if (it == itb.max) browser()
    #---------------------------------------------------------------------------------------#

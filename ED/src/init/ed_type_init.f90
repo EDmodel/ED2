@@ -19,7 +19,8 @@ module ed_type_init
    !---------------------------------------------------------------------------------------!
    subroutine init_ed_cohort_vars(cpatch,ico, lsl,mzg,ntext_soil)
       use ed_state_vars  , only : patchtype          ! ! structure
-      use allometry      , only : size2krdepth       ! ! function
+      use allometry      , only : size2krdepth       & ! function
+                                , distrib_root       ! ! sub-routine
       use pft_coms       , only : phenology          & ! intent(in)
                                 , cuticular_cond     & ! intent(in)
                                 , leaf_turnover_rate & ! intent(in)
@@ -198,6 +199,12 @@ module ed_type_init
       !------------------------------------------------------------------------------------!
       cpatch%krdepth(ico) = size2krdepth(cpatch%hite(ico),cpatch%dbh(ico),ipft,lsl)
       kroot               = cpatch%krdepth(ico)
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------ Find the root distribution. -------------------------------------------------!
+      call distrib_root(kroot,ipft,cpatch%root_frac(:,ico))
       !------------------------------------------------------------------------------------!
 
 
@@ -1128,6 +1135,7 @@ module ed_type_init
       csite%fmean_sfcw_mass                 (ipaa:ipaz) = 0.0
       csite%fmean_sfcw_temp                 (ipaa:ipaz) = 0.0
       csite%fmean_sfcw_fliq                 (ipaa:ipaz) = 0.0
+      csite%fmean_snowfac                   (ipaa:ipaz) = 0.0
       csite%fmean_rshort_gnd                (ipaa:ipaz) = 0.0
       csite%fmean_par_gnd                   (ipaa:ipaz) = 0.0
       csite%fmean_rlong_gnd                 (ipaa:ipaz) = 0.0
@@ -1210,6 +1218,7 @@ module ed_type_init
          csite%dmean_sfcw_mass              (ipaa:ipaz) = 0.0
          csite%dmean_sfcw_temp              (ipaa:ipaz) = 0.0
          csite%dmean_sfcw_fliq              (ipaa:ipaz) = 0.0
+         csite%dmean_snowfac                (ipaa:ipaz) = 0.0
          csite%dmean_rshort_gnd             (ipaa:ipaz) = 0.0
          csite%dmean_par_gnd                (ipaa:ipaz) = 0.0
          csite%dmean_rlong_gnd              (ipaa:ipaz) = 0.0
@@ -1286,6 +1295,7 @@ module ed_type_init
          csite%mmean_sfcw_mass              (ipaa:ipaz) = 0.0
          csite%mmean_sfcw_temp              (ipaa:ipaz) = 0.0
          csite%mmean_sfcw_fliq              (ipaa:ipaz) = 0.0
+         csite%mmean_snowfac                (ipaa:ipaz) = 0.0
          csite%mmean_rshort_gnd             (ipaa:ipaz) = 0.0
          csite%mmean_par_gnd                (ipaa:ipaz) = 0.0
          csite%mmean_rlong_gnd              (ipaa:ipaz) = 0.0
@@ -1409,6 +1419,7 @@ module ed_type_init
          csite%qmean_sfcw_mass            (:,ipaa:ipaz) = 0.0
          csite%qmean_sfcw_temp            (:,ipaa:ipaz) = 0.0
          csite%qmean_sfcw_fliq            (:,ipaa:ipaz) = 0.0
+         csite%qmean_snowfac              (:,ipaa:ipaz) = 0.0
          csite%qmean_rshort_gnd           (:,ipaa:ipaz) = 0.0
          csite%qmean_par_gnd              (:,ipaa:ipaz) = 0.0
          csite%qmean_rlong_gnd            (:,ipaa:ipaz) = 0.0
@@ -1522,6 +1533,7 @@ module ed_type_init
                                , writing_eorq       & ! intent(in)
                                , writing_dcyc       & ! intent(in)
                                , economics_scheme   ! ! intent(in)
+      use consts_coms   , only : huge_num           ! ! intent(in)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       type(polygontype), target     :: cpoly
@@ -1674,7 +1686,7 @@ module ed_type_init
       !      Initialise the minimum monthly temperature with a very large value, this is   !
       ! going to be reduced as the canopy temperature is updated.                          !
       !------------------------------------------------------------------------------------!
-      cpoly%min_monthly_temp(:) = huge(1.)
+      cpoly%min_monthly_temp(:) = huge_num
       !------------------------------------------------------------------------------------!
 
 
@@ -1684,7 +1696,7 @@ module ed_type_init
       ! by actual rainfall after 12 months.  In the future we may initialise with climato- !
       ! logical rainfall.                                                                  !
       !------------------------------------------------------------------------------------!
-      cpoly%avg_monthly_pcpg(:,:) = 500.
+      cpoly%avg_monthly_accp(:,:) = 500.
       !------------------------------------------------------------------------------------!
 
 
@@ -2084,6 +2096,7 @@ module ed_type_init
          cgrid%fmean_sfcw_mass            (ipy) = 0.0
          cgrid%fmean_sfcw_temp            (ipy) = 0.0
          cgrid%fmean_sfcw_fliq            (ipy) = 0.0
+         cgrid%fmean_snowfac              (ipy) = 0.0
          cgrid%fmean_rshort_gnd           (ipy) = 0.0
          cgrid%fmean_par_gnd              (ipy) = 0.0
          cgrid%fmean_rlong_gnd            (ipy) = 0.0
@@ -2257,6 +2270,7 @@ module ed_type_init
             cgrid%dmean_sfcw_mass            (ipy) = 0.0
             cgrid%dmean_sfcw_temp            (ipy) = 0.0
             cgrid%dmean_sfcw_fliq            (ipy) = 0.0
+            cgrid%dmean_snowfac              (ipy) = 0.0
             cgrid%dmean_rshort_gnd           (ipy) = 0.0
             cgrid%dmean_par_gnd              (ipy) = 0.0
             cgrid%dmean_rlong_gnd            (ipy) = 0.0
@@ -2414,6 +2428,7 @@ module ed_type_init
             cgrid%mmean_sfcw_mass            (ipy) = 0.0
             cgrid%mmean_sfcw_temp            (ipy) = 0.0
             cgrid%mmean_sfcw_fliq            (ipy) = 0.0
+            cgrid%mmean_snowfac              (ipy) = 0.0
             cgrid%mmean_rshort_gnd           (ipy) = 0.0
             cgrid%mmean_par_gnd              (ipy) = 0.0
             cgrid%mmean_rlong_gnd            (ipy) = 0.0
@@ -2656,6 +2671,7 @@ module ed_type_init
             cgrid%qmean_sfcw_mass          (:,ipy) = 0.0
             cgrid%qmean_sfcw_temp          (:,ipy) = 0.0
             cgrid%qmean_sfcw_fliq          (:,ipy) = 0.0
+            cgrid%qmean_snowfac            (:,ipy) = 0.0
             cgrid%qmean_rshort_gnd         (:,ipy) = 0.0
             cgrid%qmean_par_gnd            (:,ipy) = 0.0
             cgrid%qmean_rlong_gnd          (:,ipy) = 0.0

@@ -7,7 +7,7 @@ nstyp      <<- 17 # Number of default soil types
 
 
 #----- Radiation thresholds. --------------------------------------------------------------#
-cosz.min      <<- 0.03 # cos(89*pi/180) # Minimum cosine of zenith angle
+cosz.min      <<- 0.0001 # 0.03 # cos(89*pi/180) # Minimum cosine of zenith angle
 cosz.highsun  <<- cos(84*pi/180)        # Zenith angle to not be called sunrise or sunset
 cosz.twilight <<- cos(96*pi/180)        # Cosine of the end of civil twilight
 fvis.beam.def <<- 0.43

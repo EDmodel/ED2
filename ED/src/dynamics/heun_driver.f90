@@ -22,6 +22,7 @@ module heun_driver
       use grid_coms              , only : nzg                        ! ! intent(in)
       use ed_misc_coms           , only : current_time               & ! intent(in)
                                         , dtlsm                      ! ! intent(in)
+      use soil_coms              , only : isoilbc                    ! ! intent(in)
       use ed_max_dims            , only : n_dbh                      ! ! intent(in)
       use budget_utils           , only : update_cbudget_committed   & ! function
                                         , compute_budget             ! ! function
@@ -78,12 +79,38 @@ module heun_driver
       integer                                 :: ibuff
       integer                                 :: npa_thread
       integer                                 :: ita
+      integer                                 :: site_isoilbc
       !----- Local constants. -------------------------------------------------------------!
       logical                   , parameter   :: test_energy_sanity = .false.
       !------------------------------------------------------------------------------------!
 
       polyloop: do ipy = 1,cgrid%npolygons
          cpoly => cgrid%polygon(ipy)
+
+         !---------------------------------------------------------------------------------!
+         !      Decide the local soil boundary condition based on depth to bedrock and     !
+         ! the preferred boundary condition set by the user.                               !
+         !---------------------------------------------------------------------------------!
+         select case (isoilbc)
+         case (-1)
+            !----- Decide boundary condition based on depth to bedrock. -------------------!
+            select case (cpoly%lsl(isi))
+            case (1)
+               !------ Soil depth is at or below slz(1), assume free drainage. ------------!
+               site_isoilbc = 1
+               !---------------------------------------------------------------------------!
+            case default
+               !------ Soil depth is above slz(1), assume flat bedrock. -------------------!
+               site_isoilbc = 0
+               !---------------------------------------------------------------------------!
+            end select
+            !------------------------------------------------------------------------------!
+         case default
+            !----- Default settings, use the namelist settings for every site. ------------!
+            site_isoilbc = isoilbc
+            !------------------------------------------------------------------------------!
+         end select
+         !---------------------------------------------------------------------------------!
 
          siteloop: do isi = 1,cpoly%nsites
             csite => cpoly%site(isi)
@@ -98,19 +125,20 @@ module heun_driver
             !     Update the monthly rainfall.                                             !
             !------------------------------------------------------------------------------!
             imon                             = current_time%month
-            cpoly%avg_monthly_pcpg(imon,isi) = cpoly%avg_monthly_pcpg(imon,isi)            &
+            cpoly%avg_monthly_accp(imon,isi) = cpoly%avg_monthly_accp(imon,isi)            &
                                              + cmet%pcpg * dtlsm
             !------------------------------------------------------------------------------!
 
             !------------------------------------------------------------------------------!
             !    Copy the meteorological variables to the rk4site structure.               !
             !------------------------------------------------------------------------------!
-            call copy_met_2_rk4site(nzg,cmet%atm_ustar,cmet%atm_theiv,cmet%atm_vpdef       &
-                                   ,cmet%atm_theta,cmet%atm_tmp,cmet%atm_shv,cmet%atm_co2  &
-                                   ,cmet%geoht,cmet%exner,cmet%pcpg,cmet%qpcpg,cmet%dpcpg  &
-                                   ,cmet%prss,cmet%rshort,cmet%rlong,cmet%par_beam         &
-                                   ,cmet%par_diffuse,cmet%nir_beam,cmet%nir_diffuse        &
-                                   ,cmet%geoht,cpoly%lsl(isi),cpoly%ntext_soil(:,isi)      &
+            call copy_met_2_rk4site(nzg,site_isoilbc,cmet%atm_ustar,cmet%atm_theiv         &
+                                   ,cmet%atm_vpdef,cmet%atm_theta,cmet%atm_tmp             &
+                                   ,cmet%atm_shv,cmet%atm_co2,cmet%geoht,cmet%exner        &
+                                   ,cmet%pcpg,cmet%qpcpg,cmet%dpcpg,cmet%prss,cmet%rshort  &
+                                   ,cmet%rlong,cmet%par_beam,cmet%par_diffuse              &
+                                   ,cmet%nir_beam,cmet%nir_diffuse,cmet%geoht              &
+                                   ,cpoly%lsl(isi),cpoly%ntext_soil(:,isi)                 &
                                    ,cpoly%green_leaf_factor(:,isi),cgrid%lon(ipy)          &
                                    ,cgrid%lat(ipy),cgrid%cosz(ipy))
             !------------------------------------------------------------------------------!
@@ -218,7 +246,8 @@ module heun_driver
                   ! placed before canopy_photosynthesis, because plant_hydro_driver needs  !
                   ! fs_open from the previous timestep.                                    !
                   !------------------------------------------------------------------------!
-                  call plant_hydro_driver(csite,ipa,cpoly%ntext_soil(:,isi))
+                  call plant_hydro_driver(csite,ipa,cpoly%lsl(isi),cpoly%ntext_soil(:,isi) &
+                                         ,site_isoilbc)
                   !------------------------------------------------------------------------!
 
 

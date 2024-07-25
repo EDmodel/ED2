@@ -23,31 +23,48 @@ module ed_init_history
    ! polygons and populate the model states with what is found in the files tree.          !
    !---------------------------------------------------------------------------------------!
    subroutine resume_from_history()
-      use ed_max_dims      , only : n_pft                 & ! intent(in)
-                                  , str_len               ! ! intent(in)
-      use ed_misc_coms     , only : sfilin                & ! intent(in)
-                                  , current_time          & ! intent(in)
-                                  , max_poihist_dist      ! ! intent(in)
-      use ed_state_vars    , only : polygontype           & ! structure
-                                  , sitetype              & ! structure
-                                  , patchtype             & ! structure
-                                  , edtype                & ! structure
-                                  , edgrid_g              & ! structure
-                                  , allocate_sitetype     & ! subroutine
-                                  , allocate_patchtype    & ! subroutine
-                                  , allocate_polygontype  ! ! subroutine
-      use soil_coms        , only : alloc_soilgrid        ! ! subroutine
-      use grid_coms        , only : ngrids                ! ! intent(in)
-      use phenology_startup, only : phenology_init        ! ! subroutine
-      use ed_node_coms     , only : mynum                 ! ! intent(in)
+      use ed_max_dims        , only : n_pft                 & ! intent(in)
+                                    , str_len               & ! intent(in)
+                                    , ed_nstyp              & ! intent(in)
+                                    , undef_real            ! ! intent(in)
+      use ed_misc_coms       , only : sfilin                & ! intent(in)
+                                    , current_time          & ! intent(in)
+                                    , max_poihist_dist      ! ! intent(in)
+      use ed_state_vars      , only : polygontype           & ! structure
+                                    , sitetype              & ! structure
+                                    , patchtype             & ! structure
+                                    , edtype                & ! structure
+                                    , edgrid_g              & ! structure
+                                    , allocate_sitetype     & ! subroutine
+                                    , allocate_patchtype    & ! subroutine
+                                    , allocate_polygontype  ! ! subroutine
+      use grid_coms          , only : ngrids                & ! intent(in)
+                                    , nzg                   & ! intent(out)
+                                    , nzs                   ! ! intent(out)
+      use soil_coms          , only : slz                   & ! intent(out)
+                                    , slhydro_ref           & ! intent(out)
+                                    , slxclay_ref           & ! intent(out)
+                                    , slxsilt_ref           & ! intent(out)
+                                    , slxsand_ref           & ! intent(out)
+                                    , slsoc_ref             & ! intent(out)
+                                    , slph_ref              & ! intent(out)
+                                    , slcec_ref             & ! intent(out)
+                                    , sldbd_ref             & ! intent(out)
+                                    , alloc_soilgrid        ! ! sub-routine
+      use fusion_fission_coms, only : ff_nhgt               & ! intent(in)
+                                    , hgt_class             ! ! intent(in)
+      use phenology_startup  , only : phenology_init        ! ! subroutine
+      use ed_node_coms       , only : mynum                 & ! intent(in)
+                                    , nnodetot              ! ! intent(in)
+      use ed_init            , only : sfcdata_ed            ! ! sub-routine
       use hdf5
-      use hdf5_coms        , only : file_id               & ! intent(inout)
-                                  , dset_id               & ! intent(inout)
-                                  , dspace_id             & ! intent(inout)
-                                  , globdims              & ! intent(inout)
-                                  , chnkdims              & ! intent(inout)
-                                  , chnkoffs              ! ! intent(inout)
-      use landuse_init     , only : read_landuse_matrix   ! ! intent(in)
+      use hdf5_coms          , only : file_id               & ! intent(inout)
+                                    , dset_id               & ! intent(inout)
+                                    , dspace_id             & ! intent(inout)
+                                    , globdims              & ! intent(inout)
+                                    , chnkdims              & ! intent(inout)
+                                    , chnkoffs              ! ! intent(inout)
+      use landuse_init       , only : read_landuse_matrix   ! ! sub-routine
       implicit none
       !------ Local variables. ------------------------------------------------------------!
       type(edtype)                        , pointer     :: cgrid
@@ -88,6 +105,7 @@ module ed_init_history
 
       write (unit=*,fmt='(a)') '-----------------------------------------------------'
       write (unit=*,fmt='(a)') '  Loading Full State (HISTORY)'
+      write (unit=*,fmt='(a)') '-----------------------------------------------------'
 
 
       !----- Open the HDF environment. ----------------------------------------------------!
@@ -133,6 +151,182 @@ module ed_init_history
                                ,'resume_from_history','ed_init_history.f90')
             end if
          end if
+         !---------------------------------------------------------------------------------!
+
+
+
+
+         !---------------------------------------------------------------------------------!
+         !      If this is the first grid, we read global dimensions and vectors.          !
+         !---------------------------------------------------------------------------------!
+         select case (ngr)
+         case (1)
+            if (mynum == nnodetot) write (unit=*,fmt='(a)')                                &
+               '     [-] Load global dimensions...'
+
+            !------------------------------------------------------------------------------!
+            !     Retrieve global vector sizes.  This includes the number of soil and snow !
+            ! layers, and the number of height classes for patch fusion.                   !
+            !                                                                              !
+            ! Note: if running HISTORY, this will overwrite the ED2IN settings.  It is     !
+            !       not anyway a good idea to change settings in simulations using         !
+            !       HISTORY (you can always have a "soft" initialisation for forest        !
+            !       structure only, using RUNTYPE='INITIAL' and IED_INIT_MODE=5, and this  !
+            !       would allow you to change as many settings as you want, and likely     !
+            !       even different versions of code if you dare.                           !
+            !------------------------------------------------------------------------------!
+            globdims    = 0_8
+            chnkdims    = 0_8
+            chnkoffs    = 0_8
+            globdims(1) = 1_8
+
+            call h5dopen_f(file_id,'NZG', dset_id, hdferr)
+            call h5dget_space_f(dset_id, dspace_id, hdferr)
+            call h5dread_f(dset_id, H5T_NATIVE_INTEGER,nzg,globdims, hdferr)
+            call h5sclose_f(dspace_id, hdferr)
+            call h5dclose_f(dset_id, hdferr)
+
+            call h5dopen_f(file_id,'NZS', dset_id, hdferr)
+            call h5dget_space_f(dset_id, dspace_id, hdferr)
+            call h5dread_f(dset_id, H5T_NATIVE_INTEGER,nzs,globdims, hdferr)
+            call h5sclose_f(dspace_id, hdferr)
+            call h5dclose_f(dset_id, hdferr)
+
+            call h5dopen_f(file_id,'FF_NHGT', dset_id, hdferr)
+            call h5dget_space_f(dset_id, dspace_id, hdferr)
+            call h5dread_f(dset_id, H5T_NATIVE_INTEGER,ff_nhgt,globdims, hdferr)
+            call h5sclose_f(dspace_id, hdferr)
+            call h5dclose_f(dset_id, hdferr)
+            !------------------------------------------------------------------------------!
+
+
+
+
+
+
+            !------------------------------------------------------------------------------!
+            !     Retrieve soil layers. These will overwrite ED2IN settings if they are    !
+            ! different.  It is very unwise to change the soil grid during a HISTORY run.  !
+            !------------------------------------------------------------------------------!
+            globdims    = 0_8
+            chnkdims    = 0_8
+            chnkoffs    = 0_8
+            globdims(1) = int(nzg,8)
+
+            slz(:) = undef_real
+            call h5dopen_f(file_id,'SLZ', dset_id, hdferr)
+            call h5dget_space_f(dset_id, dspace_id, hdferr)
+            call h5dread_f(dset_id, H5T_NATIVE_REAL,slz(1:nzg),globdims, hdferr)
+            call h5sclose_f(dspace_id, hdferr)
+            call h5dclose_f(dset_id, hdferr)
+            !------------------------------------------------------------------------------!
+
+
+
+
+
+
+            !------------------------------------------------------------------------------!
+            !     Height classes for patch fusion.                                         !
+            !------------------------------------------------------------------------------!
+            globdims    = 0_8
+            chnkdims    = 0_8
+            chnkoffs    = 0_8
+            globdims(1) = int(ff_nhgt,8)
+
+            if (allocated(hgt_class)) deallocate(hgt_class)
+            allocate(hgt_class(ff_nhgt))
+            call h5dopen_f(file_id,'HGT_CLASS', dset_id, hdferr)
+            call h5dget_space_f(dset_id, dspace_id, hdferr)
+            call h5dread_f(dset_id, H5T_NATIVE_REAL,hgt_class,globdims, hdferr)
+            call h5sclose_f(dspace_id, hdferr)
+            call h5dclose_f(dset_id, hdferr)
+            !------------------------------------------------------------------------------!
+
+
+
+
+
+
+            !------------------------------------------------------------------------------!
+            !     Retrieve default soil characteristics (texture and approach).  This will !
+            ! effectively supersede the ISOIL_HYDRO settings (it's not wise to change      !
+            ! settings in the middle of a simulation).                                     !
+            !------------------------------------------------------------------------------!
+            globdims    = 0_8
+            chnkdims    = 0_8
+            chnkoffs    = 0_8
+            globdims(1) = int(ed_nstyp,8)
+
+            call h5dopen_f(file_id,'SLHYDRO_REF', dset_id, hdferr)
+            call h5dget_space_f(dset_id, dspace_id, hdferr)
+            call h5dread_f(dset_id, H5T_NATIVE_INTEGER,slhydro_ref,globdims, hdferr)
+            call h5sclose_f(dspace_id, hdferr)
+            call h5dclose_f(dset_id, hdferr)
+
+            call h5dopen_f(file_id,'SLXSAND_REF', dset_id, hdferr)
+            call h5dget_space_f(dset_id, dspace_id, hdferr)
+            call h5dread_f(dset_id, H5T_NATIVE_REAL,slxsand_ref,globdims, hdferr)
+            call h5sclose_f(dspace_id, hdferr)
+            call h5dclose_f(dset_id, hdferr)
+
+            call h5dopen_f(file_id,'SLXSILT_REF', dset_id, hdferr)
+            call h5dget_space_f(dset_id, dspace_id, hdferr)
+            call h5dread_f(dset_id, H5T_NATIVE_REAL,slxsilt_ref,globdims, hdferr)
+            call h5sclose_f(dspace_id, hdferr)
+            call h5dclose_f(dset_id, hdferr)
+
+            call h5dopen_f(file_id,'SLXCLAY_REF', dset_id, hdferr)
+            call h5dget_space_f(dset_id, dspace_id, hdferr)
+            call h5dread_f(dset_id, H5T_NATIVE_REAL,slxclay_ref,globdims, hdferr)
+            call h5sclose_f(dspace_id, hdferr)
+            call h5dclose_f(dset_id, hdferr)
+
+            call h5dopen_f(file_id,'SLSOC_REF', dset_id, hdferr)
+            call h5dget_space_f(dset_id, dspace_id, hdferr)
+            call h5dread_f(dset_id, H5T_NATIVE_REAL,slsoc_ref,globdims, hdferr)
+            call h5sclose_f(dspace_id, hdferr)
+            call h5dclose_f(dset_id, hdferr)
+
+            call h5dopen_f(file_id,'SLPH_REF', dset_id, hdferr)
+            call h5dget_space_f(dset_id, dspace_id, hdferr)
+            call h5dread_f(dset_id, H5T_NATIVE_REAL,slph_ref,globdims, hdferr)
+            call h5sclose_f(dspace_id, hdferr)
+            call h5dclose_f(dset_id, hdferr)
+
+            call h5dopen_f(file_id,'SLCEC_REF', dset_id, hdferr)
+            call h5dget_space_f(dset_id, dspace_id, hdferr)
+            call h5dread_f(dset_id, H5T_NATIVE_REAL,slcec_ref,globdims, hdferr)
+            call h5sclose_f(dspace_id, hdferr)
+            call h5dclose_f(dset_id, hdferr)
+
+            call h5dopen_f(file_id,'SLDBD_REF', dset_id, hdferr)
+            call h5dget_space_f(dset_id, dspace_id, hdferr)
+            call h5dread_f(dset_id, H5T_NATIVE_REAL,sldbd_ref,globdims, hdferr)
+            call h5sclose_f(dspace_id, hdferr)
+            call h5dclose_f(dset_id, hdferr)
+            !------------------------------------------------------------------------------!
+
+
+
+
+            !------------------------------------------------------------------------------!
+            !      Allocate soil grid arrays.                                              !
+            !------------------------------------------------------------------------------!
+            if (mynum == nnodetot) write (unit=*,fmt='(a)') '     [-] Alloc_Soilgrid...'
+            call alloc_soilgrid()
+            !------------------------------------------------------------------------------!
+
+
+
+            !------------------------------------------------------------------------------!
+            !      Initialise variables that are related to soil layers.                   !
+            !------------------------------------------------------------------------------!
+            if (mynum == nnodetot) write (unit=*,fmt='(a)') '     [-] Sfcdata_ED...'
+            call sfcdata_ed()
+            !------------------------------------------------------------------------------!
+         end select
+         !---------------------------------------------------------------------------------!
 
 
          !---------------------------------------------------------------------------------!
@@ -424,13 +618,13 @@ module ed_init_history
 
 
       !----- Load the anthropogenic disturbance (or set them all to zero). ----------------!
-      write(unit=*,fmt='(a,i2.2)') ' Checking anthropogenic disturbance.  Node: ',mynum
+      write(unit=*,fmt='(a,i2.2)') ' Loading anthropogenic disturbance.  Node: ',mynum
       call read_landuse_matrix()
       !------------------------------------------------------------------------------------!
 
 
       !----- Load phenology in case it is prescribed (or set them with defaults). ---------!
-      write(unit=*,fmt='(a,i2.2)') ' Checking prescribed phenology.  Node: ',mynum
+      write(unit=*,fmt='(a,i2.2)') ' Loading prescribed phenology.  Node: ',mynum
       call phenology_init()
 
       return
@@ -1004,6 +1198,8 @@ module ed_init_history
                         ,'DMEAN_SFCW_TEMP_PY        ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cgrid%dmean_sfcw_fliq      (ipy:ipy)                           &
                         ,'DMEAN_SFCW_FLIQ_PY        ',dsetrank,iparallel,.false.,foundvar)
+         call hdf_getslab_r(cgrid%dmean_snowfac        (ipy:ipy)                           &
+                        ,'DMEAN_SNOWFAC_PY          ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cgrid%dmean_rshort_gnd     (ipy:ipy)                           &
                         ,'DMEAN_RSHORT_GND_PY       ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cgrid%dmean_par_gnd        (ipy:ipy)                           &
@@ -1432,6 +1628,8 @@ module ed_init_history
                         ,'MMEAN_SFCW_TEMP_PY        ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cgrid%mmean_sfcw_fliq      (ipy:ipy)                           &
                         ,'MMEAN_SFCW_FLIQ_PY        ',dsetrank,iparallel,.false.,foundvar)
+         call hdf_getslab_r(cgrid%mmean_snowfac        (ipy:ipy)                           &
+                        ,'MMEAN_SNOWFAC_PY          ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cgrid%mmean_rshort_gnd     (ipy:ipy)                           &
                         ,'MMEAN_RSHORT_GND_PY       ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cgrid%mmean_par_gnd        (ipy:ipy)                           &
@@ -2055,6 +2253,8 @@ module ed_init_history
                         ,'QMEAN_SFCW_TEMP_PY       ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cgrid%qmean_sfcw_fliq      (:,ipy)                             &
                         ,'QMEAN_SFCW_FLIQ_PY       ',dsetrank,iparallel,.false.,foundvar)
+         call hdf_getslab_r(cgrid%qmean_snowfac        (:,ipy)                             &
+                        ,'QMEAN_SNOWFAC_PY         ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cgrid%qmean_rshort_gnd     (:,ipy)                             &
                         ,'QMEAN_RSHORT_GND_PY      ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(cgrid%qmean_par_gnd        (:,ipy)                             &
@@ -3257,8 +3457,8 @@ module ed_init_history
       memoffs (2) = 0_8
       call hdf_getslab_r(cpoly%lambda_fire                                                 &
                         ,'LAMBDA_FIRE ',dsetrank,iparallel,.true.,foundvar)
-      call hdf_getslab_r(cpoly%avg_monthly_pcpg                                            &
-                        ,'AVG_MONTHLY_PCPG ',dsetrank,iparallel,.true.,foundvar)
+      call hdf_getslab_r(cpoly%avg_monthly_accp                                            &
+                        ,'AVG_MONTHLY_ACCP ',dsetrank,iparallel,.true.,foundvar)
       call hdf_getslab_r(cpoly%crop_yield                                                  &
                         ,'CROP_YIELD_SI ',dsetrank,iparallel,.true.,foundvar)
       !------------------------------------------------------------------------------------!
@@ -4069,6 +4269,8 @@ module ed_init_history
                         ,'DMEAN_SFCW_TEMP_PA        ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(csite%dmean_sfcw_fliq                                          &
                         ,'DMEAN_SFCW_FLIQ_PA        ',dsetrank,iparallel,.false.,foundvar)
+         call hdf_getslab_r(csite%dmean_snowfac                                            &
+                        ,'DMEAN_SNOWFAC_PA          ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(csite%dmean_rshort_gnd                                         &
                         ,'DMEAN_RSHORT_GND_PA       ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(csite%dmean_par_gnd                                            &
@@ -4238,6 +4440,8 @@ module ed_init_history
                         ,'MMEAN_SFCW_TEMP_PA        ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(csite%mmean_sfcw_fliq                                          &
                         ,'MMEAN_SFCW_FLIQ_PA        ',dsetrank,iparallel,.false.,foundvar)
+         call hdf_getslab_r(csite%mmean_snowfac                                            &
+                        ,'MMEAN_SNOWFAC_PA          ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(csite%mmean_rshort_gnd                                         &
                         ,'MMEAN_RSHORT_GND_PA       ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(csite%mmean_par_gnd                                            &
@@ -4443,6 +4647,8 @@ module ed_init_history
                         ,'QMEAN_SFCW_TEMP_PA       ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(csite%qmean_sfcw_fliq                                          &
                         ,'QMEAN_SFCW_FLIQ_PA       ',dsetrank,iparallel,.false.,foundvar)
+         call hdf_getslab_r(csite%qmean_snowfac                                            &
+                        ,'QMEAN_SNOWFAC_PA         ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(csite%qmean_rshort_gnd                                         &
                         ,'QMEAN_RSHORT_GND_PA      ',dsetrank,iparallel,.false.,foundvar)
          call hdf_getslab_r(csite%qmean_par_gnd                                            &
@@ -5691,6 +5897,8 @@ module ed_init_history
       memdims (2) = int(cpatch%ncohorts,8)
       memsize (2) = int(cpatch%ncohorts,8)
       memoffs (2) = 0_8
+      call hdf_getslab_r(cpatch%root_frac                                                  &
+                        ,'ROOT_FRAC                  ',dsetrank,iparallel,.true. ,foundvar)
       call hdf_getslab_r(cpatch%wflux_gw_layer                                             &
                         ,'WFLUX_GW_LAYER             ',dsetrank,iparallel,.true. ,foundvar)
       if (writing_long) then

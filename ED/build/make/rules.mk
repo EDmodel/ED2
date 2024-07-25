@@ -208,6 +208,11 @@ ed_read_ed21_history.o : $(ED_IO)/ed_read_ed21_history.f90
 	/bin/cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 
+ed_read_ed22_initial.o : $(ED_IO)/ed_read_ed22_initial.f90
+	/bin/rm -f $(<F:.f90=.f90)
+	/bin/cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+
 ed_state_vars.o : $(ED_MEMORY)/ed_state_vars.F90
 	/bin/rm -f $(<F:.F90=.F90)
 	/bin/cp -f $< $(<F:.F90=.F90)
@@ -498,10 +503,10 @@ rsys.o: $(ED_UTILS)/rsys.F90
 	/bin/cp -f $< $(<F:.F90=.F90)
 	$(FPP_COMMAND) $(<F:.F90=.F90)
 
-soil_coms.o : $(ED_MEMORY)/soil_coms.F90
-	/bin/rm -f $(<F:.F90=.F90)
-	/bin/cp -f $< $(<F:.F90=.F90)
-	$(FPP_COMMAND) $(<F:.F90=.F90)
+soil_coms.o : $(ED_MEMORY)/soil_coms.f90
+	/bin/rm -f $(<F:.f90=.f90)
+	/bin/cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
 
 soil_respiration.o : $(ED_DYNAMICS)/soil_respiration.f90
 	/bin/rm -f $(<F:.f90=.f90)
