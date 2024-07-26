@@ -1,12 +1,18 @@
 name: CI
 
-on: [push, pull_request]
+on: 
+  push:
+    branches:
+      - master
+      - main
+
+  pull_request:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v3
     - name: Install dependencies
       run: sudo apt-get install -y --no-install-recommends gfortran libhdf5-openmpi-dev libopenmpi-dev
     - name: Install ED2
@@ -21,7 +27,7 @@ jobs:
 
   test-umbs-bg:
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
     - uses: actions/checkout@v1
     - name: Retrieve compiled binary
@@ -38,7 +44,7 @@ jobs:
 
   test-tonzi:
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
     - uses: actions/checkout@v1
     - name: Retrieve compiled binary
@@ -55,7 +61,7 @@ jobs:
 
   test-tonzi-harvest:
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
     - uses: actions/checkout@v1
     - name: Retrieve compiled binary

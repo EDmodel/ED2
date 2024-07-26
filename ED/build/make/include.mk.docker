@@ -9,8 +9,8 @@ BASE=$(ED_ROOT)/build/
 
 # HDF 5  Libraries
 USE_HDF5=1
-HDF5_INCS=-I/usr/include/hdf5/serial
-HDF5_LIBS=-L/usr/lib/x86_64-linux-gnu/hdf5/serial -lz -lhdf5_fortran -lhdf5 -lhdf5_hl
+HDF5_INCS=-I/usr/include/hdf5/openmpi
+HDF5_LIBS=-L/usr/lib/x86_64-linux-gnu/hdf5/openmpi -lz -lhdf5_fortran -lhdf5 -lhdf5_hl
 #HDF5_INCS=-I/usr/include
 #HDF5_LIBS=-lz -lhdf5_fortran -lhdf5 -lhdf5_hl
 USE_COLLECTIVE_MPIO=0
