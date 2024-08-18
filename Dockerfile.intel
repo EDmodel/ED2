@@ -1,7 +1,7 @@
 # ----------------------------------------------------------------------
 # Build ED2 model
 # ----------------------------------------------------------------------
-FROM intel/oneapi-hpckit:2023.1-devel-ubuntu22.04 AS build
+FROM intel/oneapi-hpckit:2023.1.0-devel-ubuntu22.04 AS build
 
 # Some variables that can be used to set control the docker build
 ARG ED2_KIND=E
