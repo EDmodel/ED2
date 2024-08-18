@@ -10,9 +10,9 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Install dependencies
       run: sudo apt-get install -y --no-install-recommends gfortran libhdf5-openmpi-dev libopenmpi-dev
     - name: Install ED2
@@ -27,9 +27,9 @@ jobs:
 
   test-umbs-bg:
     needs: build
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v4
     - name: Retrieve compiled binary
       uses: actions/download-artifact@v1
       with:
@@ -44,9 +44,9 @@ jobs:
 
   test-tonzi:
     needs: build
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v4
     - name: Retrieve compiled binary
       uses: actions/download-artifact@v1
       with:
@@ -61,9 +61,9 @@ jobs:
 
   test-tonzi-harvest:
     needs: build
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v4
     - name: Retrieve compiled binary
       uses: actions/download-artifact@v1
       with:
