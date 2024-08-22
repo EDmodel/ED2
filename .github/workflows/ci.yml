@@ -31,7 +31,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Retrieve compiled binary
-      uses: actions/download-artifact@v1
+      uses: actions/download-artifact@v4
       with:
         name: ed2-binary
     - name: Install dependencies
@@ -48,7 +48,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Retrieve compiled binary
-      uses: actions/download-artifact@v1
+      uses: actions/download-artifact@v4
       with:
         name: ed2-binary
     - name: Install dependencies
@@ -65,7 +65,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Retrieve compiled binary
-      uses: actions/download-artifact@v1
+      uses: actions/download-artifact@v4
       with:
         name: ed2-binary
     - name: Install dependencies
