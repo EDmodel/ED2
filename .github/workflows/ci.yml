@@ -20,7 +20,7 @@ jobs:
         cd ED/build
         ./install.sh -g -p travisci -k A
     - name: Upload compiled ED2 binary
-      uses: actions/upload-artifact@v1
+      uses: actions/upload-artifact@v4
       with:
         name: ed2-binary
         path: ED/build/ed_2.2-dbg
