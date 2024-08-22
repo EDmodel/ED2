@@ -47,5 +47,5 @@ jobs:
     - name: Run ED2
       working-directory: ./EDTS/
       run: |
-        chmod +x "$GITHUB_WORKSPACE"/ed2-binary
-        ./run-test.sh ${{ matrix.name }} "$GITHUB_WORKSPACE/ed2-binary"
+        chmod +x "$GITHUB_WORKSPACE"/ed_2.2-dbg
+        ./run-test.sh ${{ matrix.name }} "$GITHUB_WORKSPACE/ed_2.2-dbg"
