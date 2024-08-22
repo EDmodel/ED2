@@ -47,4 +47,4 @@ RUN apt-get update \
 WORKDIR /data
 COPY --from=build /ED2/ED/build/ed2 /usr/bin
 
-CMD /usr/bin/ed2
+CMD ["/usr/bin/ed2"]
