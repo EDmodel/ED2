@@ -27,6 +27,13 @@
 !==========================================================================================!
 module farq_katul
 
+   !---------------------------------------------------------------------------------------!
+   !     This is a flag used in various sub-routines and functions and denote that we      !
+   ! should ignore the result.                                                             !
+   !---------------------------------------------------------------------------------------!
+   real(kind=8), parameter :: discard = huge(1.d0)
+   !---------------------------------------------------------------------------------------!
+
    contains
    !=======================================================================================!
    !=======================================================================================!
@@ -848,6 +855,8 @@ module farq_katul
         real(kind=8)                :: k1,k2        !! Variable used in photosynthesis equation
         real(kind=8)                :: a,b,c        !! Coefficients of the quadratic equation to solve ci
         real(kind=8)                :: rad          !! sqrt(b2-4ac)
+        real(kind=8)                :: ciroot1      !! First root of ci
+        real(kind=8)                :: ciroot2      !! Second root of ci
         real(kind=8)                :: dbdg         !! derivatives of b wrt. gsc
         real(kind=8)                :: dcdg         !! derivatives of c wrt. gsc
         !------------------------------------------------------------------------------------!
@@ -877,7 +886,8 @@ module farq_katul
 
             ! solve the quadratic equation
             rad = sqrt(b ** 2 - 4.d0 * a * c)
-            ci = - (b - rad) / (2.d0 * a)
+            call solve_quadratic8(a,b,c,-discard,ciroot1,ciroot2)
+            ci = max(ciroot1,ciroot2)
             fc = gsbc * (met(ib)%can_co2 - ci)
 
             ! calculate derivatives
@@ -905,7 +915,8 @@ module farq_katul
             c = (-k1 * aparms(ib)%compp - k2 * aparms(ib)%leaf_resp) / gsbc - k2 * met(ib)%can_co2
 
             rad = sqrt(b ** 2 - 4.d0 * a * c)
-            ci = - (b - rad) / (2.d0 * a)
+            call solve_quadratic8(a,b,c,-discard,ciroot1,ciroot2)
+            ci = max(ciroot1,ciroot2)
             fc = gsbc * (met(ib)%can_co2 - ci)
 
             ! calculate derivatives

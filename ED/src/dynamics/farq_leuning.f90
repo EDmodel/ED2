@@ -403,7 +403,6 @@ module farq_leuning
       real(kind=8)             :: aterm     !> 'a' term for quadratic equation  [      ---]
       real(kind=8)             :: bterm     !> 'b' term for quadratic equation  [      ---]
       real(kind=8)             :: cterm     !> 'c' term for quadratic equation  [      ---]
-      real(kind=8)             :: discr     !> discriminant for quadratic eqn   [      ---]
       real(kind=8)             :: jroot1    !> root for quadratic equation      [      ---]
       real(kind=8)             :: jroot2    !> root for quadratic equation      [      ---]
       !------------------------------------------------------------------------------------!
@@ -659,54 +658,41 @@ module farq_leuning
 
 
 
+         !----- Solve the quadratic equation. ---------------------------------------------!
+         call solve_quadratic8(aterm,bterm,cterm,discard,jroot1,jroot2)
          !---------------------------------------------------------------------------------!
-         if (aterm == 0.d0) then
-            !----- Equation was reduced to linear equation. -------------------------------!
-            aparms(ib)%jact = - cterm / bterm
-            !------------------------------------------------------------------------------!
+
+
+
+         !---------------------------------------------------------------------------------!
+         !     Make sure at least one root is valid.                                       !
+         !---------------------------------------------------------------------------------!
+         if ( ( jroot1 /= discard ) .or. ( jroot2 /= discard ) ) then
+            aparms(ib)%jact = min( jroot1, jroot2 )
          else
-            !----- Check whether discriminant is positive. --------------------------------!
-            discr = bterm * bterm - 4.d0 * aterm * cterm
-            if (discr == 0.d0) then
-               aparms(ib)%jact = - bterm / (2.d0 * aterm)
-            elseif (discr > 0.d0) then
-               !----- Always pick the smallest of the roots. ------------------------------!
-               jroot1 = ( - bterm - sqrt(discr) ) / ( 2.d0 * aterm)
-               jroot2 = ( - bterm + sqrt(discr) ) / ( 2.d0 * aterm)
-               if (jroot1 <= jroot2) then
-                  aparms(ib)%jact = jroot1
-               else 
-                  aparms(ib)%jact = jroot2
-               end if
-               !---------------------------------------------------------------------------!
-            else
-               !----- Broadcast the bad news. ---------------------------------------------!
-               write(unit=*,fmt='(a)'          ) ''
-               write(unit=*,fmt='(a)'          ) ''
-               write(unit=*,fmt='(a)'          ) '========================================'
-               write(unit=*,fmt='(a)'          ) '========================================'
-               write(unit=*,fmt='(a)'          ) '   Discriminant is negative.'
-               write(unit=*,fmt='(a)'          ) '----------------------------------------'
-               write(unit=*,fmt='(a,1x,f12.5)' ) 'PAR       = ', met(ib)%par * mol_2_umol8
-               write(unit=*,fmt='(a,1x,f12.5)' ) 'QYIELD    = ', thispft(ib)%phi_psII
-               write(unit=*,fmt='(a,1x,f12.5)' ) 'CURVATURE = ', thispft(ib)%curvpar
-               write(unit=*,fmt='(a,1x,f12.5)' ) 'JMAX      = ', aparms(ib)%jm             &
-                                                               * mol_2_umol8
-               write(unit=*,fmt='(a,1x,f12.5)' ) 'JM0       = ', thispft(ib)%jm0           &
-                                                               * mol_2_umol8
-               write(unit=*,fmt='(a,1x,f12.5)' ) 'LEAF_TEMP = ', met(ib)%leaf_temp + t008
-               write(unit=*,fmt='(a,1x,es12.5)') 'A         = ', aterm
-               write(unit=*,fmt='(a,1x,es12.5)') 'B         = ', bterm
-               write(unit=*,fmt='(a,1x,es12.5)') 'C         = ', cterm
-               write(unit=*,fmt='(a,1x,es12.5)') 'DISCR     = ', discr
-               write(unit=*,fmt='(a)'          ) '========================================'
-               write(unit=*,fmt='(a)'          ) '========================================'
-               write(unit=*,fmt='(a)'          ) ''
-               write(unit=*,fmt='(a)'          ) ''
-               call fatal_error(' Negative discriminant when seeking the J rate.'          &
-                               ,'comp_photo_tempfun','farq_leuning.f90')
-               !---------------------------------------------------------------------------!
-            end if
+            !----- Broadcast the bad news. ------------------------------------------------!
+            write(unit=*,fmt='(a)'          ) ''
+            write(unit=*,fmt='(a)'          ) ''
+            write(unit=*,fmt='(a)'          ) '==========================================='
+            write(unit=*,fmt='(a)'          ) '==========================================='
+            write(unit=*,fmt='(a)'          ) '   Discriminant is negative.'
+            write(unit=*,fmt='(a)'          ) '-------------------------------------------'
+            write(unit=*,fmt='(a,1x,f12.5)' ) 'PAR       = ', met(ib)%par * mol_2_umol8
+            write(unit=*,fmt='(a,1x,f12.5)' ) 'QYIELD    = ', thispft(ib)%phi_psII
+            write(unit=*,fmt='(a,1x,f12.5)' ) 'CURVATURE = ', thispft(ib)%curvpar
+            write(unit=*,fmt='(a,1x,f12.5)' ) 'JMAX      = ', aparms(ib)%jm   * mol_2_umol8
+            write(unit=*,fmt='(a,1x,f12.5)' ) 'JM0       = ', thispft(ib)%jm0 * mol_2_umol8
+            write(unit=*,fmt='(a,1x,f12.5)' ) 'LEAF_TEMP = ', met(ib)%leaf_temp + t008
+            write(unit=*,fmt='(a,1x,es12.5)') 'A         = ', aterm
+            write(unit=*,fmt='(a,1x,es12.5)') 'B         = ', bterm
+            write(unit=*,fmt='(a,1x,es12.5)') 'C         = ', cterm
+            write(unit=*,fmt='(a,1x,es12.5)') 'DISCR     = ', bterm*bterm-4.d0*aterm*cterm
+            write(unit=*,fmt='(a)'          ) '==========================================='
+            write(unit=*,fmt='(a)'          ) '==========================================='
+            write(unit=*,fmt='(a)'          ) ''
+            write(unit=*,fmt='(a)'          ) ''
+            call fatal_error(' Negative discriminant when seeking the J rate.'             &
+                            ,'comp_photo_tempfun','farq_leuning.f90')
             !------------------------------------------------------------------------------!
          end if
          !---------------------------------------------------------------------------------!
@@ -1004,7 +990,6 @@ module farq_leuning
       real(kind=8)                     :: aquad
       real(kind=8)                     :: bquad
       real(kind=8)                     :: cquad
-      real(kind=8)                     :: discr
       real(kind=8)                     :: gswroot1
       real(kind=8)                     :: gswroot2
       real(kind=8)                     :: ciroot1
@@ -1071,31 +1056,7 @@ module farq_leuning
          bquad = qterm1 * qterm2 - aquad * thispft(ib)%b - qterm3
          cquad = - qterm1 * qterm2 * thispft(ib)%b - qterm3 * met(ib)%blyr_cond_h2o
          !----- Solve the quadratic equation for gsw. -------------------------------------!
-         if (aquad == 0.d0) then
-            !----- Not really a quadratic equation. ---------------------------------------!
-            gswroot1 = -cquad / bquad
-            gswroot2 = discard
-         else
-            !----- A quadratic equation, find the discriminant. ---------------------------!
-            discr = bquad * bquad - 4.d0 * aquad * cquad
-            !----- Decide what to do based on the discriminant. ---------------------------!
-            if (discr == 0.d0) then
-               !----- Double root. --------------------------------------------------------!
-               gswroot1 = - bquad / (2.d0 * aquad)
-               gswroot2 = discard
-               !---------------------------------------------------------------------------!
-            elseif (discr > 0.d0) then
-               !----- Two distinct roots. -------------------------------------------------!
-               gswroot1 = (- bquad - sqrt(discr)) / (2.d0 * aquad)
-               gswroot2 = (- bquad + sqrt(discr)) / (2.d0 * aquad)
-               !---------------------------------------------------------------------------!
-            else
-               !----- None of the roots are real, this solution failed. -------------------!
-               return
-               !---------------------------------------------------------------------------!
-            end if
-            !------------------------------------------------------------------------------!
-         end if
+         call solve_quadratic8(aquad,bquad,cquad,discard,gswroot1,gswroot2)
          !---------------------------------------------------------------------------------!
 
 
@@ -1868,7 +1829,6 @@ module farq_leuning
       real(kind=8)               :: ytmp    ! variable for ciQ
       real(kind=8)               :: ztmp    ! variable for ciQ
       real(kind=8)               :: wtmp    ! variable for ciQ
-      real(kind=8)               :: discr   ! The discriminant of the quad. eq. [mol2/mol2]
       real(kind=8)               :: ciroot1 ! 1st root for the quadratic eqn.   [  mol/mol]
       real(kind=8)               :: ciroot2 ! 2nd root for the quadratic eqn.   [  mol/mol]
       !------------------------------------------------------------------------------------!
@@ -1898,46 +1858,9 @@ module farq_leuning
             + met(ib)%blyr_cond_co2 * aparms(ib)%tau + aparms(ib)%rho
       cquad = aparms(ib)%tau * (aparms(ib)%nu - met(ib)%blyr_cond_co2 * met(ib)%can_co2 )  &
             + aparms(ib)%sigma
-      !----- 2. Decide whether this is a true quadratic case or not. ----------------------!
-      if (aquad /= 0.d0) then
-         !---------------------------------------------------------------------------------!
-         !     This is a true quadratic case, the first step is to find the discriminant.  !
-         !---------------------------------------------------------------------------------!
-         discr = bquad * bquad - 4.d0 * aquad * cquad
-         if (discr == 0.d0) then
-            !------------------------------------------------------------------------------!
-            !      Discriminant is zero, both roots are the same.  We save only one, and   !
-            ! make the other negative, which will make the guess discarded.                !
-            !------------------------------------------------------------------------------!
-            ciroot1      = - bquad / (2.d0 * aquad)
-            ciroot2      = - discard
-         elseif (discr > 0.d0) then
-            !----- Positive discriminant, two solutions are possible. ---------------------!
-            ciroot1 = (- bquad + sqrt(discr)) / (2.d0 * aquad)
-            ciroot2 = (- bquad - sqrt(discr)) / (2.d0 * aquad)
-            !------------------------------------------------------------------------------!
-         else
-            !----- Discriminant is negative.  Impossible to solve. ------------------------!
-            ciroot1      = - discard
-            ciroot2      = - discard
-            !------------------------------------------------------------------------------!
-         end if
-         !---------------------------------------------------------------------------------!
-      else
-         !---------------------------------------------------------------------------------!
-         !    This is a linear case, the xi term is zero.  There is only one number that   !
-         ! works for this case.                                                            !
-         !---------------------------------------------------------------------------------!
-         ciroot1      = - cquad / bquad
-         ciroot2      = - discard
-         !----- Not used, just for the debugging process. ---------------------------------!
-         discr        = bquad * bquad
-         !---------------------------------------------------------------------------------!
-      end if
-      !------------------------------------------------------------------------------------!
-      !     Save the largest of the values.  In case both were discarded, we switch it to  !
-      ! the positive discard so this will never be chosen.                                 !
-      !------------------------------------------------------------------------------------!
+      !----- 2. Solve the quadratic equation. ---------------------------------------------!
+      call solve_quadratic8(aquad,bquad,cquad,-discard,ciroot1,ciroot2)
+      !----- 3. Save the largest value (or flag them as invalid when both are invalid). ---!
       cigsw=max(ciroot1, ciroot2)
       if (cigsw == -discard) cigsw = discard
       !------------------------------------------------------------------------------------!
@@ -1962,44 +1885,12 @@ module farq_leuning
       bquad = ytmp * aparms(ib)%rho - aparms(ib)%xi * wtmp + ztmp * aparms(ib)%tau
       cquad = - aparms(ib)%tau * wtmp + ytmp * aparms(ib)%sigma
 
-      !----- 3. Decide whether this is a true quadratic case or not. ----------------------!
-      if (aquad /= 0.d0) then
-         !---------------------------------------------------------------------------------!
-         !     This is a true quadratic case, the first step is to find the discriminant.  !
-         !---------------------------------------------------------------------------------!
-         discr = bquad * bquad - 4.d0 * aquad * cquad
-         if (discr == 0.d0) then
-            !------------------------------------------------------------------------------!
-            !      Discriminant is zero, both roots are the same.  We save only one, and   !
-            ! make the other negative, which will make the guess discarded.                !
-            !------------------------------------------------------------------------------!
-            ciroot1 = - bquad / (2.d0 * aquad)
-            ciroot2 = -discard
-            !------------------------------------------------------------------------------!
-         elseif (discr > 0.d0) then
-            !----- Positive discriminant, two solutions are possible. ---------------------!
-            ciroot1 = (- bquad + sqrt(discr)) / (2.d0 * aquad)
-            ciroot2 = (- bquad - sqrt(discr)) / (2.d0 * aquad)
-            !------------------------------------------------------------------------------!
-         else
-            !----- Discriminant is negative.  Impossible to solve. ------------------------!
-            ciroot1      = -discard
-            ciroot2      = -discard
-            !------------------------------------------------------------------------------!
-         end if
-      else
-         !---------------------------------------------------------------------------------!
-         !    This is a linear case, the xi term is zero.  There is only one number        !
-         ! that works for this case.                                                       !
-         !---------------------------------------------------------------------------------!
-         ciroot1 = - cquad / bquad
-         ciroot2 = -discard
-         !----- Not used, just for the debugging process. ---------------------------------!
-         discr = bquad * bquad
-      end if
+      !----- 3. Solve the quadratic equation. ---------------------------------------------!
+      call solve_quadratic8(aquad,bquad,cquad,-discard,ciroot1,ciroot2)
+
       !------------------------------------------------------------------------------------!
-      !     Save the largest of the values.  In case both were discarded, we switch it to  !
-      ! the positive discard so this will never be chosen.                                 !
+      !      4. Save the largest of the values.  In case both were discarded, we switch it !
+      ! to the positive discard so this will never be chosen.                              !
       !------------------------------------------------------------------------------------!
       ciQ=max(ciroot1, ciroot2)
       if (ciQ == -discard) ciQ = discard
