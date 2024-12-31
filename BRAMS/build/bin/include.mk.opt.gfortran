@@ -56,6 +56,19 @@ HDF5_LIBS=-lz -L/opt/hdf5/1.8.1/ompi-tcp-gnu41/lib \
 
 
 
+#------------------------------------------------------------------------------------------#
+#     Linear Algebra Package (LAPACK) libraries.                                           #
+#                                                                                          #
+#     Lapack is a well-established package for solving linear systems in Fortran. This is  #
+# more efficient than the former built-in solution, and thus it became the new default.    #
+# Consequently, it is now required to link the lapack libraries during compilation.        #
+#------------------------------------------------------------------------------------------#
+LAPACK_PATH=/usr/local/opt/lapack
+LAPACK_INCS=-I$(LAPACK_PATH)/include
+LAPACK_LIBS=-L$(LAPACK_PATH)/lib -llapack -lblas
+#------------------------------------------------------------------------------------------#
+
+
 # HDF libraries-------------------------------------------------
 # HDF4 library: Instructions to install: www.cptec.inpe.br/brams
 # If you run "configure" script, you don't need to edit line bellow

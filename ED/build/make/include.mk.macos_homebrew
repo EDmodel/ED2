@@ -31,6 +31,34 @@ HDF5_LIBS=-L$(BREW_PREFIX)/lib -lhdf5_fortran -lhdf5 -lhdf5_hl -lz
 
 
 #------------------------------------------------------------------------------------------#
+#     HDF5 libraries                                                                       #
+#                                                                                          #
+#     Since ED-2.1, this is no longer optional for real simulations.  You must have HDF5   #
+# libraries compiled with the same compiler you set for F_COMP and C_COMP.  You may still  #
+# be able to compile without HDF5 but it will not run.                                     #
+#------------------------------------------------------------------------------------------#
+ZLIB_PATH=/usr/local
+HDF5_PATH=/usr/local
+HDF5_INCS=-I$(HDF5_PATH)/include
+HDF5C_INCS=$(HDF5_INCS)
+HDF5_LIBS=-L$(ZLIB_PATH)/lib -lz -L$(HDF5_PATH)/lib -lhdf5_fortran -lhdf5 -lhdf5_hl
+#------------------------------------------------------------------------------------------#
+
+
+#------------------------------------------------------------------------------------------#
+#     Linear Algebra Package (LAPACK) libraries.                                           #
+#                                                                                          #
+#     Lapack is a well-established package for solving linear systems in Fortran. This is  #
+# more efficient than the former built-in solution, and thus it became the new default.    #
+# Consequently, it is now required to link the lapack libraries during compilation.        #
+#------------------------------------------------------------------------------------------#
+LAPACK_PATH=/usr/local/opt/lapack
+LAPACK_INCS=-I$(LAPACK_PATH)/include
+LAPACK_LIBS=-L$(LAPACK_PATH)/lib -llapack -lblas
+#------------------------------------------------------------------------------------------#
+
+
+#------------------------------------------------------------------------------------------#
 #      If you have a version of hdf5 compiled in parallel, then you may benefit from       #
 # collective I/O, then use this flag = 1.  Otherwise, set it to zero.                      #
 #------------------------------------------------------------------------------------------#

@@ -65,7 +65,8 @@ module multiple_scatter
       integer                                                   :: i2p1
       integer                                                   :: i2m1
       integer                                                   :: i2p2
-      logical                                                   :: sing
+      integer                                                   :: info
+      integer     , dimension(2*ncoh+2)                         :: pivot
       real(kind=8), dimension(ncoh)                             :: locetai
       real(kind=8), dimension(ncoh)                             :: elai
       real(kind=8), dimension(ncoh)                             :: etai
@@ -274,12 +275,14 @@ module multiple_scatter
 
 
       !------------------------------------------------------------------------------------!
-      !       Solve the linear system.  In the future we could use a tridiagonal solver,   !
-      ! which is a lot cheaper than the regular Gauss elimination, but for the time being, !
-      ! we go with a tested method.                                                        !
+      !       Solve the linear system.  We invoke the Linear Algebra Package (LAPACK)      !
+      ! procedure for solving the system efficiently.  LAPACK rewrites the right hand side !
+      ! vector with the solution, so we first copy the right hand side to the output       !
+      ! vector.                                                                            !
       !------------------------------------------------------------------------------------!
-      call lisys_solver8(nsiz,amat,cvec,lwvec,sing)
-      if (sing) then
+      lwvec(:) = cvec(:)
+      call dgesv(nsiz,1,amat,nsiz,pivot,lwvec,nsiz,info)
+      if (info > 0) then
          call fatal_error('LW radiation failed... The matrix is singular!'                 &
                          ,'lw_multiple_scatter','multiple_scatter.f90')
       end if
@@ -458,7 +461,8 @@ module multiple_scatter
       integer                                                 :: i2p1
       integer                                                 :: i2m1
       integer                                                 :: i2p2
-      logical                                                 :: sing
+      integer                                                 :: info
+      integer     , dimension(2*ncoh+2)                       :: pivot
       real(kind=8)                                            :: alb_par
       real(kind=8)                                            :: alb_nir
       real(kind=8)                                            :: mu
@@ -805,12 +809,14 @@ module multiple_scatter
 
 
          !---------------------------------------------------------------------------------!
-         !       Solve the linear system.  In the future we could use a tridiagonal        !
-         ! solver, which is a lot cheaper than the regular Gauss elimination, but for the  !
-         ! time being, we go with a tested method.                                         !
+         !       Solve the linear system.  We invoke the Linear Algebra Package (LAPACK)   !
+         ! procedure for solving the system efficiently.  LAPACK rewrites the right hand   !
+         ! side vector with the solution, so we first copy the right hand side to the      !
+         ! output vector.                                                                  !
          !---------------------------------------------------------------------------------!
-         call lisys_solver8(nsiz,amat,cvec,swvec,sing)
-         if (sing) then
+         swvec(:) = cvec(:)
+         call dgesv(nsiz,1,amat,nsiz,pivot,swvec,nsiz,info)
+         if (info > 0) then
             call fatal_error('SW radiation failed... The matrix is singular!'              &
                             ,'sw_multiple_scatter','multiple_scatter.f90')
          end if
