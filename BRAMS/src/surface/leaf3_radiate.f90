@@ -1215,7 +1215,8 @@ subroutine leaf3_2stream_lw(grnd_emiss4,grnd_temp4,rlong_top4,nveg,lai,wai,leaf_
    integer                                                :: i2p1
    integer                                                :: i2m1
    integer                                                :: i2p2
-   logical                                                :: sing
+   integer                                                :: info
+   integer     , dimension(:)              , allocatable  :: xvec
    real(kind=8), dimension(:)              , allocatable  :: black
    real(kind=8), dimension(:)              , allocatable  :: expl_plus
    real(kind=8), dimension(:)              , allocatable  :: expl_minus
@@ -1264,6 +1265,7 @@ subroutine leaf3_2stream_lw(grnd_emiss4,grnd_temp4,rlong_top4,nveg,lai,wai,leaf_
    allocate(mmat       (ncoh2p2,ncoh2p2) )
    allocate(yvec       (ncoh2p2)         )
    allocate(xvec       (ncoh2p2)         )
+   allocate(pivot      (ncoh2p2)         )
    allocate(elai       (ncohp1)          )
    allocate(etai       (ncohp1)          )
    allocate(mu         (ncohp1)          )
@@ -1449,16 +1451,16 @@ subroutine leaf3_2stream_lw(grnd_emiss4,grnd_temp4,rlong_top4,nveg,lai,wai,leaf_
 
 
 
-
    !---------------------------------------------------------------------------------------!
-   !       Solve the linear system.  In the future we could use a band diagonal solver,    !
-   ! which is a lot cheaper than the regular Gauss elimination, but for the time being, we !
-   ! go with a tested method.                                                              !
+   !       Solve the linear system.  We invoke the Linear Algebra Package (LAPACK)         !
+   ! procedure for solving the system efficiently.  LAPACK rewrites the right hand side    !
+   ! vector with the solution, so we first copy the right hand side to the output vector.  !
    !---------------------------------------------------------------------------------------!
-   call lisys_solver8(nsiz,mmat,yvec,xvec,sing)
-   if (sing) then
+   xvec(:) = yvec(:)
+   call dgesv(nsiz,1,mmat,nsiz,pivot,xvec,nsiz,info)
+   if (info > 0) then
       call abort_run('LW radiation failed... The matrix is singular!'                      &
-                    ,'leaf3_2stream_lw','leaf3_radiate.f90')
+                      ,'leaf3_2stream_lw','leaf3_radiate.f90')
    end if
    !---------------------------------------------------------------------------------------!
 
@@ -1522,6 +1524,7 @@ subroutine leaf3_2stream_lw(grnd_emiss4,grnd_temp4,rlong_top4,nveg,lai,wai,leaf_
    deallocate(mmat       )
    deallocate(yvec       )
    deallocate(xvec       )
+   deallocate(pivot      )
    deallocate(elai       )
    deallocate(etai       )
    deallocate(mu         )
@@ -1620,13 +1623,14 @@ subroutine leaf3_2stream_sw(grnd_alb_par4,grnd_alb_nir4,cosz4,par_beam_norm4    
    integer                                                :: i2p1
    integer                                                :: i2m1
    integer                                                :: i2p2
-   logical                                                :: sing
+   integer                                                :: info
    real(kind=4)                                           :: nir_beam
    real(kind=4)                                           :: nir_diff
    real(kind=8)                                           :: leaf_scatter
    real(kind=8)                                           :: wood_scatter
    real(kind=8)                                           :: leaf_backscatter
    real(kind=8)                                           :: wood_backscatter
+   integer     , dimension(:)              , allocatable  :: pivot
    real(kind=8), dimension(:)              , allocatable  :: expl_plus
    real(kind=8), dimension(:)              , allocatable  :: expl_minus
    real(kind=8), dimension(:)              , allocatable  :: expm0_minus
@@ -1692,6 +1696,7 @@ subroutine leaf3_2stream_sw(grnd_alb_par4,grnd_alb_nir4,cosz4,par_beam_norm4    
    allocate(mmat       (ncoh2p2,ncoh2p2))
    allocate(yvec       (ncoh2p2)        )
    allocate(xvec       (ncoh2p2)        )
+   allocate(pivot      (ncoh2p2)        )
    allocate(elai       (ncohp1)         )
    allocate(etai       (ncohp1)         )
    allocate(mu         (ncohp1)         )
@@ -1990,12 +1995,14 @@ subroutine leaf3_2stream_sw(grnd_alb_par4,grnd_alb_nir4,cosz4,par_beam_norm4    
 
 
       !------------------------------------------------------------------------------------!
-      !       Solve the linear system.  In the future we could use a tridiagonal solver,   !
-      ! which is a lot cheaper than the regular Gauss elimination, but for the time being, !
-      ! we go with a tested method.                                                        !
+      !       Solve the linear system.  We invoke the Linear Algebra Package (LAPACK)      !
+      ! procedure for solving the system efficiently.  LAPACK rewrites the right hand side !
+      ! vector with the solution, so we first copy the right hand side to the output       !
+      ! vector.                                                                            !
       !------------------------------------------------------------------------------------!
-      call lisys_solver8(nsiz,mmat,yvec,xvec,sing)
-      if (sing) then
+      xvec(:) = yvec(:)
+      call dgesv(nsiz,1,mmat,nsiz,pivot,xvec,nsiz,info)
+      if (info > 0) then
          call abort_run('SW radiation failed... The matrix is singular!'                   &
                        ,'leaf3_2stream_sw','leaf3_radiate.f90')
       end if
@@ -2108,6 +2115,7 @@ subroutine leaf3_2stream_sw(grnd_alb_par4,grnd_alb_nir4,cosz4,par_beam_norm4    
    deallocate(mmat       )
    deallocate(yvec       )
    deallocate(xvec       )
+   deallocate(pivot      )
    deallocate(elai       )
    deallocate(etai       )
    deallocate(mu         )
