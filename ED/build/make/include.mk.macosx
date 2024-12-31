@@ -5,7 +5,7 @@
 
 
 #----- Define make (gnu make works best). -------------------------------------------------#
-MAKE=/usr/bin/make
+MAKE=/usr/local/bin/make
 #------------------------------------------------------------------------------------------#
 
 #----- Libraries. -------------------------------------------------------------------------#
@@ -51,10 +51,9 @@ USE_INTERF=1
 #################################### COMPILER SETTINGS #####################################
 CMACH=MAC_OS_X
 FC_TYPE=GNU
-F_COMP=gfortran-13
-C_COMP=gcc-13
-LOADER=gfortran-13
-C_LOADER=gcc-13
+F_COMP=/usr/local/bin/gfortran-14
+C_COMP=/usr/local/bin/gcc-14
+LOADER=/usr/local/bin/gfortran-14
 LIBS=
 MOD_EXT=mod
 ############################################################################################
@@ -88,20 +87,17 @@ endif
 ifeq ($(KIND_COMP),A)
    F_OPTS= -O0 -ffree-line-length-none -g -fimplicit-none -Wall -finit-real=snan           \
            -finit-integer=-2147483648 -ffpe-trap=invalid,zero,overflow,underflow           \
-           -fcheck=all -frecursive -fsignaling-nans -Werror -mmacosx-version-min=10.12     \
-           -fopenmp -static
-   C_OPTS= -O0 -DLITTLE  -g -static
+           -fcheck=all -frecursive -fsignaling-nans -Werror -fopenmp -fbacktrace -static
+   C_OPTS= -O0 -DLITTLE -g -fbacktrace -static
    LOADER_OPTS= -O0 -ffree-line-length-none -g -fimplicit-none -Wall -finit-real=snan      \
                 -finit-integer=-2147483648 -ffpe-trap=invalid,zero,overflow,underflow      \
-                -fcheck=all -frecursive -fsignaling-nans -Werror                           \
-                -mmacosx-version-min=10.12 -fopenmp
+                -fcheck=all -frecursive -fsignaling-nans -Werror -fopenmp -fbacktrace
    #---------------------------------------------------------------------------------------#
 endif
 ifeq ($(KIND_COMP),E)
-   F_OPTS= -O3 -ffree-line-length-none -frecursive -mmacosx-version-min=10.12 -fopenmp     \
-           -static
-   C_OPTS= -O0 -DLITTLE  -g  -static
-   LOADER_OPTS= -O3 -ffree-line-length-none -frecursive -mmacosx-version-min=10.12 -fopenmp
+   F_OPTS= -O3 -ffree-line-length-none -frecursive -fopenmp -fbacktrace -static
+   C_OPTS= -O3 -DLITTLE -g -fbacktrace -static
+   LOADER_OPTS= -O3 -ffree-line-length-none -frecursive -fopenmp -fbacktrace
    #---------------------------------------------------------------------------------------#
 endif
 #------------------------------------------------------------------------------------------#

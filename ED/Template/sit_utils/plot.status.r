@@ -16,11 +16,16 @@ graphics.off()
 
 
 #----- Paths. -----------------------------------------------------------------------------#
-main    = "/x/xxxxxxxxxxxx/xxxxxx/xxxxxxx/xxxxxxxx" # Main simulation directory.
-here    = file.path(main,"sit_utils")               # This directory.
-
-srcdir  = "/n/home00/mlongo/util/Rsc"               # Source  directory.
-outroot = here                                      # Directory for figures
+main    = "mypath"                                      # Main path (one up sit_utils).
+here    = file.path(main,"sit_utils")                   # This path
+srcdir  = c( "/home/mlongo/Util/Rsc"                    # Possible paths with libraries
+           , "/Users/mlongo/Util/Rsc"                   #    R will select the first
+           , "/prj/prjidfca/marcosl/Util/Rsc"           #    one that is found.
+           , "/prj/bramsolam/marcos.longo/Util/Rsc"     #
+           , "/scratch/bramsolam/marcos.longo/Util/Rsc" #
+           , "/n/home00/mlongo/Util/Rsc"                #
+           )#end c                                      #
+outroot = here                                          # Directory for figures
 #------------------------------------------------------------------------------------------#
 
 
@@ -58,6 +63,43 @@ mtext.yadj     =  0.65                # Offset for the y label
 #------------------------------------------------------------------------------------------#
 
 
+#------ List of variables to make the maps. -----------------------------------------------#
+n            = 0
+outvars      = list()
+n            = n + 1
+outvars[[n]] = list( vnam = "lai"
+                   , desc = "Leaf area index"
+                   , unit = "m2lom2"
+                   , csch = "pubugn"
+                   )#end list
+n            = n + 1
+outvars[[n]] = list( vnam = "bsa"
+                   , desc = "Basal area"
+                   , unit = "cm2om2"
+                   , csch = "bupu"
+                   )#end list
+n            = n + 1
+outvars[[n]] = list( vnam = "agb"
+                   , desc = "Aboveground carbon"
+                   , unit = "kgcom2"
+                   , csch = "ylgnbu"
+                   )#end list
+n            = n + 1
+outvars[[n]] = list( vnam = "scb"
+                   , desc = "Soil carbon"
+                   , unit = "kgcom2"
+                   , csch = "orrd"
+                   )#end list
+n            = n + 1
+outvars[[n]] = list( vnam = "npa"
+                   , desc = "Patch count"
+                   , unit = "empty"
+                   , csch = "magma"
+                   )#end list
+#------------------------------------------------------------------------------------------#
+
+
+
 
 #==========================================================================================#
 #==========================================================================================#
@@ -74,16 +116,25 @@ mtext.yadj     =  0.65                # Offset for the y label
 #==========================================================================================#
 
 #----- Check that directory main has been set. --------------------------------------------#
-if ( main == "/x/xxxxxxxxxxxx/xxxxxx/xxxxxxx/xxxxxxxx"){
+if (! dir.exists(main)){
    cat (" Main: ",main,"\n")
-   stop(" Directory main has not been set!!!")
+   stop(" Directory main is incorrect or has not been set!!!")
 }#end if
 #------------------------------------------------------------------------------------------#
 
 
 
+
 #----- Loading some packages and scripts. -------------------------------------------------#
+srcdir = (srcdir[file.exists(srcdir)])[1]
 source(file.path(srcdir,"load.everything.r"))
+#------------------------------------------------------------------------------------------#
+
+
+
+#----- Convert output var list to data table. ---------------------------------------------#
+outvars  = list.2.data.table(outvars)
+noutvars = nrow(outvars)
 #------------------------------------------------------------------------------------------#
 
 
@@ -91,11 +142,6 @@ source(file.path(srcdir,"load.everything.r"))
 #----- Set how many formats we must output. -----------------------------------------------#
 outform = tolower(outform)
 nout    = length (outform)
-#------------------------------------------------------------------------------------------#
-
-
-#----- Avoid unecessary and extremely annoying beeps. -------------------------------------#
-options(locatorBell=FALSE)
 #------------------------------------------------------------------------------------------#
 
 
@@ -107,7 +153,7 @@ size = plotsize(proje=FALSE,paper=paper)
 
 
 #---- Create the main output directory in case there is none. -----------------------------#
-if (! file.exists(outroot)) dir.create(outroot)
+dummy = dir.create(outroot,recursive=TRUE,showWarnings=FALSE)
 #------------------------------------------------------------------------------------------#
 
 
@@ -115,7 +161,7 @@ if (! file.exists(outroot)) dir.create(outroot)
 #------------------------------------------------------------------------------------------#
 #     Read job order.  We always use this file to build the array.                         #
 #------------------------------------------------------------------------------------------#
-cat (" + Reading ",basename(joborder),"...","\n")
+cat0(" + Read ",basename(joborder),".")
 names.jobs       = scan(file=joborder,skip=1,nlines=1,what="character",quiet=TRUE)
 names.jobs       = gsub(pattern="_",replacement=".",x=tolower(names.jobs))
 jobs             = read.table(file=joborder,skip=3,header=FALSE,comment.char=""
@@ -131,25 +177,113 @@ jobs$realisation = as.numeric(substring(jobs$run,23,24))
 
 #------------------------------------------------------------------------------------------#
 #     Read the last and the current check.  For the current check, we normally skip the    #
-# last line to avoid trouble, unless the file is complete.                                 #
+# last line to avoid trouble, unless the file is complete.  Sometimes one of the files     #
+# (typically last) may be missing.  Account for that too.                                  #
 #------------------------------------------------------------------------------------------#
-names.check   = c("run","lon","lat","year","month","day","hhmm","runt"
+names.check   = c("run","lon","lat","year","month","day","hhmm","stall","runt"
                  ,"agb","bsa","lai","scb","npa")
-cat (" + Reading ",basename(lastcheck),"...","\n")
-last          = read.table(file=lastcheck,skip=0,header=FALSE,comment.char=""
-                          ,col.names=names.check,stringsAsFactors=FALSE)
-cat (" + Reading ",basename(mycheck),"...","\n")
-ncurr         = length(readLines(mycheck))
-if (ncurr == njobs){
-   curr = read.table(file=mycheck,skip=0,header=FALSE,comment.char=""
-                    ,col.names=names.check,stringsAsFactors=FALSE)
-}else if (ncurr > 0){
-   curr = read.table(file=mycheck,skip=0,nrows=ncurr-1,header=FALSE,comment.char=""
-                    ,col.names=names.check,stringsAsFactors=FALSE)
+if (file.exists(lastcheck) && file.exists(mycheck)){
+   #------ Both files exist, read both. ---------------------------------------------------#
+   cat0(" + Read ",basename(lastcheck),".")
+   last = read.table( file             = lastcheck
+                    , skip             = 0
+                    , header           = FALSE
+                    , comment.char     = ""
+                    , col.names        = names.check
+                    , stringsAsFactors = FALSE
+                    )#end read.table
+   cat0(" + Read ",basename(mycheck),".")
+   ncurr = length(readLines(mycheck))
+   if (ncurr == njobs){
+      curr = read.table( file             = mycheck
+                       , skip             = 0
+                       , header           = FALSE
+                       , comment.char     = ""
+                       , col.names        = names.check
+                       , stringsAsFactors = FALSE
+                       )#end read.table
+   }else if (ncurr > 0){
+      curr = read.table( file             = mycheck
+                       , skip             = 0
+                       , nrows            = ncurr-1
+                       , header           = FALSE
+                       , comment.char     = ""
+                       , col.names        = names.check
+                       , stringsAsFactors = FALSE
+                       )#end read.table
+   }else{
+      curr = last[ 1,,drop=FALSE]
+      curr = curr[-1,,drop=FALSE]
+   }#end if (ncurr == njobs)
+   #---------------------------------------------------------------------------------------#
+}else if(file.exists(lastcheck)){
+   #------ Only lastcheck exists, duplicate it. -------------------------------------------#
+   cat0(" + Read ",basename(lastcheck),".")
+   last = read.table( file             = lastcheck
+                    , skip             = 0
+                    , header           = FALSE
+                    , comment.char     = ""
+                    , col.names        = names.check
+                    , stringsAsFactors = FALSE
+                    )#end read.table
+   #---------------------------------------------------------------------------------------#
+
+   #---- Duplicate last. ------------------------------------------------------------------#
+   curr = last
+   #---------------------------------------------------------------------------------------#
+}else if(file.exists(mycheck  )){
+   #------ Only mycheck exists. -----------------------------------------------------------#
+   cat0(" + Read ",basename(mycheck),".")
+   ncurr = length(readLines(mycheck))
+   if (ncurr == njobs){
+      curr = read.table( file             = mycheck
+                       , skip             = 0
+                       , header           = FALSE
+                       , comment.char     = ""
+                       , col.names        = names.check
+                       , stringsAsFactors = FALSE
+                       )#end read.table
+   }else if (ncurr > 0){
+      curr = read.table( file             = mycheck
+                       , skip             = 0
+                       , nrows            = ncurr-1
+                       , header           = FALSE
+                       , comment.char     = ""
+                       , col.names        = names.check
+                       , stringsAsFactors = FALSE
+                       )#end read.table
+   }else{
+      #------ Nothing to read, stop the run. ----------------------------------------------#
+      cat0("-----------------------------------------------------------------------------")
+      cat0("    Last check file not found and current check file is empty/almost empty!")
+      cat0(" Lastcheck: "              ,lastcheck,".")
+      cat0(" Mycheck:   "              ,mycheck  ,".")
+      cat0(" Line count in mycheck:   ",ncurr    ,".")
+      cat0("-----------------------------------------------------------------------------")
+      stop(" At least one of these files must exist (ideally both of them).")
+      #------------------------------------------------------------------------------------#
+   }#end if (ncurr == njobs)
+   #---------------------------------------------------------------------------------------#
+
+   #---- Duplicate curr. ------------------------------------------------------------------#
+   last = curr
+   #---------------------------------------------------------------------------------------#
 }else{
-   curr = data.frame(rep(NA,times=length(names.check)),names=names.check)
-   curr = curr[-1,]
-}#end f
+   #------ Nothing to read, stop the run. -------------------------------------------------#
+   cat0("-----------------------------------------------------------------------------")
+   cat0("    None of the check files was found!")
+   cat0(" Lastcheck: ",lastcheck,".")
+   cat0(" Mycheck:   ",mycheck  ,".")
+   cat0("-----------------------------------------------------------------------------")
+   stop(" At least one of these files must exist (ideally both of them).")
+   #---------------------------------------------------------------------------------------#
+}#end if (file.exists(lastcheck) && file.exists(mycheck))
+#------------------------------------------------------------------------------------------#
+
+
+#----- Turn data frames into data tables. -------------------------------------------------#
+last = data.table(last)
+curr = data.table(curr)
 #------------------------------------------------------------------------------------------#
 
 
@@ -172,10 +306,10 @@ n.realisation   = length(realisation)
 n.stext         = length(stext      )
 n.iphen         = length(iphen      )
 key.iata        = toupper(iata      )
-key.drain       = paste("r"    ,sprintf("%+3.3i",sort(100*unique(jobs$drain      ))),sep="")
-key.dtemp       = paste("t"    ,sprintf("%+3.3i",sort(100*unique(jobs$dtemp      ))),sep="")
-key.realisation = paste("real" ,sprintf("%2.2i" ,sort(    unique(jobs$realisation))),sep="")
-key.stext       = paste("stext",sprintf("%2.2i" ,sort(    unique(jobs$istext     ))),sep="")
+key.drain       = paste0("r"    ,sprintf("%+3.3i",sort(100*unique(jobs$drain      ))))
+key.dtemp       = paste0("t"    ,sprintf("%+3.3i",sort(100*unique(jobs$dtemp      ))))
+key.realisation = paste0("real" ,sprintf("%2.2i" ,sort(    unique(jobs$realisation))))
+key.stext       = paste0("stext",sprintf("%2.2i" ,sort(    unique(jobs$istext     ))))
 key.iphen       = c("Evergreen","Deciduous")
 desc.iata       = poilist$longname[match(iata,poilist$iata)]
 desc.stext      = stext.names[stext]
@@ -265,14 +399,16 @@ datum$yearn [index] = jobs$yearn
 #------------------------------------------------------------------------------------------#
 #     Run the matrices.                                                                    #
 #------------------------------------------------------------------------------------------#
-yr.range              = range(c(jobs$yeara,jobs$yearz))
-yr.cut                = pretty(yr.range,n=10)
-yr.keep               = yr.cut > yr.range[1] & yr.cut < yr.range[2]
-yr.brks               = c(-Inf,c(yr.range[1],yr.cut[yr.keep],yr.range[2]))
-n.cut                 = length(yr.cut)-1
-yr.cut                = cut(datum$yearn,yr.brks)
-yr.level              = levels(yr.cut)
-n.level               = length(yr.level)
+yeara    = min(jobs$yeara)
+yearz    = max(jobs$yearz)
+yr.range = pretty.xylim(u=c(yeara,yearz))
+yr.brks  = pretty(yr.range,n=10)
+yr.keep  = (yr.brks %wr% yr.range) & (! yr.brks %in% c(yeara,yearz))
+yr.brks  = unique(c(-Inf,yr.brks[yr.keep],Inf))
+n.cut    = length(yr.brks)-1
+yr.cut   = cut(datum$yearn,yr.brks)
+yr.level = levels(yr.cut)
+n.level  = length(yr.level)
 #------------------------------------------------------------------------------------------#
 
 
@@ -281,6 +417,7 @@ n.level               = length(yr.level)
 datum$yr.idx          = match(yr.cut,yr.level) + 0 * datum$yearn
 initial               = datum$status == "INITIAL"
 crashed               = datum$status == "CRASHED"
+hydfail               = datum$status == "HYDFAIL"
 bad.met               = datum$status == "BAD_MET"
 metmiss               = datum$status == "METMISS"
 stopped               = datum$status == "STOPPED"
@@ -294,17 +431,18 @@ datum$yr.idx[extinct] = n.level + 3
 datum$yr.idx[stopped] = n.level + 4
 datum$yr.idx[metmiss] = n.level + 5
 datum$yr.idx[bad.met] = n.level + 6
-datum$yr.idx[crashed] = n.level + 7
-yr.cscheme            = c("grey89",iatlas(n=n.level),"royalblue4","steelblue3","purple3"
-                         ,"mediumpurple1","deepskyblue","red3","hotpink")
-ybottom               = rep(0,times=n.level+8)
-ytop                  = rep(1,times=n.level+8)
-xleft                 = seq(from=-1,to=n.level+6)
-xright                = seq(from= 0,to=n.level+7)
-xat                   = seq(from=-1,to=n.level+6)+0.5
-xbrks                 = seq(from=-1,to=n.level+7)+0.5
-xlabel                = c("Initial",yr.brks[-1],"Finish","StState","Extinct"
-                         ,"Stopped","MetMiss","Bad Met","Crashed")
+datum$yr.idx[hydfail] = n.level + 7
+datum$yr.idx[crashed] = n.level + 8
+yr.cscheme            = c("grey89",atlas(n=n.level),"royalblue4","steelblue3","purple3"
+                         ,"mediumpurple1","deepskyblue","hotpink","red3","firebrick4")
+ybottom               = rep(0,times=n.level+9)
+ytop                  = rep(1,times=n.level+9)
+xleft                 = sequence(n.level+9) - 1
+xright                = sequence(n.level+9)
+xat                   = c(sequence(n.level+2)-1,n.level+sequence(8)+0.5)
+xbrks                 = sequence(n.level+10)-1-0.5
+xlabel                = c("Initial",yeara,yr.brks[-c(1,n.level+1)],yearz,"Finish","StState"
+                         ,"Extinct","Stopped","MetMiss","Bad Met","HydFail","Crashed")
 #------------------------------------------------------------------------------------------#
 
 
@@ -326,9 +464,9 @@ use.yr.idx = apply( X      = datum$yr.idx
 #------------------------------------------------------------------------------------------#
 #      Create the status map for all sites.                                                #
 #------------------------------------------------------------------------------------------#
-cat(" Plot the current status...","\n")
+cat0(" + lot the current status.")
 lo.box = pretty.box(n.iphen*n.iata)
-for (st in 1:n.stext){
+for (st in sequence(n.stext)){
    #------ Find the soil texture key and description. -------------------------------------#
    this.st.key  = key.stext [st]
    letitre      = paste("Polygon status   --   Soil type: ",desc.stext[st]
@@ -337,27 +475,20 @@ for (st in 1:n.stext){
    ley          = paste("Temperature change [K]")
    #---------------------------------------------------------------------------------------#
 
-   for (o in 1:nout){
+   for (o in sequence(nout)){
       #----- Open file. -------------------------------------------------------------------#
-      fichier = paste(here,"/stt_",this.st.key,".",outform[o],sep="")
-      if(outform[o] == "x11"){
-         X11(width=size$width,height=size$height,pointsize=ptsz)
-      }else if(outform[o] == "png"){
-         png(filename=fichier,width=size$width*depth,height=size$height*depth
-            ,pointsize=ptsz,res=depth)
-      }else if(outform[o] == "eps"){
-         postscript(file=fichier,width=size$width,height=size$height
-                   ,pointsize=ptsz,paper=size$paper)
-      }else if(outform[o] == "pdf"){
-         pdf(file=fichier,onefile=FALSE,width=size$width,height=size$height
-            ,pointsize=ptsz,paper=size$paper)
-      }#end if
+      fichier = file.path(here,paste0("stt_",this.st.key,".",outform[o]))
+      dummy   = open.plot( fichier = fichier
+                         , outform = outform[o]
+                         , size    = size
+                         , ptsz    = ptsz
+                         , depth   = depth
+                         )#end open.plot
       #------------------------------------------------------------------------------------#
 
 
       #----- Save the margins to avoid losing the data. -----------------------------------#
-      par.orig = par(no.readonly = TRUE)
-      mar.orig = par.orig$mar
+      par(par.user)
       #------------------------------------------------------------------------------------#
 
 
@@ -382,7 +513,7 @@ for (st in 1:n.stext){
       rect(xleft=xleft,ybottom=ybottom,xright=xright,ytop=ytop,col=yr.cscheme)
       box()
       axis(side=1,at=xat,srt=45,labels=FALSE)
-      text(x=xat,y=par("usr")[3]-0.6,labels=xlabel,srt=30,adj=1,xpd=TRUE,cex=1.1)
+      text(x=xat,y=par("usr")[3]-0.6,labels=xlabel,srt=45,adj=1,xpd=TRUE,cex=0.95)
       title(main="Status",ylab="",xlab="")
       #------------------------------------------------------------------------------------#
 
@@ -392,8 +523,8 @@ for (st in 1:n.stext){
       #     Now we loop over sites and pheonologies.                                       #
       #------------------------------------------------------------------------------------#
       k = 0
-      for (ph in 1:n.iphen){
-         for (pl in 1:n.iata){
+      for (ph in sequence(n.iphen)){
+         for (pl in sequence(n.iata)){
             #----- Make the sub-title. ----------------------------------------------------#
             lesub=paste(desc.iata[pl],desc.iphen[ph],sep=" - ")
             #------------------------------------------------------------------------------#
@@ -443,13 +574,7 @@ for (st in 1:n.stext){
 
 
       #----- Close the device. ------------------------------------------------------------#
-      if (outform[o] == "x11"){
-         locator(n=1)
-         dev.off()
-      }else{
-         dev.off()
-      }#end if
-      bye = clean.tmp()
+      dummy = close.plot(outform=outform[o])
       #------------------------------------------------------------------------------------#
    }#end for
    #---------------------------------------------------------------------------------------#
@@ -462,22 +587,26 @@ for (st in 1:n.stext){
 #------------------------------------------------------------------------------------------#
 #      Create parameter space maps for all other variables.                                #
 #------------------------------------------------------------------------------------------#
-cat(" Plot the current properties...","\n")
-key.var  = c("lai","bsa","agb","scb","npa")
-desc.var = c("Leaf area index [m2/m2]","Basal area [cm2/m2]"
-            ,"Above-ground biomass [kgC/m2]","Soil carbon [kgC/m2]","Patch count [---]")
-n.var    = length(key.var)
+cat0(" Plot the current properties.")
 lo.box = pretty.box(n.iphen*n.iata)
-for (v in 1:n.var){
-   cat("   - ",desc.var[v],"...","\n")
+for (v in sequence(noutvars)){
+   #----- Handy aliases. ------------------------------------------------------------------#
+   v.vnam = outvars$vnam[v]
+   v.desc = outvars$desc[v]
+   v.unit = untab[[outvars$unit[v]]]
+   v.csch = match.fun(outvars$csch[v])
+   cat0("   - ",v.desc,".")
+   #---------------------------------------------------------------------------------------#
+
+
    #----- Collapse realisations using the median. -----------------------------------------#
-   this.var       = apply( X      = datum[[key.var[v]]]
-                         , MARGIN = c(1,2,4,5,6)
-                         , FUN    = median
-                         , na.rm  = TRUE
-                         )#end apply
-   rien           = ! is.finite(this.var)
-   this.var[rien] = NA
+   v.value       = apply( X      = datum[[v.vnam]]
+                        , MARGIN = c(1,2,4,5,6)
+                        , FUN    = median
+                        , na.rm  = TRUE
+                        )#end apply
+   rien          = ! is.finite(v.value)
+   v.value[rien] = NA
    #---------------------------------------------------------------------------------------#
 
 
@@ -485,18 +614,13 @@ for (v in 1:n.var){
    #---------------------------------------------------------------------------------------#
    #      Break the data into bins.                                                        #
    #---------------------------------------------------------------------------------------#
-   if (all(is.na(this.var))){
-     var.brks    = c(-1,0,1)
-     n.brks      = length(var.brks)
-     var.cut     = cut(as.numeric(this.var),breaks=var.brks)
-   }else{
-     var.brks    = pretty(this.var,n=ncolours)
-     n.brks      = length(var.brks)
-     var.cut     = cut(this.var,breaks=var.brks)
-   }#end if
-   var.lev     = levels(var.cut)
-   var.idx     = match(var.cut,var.lev) + 0 * this.var
-   var.cscheme = iatlas(n=n.brks-1)
+   v.limit   = pretty.xylim(v.value)
+   v.brks    = pretty(v.value,n=ncolours)
+   n.brks    = length(v.brks)
+   v.cut     = cut(as.numeric(v.value),breaks=v.brks)
+   v.lev     = levels(v.cut)
+   v.idx     = match(v.cut,v.lev) + 0 * v.value
+   v.cscheme = v.csch(n=n.brks-1)
    #---------------------------------------------------------------------------------------#
 
 
@@ -505,33 +629,27 @@ for (v in 1:n.var){
    xright      = var.brks[     -1]
    ybottom     = rep(0,times=n.brks)
    ytop        = rep(1,times=n.brks)
-   xat         = var.brks
+   xat         = v.brks
    #---------------------------------------------------------------------------------------#
 
 
-   for (st in 1:n.stext){
+   for (st in sequence(n.stext)){
       #------ Find the soil texture key and description. ----------------------------------#
       this.st.key  = key.stext [st]
-      letitre      = paste(desc.var[v],"   --   Soil type: ",desc.stext[st],sep="")
-      lex          = paste("Rainfall change [scale parameter]")
-      ley          = paste("Temperature change [K]")
+      letitre      = paste0(desc.var[v],"   --   Soil type: ",desc.stext[st])
+      lex          = paste0("Rainfall change [scale parameter]")
+      ley          = paste0("Temperature change [K]")
       #------------------------------------------------------------------------------------#
 
-      for (o in 1:nout){
+      for (o in sequence(nout)){
          #----- Open file. ----------------------------------------------------------------#
-         fichier = paste(here,"/",key.var[v],"_",this.st.key,".",outform[o],sep="")
-         if(outform[o] == "x11"){
-            X11(width=size$width,height=size$height,pointsize=ptsz)
-         }else if(outform[o] == "png"){
-            png(filename=fichier,width=size$width*depth,height=size$height*depth
-               ,pointsize=ptsz,res=depth)
-         }else if(outform[o] == "eps"){
-            postscript(file=fichier,width=size$width,height=size$height
-                      ,pointsize=ptsz,paper=size$paper)
-         }else if(outform[o] == "pdf"){
-            pdf(file=fichier,onefile=FALSE,width=size$width,height=size$height
-               ,pointsize=ptsz,paper=size$paper)
-         }#end if
+         fichier = file.path(here,paste0(key.var[v],"_",this.st.key,".",outform[o]))
+         dummy   = open.plot( fichier = fichier
+                            , outform = outform[o]
+                            , size    = size
+                            , ptsz    = ptsz
+                            , depth   = depth
+                            )#end open.plot
          #---------------------------------------------------------------------------------#
 
 
@@ -559,10 +677,10 @@ for (v in 1:n.var){
          par(mar=c(3,3,2,3)+0.1)
          plot.new()
          plot.window(xlim=range(xleft,xright),ylim=range(ybottom,ytop),xaxs="i",yaxs="i")
-         rect(xleft=xleft,ybottom=ybottom,xright=xright,ytop=ytop,col=var.cscheme)
+         rect(xleft=xleft,ybottom=ybottom,xright=xright,ytop=ytop,col=v.cscheme)
          box()
          axis(side=1,at=xat)
-         title(main=desc.var[v],xlab="",ylab="")
+         title(main=desc.unit(desc=v.desc,unit=v.unit),cex.main=1.0)
          #---------------------------------------------------------------------------------#
 
 
@@ -571,8 +689,8 @@ for (v in 1:n.var){
          #     Now we loop over sites and pheonologies.                                    #
          #---------------------------------------------------------------------------------#
          k = 0
-         for (ph in 1:n.iphen){
-            for (pl in 1:n.iata){
+         for (ph in sequence(n.iphen)){
+            for (pl in sequence(n.iata)){
                #----- Make the sub-title. -------------------------------------------------#
                lesub=paste(desc.iata[pl],desc.iphen[ph],sep=" - ")
                #---------------------------------------------------------------------------#
@@ -600,7 +718,7 @@ for (v in 1:n.var){
 
                #----- Set the window. -----------------------------------------------------#
                par(mar = mar.now)
-               image(x=drain,y=dtemp,z=this.var[,,ph,pl,st],col=var.cscheme
+               image(x=drain,y=dtemp,z=v.value[,,ph,pl,st],col=v.cscheme
                     ,breaks=var.brks,xaxt=xaxt,yaxt=yaxt,main=lesub,xlab="",ylab="")
                #---------------------------------------------------------------------------#
             }#end for
@@ -622,17 +740,11 @@ for (v in 1:n.var){
 
 
          #----- Close the device. ---------------------------------------------------------#
-         if (outform[o] == "x11"){
-            locator(n=1)
-            dev.off()
-         }else{
-            dev.off()
-         }#end if
-         bye = clean.tmp()
+         dummy = close.plot(outform=outform[o])
          #---------------------------------------------------------------------------------#
-      }#end for
+      }#end for (o in sequence(nout))
       #------------------------------------------------------------------------------------#
-   }#end for
+   }#end for (st in sequence(n.stext))
    #---------------------------------------------------------------------------------------#
-}#end for
+}#end for (v in sequence(noutvars))
 #------------------------------------------------------------------------------------------#

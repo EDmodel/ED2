@@ -881,12 +881,18 @@ subroutine read_ed10_ed20_history_file
                         end select
                         !------------------------------------------------------------------!
 
+
                         !------------------------------------------------------------------!
-                        !     Initialise SLA with the look-up table value, this may be     !
-                        ! updated during phenology initialisation, but an initial assign-  !
-                        ! ment is needed to obtain area indices.                           !
+                        !     Initialise SLA, Vm0, Rd0, and  with the look-up table value. !
+                        ! These variables may be updated during phenology initialisation,  !
+                        ! or trait plasticity, but they must have an initial assignment so !
+                        ! we can even calculate the initial area indices and inicial trait !
+                        ! values needed for the trait update.                              !
                         !------------------------------------------------------------------!
-                        cpatch%sla(ic2) = SLA(ipft(ic))
+                        cpatch%sla   (ic2) = SLA          (ipft(ic))
+                        cpatch%vm_bar(ic2) = Vm0          (ipft(ic))
+                        cpatch%rd_bar(ic2) = Rd0          (ipft(ic))
+                        cpatch%llspan(ic2) = leaf_lifespan(ipft(ic))
                         !------------------------------------------------------------------!
 
 

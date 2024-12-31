@@ -49,7 +49,7 @@ density.safe <<- function( x
 
    }else{
       #----- Select the valid x and e values. ---------------------------------------------#
-      sel     = x %>% 0 & e %>=% 0
+      sel     = (x %gt% 0) & (e %ge% 0)
       n.x.use = sum(sel)
       #------------------------------------------------------------------------------------#
 
@@ -104,16 +104,16 @@ density.safe <<- function( x
    # (for example, negative CO2 concentration).                                            #
    #---------------------------------------------------------------------------------------#
    if (is.finite(xmin)){
-      bye         = ans$x %<% xmin
+      bye         = ans$x %lt% xmin
       xadd        = min(ans$x[! bye],na.rm=TRUE)
-      iadd        = which(ans$x %==% xadd)
+      iadd        = which(ans$x %eq% xadd)
       ans$y[iadd] = ans$y[iadd] + sum(ans$y[bye])
       ans$y[bye ] = 0.
    }#end if(is.finite(xmin))
    if (is.finite(xmax)){
-      bye         = ans$x %>% xmax
+      bye         = ans$x %gt% xmax
       xadd        = max(ans$x[! bye],na.rm=TRUE)
-      iadd        = which(ans$x %==% xadd)
+      iadd        = which(ans$x %eq% xadd)
       ans$y[iadd] = ans$y[iadd] + sum(ans$y[bye])
       ans$y[bye ] = 0.
    }#end if(is.finite(xmax))

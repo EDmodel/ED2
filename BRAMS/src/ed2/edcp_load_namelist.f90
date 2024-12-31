@@ -109,12 +109,13 @@ subroutine read_ednl(iunit,filename)
                                    , sl_mindbh_harvest                     & ! intent(out)
                                    , sl_biomass_harvest                    & ! intent(out)
                                    , sl_skid_rel_area                      & ! intent(out)
+                                   , sl_skid_dbh_thresh                    & ! intent(out)
                                    , sl_skid_s_gtharv                      & ! intent(out)
                                    , sl_skid_s_ltharv                      & ! intent(out)
                                    , sl_felling_s_ltharv                   & ! intent(out)
                                    , cl_fseeds_harvest                     & ! intent(out)
                                    , cl_fstorage_harvest                   & ! intent(out)
-                                   , cl_fleaf_harvest                      ! ! intent(out)
+                                   , cl_fleaf_harvest                      & ! intent(out)
                                    , lu_database                           & ! intent(out)
                                    , plantation_file                       & ! intent(out)
                                    , lu_rescale_file                       & ! intent(out)
@@ -305,13 +306,14 @@ subroutine read_ednl(iunit,filename)
                        ,lwidth_grass,lwidth_bltree,lwidth_nltree,q10_c3,q10_c4,thetacrit   &
                        ,quantum_efficiency_t,n_plant_lim,n_decomp_lim,include_fire,sl_pft  &
                        ,sl_prob_harvest,sl_mindbh_harvest,sl_biomass_harvest               &
-                       ,sl_skid_rel_area,sl_skid_s_gtharv,sl_skid_s_ltharv                 &
-                       ,sl_felling_s_ltharv,cl_fseeds_harvest,cl_fstorage_harvest          &
-                       ,cl_fleaf_harvest,icanturb,include_these_pft,pasture_stock          &
-                       ,agri_stock,plantation_stock,pft_1st_check,ifusion,maxpatch         &
-                       ,maxcohort,min_patch_area,treefall_disturbance_rate,time2canopy     &
-                       ,iprintpolys,npvars,printvars,pfmtstr,ipmin,ipmax,imetrad,iphenys1  &
-                       ,iphenysf,iphenyf1,iphenyff,iedcnfgf,event_file,phenpath
+                       ,sl_skid_rel_area,sl_skid_dbh_thresh,sl_skid_s_gtharv               &
+                       ,sl_skid_s_ltharv,sl_felling_s_ltharv,cl_fseeds_harvest             &
+                       ,cl_fstorage_harvest,cl_fleaf_harvest,icanturb,include_these_pft    &
+                       ,pasture_stock,agri_stock,plantation_stock,pft_1st_check,ifusion    &
+                       ,maxpatch,maxcohort,min_patch_area,treefall_disturbance_rate        &
+                       ,time2canopy,iprintpolys,npvars,printvars,pfmtstr,ipmin,ipmax       &
+                       ,imetrad,iphenys1,iphenysf,iphenyf1,iphenyff,iedcnfgf,event_file    &
+                       ,phenpath
 
    !----- Initialise some database variables with a non-sense path. -----------------------!
    islcolflg       (:) = undef_integer

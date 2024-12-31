@@ -24,7 +24,7 @@ open.plot <<- function( fichier
 
 
    #----- Fichier must be provided unless we are plotting on screen. ----------------------#
-   if (missing(fichier) && (! outform %in% c("x11","quartz","windows"))){
+   if (missing(fichier) && (! outform %in% c("x11","quartz","windows","default"))){
       stop("Output file (\"fichier\") must be provided when plotting on file!")
    }#end if (missing(fichier) && (! outform %in% c("x11","quartz","windows")))
    #---------------------------------------------------------------------------------------#
@@ -77,7 +77,7 @@ open.plot <<- function( fichier
                 , paper     = size$paper
                 , ...
                 )#end postscript
-   }else if (outform[o] %in% "pdf"){
+   }else if (outform %in% "pdf"){
       pdf       ( file      = fichier
                 , onefile   = FALSE
                 , width     = size$width
@@ -85,6 +85,9 @@ open.plot <<- function( fichier
                 , pointsize = ptsz
                 , paper     = size$paper
                 )#end pdf
+   }else if (outform %in% "default"){
+      # Don't open any device, let the script open at the default location.
+      dev.new()
    }#end if
    #---------------------------------------------------------------------------------------#
 
@@ -111,12 +114,11 @@ close.plot <<- function( outform = switch( EXPR    = get.os()
    if (outform %in% c("x11","quartz","windows")){
       locator(n=n)
       dev.off()
+   }else if (outform %in% "default"){
    }else{
       dev.off()
    }#end if
    dummy = clean.tmp()
-
-
    invisible()
 }#end close.plot
 #==========================================================================================#

@@ -6,11 +6,11 @@ subroutine abort_run(reason,subr,file)
 ! being frozen.                                                                            !
 !------------------------------------------------------------------------------------------!
    use node_mod, only: nmachs,mynum
+#if defined(RAMS_MPI)
+   use mpi
+#endif
    implicit none
    character(len=*), intent(in) :: reason,subr,file
-#if defined(RAMS_MPI)
-   include 'mpif.h'
-#endif
    write(unit=*,fmt='(a)') '::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::'
    write(unit=*,fmt='(a)') '::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::'
    write(unit=*,fmt='(a)') '::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::'
@@ -49,12 +49,12 @@ subroutine opspec_mess(reason,opssub)
 !   This is just a first warning to be given in the standard output. Since the namelist    !
 ! may have more than one error, I list all the problems, then the model will stop.         !
 !------------------------------------------------------------------------------------------!
+#if defined(RAMS_MPI)
+   use mpi
+#endif
    implicit none
    character(len=*), intent(in) :: reason,opssub
 
-#if defined(RAMS_MPI)
-   include 'mpif.h'
-#endif
    write (unit=*,fmt='(a)')       ' '
    write (unit=*,fmt='(a)')       '----------------------------------------------------------------------------'
    write (unit=*,fmt='(3(a,1x))') '>>>> ',trim(opssub),' error! in your namelist!'

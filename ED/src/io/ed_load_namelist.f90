@@ -659,11 +659,6 @@ subroutine copy_nl(copy_type)
       imontha       = nl%imontha
       iyeara        = nl%iyeara
 
-      nzg           = nl%nzg
-      nzs           = nl%nzs
-
-      slz(1:nzgmax) = nl%slz(1:nzgmax)
-      
       !------------------------------------------------------------------------------------!
       !      Set current time to initial time here.  If this is a history run, reset       !
       ! current time in subroutine history_start.                             !

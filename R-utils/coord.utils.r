@@ -471,7 +471,7 @@ dec2dms <<- function(lon=NULL,lat=NULL){
       degree = sprintf("%3i"  ,floor(abs(lon))                      )
       minute = sprintf("%2.2i",floor(abs(lon) %% 1 * 60)            )
       second = sprintf("%2.2i",floor((abs(lon) %% 1 * 60) %% 1 * 60))
-      hemisf = ifelse(lon %>=% 0,"E","W")
+      hemisf = ifelse(lon %ge% 0,"E","W")
       olon   = paste0(degree,"-",minute,"\'",second,"\"",hemisf)
       olon   = ifelse(is.finite(lon),olon,NA_character_)
    }else{
@@ -486,7 +486,7 @@ dec2dms <<- function(lon=NULL,lat=NULL){
       degree = sprintf("%2i"  ,floor(abs(lat))                      )
       minute = sprintf("%2.2i",floor(abs(lat) %% 1 * 60)            )
       second = sprintf("%2.2i",floor((abs(lat) %% 1 * 60) %% 1 * 60))
-      hemisf = ifelse(lat %>=% 0,"N","S")
+      hemisf = ifelse(lat %ge% 0,"N","S")
       olat   = paste0(degree,"-",minute,"\'",second,"\"",hemisf)
       olat   = ifelse(is.finite(lat),olat,NA_character_)
    }else{

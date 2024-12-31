@@ -157,7 +157,7 @@ pet.penmon <<- function( rnet
    #----- Find the potential ET (kgW/m2/s). -----------------------------------------------#
    anom = ( eslope * (rnet - fgnd) + rhos * cpdry * vpdef / ra )
    aden = splat * (eslope + psycho * (1. + rc / ra))
-   ans  = ifelse( test = aden %!=% 0., yes = anom / aden, no = NA_real_)
+   ans  = ifelse( test = aden %ne% 0., yes = anom / aden, no = NA_real_)
    #---------------------------------------------------------------------------------------#
    return(ans)
 }#end function pet.penmon
@@ -233,7 +233,7 @@ pet.prtay  <<- function( rnet
    #----- Find the potential ET (kgW/m2/s). -----------------------------------------------#
    anom = alpha * eslope * ( rnet - fgnd )
    aden = splat * (eslope + psycho)
-   ans  = ifelse( test = aden %!=% 0., yes = anom / aden, no = NA_real_)
+   ans  = ifelse( test = aden %ne% 0., yes = anom / aden, no = NA_real_)
    #---------------------------------------------------------------------------------------#
    return(ans)
 }#end function pet.prtay

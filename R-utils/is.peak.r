@@ -12,7 +12,7 @@ is.peak <<- function( pt.cloud
    #----- Check whether to use only first returns or all returns. -------------------------#
    idx.retn = with(pt.cloud, which(retn.number %in% retn.use))
    idx.clss = with(pt.cloud, which(pt.class    %in% clss.use))
-   idx.agnd = with(pt.cloud, which(z %>=% zmin))
+   idx.agnd = with(pt.cloud, which(z %ge% zmin))
    idx.keep = intersect(idx.clss,intersect(idx.retn,idx.agnd))
    #---------------------------------------------------------------------------------------#
 

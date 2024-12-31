@@ -8,6 +8,7 @@
 4. <a href="#implementation"> Implementation Notes </a> 
 5. <a href="#info"> Further Information </a>
 6. <a href="#develop">Code Development, Pull Requests, and Commits</a>
+7. <a href="#docker">Using Docker</a>
 
 
 ## <a name="overview"> Model Overview </a>
@@ -38,7 +39,7 @@ The primary data structure in ED, which can be found in ed_state_vars.F90, is a 
  - <b> site: </b> A collection of patches sharing a common soil system and ground hydrology.
  - <b> patch: </b> A collection of cohorts sharing a disturbance history and age.
  - <b> cohort: </b> A collection of plants of identical PFT and height.
- 
+
 Note: height and age, being continuous variables, are "binned". "Identical" in this context means sufficiently similar to be placed in the same bin.  These bins are dynamically defined, based on the number of classes sought by the user and the similarity along the age and height axes.
 
 ## <a name="info"> Further Information </a> 
@@ -53,3 +54,23 @@ If you plan to develop the code, please refer to the Wiki entries on <a href="ht
 
 We strongly encourage that code developments are properly documented.  Please refer to the <a href="https://github.com/EDmodel/ED2/wiki/ED2-Documentation-with-Doxygen">Doxygen</a> instructions, and especially the <a href="https://github.com/EDmodel/ED2/wiki/ED2-Documentation-with-Doxygen#doxygit"> Doxygen and Git commits</a> section, so additional documentation can be automatically generated from the source code comments.
 
+## <a name="docker"> Using Docker</a>
+
+To use ED2 with Docker use either the `Dockerfile.gnu` for the GNU compiler (works with both x86 and arm64) or `Dockerfile.intel`  which compiled ED2 using the intel compiler (x86 only). For example the following command builds the GNU version (run this in the root of the ED2 source code):
+
+```
+docker build -t edmodel/ed2:gnu -f Dockerfile.gnu .
+```
+
+Once you have build ED2 model you can run it using:
+
+```bash
+docker run -ti --rm --ulimit stack=-1 --volume ${PWD}:/data edmodel/ed2:gnu
+```
+
+`-ti` : tells docker to use an interactive shell session
+`--rm` : will remove the container after it finishes running, make sure outputs are written to /data or current folder
+`--ulimit stack=-1` : set the stack to be unlimited in size, this is needed otherwise ED2 will coredump
+`--volume ${PWD}:/data` : mounts the current folder to the /data folder. This is where the container starts
+
+If no arguments are given it will run `ed2` in the /data folder. Otherwise you can pass in any arguments, for example you can use `ed2 -f Templates/ED2IN-tonzi.harvest` to run ed2 with the input file Templates/ED2IN-tonzi.harvest.

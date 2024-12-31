@@ -619,7 +619,7 @@ optim.lsq.htscd <<- function( lsq.formula
          #---------------------------------------------------------------------------------#
          #     Accept step only if it converged.                                           #
          #---------------------------------------------------------------------------------#
-         success             = opt.1st$convergence %==% 0
+         success             = opt.1st$convergence %eq% 0
          #---------------------------------------------------------------------------------#
       }#end if ("try-error" %in% is(opt.1st))
       #------------------------------------------------------------------------------------#
@@ -734,7 +734,7 @@ optim.lsq.htscd <<- function( lsq.formula
          # solution, as the likelihood is a product of probabilities, which should be less #
          # than 1, hence the negative requirement.                                         #
          #---------------------------------------------------------------------------------#
-         success = opt.hess$convergence %==% 0
+         success = opt.hess$convergence %eq% 0
          #---------------------------------------------------------------------------------#
       }#end if ("try-error" %in% is(opt.hess))
       #------------------------------------------------------------------------------------#
@@ -949,7 +949,7 @@ optim.lsq.htscd <<- function( lsq.formula
             # bogus solution, as the likelihood is a product of probabilities, which       #
             # should be less than 1, hence the negative requirement.                       #
             #------------------------------------------------------------------------------#
-            success     = opt.boot$convergence %==% 0
+            success     = opt.boot$convergence %eq% 0
             nsteps.now  = opt.boot$counts["function"]
             #------------------------------------------------------------------------------#
          }#end if
@@ -1092,7 +1092,7 @@ optim.lsq.htscd <<- function( lsq.formula
             # bogus solution, as the likelihood is a product of probabilities, which       #
             # should be less than 1, hence the negative requirement.                       #
             #------------------------------------------------------------------------------#
-            success     = opt.sxobs$convergence %==% 0
+            success     = opt.sxobs$convergence %eq% 0
             nsteps.now  = opt.sxobs$counts["function"]
             #------------------------------------------------------------------------------#
          }#end if
@@ -1232,7 +1232,7 @@ optim.lsq.htscd <<- function( lsq.formula
             # bogus solution, as the likelihood is a product of probabilities, which       #
             # should be less than 1, hence the negative requirement.                       #
             #------------------------------------------------------------------------------#
-            success     = opt.syobs$convergence %==% 0
+            success     = opt.syobs$convergence %eq% 0
             nsteps.now  = opt.syobs$counts["function"]
             #------------------------------------------------------------------------------#
          }#end if
@@ -2389,7 +2389,7 @@ print.lsq.htscd <<- function(object){
    coeff.table[,1] = sprintf("%g",signif(coeff.table[,1],5))
    coeff.table[,2] = sprintf("%g",signif(coeff.table[,2],5))
    coeff.table[,3] = sprintf("%g",signif(coeff.table[,3],4))
-   coeff.table[,4] = ifelse( p.value %<% 1.e-16,"< 1e-16",sprintf("%g",signif(p.value,3)))
+   coeff.table[,4] = ifelse( p.value %lt% 1.e-16,"< 1e-16",sprintf("%g",signif(p.value,3)))
 
    #----- Append the significance test. ---------------------------------------------------#
    sig.brks           = c(-Inf,0.001,0.01,0.05,0.1,Inf)
