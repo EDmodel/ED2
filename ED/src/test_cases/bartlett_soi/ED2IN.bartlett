@@ -202,7 +202,6 @@
 ! Commonly changed parameters                                                              !
 !-------------------------------------------------------------------------!
 
-   NL%ZROUGH = 0.1                      ! Constant roughness if for all domain
 
    NL%TREEFALL_DISTURBANCE_RATE  = 0.0  ! Treefall disturbance rate, 1/years
 
