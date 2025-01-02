@@ -238,7 +238,7 @@ default = list( run             = "unnamed"
               , icarbonmort     = 2
               , ihydromort      = 0
               , igndvap         = 0
-              , iphen           = -1
+              , iphen           = 0
               , iallom          = 3
               , ieconomics      = 1
               , igrass          = 1
@@ -310,7 +310,7 @@ for (n in sequence(nvars)){
       joborder$istemresp   = c(   0,   0,   1,   1,   0,   0)[idx]
       joborder$istomata    = c(   0,   1,   1,   1,   1,   1)[idx]
       joborder$growthresp  = c(0.30,0.45,0.45,0.40,0.40,0.40)[idx]
-      joborder$iphen       = c(   2,   2,   4,   4,   3,   5)[idx]
+      joborder$iphen       = c(   0,   0,   0,   0,   0,   0)[idx]
       joborder$iplastic    = c(   2,   2,   3,   3,   2,   2)[idx]
       joborder$icarbonmort = c(   1,   1,   2,   2,   1,   1)[idx]
       joborder$ihydromort  = c(   0,   0,   1,   1,   0,   0)[idx]

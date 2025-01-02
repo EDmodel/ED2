@@ -167,14 +167,6 @@ module ename_coms
       integer                                           :: crown_mod
       integer                                           :: icanrad
       integer                                           :: ihrzrad
-      real                                              :: ltrans_vis
-      real                                              :: ltrans_nir
-      real                                              :: lreflect_vis
-      real                                              :: lreflect_nir
-      real                                              :: orient_tree
-      real                                              :: orient_grass
-      real                                              :: clump_tree
-      real                                              :: clump_grass
       integer                                           :: igoutput
       character(len=str_len)                            :: gfilout
       integer                                           :: h2o_plant_lim
@@ -183,30 +175,6 @@ module ename_coms
       real                                              :: ddmort_const
       integer                                           :: carbon_mortality_scheme
       integer                                           :: hydraulic_mortality_scheme
-      real                                              :: vmfact_c3
-      real                                              :: vmfact_c4
-      real                                              :: mphoto_trc3
-      real                                              :: mphoto_tec3
-      real                                              :: mphoto_c4
-      real                                              :: bphoto_blc3
-      real                                              :: bphoto_nlc3
-      real                                              :: bphoto_c4
-      real                                              :: kw_grass
-      real                                              :: kw_tree
-      real                                              :: gamma_c3
-      real                                              :: gamma_c4
-      real                                              :: d0_grass
-      real                                              :: d0_tree
-      real                                              :: alpha_c3
-      real                                              :: alpha_c4
-      real                                              :: klowco2in
-      real                                              :: rrffact
-      real                                              :: growthresp
-      real                                              :: lwidth_grass
-      real                                              :: lwidth_bltree
-      real                                              :: lwidth_nltree
-      real                                              :: q10_c3
-      real                                              :: q10_c4
       real                                              :: thetacrit
       integer                                           :: quantum_efficiency_T
       integer                                           :: n_plant_lim
@@ -243,14 +211,6 @@ module ename_coms
       real                                              :: treefall_disturbance_rate
       real                                              :: Time2Canopy
       real                                              :: runoff_time
-      real                                              :: ubmin
-      real                                              :: ugbmin
-      real                                              :: ustmin
-      real                                              :: gamm
-      real                                              :: gamh
-      real                                              :: tprandtl
-      real                                              :: ribmax
-      real                                              :: leaf_maxwhc
 
       !----- Options for printing polygon vectors/arrays to standard output. --------------!
       integer                                           :: iprintpolys
@@ -274,8 +234,6 @@ module ename_coms
       integer                                           :: iphenysf
       integer                                           :: iphenyf1
       integer                                           :: iphenyff
-      real                                              :: radint
-      real                                              :: radslp
 
       !------ XML, phenology, and prescribed event files. ---------------------------------!
       character(len=str_len)                            :: iedcnfgf
@@ -297,9 +255,6 @@ module ename_coms
       integer                                           :: maxcohort
       real                                              :: min_site_area
       real                                              :: min_patch_area
-
-      !----- Roughness length. ------------------------------------------------------------!
-      real                                              :: zrough
 
       !----- ED restart grid resolution. --------------------------------------------------!
       real                                              :: edres
@@ -472,14 +427,6 @@ module ename_coms
       enl%crown_mod                 = undef_integer
       enl%icanrad                   = undef_integer
       enl%ihrzrad                   = undef_integer
-      enl%ltrans_vis                = undef_real
-      enl%ltrans_nir                = undef_real
-      enl%lreflect_vis              = undef_real
-      enl%lreflect_nir              = undef_real
-      enl%orient_tree               = undef_real
-      enl%orient_grass              = undef_real
-      enl%clump_tree                = undef_real
-      enl%clump_grass               = undef_real
       enl%igoutput                  = undef_integer
       enl%gfilout                   = undef_path
       enl%h2o_plant_lim             = undef_integer
@@ -488,30 +435,6 @@ module ename_coms
       enl%ddmort_const              = undef_real
       enl%carbon_mortality_scheme   = undef_integer
       enl%hydraulic_mortality_scheme= undef_integer
-      enl%vmfact_c3                 = undef_real
-      enl%vmfact_c4                 = undef_real
-      enl%mphoto_trc3               = undef_real
-      enl%mphoto_tec3               = undef_real
-      enl%mphoto_c4                 = undef_real
-      enl%bphoto_blc3               = undef_real
-      enl%bphoto_nlc3               = undef_real
-      enl%bphoto_c4                 = undef_real
-      enl%kw_grass                  = undef_real
-      enl%kw_tree                   = undef_real
-      enl%gamma_c3                  = undef_real
-      enl%gamma_c4                  = undef_real
-      enl%d0_grass                  = undef_real
-      enl%d0_tree                   = undef_real
-      enl%alpha_c3                  = undef_real
-      enl%alpha_c4                  = undef_real
-      enl%klowco2in                 = undef_real
-      enl%rrffact                   = undef_real
-      enl%growthresp                = undef_real
-      enl%lwidth_grass              = undef_real
-      enl%lwidth_bltree             = undef_real
-      enl%lwidth_nltree             = undef_real
-      enl%q10_c3                    = undef_real
-      enl%q10_c4                    = undef_real
       enl%thetacrit                 = undef_real
       enl%quantum_efficiency_T      = undef_integer
       enl%n_plant_lim               = undef_integer
@@ -549,14 +472,6 @@ module ename_coms
       enl%treefall_disturbance_rate = undef_real
       enl%Time2Canopy               = undef_real
       enl%runoff_time               = undef_real
-      enl%ubmin                     = undef_real
-      enl%ugbmin                    = undef_real
-      enl%ustmin                    = undef_real
-      enl%gamm                      = undef_real
-      enl%gamh                      = undef_real
-      enl%tprandtl                  = undef_real
-      enl%ribmax                    = undef_real
-      enl%leaf_maxwhc               = undef_real
 
       enl%iprintpolys               = undef_integer
       enl%npvars                    = undef_integer
@@ -577,8 +492,6 @@ module ename_coms
       enl%iphenysf                  = undef_integer
       enl%iphenyf1                  = undef_integer
       enl%iphenyff                  = undef_integer
-      enl%radint                    = undef_real
-      enl%radslp                    = undef_real
 
       enl%iedcnfgf                  = undef_path
       enl%phenpath                  = undef_path
@@ -598,7 +511,6 @@ module ename_coms
       enl%min_site_area             = undef_real
       enl%min_patch_area            = undef_real
 
-      enl%zrough                    = undef_real
       enl%edres                     = undef_real 
 
       return
