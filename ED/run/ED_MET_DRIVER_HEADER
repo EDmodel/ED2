@@ -2,6 +2,7 @@
 1
 /home/rknox/Datasets/CCSM3/H5/ccsm3_surf_SA_
 51 51 1.5 1.5 -100.75 -60.0
+1
 15
 'lat'  'lon'   'vbdsf'   'vddsf'   'prate'  'dlwrf'   'pres'    'ugrd'     'vgrd'   'sh'     'tmp'     'hgt'    'co2'    'nbdsf'   'nddsf'
 00.00   00.00   21600.0  21600.0   21600.0  21600.0   21600.0   21600.0    21600.0  21600.0   21600.0   50.0    21600.0  21600.0   21600.0

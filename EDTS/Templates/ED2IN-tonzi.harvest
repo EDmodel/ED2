@@ -1698,14 +1698,6 @@ $ED_NL
    !                   the  model is run.                                                  !
    ! IMETCYC1    -- First year with meteorological information                             !
    ! IMETCYCF    -- Last year with meteorological information                              !
-   ! IMETAVG     -- How the input radiation was originally averaged.  You must tell this   !
-   !                because ED-2.1 can make a interpolation accounting for the cosine of   !
-   !                zenith angle.                                                          !
-   !               -1.  I don't know, use linear interpolation.                            !
-   !                0.  No average, the values are instantaneous                           !
-   !                1.  Averages ending at the reference time                              !
-   !                2.  Averages beginning at the reference time                           !
-   !                3.  Averages centred at the reference time                             !
    ! IMETRAD     -- What should the model do with the input short wave radiation?          !
    !                0.  Nothing, use it as is.                                             !
    !                1.  Add them together, then use the SiB method to break radiation down !
@@ -1722,7 +1714,6 @@ $ED_NL
    NL%ISHUFFLE    = 0
    NL%METCYC1     = 2001
    NL%METCYCF     = 2002
-   NL%IMETAVG     = 1
    NL%IMETRAD     = 0
    NL%INITIAL_CO2 = 380
    !---------------------------------------------------------------------------------------!
