@@ -33,7 +33,6 @@ subroutine read_ednl(iunit,filename)
                                    , imettype                              & ! intent(out)
                                    , metcyc1                               & ! intent(out)
                                    , metcycf                               & ! intent(out)
-                                   , imetavg                               & ! intent(out)
                                    , imetrad                               & ! intent(out)
                                    , lapse_scheme                          ! ! intent(out)
    use mem_polygons         , only : n_poi                                 & ! intent(out)
@@ -519,7 +518,6 @@ subroutine read_ednl(iunit,filename)
    imettype = 1             ! BRAMS is the meteorology driver...
    metcyc1  = 0000          ! BRAMS is the meteorology driver...
    metcycf  = 0000          ! BRAMS is the meteorology driver...
-   imetavg  = 0             ! BRAMS is the meteorology driver...
    ioptinpt = ''            ! It will be used once optimization is 
                             !    implemented in ED-2.1.
    unitfast  = 0            ! Since BRAMS uses frqanl and frqhist in seconds, there is no
