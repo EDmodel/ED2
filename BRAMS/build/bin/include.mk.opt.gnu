@@ -62,6 +62,19 @@ HDF4_LIBS=-L./.hdf4_libs -lmfhdf -ldf -lz -ljpeg -lsz
 USE_MPIWTIME=0
 
 
+#------------------------------------------------------------------------------------------#
+#     Linear Algebra Package (LAPACK) libraries.                                           #
+#                                                                                          #
+#     Lapack is a well-established package for solving linear systems in Fortran. This is  #
+# more efficient than the former built-in solution, and thus it became the new default.    #
+# Consequently, it is now required to link the lapack libraries during compilation.        #
+#------------------------------------------------------------------------------------------#
+LAPACK_PATH=/usr/local/opt/lapack
+LAPACK_INCS=-I$(LAPACK_PATH)/include
+LAPACK_LIBS=-L$(LAPACK_PATH)/lib -llapack -lblas
+#------------------------------------------------------------------------------------------#
+
+
 #----------------- SGI -n32 ------------------------------------
 #CMACH=SGI
 #F_COMP=f90
