@@ -15,13 +15,13 @@ graphics.off()
 #      Here is the user defined variable section.                                          #
 #------------------------------------------------------------------------------------------#
 #------------------------------------------------------------------------------------------#
+home       = path.expand("~")                         # Home directory
 here       = getwd()                                  # Current directory
-srcdir     = c("/prj/prjidfca/marcosl/Util/Rsc"       # Possible paths with libraries
-              ,"/prj/bramsolam/marcos.longo/Util/Rsc" #    R will select the first one that
-              ,"/n/home00/mlongo/Util/Rsc"            #    is found, or issue an error
-              ,"/Users/mlongo/Util/Rsc"               #    message in case none of them
-              ,"/home/mlongo/Util/Rsc"                #    exist.
-              )#end c                                 #
+srcdir     = c(file.path(home,"Util","Rsc")           # Possible paths with libraries
+              ,file.path(home,"ED2","R-utils"))       #    R will select the first one that
+                                                      #    is found, or issue an error
+                                                      #    message in case none of them
+                                                      #    exist.
 outfile    = file.path(here,"joborder.txt")           # Job order
 defjob     = FALSE                                    # Generate the default job order?
 append.job = FALSE                                    # Append job? (FALSE means new file)
@@ -171,44 +171,13 @@ default = list( run             = "unnamed"
               , dtlsm           = 600.
               , month.yrstep    = 1
               , iphysiol        = 3
-              , vmfact.c3       = 1.00
-              , vmfact.c4       = 1.00
-              , mphoto.trc3     = 8.0
-              , mphoto.tec3     = 7.2
-              , mphoto.c4       = 4.0
-              , bphoto.blc3     = 10000.
-              , bphoto.nlc3     = 1000.
-              , bphoto.c4       = 10000.
-              , kw.grass        = 25.
-              , kw.tree         = 20.
-              , gamma.c3        = 0.015
-              , gamma.c4        = 0.025
-              , d0.grass        = 0.016
-              , d0.tree         = 0.016
-              , alpha.c3        = 0.080
-              , alpha.c4        = 0.040
-              , klowco2         = round(0.7/39 * 1.e6)
               , decomp.scheme   = 5
-              , rrffact         = 1.000
-              , growthresp      = 0.300
-              , lwidth.grass    = 0.05
-              , lwidth.bltree   = 0.05
-              , lwidth.nltree   = 0.05
-              , q10.c3          = 2.21
-              , q10.c4          = 2.21
               , h2o.limit       = 5
               , imort.scheme    = 1
               , ddmort.const    = 0.8
               , cbr.scheme      = 0
               , isfclyrm        = 3
               , icanturb        = 0
-              , ubmin           = 1.00
-              , ugbmin          = 0.40
-              , ustmin          = 0.10
-              , gamm            = 13.0
-              , gamh            = 13.0
-              , tprandtl        = 1.00
-              , ribmax          = 0.50
               , atmco2          = 400.
               , thcrit          = -1.20
               , sm.fire         = -1.40
@@ -221,14 +190,6 @@ default = list( run             = "unnamed"
               , icanrad         = 2
               , ihrzrad         = 0
               , crown.mod       = 0
-              , ltrans.vis      = 0.05
-              , lreflect.vis    = 0.10
-              , ltrans.nir      = 0.200
-              , lreflect.nir    = 0.400
-              , orient.tree     = +0.100
-              , orient.grass    = -0.300
-              , clump.tree      = 0.80
-              , clump.grass     = 0.80
               , igoutput        = 0
               , ivegtdyn        = 1
               , ihydro          = 0
@@ -238,7 +199,7 @@ default = list( run             = "unnamed"
               , icarbonmort     = 2
               , ihydromort      = 0
               , igndvap         = 0
-              , iphen           = -1
+              , iphen           = 0
               , iallom          = 3
               , ieconomics      = 1
               , igrass          = 1
@@ -310,7 +271,7 @@ for (n in sequence(nvars)){
       joborder$istemresp   = c(   0,   0,   1,   1,   0,   0)[idx]
       joborder$istomata    = c(   0,   1,   1,   1,   1,   1)[idx]
       joborder$growthresp  = c(0.30,0.45,0.45,0.40,0.40,0.40)[idx]
-      joborder$iphen       = c(   2,   2,   4,   4,   3,   5)[idx]
+      joborder$iphen       = c(   0,   0,   0,   0,   0,   0)[idx]
       joborder$iplastic    = c(   2,   2,   3,   3,   2,   2)[idx]
       joborder$icarbonmort = c(   1,   1,   2,   2,   1,   1)[idx]
       joborder$ihydromort  = c(   0,   0,   1,   1,   0,   0)[idx]

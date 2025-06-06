@@ -1009,9 +1009,9 @@ $CUPARM_OPTIONS
    !  !----------------------------------------------------------------------------------! !
    !  ! Type | Description                    | Deep | Shal | Reference Paper            ! !
    !  !------+--------------------------------+------+------+----------------------------! !
-   !  ! EN   | Ensemble (all closures)        | yes  |  no  | Grell and Dévényi, 2002    ! !
-   !  ! NC   | Ensemble, excluding LO and MC  | yes  | yes  | Grell and Dévényi, 2002    ! !
-   !  ! QI   | Ensemble, with AS and KF only  | yes  | yes  | Grell and Dévényi, 2002    ! !
+   !  ! EN   | Ensemble (all closures)        | yes  |  no  | Grell and Devenyi, 2002    ! !
+   !  ! NC   | Ensemble, excluding LO and MC  | yes  | yes  | Grell and Devenyi, 2002    ! !
+   !  ! QI   | Ensemble, with AS and KF only  | yes  | yes  | Grell and Devenyi, 2002    ! !
    !  ! GR   | Modified quasi-equilibrium ABE | yes  | yes  | Grell, 1993                ! !
    !  ! LO   | Low level omega                | yes  |  no  | Frank and Cohen, 1987      ! !
    !  ! MC   | moisture convergence           | yes  |  no  | Krishnamurti et al., 1983  ! !
@@ -1365,7 +1365,7 @@ $MODEL_OPTIONS
       !               yet).                                                                !
       ! CO2CON -- Initial constant CO2 value or profile if for all domain.  If ICO2 = 0    !
       !           or 1, only the first value will be considered, and if ICO2=2, then       !
-      !           provide one value per level.  Unit here is µmol/mol.                     !
+      !           provide one value per level.  Unit here is umol/mol.                     !
       !------------------------------------------------------------------------------------!
       ICO2   =    1,
       CO2CON = 410.,
@@ -1655,13 +1655,13 @@ $MODEL_OPTIONS
 
 
       !------------------------------------------------------------------------------------!
-      ! IBRUVAIS -- How to compute the Brunt-Väisälä frequency:                            !
-      !             1.  Traditional method -- (g/theta_v d(theta_v)/dz)^½;                 !
+      ! IBRUVAIS -- How to compute the Brunt-Vaisala frequency:                            !
+      !             1.  Traditional method -- (g/theta_v d(theta_v)/dz)^1/2;               !
       !             2.  Original BRAMS method, the so-called wet enhancement.              !
       !                 This violates the 1st and 2nd law of thermodynamics, creates a     !
       !                 second ITCZ and ignores that we do have the actual hydrometeor     !
-      !                 mixing ratios.  In case you didn't get it, this is soooooooo       !
-      !                 deprecated...                                                      !
+      !                 mixing ratios.  This is kept for back compatibility only, but it   !
+      !                 is _very_ deprecated.                                              !
       !------------------------------------------------------------------------------------!
       IBRUVAIS = 1,
       !------------------------------------------------------------------------------------!
@@ -2398,8 +2398,7 @@ $ED2_INFO
    ! 0. (Legacy) Original ED-1/ED-2.0 method, grasses are miniature trees, grasses have    !
    !    heartwood biomass (albeit small), and growth happens monthly.                      !
    ! 1. (ED-2.2 default).  Heartwood biomass is always 0, height is a function of leaf     !
-   !    biomass , and growth happens daily. With this option, grasses are evergreen        !
-   !    regardless of IPHEN_SCHEME.                                                        !
+   !    biomass , and growth happens daily. With this option, grasses must be evergreen.   !
    !---------------------------------------------------------------------------------------!
    IGRASS          = 1,
    !---------------------------------------------------------------------------------------!
@@ -2408,77 +2407,15 @@ $ED2_INFO
 
 
    !---------------------------------------------------------------------------------------!
-   ! IPHEN_SCHEME -- It controls the phenology scheme.  Even within each scheme, the       !
-   !                 actual phenology will be different depending on the PFT.              !
+   ! IPHEN_SCHEME -- It controls how phenology is updated for non-evergreen PFTs.          !
+   !                 This variable NO LONGER controls which leaf phenology strategy each   !
+   !                 PFT adopts. This is defined directly by PFT-parameter phenology.      !
    !                                                                                       !
-   ! -1: (ED-2.2 default for evergreen tropical).                                          !
-   !     grasses   - evergreen;                                                            !
-   !     tropical  - evergreen;                                                            !
-   !     conifers  - evergreen;                                                            !
-   !     hardwoods - cold-deciduous (Botta et al.);                                        !
-   !                                                                                       !
-   !  0: (Deprecated).                                                                     !
-   !     grasses   - drought-deciduous (old scheme);                                       !
-   !     tropical  - drought-deciduous (old scheme);                                       !
-   !     conifers  - evergreen;                                                            !
-   !     hardwoods - cold-deciduous;                                                       !
-   !                                                                                       !
-   !  1: (ED-2.2 default for prescribed phenology; deprecated for tropical PFTs).          !
-   !     phenology is prescribed for cold-deciduous broadleaf trees.                       !
-   !                                                                                       !
-   !  2: (ED-2.2 default).                                                                 !
-   !     grasses   - drought-deciduous (new scheme);                                       !
-   !     tropical  - drought-deciduous (new scheme);                                       !
-   !     conifers  - evergreen;                                                            !
-   !     hardwoods - cold-deciduous;                                                       !
-   !                                                                                       !
-   !  3: (Beta).                                                                           !
-   !     grasses   - drought-deciduous (new scheme);                                       !
-   !     tropical  - drought-deciduous (light phenology);                                  !
-   !     conifers  - evergreen;                                                            !
-   !     hardwoods - cold-deciduous;                                                       !
-   !                                                                                       !
-   !  4: (Beta).                                                                           !
-   !     grasses   - drought-deciduous (hydraulics scheme);                                !
-   !     tropical  - drought-deciduous (hydraulics scheme);                                !
-   !     conifers  - evergreen;                                                            !
-   !     hardwoods - cold-deciduous;                                                       !
-   !                                                                                       !
-   !  5: (Beta).                                                                           !
-   !     grasses   - drought-deciduous (hydraulics scheme);                                !
-   !     tropical  - drought-deciduous (hydraulics scheme + light phenology);              !
-   !     conifers  - evergreen;                                                            !
-   !     hardwoods - cold-deciduous;                                                       !
-   !                                                                                       !
-   !                                                                                       !
-   !  Old scheme: plants shed their leaves once instantaneous amount of available water    !
-   !              becomes less than a critical value.                                      !
-   !  New scheme: plants shed their leaves once a 10-day running average of available      !
-   !              water becomes less than a critical value.                                !
-   !  Hydraulics scheme: plants shed their leaves once predawn leaf water potential is     !
-   !              lower than tugor loss point for 10 consecutive days                      !
+   !  0. Predicted internally for all plant functional types.                              !
+   !  1. Phenology is prescribed for cold-deciduous broadleaf trees and predicted for all  !
+   !     other PFTs.                                                                       !
    !---------------------------------------------------------------------------------------!
-   IPHEN_SCHEME    = 2,
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !---------------------------------------------------------------------------------------!
-   !     Parameters that control the phenology response to radiation, used only when       !
-   ! IPHEN_SCHEME = 3.  The meaning depends on ECONOMICS_SCHEME.                           !
-   !                                                                                       !
-   ! If ECONOMICS_SCHEME is 0 (default).                                                   !
-   !    RADINT -- Intercept                                                                !
-   !    RADSLP -- Slope.                                                                   !
-   !    TurnoverAmplitude = RADINT + RADSLP * rshort                                       !
-   !                                                                                       !
-   ! If ECONOMICS_SCHEME is 1 (log-linear model).                                          !
-   !    RADINT -- Multiplier.                                                              !
-   !    RADSLP -- Exponent.                                                                !
-   !    TurnoverAmplitude = RADINT * rshort ** RADSLP                                      !
-   !---------------------------------------------------------------------------------------!
-   NL%RADINT          = 2.6292e-4
-   NL%RADSLP          = 1.553
+   IPHEN_SCHEME    = 0,
    !---------------------------------------------------------------------------------------!
 
 
@@ -2563,39 +2500,6 @@ $ED2_INFO
    !---------------------------------------------------------------------------------------!
    ICANRAD        =  2,
    IHRZRAD        =  0,
-   !---------------------------------------------------------------------------------------!
-
-   
-   !---------------------------------------------------------------------------------------!
-   ! LTRANS_VIS   -- Leaf transmittance for tropical plants - Visible/PAR                  !
-   ! LTRANS_NIR   -- Leaf transmittance for tropical plants - Near Infrared                !
-   ! LREFLECT_VIS -- Leaf reflectance for tropical plants - Visible/PAR                    !
-   ! LREFLECT_NIR -- Leaf reflectance for tropical plants - Near Infrared                  !
-   ! ORIENT_TREE  -- Leaf orientation factor for tropical trees.  Extremes are:            !
-   !                 -1.  All leaves are oriented in the vertical                          !
-   !                  0.  Leaf orientation is perfectly random                             !
-   !                  1.  All leaves are oriented in the horizontal                        !
-   !                  In practice, acceptable values range from -0.4 and 0.6               !
-   ! ORIENT_GRASS -- Leaf orientation factor for tropical grasses.  Extremes are:          !
-   !                 -1.  All leaves are oriented in the vertical                          !
-   !                  0.  Leaf orientation is perfectly random                             !
-   !                  1.  All leaves are oriented in the horizontal                        !
-   !                  In practice, acceptable values range from -0.4 and 0.6               !
-   ! CLUMP_TREE   -- Clumping factor for tropical trees.  Extremes are:                    !
-   !                 lim -> 0.  Black hole (0 itself is unacceptable)                      !
-   !                        1.  Homogeneously spread over the layer (i.e., no clumping)    !
-   ! CLUMP_GRASS  -- Clumping factor for tropical grasses.  Extremes are:                  !
-   !                 lim -> 0.  Black hole (0 itself is unacceptable)                      !
-   !                        1.  Homogeneously spread over the layer (i.e., no clumping)    !
-   !---------------------------------------------------------------------------------------!
-   LTRANS_VIS     =  0.050,
-   LTRANS_NIR     =  0.200,
-   LREFLECT_VIS   =  0.100,
-   LREFLECT_NIR   =  0.400,
-   ORIENT_TREE    =  0.100,
-   ORIENT_GRASS   =  0.000,
-   CLUMP_TREE     =  0.800,
-   CLUMP_GRASS    =  1.000,
    !---------------------------------------------------------------------------------------!
 
 
@@ -2828,78 +2732,6 @@ $ED2_INFO
    !                               mean xylem percentage loss of conductance (PLC)         !
    !---------------------------------------------------------------------------------------!
    HYDRAULIC_MORTALITY_SCHEME = 0,
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !---------------------------------------------------------------------------------------!
-   !     The following variables are factors that control photosynthesis and respiration.  !
-   ! Notice that some of them are relative values whereas others are absolute.             !
-   !                                                                                       !
-   ! VMFACT_C3     -- Factor multiplying the default Vm0 for C3 plants (1.0 = default).    !
-   ! VMFACT_C4     -- Factor multiplying the default Vm0 for C4 plants (1.0 = default).    !
-   ! MPHOTO_TRC3   -- Stomatal slope (M) for tropical C3 plants                            !
-   ! MPHOTO_TEC3   -- Stomatal slope (M) for conifers and temperate C3 plants              !
-   ! MPHOTO_C4     -- Stomatal slope (M) for C4 plants.                                    !
-   ! BPHOTO_BLC3   -- cuticular conductance for broadleaf C3 plants  [umol/m2/s]           !
-   ! BPHOTO_NLC3   -- cuticular conductance for needleleaf C3 plants [umol/m2/s]           !
-   ! BPHOTO_C4     -- cuticular conductance for C4 plants            [umol/m2/s]           !
-   ! KW_GRASS      -- Water conductance for trees, in m2/yr/kgC_root.  This is used only   !
-   !                  when H2O_PLANT_LIM is not 0.                                         !
-   ! KW_TREE       -- Water conductance for grasses, in m2/yr/kgC_root.  This is used only !
-   !                  when H2O_PLANT_LIM is not 0.                                         !
-   ! GAMMA_C3      -- The dark respiration factor (gamma) for C3 plants.  In case this     !
-   !                  number is set to 0, find the factor based on Atkin et al. (2015).    !
-   ! GAMMA_C4      -- The dark respiration factor (gamma) for C4 plants.  In case this     !
-   !                  number is set to 0, find the factor based on Atkin et al. (2015).    !
-   !                  (assumed to be twice as large as C3 grasses, as Atkin et al. 2015    !
-   !                  did not estimate Rd0 for C4 grasses).                                !
-   ! D0_GRASS      -- The transpiration control in gsw (D0) for ALL grasses.               !
-   ! D0_TREE       -- The transpiration control in gsw (D0) for ALL trees.                 !
-   ! ALPHA_C3      -- Quantum yield of ALL C3 plants.  This is only applied when           !
-   !                  QUANTUM_EFFICIENCY_T = 0.                                            !
-   ! ALPHA_C4      -- Quantum yield of C4 plants.  This is always applied.                 !
-   ! KLOWCO2IN     -- The coefficient that controls the PEP carboxylase limited rate of    !
-   !                  carboxylation for C4 plants.                                         !
-   ! RRFFACT       -- Factor multiplying the root respiration factor for ALL PFTs.         !
-   !                  (1.0 = default).                                                     !
-   ! GROWTHRESP    -- The actual growth respiration factor (C3/C4 tropical PFTs only).     !
-   !                  (1.0 = default).                                                     !
-   ! LWIDTH_GRASS  -- Leaf width for grasses, in metres.  This controls the leaf boundary  !
-   !                  layer conductance (gbh and gbw).                                     !
-   ! LWIDTH_BLTREE -- Leaf width for trees, in metres.  This controls the leaf boundary    !
-   !                  layer conductance (gbh and gbw).  This is applied to broadleaf trees !
-   !                  only.                                                                !
-   ! LWIDTH_NLTREE -- Leaf width for trees, in metres.  This controls the leaf boundary    !
-   !                  layer conductance (gbh and gbw).  This is applied to conifer trees   !
-   !                  only.                                                                !
-   ! Q10_C3        -- Q10 factor for C3 plants (used only if IPHYSIOL is set to 2 or 3).   !
-   ! Q10_C4        -- Q10 factor for C4 plants (used only if IPHYSIOL is set to 2 or 3).   !
-   !---------------------------------------------------------------------------------------!
-   VMFACT_C3       = 1.00,
-   VMFACT_C4       = 1.00,
-   MPHOTO_TRC3     = 9.0,
-   MPHOTO_TEC3     = 7.2,
-   MPHOTO_C4       = 5.2,
-   BPHOTO_BLC3     = 10000.,
-   BPHOTO_NLC3     = 1000.,
-   BPHOTO_C4       = 10000.,
-   KW_GRASS        = 900.,
-   KW_TREE         = 600.,
-   GAMMA_C3        = 0.0145,
-   GAMMA_C4        = 0.0350,
-   D0_GRASS        = 0.016,
-   D0_TREE         = 0.016,
-   ALPHA_C3        = 0.080,
-   ALPHA_C4        = 0.055,
-   KLOWCO2IN       = 17949.,
-   RRFFACT         = 1.000,
-   GROWTHRESP      = 0.333,
-   LWIDTH_GRASS    = 0.05,
-   LWIDTH_BLTREE   = 0.10,
-   LWIDTH_NLTREE   = 0.05,
-   Q10_C3          = 2.4,
-   Q10_C4          = 2.4,
    !---------------------------------------------------------------------------------------!
 
 
@@ -3333,23 +3165,23 @@ $MODEL_SOUND
    !            1.  Heights                            [        m]                         !
    !                                                                                       !
    ! ITSFLG  -- What is given in the TS array below?                                       !
-   !            0.  Temperature                        [       °C]                         !
+   !            0.  Temperature                        [     degC]                         !
    !            1.  Temperature                        [        K]                         !
    !            2.  Potential temperature              [        K]                         !
    !                                                                                       !
    ! IRTSFLG -- What is given in the RTS array below?                                      !
-   !            0.  Dew point temperature              [       °C]                         !
+   !            0.  Dew point temperature              [     degC]                         !
    !            1.  Dew point temperature              [        K]                         !
    !            2.  Mixing ratio                       [     g/kg]                         !
    !                                                                                       !
    ! IUSFLG  -- What is given in the US and VS arrays?                                     !
    !            0.  US = zonal wind                    [      m/s]                         !
    !                VS = meridional wind               [      m/s]                         !
-   !            1.  US = wind direction                [        °]                         !
+   !            1.  US = wind direction                [      deg]                         !
    !            2.  VS = wind magnitude                [      m/s]                         !
    !                                                                                       !
    ! ICO2FLG -- It doesn't exist,                                                          !
-   !            CO2S is CO2 mixing ratio               [ µmol/mol]                         !
+   !            CO2S is CO2 mixing ratio               [ umol/mol]                         !
    !                                                                                       !
    ! HS      -- surface height above sea level         [        m]                         !
    !                                                                                       !

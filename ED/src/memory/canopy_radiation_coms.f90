@@ -51,31 +51,6 @@ module canopy_radiation_coms
    !---------------------------------------------------------------------------------------!
 
 
-
-
-   !---------------------------------------------------------------------------------------!
-   !     The following variables are temporary namelist variables used to control the      !
-   ! radiation properties of leaves.                                                       !
-   ! LTRANS_VIS   -- Leaf transmittance on visible.                                        !
-   ! LTRANS_NIR   -- Leaf transmittance on near infrared.                                  !
-   ! LREFLECT_VIS -- Leaf reflectance on visible.                                          !
-   ! LREFLECT_NIR -- Leaf reflectance on near infrared.                                    !
-   ! ORIENT_TREE  -- Leaf orientation parameter for tropical trees                         !
-   ! ORIENT_GRASS -- Leaf orientation parameter for tropical grasses                       !
-   ! CLUMP_TREE   -- Leaf clumping factor for tropical trees                               !
-   ! CLUMP_GRASS  -- Leaf clumping factor for tropical grasses                             !
-   !---------------------------------------------------------------------------------------!
-   real :: ltrans_vis
-   real :: ltrans_nir
-   real :: lreflect_vis
-   real :: lreflect_nir
-   real :: orient_tree
-   real :: orient_grass
-   real :: clump_tree
-   real :: clump_grass
-   !---------------------------------------------------------------------------------------!
-
-
    !---------------------------------------------------------------------------------------!
    !     Fraction of diffuse solar radiation in the PAR band.  Used when you don't know    !
    ! the direct/diffuse breakdown. (parameters)                                            !

@@ -753,14 +753,39 @@ module pft_coms
    !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
-   ! Phenology indicates the leaf habit regarding phenology:                               !
-   ! 0. Evergreen coniferous;                                                              !
-   ! 1. Drought deciduous;                                                                 !
-   ! 2. Cold deciduous;                                                                    !
-   ! 3. Light controlled;                                                                  !
-   ! 4. Drought deciduous - based on 10day average.                                        !
+   !     Default tree phenology. The following codes are used.                             !
+   !                                                                                       !
+   ! 0 - Evergreen                                                                         !
+   ! 1 - Drought deciduous (M01 scheme, hard abscission and flushing).                     !
+   ! 2 - Cold deciduous (B00 scheme).                                                      !
+   ! 3 - Light-controlled (K12).                                                           !
+   ! 4 - Semi-deciduous (L19 scheme, abscission and flushing can be partial).              !
+   ! 5 - Semi-deciduous (partial abscission and flushing controlled by plant hydraulics).  !
+   ! 6 - Hydraulic semi-deciduous combined with light-controlled.                          !
+   !                                                                                       !
+   ! References:                                                                           !
+   !                                                                                       !
+   ! Botta A, Viovy N, Ciais P, Friedlingstein P , Monfray P. 2000. A global prognostic    !
+   !    scheme of leaf onset using satellite data. Glob. Change Biol., 6: 709-725.         !
+   !    doi:10.1046/j.1365-2486.2000.00362.x (B00).                                        !
+   !                                                                                       !
+   ! Kim Y, Knox RG, Longo M, Medvigy D, Hutyra LR, Pyle EH, Wofsy SC, Bras RL , Moorcroft !
+   !    PR. 2012. Seasonal carbon dynamics and water fluxes in an Amazon rainforest. Glob. !
+   !    Change Biol., 18: 1322–1334. doi:10.1111/j.1365-2486.2011.02629.x (K12).           !
+   !                                                                                       !
+   ! Longo M, Knox RG, Medvigy DM, Levine NM, Dietze MC, Kim Y, Swann ALS, Zhang K,        !
+   !    Rollinson CR, Bras RL et al . 2019. The biophysics, ecology, and biogeochemistry   !
+   !    of functionally diverse, vertically and horizontally heterogeneous ecosystems: the !
+   !    Ecosystem Demography model, version 2.2 – part 1: Model description. Geosci. Model !
+   !    Dev., 12: 4309–4346. doi:10.5194/gmd-12-4309-2019 (L19).                           !
+   !                                                                                       !
+   ! Moorcroft PR, Hurtt GC , Pacala SW. 2001. A method for scaling vegetation dynamics:   !
+   !    The Ecosystem Demography model (ED). Ecol. Monogr., 71: 557-586.                   !
+   !    doi:10.2307/3100036 (M01).                                                         !
+   !                                                                                       !
    !---------------------------------------------------------------------------------------!
    integer, dimension(n_pft) :: phenology 
+   !---------------------------------------------------------------------------------------!
 
 
    !----- Leaf width [m], which is used to compute the leaf boundary layer conductance. ---!
