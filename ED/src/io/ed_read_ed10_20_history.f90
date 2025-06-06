@@ -179,9 +179,11 @@ subroutine read_ed10_ed20_history_file
    !---------------------------------------------------------------------------------------!
    !     Define PFT-dependent leaf life span, used for initialisation.                     !
    !---------------------------------------------------------------------------------------!
-   leaf_lifespan(:) = merge( 12.0 / leaf_turnover_rate(:)                                  &
-                           , llspan_inf                                                    &
-                           , leaf_turnover_rate(:) > 0.0  )
+   where (leaf_turnover_rate(:) > 0.0)
+      leaf_lifespan(:) = 12.0 / leaf_turnover_rate(:)
+   elsewhere
+      leaf_lifespan(:) = llspan_inf
+   end where
    !---------------------------------------------------------------------------------------!
 
 
