@@ -22,6 +22,7 @@ module ed_met_driver
                                 , met_dy           & ! intent(out)
                                 , met_xmin         & ! intent(out)
                                 , met_ymin         & ! intent(out)
+                                , met_avgtype      & ! intent(out)
                                 , met_nv           & ! intent(out)
                                 , met_vars         & ! intent(out)
                                 , met_frq          & ! intent(out)
@@ -63,6 +64,7 @@ module ed_met_driver
       allocate(met_dy       (nformats)              )
       allocate(met_xmin     (nformats)              )
       allocate(met_ymin     (nformats)              )
+      allocate(met_avgtype  (nformats)              )
       allocate(met_nv       (nformats)              )
       allocate(met_vars     (nformats, max_met_vars))
       allocate(met_frq      (nformats, max_met_vars))
@@ -85,6 +87,7 @@ module ed_met_driver
          read(unit=12,fmt='(a)')  met_names(iformat)
          read(unit=12,fmt=*)      met_nlon(iformat), met_nlat(iformat), met_dx(iformat)    &
                                 , met_dy(iformat)  , met_xmin(iformat), met_ymin(iformat)
+         read(unit=12,fmt=*)      met_avgtype(iformat)
          read(unit=12,fmt=*)      met_nv(iformat)
          read(unit=12,fmt=*)      (met_vars(iformat,n)  ,n=1,met_nv(iformat))
          read(unit=12,fmt=*)      (met_frq(iformat,n)   ,n=1,met_nv(iformat))
@@ -1008,7 +1011,7 @@ module ed_met_driver
                                       , polygontype               ! ! structure
       use met_driver_coms      , only : met_frq                   & ! intent(in)
                                       , nformats                  & ! intent(in)
-                                      , imetavg                   & ! intent(in)
+                                      , met_avgtype               & ! intent(in)
                                       , met_nv                    & ! intent(in)
                                       , met_interp                & ! intent(in)
                                       , met_vars                  & ! intent(in)
@@ -1147,7 +1150,7 @@ module ed_met_driver
                   !------------------------------------------------------------------------!
                   prevmet_timea = current_time
                   nextmet_timea = current_time ! we won't use it, though.
-                  select case (imetavg)
+                  select case (met_avgtype(iformat))
                   case (0)
                      !----- Instantaneous averages. ---------------------------------------!
                      call update_model_time_dm(prevmet_timea,dtprev)
@@ -1181,8 +1184,8 @@ module ed_met_driver
                   !------------------------------------------------------------------------!
                   !    Decide whether to interpolate or not.                               !
                   !------------------------------------------------------------------------!
-                  if ( imetavg == -1 .or. met_interp(iformat,iv) == 2 .or.                 &
-                                          met_interp(iformat,iv) == 4 ) then
+                  if ( met_avgtype(iformat) == -1 .or. met_interp(iformat,iv) == 2 .or.    &
+                                                       met_interp(iformat,iv) == 4 ) then
                      !----- Constant, do not attempt to do any interpolation. -------------!
                      do ipy = 1,cgrid%npolygons
                         cgrid%met(ipy)%nir_beam = cgrid%metinput(ipy)%nbdsf(mprev)
@@ -1200,7 +1203,7 @@ module ed_met_driver
                            !     Define the normalisation factors for the previous and the !
                            ! next time.                                                    !
                            !---------------------------------------------------------------!
-                           select case (imetavg)
+                           select case (met_avgtype(iformat))
                            case (0)
                               secz_prev = mean_daysecz(cgrid%lon(ipy),cgrid%lat(ipy)       &
                                                       ,prevmet_timea,dt_radinterp,0.)
@@ -1292,8 +1295,8 @@ module ed_met_driver
                   !------------------------------------------------------------------------!
                   !    Decide whether to interpolate or not.                               !
                   !------------------------------------------------------------------------!
-                  if ( imetavg == -1 .or. met_interp(iformat,iv) == 2 .or.                 &
-                                          met_interp(iformat,iv) == 4 ) then
+                  if ( met_avgtype(iformat) == -1 .or. met_interp(iformat,iv) == 2 .or.    &
+                                                       met_interp(iformat,iv) == 4 ) then
                      !----- Constant, do not attempt to do any interpolation. -------------!
                      do ipy = 1,cgrid%npolygons
                         cgrid%met(ipy)%nir_diffuse = cgrid%metinput(ipy)%nddsf(mprev)
@@ -1312,7 +1315,7 @@ module ed_met_driver
                            !     Define the normalisation factors for the previous and the !
                            ! next time.                                                    !
                            !---------------------------------------------------------------!
-                           select case (imetavg)
+                           select case (met_avgtype(iformat))
                            case (0)
                               secz_prev = mean_daysecz(cgrid%lon(ipy),cgrid%lat(ipy)       &
                                                       ,prevmet_timea,dt_radinterp,0.)
@@ -1403,8 +1406,8 @@ module ed_met_driver
                   !------------------------------------------------------------------------!
                   !    Decide whether to interpolate or not.                               !
                   !------------------------------------------------------------------------!
-                  if ( imetavg == -1 .or. met_interp(iformat,iv) == 2 .or.                 &
-                                          met_interp(iformat,iv) == 4 ) then
+                  if ( met_avgtype(iformat) == -1 .or. met_interp(iformat,iv) == 2 .or.    &
+                                                       met_interp(iformat,iv) == 4 ) then
                      !----- Constant, do not attempt to do any interpolation. -------------!
                      do ipy = 1,cgrid%npolygons
                         cgrid%met(ipy)%par_beam = cgrid%metinput(ipy)%vbdsf(mprev)
@@ -1423,7 +1426,7 @@ module ed_met_driver
                            !     Define the normalisation factors for the previous and the !
                            ! next time.                                                    !
                            !---------------------------------------------------------------!
-                           select case (imetavg)
+                           select case (met_avgtype(iformat))
                            case (0)
                               secz_prev = mean_daysecz(cgrid%lon(ipy),cgrid%lat(ipy)       &
                                                       ,prevmet_timea,dt_radinterp,0.)
@@ -1515,8 +1518,8 @@ module ed_met_driver
                   !------------------------------------------------------------------------!
                   !    Decide whether to interpolate or not.                               !
                   !------------------------------------------------------------------------!
-                  if ( imetavg == -1 .or. met_interp(iformat,iv) == 2 .or.                 &
-                                          met_interp(iformat,iv) == 4 ) then
+                  if ( met_avgtype(iformat) == -1 .or. met_interp(iformat,iv) == 2 .or.    &
+                                                       met_interp(iformat,iv) == 4 ) then
                      !----- Constant, do not attempt to do any interpolation. -------------!
                      do ipy = 1,cgrid%npolygons
                         cgrid%met(ipy)%par_diffuse = cgrid%metinput(ipy)%vddsf(mprev)
@@ -1535,7 +1538,7 @@ module ed_met_driver
                            !     Define the normalisation factors for the previous and the !
                            ! next time.                                                    !
                            !---------------------------------------------------------------!
-                           select case (imetavg)
+                           select case (met_avgtype(iformat))
                            case (0)
                               secz_prev = mean_daysecz(cgrid%lon(ipy),cgrid%lat(ipy)       &
                                                       ,prevmet_timea,dt_radinterp,0.)
@@ -1782,7 +1785,7 @@ module ed_met_driver
                !---------------------------------------------------------------------------!
                prevmet_timea = current_time
                nextmet_timea = current_time
-               select case (imetavg)
+               select case (met_avgtype(iformat))
                case (0)
                   !----- Instantaneous averages. ------------------------------------------!
                   call update_model_time_dm(prevmet_timea,dtprev)
@@ -1935,7 +1938,7 @@ module ed_met_driver
 
                case('nbdsf')   !----- Near IR beam downward shortwave flux. [   W/m2] -----!
 
-                  select case (imetavg)
+                  select case (met_avgtype(iformat))
                   case (-1)
                      do ipy=1,cgrid%npolygons
                         cgrid%met(ipy)%nir_beam = cgrid%metinput(ipy)%nbdsf(mnext) * wnext &
@@ -1957,7 +1960,7 @@ module ed_met_driver
                            !     Define the normalisation factors for the previous and the !
                            ! next time.                                                    !
                            !---------------------------------------------------------------!
-                           select case (imetavg)
+                           select case (met_avgtype(iformat))
                            case (0)
                               secz_prev = mean_daysecz(cgrid%lon(ipy),cgrid%lat(ipy)       &
                                                       ,prevmet_timea,dt_radinterp,0.)
@@ -2059,7 +2062,7 @@ module ed_met_driver
 
                case('nddsf')   !----- Near IR diffuse downward shortwave flux. [   W/m2] --!
 
-                  select case (imetavg)
+                  select case (met_avgtype(iformat))
                   case (-1)
                      do ipy=1,cgrid%npolygons
                         cgrid%met(ipy)%nir_diffuse =                                       &
@@ -2082,7 +2085,7 @@ module ed_met_driver
                            !     Define the normalisation factors for the previous and the !
                            ! next time.                                                    !
                            !---------------------------------------------------------------!
-                           select case (imetavg)
+                           select case (met_avgtype(iformat))
                            case (0)
                               secz_prev = mean_daysecz(cgrid%lon(ipy),cgrid%lat(ipy)       &
                                                       ,prevmet_timea,dt_radinterp,0.)
@@ -2183,7 +2186,7 @@ module ed_met_driver
 
                case('vbdsf')   !----- Visible beam downward shortwave flux. [   W/m2] -----!
 
-                  select case (imetavg)
+                  select case (met_avgtype(iformat))
                   case (-1)
                      do ipy=1,cgrid%npolygons
                         cgrid%met(ipy)%par_beam = cgrid%metinput(ipy)%vbdsf(mnext) * wnext &
@@ -2205,7 +2208,7 @@ module ed_met_driver
                            !     Define the normalisation factors for the previous and the !
                            ! next time.                                                    !
                            !---------------------------------------------------------------!
-                           select case (imetavg)
+                           select case (met_avgtype(iformat))
                            case (0)
                               secz_prev = mean_daysecz(cgrid%lon(ipy),cgrid%lat(ipy)       &
                                                       ,prevmet_timea,dt_radinterp,0.)
@@ -2307,7 +2310,7 @@ module ed_met_driver
 
                case('vddsf')   !----- Visible diffuse downward shortwave flux. [   W/m2] --!
 
-                  select case (imetavg)
+                  select case (met_avgtype(iformat))
                   case (-1)
                      do ipy=1,cgrid%npolygons
                         cgrid%met(ipy)%par_diffuse =                                       &
@@ -2329,7 +2332,7 @@ module ed_met_driver
                            !     Define the normalisation factors for the previous and the !
                            ! next time.                                                    !
                            !---------------------------------------------------------------!
-                           select case (imetavg)
+                           select case (met_avgtype(iformat))
                            case (0)
                               secz_prev = mean_daysecz(cgrid%lon(ipy),cgrid%lat(ipy)       &
                                                       ,prevmet_timea,dt_radinterp,0.)

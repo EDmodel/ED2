@@ -1504,205 +1504,171 @@ do
       metdriverdb="${fullscen}/Bananal/Bananal_HEADER"
       metcyc1=2004
       metcycf=2006
-      imetavg=1
       ;;
    Brasilia)
       metdriverdb="${fullscen}/Brasilia/Brasilia_HEADER"
       metcyc1=2006
       metcycf=2012
-      imetavg=1
       ;;
    Caxiuana)
       metdriverdb="${fullscen}/Caxiuana/Caxiuana_HEADER"
       metcyc1=1999
       metcycf=2003
-      imetavg=1
       ;;
    ERA5_CHIRPS)
       metdriverdb="${fullscen}/${iscenario}_HEADER"
       metcyc1=1981
       metcycf=2019
-      imetavg=1
       ;;
    ERAINT_CHIRPS)
       metdriverdb="${fullscen}/${iscenario}_HEADER"
       metcyc1=1981
       metcycf=2017
-      imetavg=2
       ;;
    ERAINT_NATIVE)
       metdriverdb="${fullscen}/${iscenario}_HEADER"
       metcyc1=1979
       metcycf=2017
-      imetavg=2
       ;;
    ERAINT_MSWEP2)
       metdriverdb="${fullscen}/${iscenario}_HEADER"
       metcyc1=1979
       metcycf=2016
-      imetavg=2
       ;;
    Fazenda_Nossa_Senhora)
       metdriverdb="${fullscen}/Fazenda_Nossa_Senhora/Fazenda_Nossa_Senhora_HEADER"
       metcyc1=1999
       metcycf=2002
-      imetavg=1
       ;;
    Harvard)
       metdriverdb="${fullscen}/Harvard/Harvard_HEADER"
       metcyc1=1992
       metcycf=2003
-      imetavg=3
       ;;
    Laegern)
       metdriverdb="${fullscen}/Laegern/Laegern_HEADER"
       metcyc1=2006
       metcycf=2016
-      imetavg=1
       ;;
    Manaus_Km34)
       metdriverdb="${fullscen}/Manaus_Km34/Manaus_Km34_HEADER"
       metcyc1=1999
       metcycf=2006
-      imetavg=1
       ;;
    MERRA2_CHIRPS)
       metdriverdb="${fullscen}/${iscenario}_HEADER"
       metcyc1=1981
       metcycf=2017
-      imetavg=3
       ;;
    MERRA2_MSWEP2)
       metdriverdb="${fullscen}/${iscenario}_HEADER"
       metcyc1=1980
       metcycf=2016
-      imetavg=3
       ;;
    MERRA2_NATIVE)
       metdriverdb="${fullscen}/${iscenario}_HEADER"
       metcyc1=1980
       metcycf=2017
-      imetavg=3
       ;;
    Natal)
       metdriverdb="${fullscen}/Natal/Natal_HEADER"
       metcyc1=2009
       metcycf=2012
-      imetavg=1
       ;;
    Paracou)
       metdriverdb="${fullscen}/Paracou/Paracou_HEADER"
       metcyc1=2004
       metcycf=2014
-      imetavg=1
       ;;
    Pe-de-Gigante)
       metdriverdb="${fullscen}/Pe-de-Gigante/Pe-de-Gigante_HEADER"
       metcyc1=2001
       metcycf=2003
-      imetavg=1
       ;;
    Petrolina)
       metdriverdb="${fullscen}/Petrolina/Petrolina_HEADER"
       metcyc1=2004
       metcycf=2012
-      imetavg=1
       ;;
    PGMF3_CHIRPS)
       metdriverdb="${fullscen}/${iscenario}_HEADER"
       metcyc1=1981
       metcycf=2016
-      imetavg=3
       ;;
    PGMF3_MSWEP2)
       metdriverdb="${fullscen}/${iscenario}_HEADER"
       metcyc1=1979
       metcycf=2016
-      imetavg=3
       ;;
    PGMF3_NATIVE)
       metdriverdb="${fullscen}/${iscenario}_HEADER"
       metcyc1=1979
       metcycf=2016
-      imetavg=3
       ;;
    Rebio_Jaru)
       metdriverdb="${fullscen}/Rebio_Jaru/Rebio_Jaru_HEADER"
       metcyc1=1999
       metcycf=2002
-      imetavg=1
       ;;
    Santarem_Km67)
       metdriverdb="${fullscen}/Santarem_Km67/Santarem_Km67_HEADER"
       metcyc1=2001
       metcycf=2011
-      imetavg=1
       ;;
    Santarem_Km77)
       metdriverdb="${fullscen}/Santarem_Km77/Santarem_Km77_HEADER"
       metcyc1=2001
       metcycf=2005
-      imetavg=1
       ;;
    Santarem_Km83)
       metdriverdb="${fullscen}/Santarem_Km83/Santarem_Km83_HEADER"
       metcyc1=2000
       metcycf=2003
-      imetavg=1
       ;;
    Sheffield)
       metdriverdb=${fullscen}/${shefhead}
       metcyc1=1969
       metcycf=2008
-      imetavg=2
       ;;
    Tanguro_Burn)
       metdriverdb="${fullscen}/Tanguro_Burn/Tanguro_Burn_HEADER"
       metcyc1=2008
       metcycf=2018
-      imetavg=1
       ;;
    Tanguro_Ctrl)
       metdriverdb="${fullscen}/Tanguro_Ctrl/Tanguro_Ctrl_HEADER"
       metcyc1=2008
       metcycf=2018
-      imetavg=1
       ;;
    Tonzi)
       metdriverdb="${fullscen}/Tonzi/Tonzi_HEADER"
       metcyc1=2000
       metcycf=2010
-      imetavg=1
       ;;
    WFDE5_CHIRPS)
       metdriverdb="${fullscen}/${iscenario}_HEADER"
       metcyc1=1981
       metcycf=2018
-      imetavg=2
       ;;
    WFDEI_CHIRPS)
       metdriverdb="${fullscen}/${iscenario}_HEADER"
       metcyc1=1981
       metcycf=2016
-      imetavg=1
       ;;
    WFDEI_CRUP)
       metdriverdb="${fullscen}/${iscenario}_HEADER"
       metcyc1=1979
       metcycf=2016
-      imetavg=1
       ;;
    WFDEI_GPCC)
       metdriverdb="${fullscen}/${iscenario}_HEADER"
       metcyc1=1979
       metcycf=2016
-      imetavg=1
       ;;
    WFDEI_MSWEP2)
       metdriverdb="${fullscen}/${iscenario}_HEADER"
       metcyc1=1979
       metcycf=2016
-      imetavg=1
       ;;
    *)
       echo "Met driver: ${metdriver}"
