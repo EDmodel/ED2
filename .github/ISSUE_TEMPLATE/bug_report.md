@@ -12,16 +12,16 @@ A clear and concise description of what the bug is.
 
 **To Reproduce**
 Steps to reproduce the behaviour:
-1. Environment:
-[] Linux
-[] MacOS
-[] Containerised version
-[] Other
-2. Compiler:
-[] GNU (gfortran/gcc)
-[] Intel (ifort/icc)
-[] PGI (pgf90/pgcc)
-[] Other
+1. Environment (check all that apply):
+  - [ ] Linux
+  - [ ] MacOS
+  - [ ] Containerised version
+  - [ ] Other
+2. Compiler (check all that apply):
+  - [ ] GNU (gfortran/gcc)
+  - [ ] Intel (ifort/icc)
+  - [ ] PGI (pgf90/pgcc)
+  - [ ] Other
 3. Relevant options in ED2IN:
 If applicable, add ED2IN to trigger behaviour.
 4. Error message:
