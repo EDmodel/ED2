@@ -431,11 +431,12 @@ end subroutine cumsum
 !==========================================================================================!
 !     This subroutine is the double precision version of the linear system solver above.   !
 ! It will solve the linear system AA . X = Y for given AA and Y, using the Gaussian        !
-! elimination method with partial pivoting and back-substitution.  This subroutine is      !
-! based on:                                                                                !
+! elimination method with partial pivoting and back-substitution.  This subroutine builds  !
+! on the algorithm described in P92, but adopting a vector-based approach compatible with  !
+! modern Fortran.                                                                          !
 !                                                                                          !
 ! Press, W. H., S. A. Teukolsky, W. T. Vetterling, B. P. Flannery: 1992. Numerical recipes !
-!    in Fortran 77.  Cambridge University Press.                                           !
+!    in Fortran 77.  Cambridge University Press (P92).                                           !
 !------------------------------------------------------------------------------------------!
 subroutine lisys_solver8(nsiz,AA,Y,X,sing)
    implicit none
@@ -536,6 +537,8 @@ end subroutine lisys_solver8
 
 
 
+
+
 !==========================================================================================!
 !==========================================================================================!
 !     EIFUN8 -- This function computes the exponential integral function, defined by       !
@@ -544,35 +547,49 @@ end subroutine lisys_solver8
 !                        |    exp(t)                                                       !
 !              Ei(x) =   |   -------- dt                                                   !
 !                       _|      t                                                          !
-!                        0                                                                 !
+!                      -Inf                                                                !
 !                                                                                          !
-!     This function is based on:                                                           !
+!     This function checks for two approaches: series expansion, which typically works     !
+! best when x is small, and the asymptotic expansion, which typically works best when x is !
+! large. The approach selects the smallest result (in absolute numbers) as the most        !
+! accurate method. Both the series expansion and the asymptotic expansion are provided in  !
+! AS72. This approach also checks for some other edge cases, and ignores the results when  !
+! the value is very negative.                                                              !
 !                                                                                          !
-! Press, W. H., S. A. Teukolsky, W. T. Vetterling, B. P. Flannery: 1992. Numerical recipes !
-!    in Fortran 77.  Cambridge University Press, section 6.3 p. 215-219.                   !
+! Reference:                                                                               !
 !                                                                                          !
-! with the difference that we also solve for negative numbers.  Zero cannot be solved, so  !
-! if this happens, or if the sought number would lead to infinity, we stop the model.      !
+! Abramowitz, M., and I. A. Stegun, Eds., 1972: Handbook of mathematical functions with    !
+!    formulas, graphs, and mathematical tables. 10th ed., No. 55, Applied Mathematics      !
+!    Series, National Bureau of Standards, Washington, DC, USA (AS72).                     !
+!                                                                                          !
 !------------------------------------------------------------------------------------------!
 real(kind=8) function eifun8(x)
-   use consts_coms, only : euler_gam8 & ! intent(in)
-                         , lnexp_min8 & ! intent(in)
-                         , lnexp_max8 & ! intent(in)
-                         , tiny_num8  ! ! intent(in)
+   use consts_coms, only : euler_gam8   & ! intent(in)
+                         , lnexp_min8   & ! intent(in)
+                         , lnexp_max8   & ! intent(in)
+                         , tiny_num8    & ! intent(in)
+                         , almost_zero8 ! ! intent(in)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    real(kind=8), intent(in) :: x
    !----- Local variables. ----------------------------------------------------------------!
-   real(kind=8)             :: sum
-   real(kind=8)             :: term
-   real(kind=8)             :: fact
-   real(kind=8)             :: prev
-   real(kind=8)             :: diter
-   integer                  :: iter
+   real(kind=8)             :: usum
+   real(kind=8)             :: uxk
+   real(kind=8)             :: uxkm1
+   real(kind=8)             :: vsum
+   real(kind=8)             :: vxkm1
+   real(kind=8)             :: vxk
+   real(kind=8)             :: ei_series
+   real(kind=8)             :: ei_asymptote
+   integer                  :: k
    !----- Local constants. ----------------------------------------------------------------!
-   real(kind=8), parameter  :: powerlim  = 1.5d+01
-   real(kind=8), parameter  :: converge  = 1.0d-7
-   integer     , parameter  :: maxiter   = 100
+   real(kind=8), parameter  :: discard8      = 1.0d+36
+   integer     , parameter  :: maxiter       = 100
+   !----- Polynomial coefficients. --------------------------------------------------------!
+   real(kind=8), dimension(4), parameter :: apoly = (/ 8.5733287401d+00, 1.8059015973d+01  &
+                                                     , 8.6347608925d+00, 2.6777373430d-01 /)
+   real(kind=8), dimension(4), parameter :: bpoly = (/ 9.5733223454d+00, 2.5632956149d+01  &
+                                                     , 2.1099653083d+01, 3.9584969228d+00 /)
    !---------------------------------------------------------------------------------------!
 
 
@@ -582,63 +599,157 @@ real(kind=8) function eifun8(x)
    if (x == 0.d0) then
       !------------------------------------------------------------------------------------!
       !     Zero.  This is a singularity and the user should never call it in this case.   !
-      ! That's sad, but we ought to quit this run and tell the user why the run crashed.   !
       !------------------------------------------------------------------------------------!
-      call fatal_error('Exponential integral cannot be solved for x = 0.'                  &
-                      ,'eifun8','numutils.f90')
-   elseif (x >= lnexp_max8) then
-      !----- Huge value, crash because this is iminent over-flow. -------------------------!
-      write(unit=*,fmt='(a,1x,es12.5)') 'Attempted X =         ',x
-      write(unit=*,fmt='(a,1x,es12.5)') 'Maximum acceptable X =',lnexp_max8
-      call fatal_error('Exponential integral cannot be solved for x = 0.'                  &
-                      ,'eifun8','numutils.f90')
-   elseif (abs(x) <= lnexp_min8) then
-      !----- Huge negative number, the result can be rounded to zero. ---------------------!
+      stop 'Exponential integral cannot be solved for x = 0.'
+      !------------------------------------------------------------------------------------!
+   elseif (x <= lnexp_min8) then
+      !------------------------------------------------------------------------------------!
+      !    Huge negative value, the result can be set to zero.                             !
+      !------------------------------------------------------------------------------------!
       eifun8 = 0.d0
-   elseif (abs(x) <= tiny_num8) then
-      !----- The number is too close to zero, bypass iterative methods. -------------------!
-      eifun8 = euler_gam8 + log(abs(x))
-   elseif (abs(x) <= powerlim) then
       !------------------------------------------------------------------------------------!
-      !    Input x is small, so we use the power method.                                   !
+   elseif (x <= -1.d0) then
       !------------------------------------------------------------------------------------!
-      fact      = 1.d0
-      sum       = 0.d0
-      powerloop: do iter=1,maxiter
-         diter = dble(iter)
-         fact  = fact * x / diter
-         term  = fact / diter
-         sum   = sum + term
-         !----- If the term is tiny, we have reached convergence, quit the loop. ----------!
-         if (abs(term) < converge * abs(sum)) exit powerloop
-      end do powerloop
-      eifun8   = euler_gam8 + log(abs(x)) + sum
+      !     For negative values less than -1.0, we use the polynomial approximation        !
+      ! (Equation 5.1.56 of AS72), by taking that Ei(x) = - E1(-x).                        !
+      !------------------------------------------------------------------------------------!
+      eifun8 = exp(x)/x                                                                    &
+             * ( x * ( x * ( x * ( x - apoly(1) ) + apoly(2) ) - apoly(3) ) + apoly(4) )   &
+             / ( x * ( x * ( x * ( x - bpoly(1) ) + bpoly(2) ) - bpoly(3) ) + bpoly(4) )
+      !------------------------------------------------------------------------------------!
    else
       !------------------------------------------------------------------------------------!
-      !    Input x is large, so we use the asymptotic approximation.                       !
+      !    Find both the series expansion and the asymptotic expansion, and pick the one   !
+      ! with the lowest absolute value.                                                    !
       !------------------------------------------------------------------------------------!
-      sum       = 0.d0
-      term      = 1.d0
-      asymploop: do iter=1,maxiter
-         diter = dble(iter)
-         prev  = term
-         term  = term * diter / x
-         if (abs(term) < converge) then
-            !----- The term is tiny, we have reached convergence, quit the loop. ----------!
-            exit asymploop
-         elseif (abs(term) >= abs(prev)) then
-            !------------------------------------------------------------------------------!
-            !   Series is diverging, we are probably reaching round-off errors, we better  !
-            ! stop now.                                                                    !
-            !------------------------------------------------------------------------------!
-            sum = sum - prev
-            exit asymploop
-         else
-            sum = sum + term
+
+
+      !------------------------------------------------------------------------------------!
+      !  Series expansion: Equation 5.1.11 of AS72, by taking that Ei(x) = - E1(-x).       !
+      !                                                                                    !
+      !                              Inf                                                   !
+      !     Ei(x) = gamma + ln(x) +  SUM u(x,k),                                           !
+      !                              k=1                                                   !
+      !                                                                                    !
+      ! where u(x,k) = [ (-1)^k * (-x)^k / (k * k!) ]                                      !
+      !                                                                                    !
+      !  To efficiently compute the terms inside the summation, we use that:               !
+      !                                                                                    !
+      !  u(x,k) = x * (k -1) / k^2 * u(x,k-1), for k >= 2.                                 !
+      !------------------------------------------------------------------------------------!
+      uxk   = x
+      usum  = uxk
+      do_expansion: do k = 2, maxiter
+         !----- Update the current summation term. ----------------------------------------!
+         uxkm1 = uxk
+         uxk   = x * dble( k - 1 ) / dble( k * k ) * uxkm1
+         !----- Check for degenerate or very large estimate. ------------------------------!
+         if ( abs(uxk) > discard8 .or. abs(usum) > discard8) then
+            usum = sign(discard8,usum)
+            exit do_expansion
          end if
-      end do asymploop
-      eifun8 = exp(x) * (1.d0 + sum) / x
+         !----- Check for convergence. ----------------------------------------------------!
+         if ( any(abs(uxk) <= [ almost_zero8 * abs(usum), tiny_num8] ) ) exit do_expansion
+         !----- Update summation. ---------------------------------------------------------!
+         usum = usum + uxk
+         !---------------------------------------------------------------------------------!
+      end do do_expansion
+      !----- Find the series solution. ----------------------------------------------------!
+      if ( abs(usum) == discard8) then
+         ei_series = sign(discard8,usum)
+      else
+         ei_series = euler_gam8 + log(abs(x)) + usum
+      end if
+      !------------------------------------------------------------------------------------!
+
+      !------------------------------------------------------------------------------------!
+      !  Asymptote expansion: Equation 5.1.51 of AS72 by taking AS72's n=1 and             !
+      ! Ei(x) = -E1(-x)).                                                                  !
+      !                                                                                    !
+      !                          Inf                                                       !
+      !     Ei(x) = exp(x) / x * SUM v(x,k),                                               !
+      !                          k=0                                                       !
+      !                                                                                    !
+      ! where v(x,k) = k! / x^k                                                            !
+      !                                                                                    !
+      !  To efficiently compute the terms inside the summation, we use that:               !
+      !                                                                                    !
+      !  v(x,k) = k / x * v(x,n -1), for k >= 1.                                           !
+      !------------------------------------------------------------------------------------!
+      vxk       = 1.d0
+      vsum      = vxk
+      do_asymptote: do k=1,maxiter
+         !----- Update the current summation term. ----------------------------------------!
+         vxkm1 = vxk
+         vxk   = vxkm1 * dble(k) / x
+         !---------------------------------------------------------------------------------!
+         !   This method can become degenerate for low x or lead to exceedinly large       !
+         ! values, in these cases, halt evaluation.                                        !
+         !---------------------------------------------------------------------------------!
+         if ( abs(vxkm1) < abs(vxk) .or. abs(vsum) > discard8) then
+            vsum = sign(discard8,vsum)
+            exit do_asymptote
+         end if
+         !----- Check for convergence. ----------------------------------------------------!
+         if ( any(abs(vxk) <= [ almost_zero8 * abs(vsum), tiny_num8] ) ) exit do_asymptote
+         !----- Update summation. ---------------------------------------------------------!
+         vsum = vsum + vxk
+         !---------------------------------------------------------------------------------!
+      end do do_asymptote
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !     If the solution became degenerate, skip value.                                 !
+      !------------------------------------------------------------------------------------!
+      if (abs(vsum) == discard8) then
+         ei_asymptote = sign(discard8,vsum)
+      else
+         ei_asymptote = exp(x) * vsum / x
+      end if
+      !------------------------------------------------------------------------------------!
+
+
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Pick the lowest absolute value as long as the sign is reasonable.              !
+      !------------------------------------------------------------------------------------!
+      if (all(abs([ei_series,ei_asymptote]) == discard8)) then
+         !----- Huge value, crash because this is iminent over-flow. ----------------------!
+         write(unit=*,fmt='(a,1x,es12.5)') 'Attempted X =         ',x
+         stop 'Exponential integral cannot be solved for large absolute x.'
+         !---------------------------------------------------------------------------------!
+      elseif (x < 0.d0) then
+         !---------------------------------------------------------------------------------!
+         !     Exponential integral is negative when x is negative, however, for some      !
+         ! values between -15 < x < -14, the solutions become numerically unstable. Check  !
+         ! for the most reasonable estimate.                                               !
+         !---------------------------------------------------------------------------------!
+         if (ei_series > 0.d0 .and. ei_asymptote > 0.d0) then
+            write(unit=*,fmt='(a,1x,es12.5)') 'Attempted X                  = ',x
+            write(unit=*,fmt='(a,1x,es12.5)') 'Series expansion estimate    = ',ei_series
+            write(unit=*,fmt='(a,1x,es12.5)') 'Asymptote expansion estimate = ',ei_asymptote
+            stop 'Exponential integral failed solving, another method might be needed.'
+         elseif (ei_series > 0.d0) then
+            eifun8 = ei_asymptote
+         elseif (ei_asymptote > 0.d0) then
+            eifun8 = ei_series
+         elseif (abs(ei_series) < abs(ei_asymptote)) then
+            eifun8 = ei_series
+         else
+            eifun8 = ei_asymptote
+         end if
+         !---------------------------------------------------------------------------------!
+      elseif (abs(ei_series) < abs(ei_asymptote)) then
+         eifun8 = ei_series
+      else
+         eifun8 = ei_asymptote
+      end if
+      !------------------------------------------------------------------------------------!
    end if
+   !---------------------------------------------------------------------------------------!
 
    return
 end function eifun8
@@ -651,8 +762,17 @@ end function eifun8
 
 !==========================================================================================!
 !==========================================================================================!
-!    Heapsort is a robust and efficient sorting algorithm.  For more details, check        !
-! The Numerical Recipes Book (chapter 8).                                                  !
+!    Heapsort is a robust and efficient sorting algorithm introduced by W64. The algorithm !
+! implemented here is built from the Wikipedia heapsort pseudocode, which is in turn based !
+! on K97.                                                                                  !
+!                                                                                          !
+! Williams, JWJ (1964). Algorithm 232 - Heapsort, Commun. ACM 7, 347-348.                  !
+!    doi:10.1145/512274.512284 (W64).                                                      !
+!                                                                                          !
+! Knuth, D (1997). The Art of Computer Programming - volume 3: sort and searching.         !
+!    section 5.2.3. Sorting by selection (p. 144-155). ISBN 978-0-201-89685-5 (K97).       !
+!                                                                                          !
+! Wikipedia link: https://en.wikipedia.org/wiki/Heapsort                                   !
 !------------------------------------------------------------------------------------------!
 subroutine heapsort(nx,xi,increase,xo)
    implicit none
@@ -662,11 +782,12 @@ subroutine heapsort(nx,xi,increase,xo)
    logical               , intent(in)  :: increase ! Sort from small to large?
    real   , dimension(nx), intent(out) :: xo       ! Output vector
    !----- Local variables. ----------------------------------------------------------------!
-   integer                             :: i        ! Counter
-   integer                             :: ir       ! Index of selected data
-   integer                             :: j        ! Index of selected data
-   integer                             :: l        ! Index of selected data
-   real                                :: aux      ! Placeholder
+   integer                             :: i        ! Counter     (inner loop)
+   integer                             :: ilwr     ! Lower index (inner loop)
+   integer                             :: iupr     ! Upper index (inner loop)
+   integer                             :: olwr     ! Lower index (outer loop)
+   integer                             :: oupr     ! Upper index (outer loop)
+   real                                :: aux      ! Placeholder for element swapping
    !---------------------------------------------------------------------------------------!
 
 
@@ -685,13 +806,13 @@ subroutine heapsort(nx,xi,increase,xo)
 
 
    !---------------------------------------------------------------------------------------!
-   !    The index l will be decremented from its initial value down to 1 during the        !
-   ! "hiring" (heap creation) phase.  Once it reaches 1, the index ir will be decremented  !
-   ! from its initial value down to 1 during the "retirement-and-promotion" (heap          !
-   ! selection) phase.                                                                     !
+   !    Set initial guess of lower index ilwr to half the size of the vector and iupr to   !
+   ! the size of the vector. During the heap setting stage, ilwr will be reduced until it  !
+   ! becomes 0, and then we start decreasing iupr until it becomes 1, at which point the   !
+   ! vector becomes sorted.                                                                !
    !---------------------------------------------------------------------------------------!
-   l  = nx/2 + 1
-   ir = nx
+   olwr  = nx/2 + 1
+   oupr  = nx+1
    !---------------------------------------------------------------------------------------!
 
 
@@ -700,78 +821,73 @@ subroutine heapsort(nx,xi,increase,xo)
    !---------------------------------------------------------------------------------------!
    outer_loop: do
       !------------------------------------------------------------------------------------!
-      !      Check whether we are in the hiring phase or in the retirement-and-promotion   !
+      !     Exit outer loop if we reach the upper bound has already reached 1.             !
+      !------------------------------------------------------------------------------------!
+      if (oupr == 2) exit outer_loop
+      !------------------------------------------------------------------------------------!
+
+      !------------------------------------------------------------------------------------!
+      !      Check whether we are in the heap setting phase or in the retirement-and-promotion   !
       ! phase.                                                                             !
       !------------------------------------------------------------------------------------!
-      if (l > 1) then
-         !---------------------------------------------------------------------------------!
-         !     Still in hiring phase.                                                      !
-         !---------------------------------------------------------------------------------!
-         l   = l - 1
-         aux = xo(l)
+      if (olwr > 1) then
+         !----- Heap construction. --------------------------------------------------------!
+         olwr = olwr - 1
          !---------------------------------------------------------------------------------!
       else
          !---------------------------------------------------------------------------------!
-         !    In the retirement-and-promotion phase.                                       !
+         !      Heap extraction.                                                           !
          !---------------------------------------------------------------------------------!
-         !----- Clear a space at end of array. --------------------------------------------!
-         aux    = xo(ir)
-         !----- Retire the top of the heap into it. ---------------------------------------!
-         xo(ir) = xo(1)
-         !----- Decrease the size of the corporation. -------------------------------------!
-         ir      = ir -1
-         !----- Check how we are doing with promotions. -----------------------------------!
-         if (ir == 1) then
-            !----- Done with the last promotion.  The least competent worker of all! ------!
-            xo(1) = aux
-            !------------------------------------------------------------------------------!
-
-            !------------------------------------------------------------------------------!
-            !      Time to leave the loop (and the sub-routine).                           !
-            !------------------------------------------------------------------------------!
-            exit outer_loop
-            !------------------------------------------------------------------------------!
-         end if
+         !----- Shift upper side down one step. -------------------------------------------!
+         oupr     = oupr -1
+         !----- Swap indices. -------------------------------------------------------------!
+         aux      = xo(oupr)
+         xo(oupr) = xo(1)
+         xo(1)    = aux
          !---------------------------------------------------------------------------------!
       end if
       !------------------------------------------------------------------------------------!
 
-      !------------------------------------------------------------------------------------!
-      !    Whether in hiring phase or promotion phase, we here set up to sift down element !
-      ! aux to its proper level.                                                           !
-      !------------------------------------------------------------------------------------!
-      i = l
-      j = l+1
-      inner_loop: do
-         if (j > ir) exit inner_loop
 
-         !----- Compare to the better underling. ------------------------------------------!
-         if (j < ir) then
-            if(xo(j) < xo(j+1)) j = j + 1
+      !------------------------------------------------------------------------------------!
+      !     Sift down step.                                                                !
+      !------------------------------------------------------------------------------------!
+      i = olwr
+      inner_loop: do
+         !----- Find the lower and right elements. ----------------------------------------!
+         ilwr = 2 * i
+         iupr = ilwr + 1
+         !---------------------------------------------------------------------------------!
+
+         !----- Make sure we do not exceed the heap size. ---------------------------------!
+         if (iupr > oupr) exit inner_loop
+         !---------------------------------------------------------------------------------!
+
+
+         !---------------------------------------------------------------------------------!
+         !     Test whether there is an upper element that is larger, and swap the order.  !
+         ! Make sure that the elements are bounded before testing vector elements, to      !
+         ! avoid segmentation violation.                                                   !
+         !---------------------------------------------------------------------------------!
+         if (iupr < oupr) then
+            if (xo(ilwr) < xo(ilwr+1)) ilwr = ilwr + 1
          end if
          !---------------------------------------------------------------------------------!
 
 
          !---------------------------------------------------------------------------------!
-         !     Check whether to demote aux or not.                                         !
+         !     Test whether or not to swap elements.                                       !
          !---------------------------------------------------------------------------------!
-         if (aux < xo(j)) then
-            !----- Demote aux. ------------------------------------------------------------!
-            xo(i) = xo(j)
-            i     = j
-            j     = j + j
-            !------------------------------------------------------------------------------!
+         if (xo(i) < xo(ilwr)) then
+            aux      = xo(i)
+            xo(i)    = xo(ilwr)
+            xo(ilwr) = aux
+            i        = ilwr
          else
-            !----- This is aux's level.  Set j to terminate the sift-down. ----------------!
-            j     = ir + 1
-            !------------------------------------------------------------------------------!
+            exit inner_loop
          end if
          !---------------------------------------------------------------------------------!
       end do inner_loop
-      !------------------------------------------------------------------------------------!
-
-      !----- Put aux into its slot. -------------------------------------------------------!
-      xo(i) = aux
       !------------------------------------------------------------------------------------!
    end do outer_loop
    !---------------------------------------------------------------------------------------!
@@ -909,70 +1025,231 @@ end function fquant_mask
 
 
 
+
 !==========================================================================================!
 !==========================================================================================!
-! FUNCTION bpow01
-!\brief Safe power estimate to avoid floating point exceptions
-!\author Marcos Longo 3 March 2021
-!\details This function to calculate power functions for numbers bounded between 0 and 1
-!!        safely.  It uses that y = x ** a = exp(a * ln(x)), and use the safe log limits
-!!        to avoid FPE errors.  This function "should" work for values greater than 1 too,
-!!        but don't use if for negative numbers.
+!     Sub-routine that solves the quadratic equation ( a * x**2 + b * x + c = 0).          !
+! We test whether or not this is a trivial case that does not require solving the full     !
+! equation. For the full equation, we use the approach by H02 to avoid floating point      !
+! issues when solving roots. We further check whether or not the discriminant is negative. !
+!                                                                                          !
+!     The subroutine also requires a "undef" flag to be passed, which will flag cases      !
+! in which one or both solutions are not valid. This is an argument so the solver can be   !
+! used when either the largest or the smallest root is sought.                             !
+!                                                                                          !
+! Higham, N. J., 2002: Accuracy and Stability of Numerical Algorithms. 2nd ed., Society    !
+!    for Industrial and Applied Mathematics, Philadelphia, PA, United States,              !
+!    doi:10.1137/1.9780898718027 (H02).                                                    !
 !------------------------------------------------------------------------------------------!
-real(kind=4) function bpow01(x,a)
-   use consts_coms, only : lnexp_min & ! intent(in)
-                         , lnexp_max ! ! intent(in)
+subroutine solve_quadratic(aquad,bquad,cquad,undef,root1,root2)
+   use consts_coms, only : tiny_num
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
-   real(kind=4), intent(in) :: x
-   real(kind=4), intent(in) :: a
+   real(kind=4), intent(in)  :: aquad
+   real(kind=4), intent(in)  :: bquad
+   real(kind=4), intent(in)  :: cquad
+   real(kind=4), intent(in)  :: undef
+   real(kind=4), intent(out) :: root1
+   real(kind=4), intent(out) :: root2
    !----- Internal variables. -------------------------------------------------------------!
-   real(kind=4)             :: lnexp
+   real(kind=4)              :: discr
+   logical                   :: a_offzero
+   logical                   :: b_offzero
+   logical                   :: c_offzero
    !---------------------------------------------------------------------------------------!
 
 
 
+   !----- Save logical tests. -------------------------------------------------------------!
+   a_offzero = abs(aquad) >= tiny_num
+   b_offzero = abs(bquad) >= tiny_num
+   c_offzero = abs(cquad) >= tiny_num
    !---------------------------------------------------------------------------------------!
-   !      Check if x is greater than zero (if it is exactly zero, we cannot use the log    !
-   ! approach).                                                                            !
-   !---------------------------------------------------------------------------------------!
-   if (x > 0.) then
 
 
-      !----- Find the bounded term inside the exponential. --------------------------------!
-      lnexp = max(lnexp_min,min(lnexp_max,a * log(x)))
+   !---------------------------------------------------------------------------------------!
+   !     Check for cases to solve.                                                         !
+   !---------------------------------------------------------------------------------------!
+   if (a_offzero .and. ( b_offzero .or. c_offzero ) ) then
+      !------------------------------------------------------------------------------------!
+      !    Quadratic equation with two non-zero solutions. Find the discriminant to find   !
+      ! out whether the solutions are real (if negative, then the roots are complex).      !
+      !------------------------------------------------------------------------------------!
+      discr = bquad*bquad - 4.0 * aquad * cquad
       !------------------------------------------------------------------------------------!
 
-
-      !----- Report result. ---------------------------------------------------------------!
-      bpow01 = exp(lnexp)
       !------------------------------------------------------------------------------------!
-   else if (x == 0. .and. a > 0.) then
-      !----- By definition 0^a = 0 as long as a > 0. --------------------------------------!
-      bpow01 = 0.
+      !     Check discriminant sign (but allow for round-off errors).                      !
+      !------------------------------------------------------------------------------------!
+      if (discr >= - tiny_num) then
+         !----- Coerce discriminant to non-negative. --------------------------------------!
+         discr = max(0.0,discr)
+         !---------------------------------------------------------------------------------!
+
+         !---------------------------------------------------------------------------------!
+         !     Follow H02's approach to find the largest root (absolute value) from the    !
+         ! traditional quadratic equation, then derive the second root from the first one. !
+         ! This is safe whenever b or c are non-zero.                                      !
+         !---------------------------------------------------------------------------------!
+         root1  = - (bquad + sign(sqrt(discr),bquad)) / ( 2. * aquad )
+         root2  = cquad / ( aquad * root1 )
+         !---------------------------------------------------------------------------------!
+      else
+         !----- Negative discriminant, return invalid roots. ------------------------------!
+         root1  = undef
+         root2  = undef
+         !---------------------------------------------------------------------------------!
+      end if
+   else if (a_offzero) then
+      !------------------------------------------------------------------------------------!
+      !     Both bquad and cquad are nearly zero. Double root, and both have to be zero.   !
+      !------------------------------------------------------------------------------------!
+      root1 = 0.0
+      root2 = 0.0
+      !------------------------------------------------------------------------------------!
+   else if (b_offzero) then
+      !------------------------------------------------------------------------------------!
+      !     "aquad" is not zero, not a true quadratic equation. Single root.               !
+      !------------------------------------------------------------------------------------!
+      root1 = - cquad / bquad
+      root2 = undef
       !------------------------------------------------------------------------------------!
    else
       !------------------------------------------------------------------------------------!
-      !    Invalid input data, stop everything.                                            !
+      !     Both aquad and bquad are zero, this really doesn't make any sense and should   !
+      ! never happen. If it does, issue an error and stop the run.                         !
       !------------------------------------------------------------------------------------!
-      write(unit=*,fmt='(a)'          ) '-----------------------------------------------'
-      write(unit=*,fmt='(a)'          ) ' Invalid variables for bpow01!'
-      write(unit=*,fmt='(a)'          ) '-----------------------------------------------'
-      write(unit=*,fmt='(a,1x,es12.5)') ' x = ',x
-      write(unit=*,fmt='(a,1x,es12.5)') ' a = ',a
-      write(unit=*,fmt='(a)'          ) '-----------------------------------------------'
-      write(unit=*,fmt='(a)'          ) ' If x >= 0., then make sure a >= 0. '
-      write(unit=*,fmt='(a)'          ) ' If x = 0., then make sure a > 0. '
-      write(unit=*,fmt='(a)'          ) ' Negative x values are not allowed. '
-      write(unit=*,fmt='(a)'          ) '-----------------------------------------------'
-      call fatal_error('Invalid values for x and/or a.','bpow01','numutils.f90')
+      write (unit=*,fmt='(a)')           '------------------------------------------------'
+      write (unit=*,fmt='(a)')           ' Quadratic equation cannot be solved!'
+      write (unit=*,fmt='(a)')           ' ''aquad'' and/or ''bquad'' must be non-zero.'
+      write (unit=*,fmt='(a)')           '------------------------------------------------'
+      write (unit=*,fmt='(a,1x,es12.5)') ' aquad = ',aquad
+      write (unit=*,fmt='(a,1x,es12.5)') ' bquad = ',bquad
+      write (unit=*,fmt='(a,1x,es12.5)') ' cquad = ',cquad
+      write (unit=*,fmt='(a)')           '------------------------------------------------'
+      call fatal_error(' Invalid coefficients for quadratic equation'                      &
+                      ,'solve_quadratic','numutils.f90')
       !------------------------------------------------------------------------------------!
    end if
    !---------------------------------------------------------------------------------------!
 
+   return
+end subroutine solve_quadratic
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!     Sub-routine that solves the quadratic equation ( a * x**2 + b * x + c = 0).          !
+! We test whether or not this is a trivial case that does not require solving the full     !
+! equation. For the full equation, we use the approach by H02 to avoid floating point      !
+! issues when solving roots. We further check whether or not the discriminant is negative. !
+!                                                                                          !
+!     The subroutine also requires a "undef" flag to be passed, which will flag cases      !
+! in which one or both solutions are not valid. This is an argument so the solver can be   !
+! used when either the largest or the smallest root is sought.                             !
+!                                                                                          !
+! Higham, N. J., 2002: Accuracy and Stability of Numerical Algorithms. 2nd ed., Society    !
+!    for Industrial and Applied Mathematics, Philadelphia, PA, United States,              !
+!    doi:10.1137/1.9780898718027 (H02).                                                    !
+!------------------------------------------------------------------------------------------!
+subroutine solve_quadratic8(aquad,bquad,cquad,undef,root1,root2)
+   use consts_coms, only : tiny_num8
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   real(kind=8), intent(in)  :: aquad
+   real(kind=8), intent(in)  :: bquad
+   real(kind=8), intent(in)  :: cquad
+   real(kind=8), intent(in)  :: undef
+   real(kind=8), intent(out) :: root1
+   real(kind=8), intent(out) :: root2
+   !----- Internal variables. -------------------------------------------------------------!
+   real(kind=8)              :: discr
+   logical                   :: a_offzero
+   logical                   :: b_offzero
+   logical                   :: c_offzero
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !----- Save logical tests. -------------------------------------------------------------!
+   a_offzero = abs(aquad) >= tiny_num8
+   b_offzero = abs(bquad) >= tiny_num8
+   c_offzero = abs(cquad) >= tiny_num8
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Check for cases to solve.                                                         !
+   !---------------------------------------------------------------------------------------!
+   if (a_offzero .and. ( b_offzero .or. c_offzero ) ) then
+      !------------------------------------------------------------------------------------!
+      !    Quadratic equation with two non-zero solutions. Find the discriminant to find   !
+      ! out whether the solutions are real (if negative, then the roots are complex).      !
+      !------------------------------------------------------------------------------------!
+      discr = bquad*bquad - 4.d0 * aquad * cquad
+      !------------------------------------------------------------------------------------!
+
+      !------------------------------------------------------------------------------------!
+      !     Check discriminant sign (but allow for round-off errors).                      !
+      !------------------------------------------------------------------------------------!
+      if (discr >= - tiny_num8) then
+         !----- Coerce discriminant to non-negative. --------------------------------------!
+         discr = max(0.d0,discr)
+         !---------------------------------------------------------------------------------!
+
+         !---------------------------------------------------------------------------------!
+         !     Follow H02's approach to find the largest root (absolute value) from the    !
+         ! traditional quadratic equation, then derive the second root from the first one. !
+         ! This is safe whenever b or c are non-zero.                                      !
+         !---------------------------------------------------------------------------------!
+         root1  = - (bquad + sign(sqrt(discr),bquad)) / ( 2.d0 * aquad )
+         root2  = cquad / ( aquad * root1 )
+         !---------------------------------------------------------------------------------!
+      else
+         !----- Negative discriminant, return invalid roots. ------------------------------!
+         root1  = undef
+         root2  = undef
+         !---------------------------------------------------------------------------------!
+      end if
+   else if (a_offzero) then
+      !------------------------------------------------------------------------------------!
+      !     Both bquad and cquad are nearly zero. Double root, and both have to be zero.   !
+      !------------------------------------------------------------------------------------!
+      root1 = 0.d0
+      root2 = 0.d0
+      !------------------------------------------------------------------------------------!
+   else if (b_offzero) then
+      !------------------------------------------------------------------------------------!
+      !     "aquad" is not zero, not a true quadratic equation. Single root.               !
+      !------------------------------------------------------------------------------------!
+      root1 = - cquad / bquad
+      root2 = undef
+      !------------------------------------------------------------------------------------!
+   else
+      !------------------------------------------------------------------------------------!
+      !     Both aquad and bquad are zero, this really doesn't make any sense and should   !
+      ! never happen. If it does, issue an error and stop the run.                         !
+      !------------------------------------------------------------------------------------!
+      write (unit=*,fmt='(a)')           '------------------------------------------------'
+      write (unit=*,fmt='(a)')           ' Quadratic equation cannot be solved!'
+      write (unit=*,fmt='(a)')           ' ''aquad'' and/or ''bquad'' must be non-zero.'
+      write (unit=*,fmt='(a)')           '------------------------------------------------'
+      write (unit=*,fmt='(a,1x,es12.5)') ' aquad = ',aquad
+      write (unit=*,fmt='(a,1x,es12.5)') ' bquad = ',bquad
+      write (unit=*,fmt='(a,1x,es12.5)') ' cquad = ',cquad
+      write (unit=*,fmt='(a)')           '------------------------------------------------'
+      call fatal_error(' Invalid coefficients for quadratic equation'                      &
+                      ,'solve_quadratic8','numutils.f90')
+      !------------------------------------------------------------------------------------!
+   end if
+   !---------------------------------------------------------------------------------------!
 
    return
-end function bpow01
+end subroutine solve_quadratic8
 !==========================================================================================!
 !==========================================================================================!
-
