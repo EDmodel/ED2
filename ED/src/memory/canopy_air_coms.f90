@@ -11,7 +11,7 @@ module canopy_air_coms
 
    !=======================================================================================!
    !=======================================================================================!
-   !     Parameter that will be read in the namelist.                                      !
+   !     Parameters that will be read in the namelist.                                     !
    !---------------------------------------------------------------------------------------!
    integer :: icanturb      ! Which canopy turbulence we will use?
                             ! -1. is the original ED-2.0 scheme
@@ -50,13 +50,11 @@ module canopy_air_coms
                             !  3. Test # 3 of Mahfouf and Noilhan (1991)
                             !  4. Test # 4 of Mahfouf and Noilhan (1991)
 
-   real :: leaf_maxwhc      !   Maximum amount of water that can stay on top of the leaf
-                            ! surface.  If this amount is reached, the leaf stops collect-
-                            ! ing water, thus increasing the through fall fraction.  This 
-                            ! value is given in kg/[m2 leaf], so it will be always scaled
-                            ! by LAI.
+   !=======================================================================================!
+   !=======================================================================================!
+   !     Parameters that will be read in the XML file (or namelist in case of coupled      !
+   ! simulations.                                                                          !
    !---------------------------------------------------------------------------------------!
-
    !----- Minimum speed for stars [m/s]. --------------------------------------------------!
    real         :: ubmin
    !----- Minimum speed for conductances [m/s]. -------------------------------------------!
@@ -70,21 +68,11 @@ module canopy_air_coms
    real   :: vh2vr       ! vegetation roughness:vegetation height ratio
    real   :: vh2dh       ! displacement height:vegetation height ratio
    real   :: ribmax      ! Maximum bulk Richardson number (ignored when ISFCLYRM = 1)
-   !---------------------------------------------------------------------------------------!
-
-   !---------------------------------------------------------------------------------------!
-   ! LWIDTH_GRASS  -- Leaf width for grasses, in metres.  This controls the leaf boundary  !
-   !                  layer conductance (gbh and gbw).                                     !
-   ! LWIDTH_BLTREE -- Leaf width for trees, in metres.  This controls the leaf boundary    !
-   !                  layer conductance (gbh and gbw).  This is applied to broadleaf trees !
-   !                  only.                                                                !
-   ! LWIDTH_NLTREE -- Leaf width for trees, in metres.  This controls the leaf boundary    !
-   !                  layer conductance (gbh and gbw).  This is applied to conifer trees   !
-   !                  only.                                                                !
-   !---------------------------------------------------------------------------------------!
-   real(kind=4)               :: lwidth_grass
-   real(kind=4)               :: lwidth_bltree
-   real(kind=4)               :: lwidth_nltree
+   real   :: leaf_maxwhc ! Maximum amount of water that can stay on top of the leaf
+                         !   surface.  If this amount is reached, the leaf stops collect-
+                         !   ing water, thus increasing the through fall fraction.  This 
+                         !   value is given in kg/[m2 leaf], so it will be always scaled
+                         !   by LAI.
    !---------------------------------------------------------------------------------------!
 
 

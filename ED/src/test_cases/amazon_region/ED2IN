@@ -283,8 +283,6 @@
                                   ! 1: ED1 - parameters for Amazon in Paul Moorcroft (2001)
                                   ! 2: ED2 - optimized parameters for HF in David Medvigy (2007)
                                   ! 3: ED2 - optimized parameters for Amazon by Yeonjoo Kim
-
-   NL%ZROUGH = 0.1                ! Constant roughness if for all domain
    
    NL%EDRES  = 1.0                ! ED2/ED1 restart grid resolution
 / ! end of ED_NL
