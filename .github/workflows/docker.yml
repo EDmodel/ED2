@@ -36,7 +36,10 @@ jobs:
   docker:
     runs-on: ubuntu-latest
     permissions:
+        contents: read
         packages: write
+        attestations: write
+        id-token: write
 
     strategy:
       fail-fast: false

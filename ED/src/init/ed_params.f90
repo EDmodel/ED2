@@ -6096,10 +6096,7 @@ subroutine init_can_air_params()
                              , onesixth              & ! intent(in)
                              , vonk                  ! ! intent(in)
    use pft_coms       , only : hgt_min               ! ! intent(in)
-   use rk4_coms       , only : tiny_offset           ! ! intent(in)
-   use canopy_air_coms, only : psim8                 & ! function
-                             , psih8                 & ! function
-                             , ugbmin                & ! intent(inout)
+   use canopy_air_coms, only : ugbmin                & ! intent(inout)
                              , ubmin                 & ! intent(inout)
                              , ustmin                & ! intent(inout)
                              , gamm                  & ! intent(inout)
@@ -6182,8 +6179,6 @@ subroutine init_can_air_params()
                              , zetac_shi             & ! intent(out)
                              , zetac_umi16           & ! intent(out)
                              , zetac_uhi13           & ! intent(out)
-                             , psimc_um              & ! intent(out)
-                             , psihc_uh              & ! intent(out)
                              , zd98_a                & ! intent(out)
                              , zd98_b                & ! intent(out)
                              , zd98_emax             & ! intent(out)
@@ -6216,8 +6211,6 @@ subroutine init_can_air_params()
                              , zetac_shi8            & ! intent(out)
                              , zetac_umi168          & ! intent(out)
                              , zetac_uhi138          & ! intent(out)
-                             , psimc_um8             & ! intent(out)
-                             , psihc_uh8             & ! intent(out)
                              , zd98_a8               & ! intent(out)
                              , zd98_b8               & ! intent(out)
                              , zd98_emax8            & ! intent(out)
@@ -6611,16 +6604,6 @@ subroutine init_can_air_params()
    zetac_shi8            = dble(zetac_shi           )
    zetac_umi168          = dble(zetac_umi16         )
    zetac_uhi138          = dble(zetac_uhi13         )
-   !---------------------------------------------------------------------------------------!
-
-   !---------------------------------------------------------------------------------------!
-   !     Initialise these values with dummies, it will be updated after we define the      !
-   ! functions.                                                                            !
-   !---------------------------------------------------------------------------------------!
-   psimc_um8  = psim8(zetac_um8,.false.)
-   psimc_um   = sngloff(psimc_um8,tiny_offset)
-   psihc_uh8  = psih8(zetac_uh8,.false.)
-   psihc_uh   = sngloff(psihc_uh8,tiny_offset)
    !---------------------------------------------------------------------------------------!
 
    return
@@ -7660,7 +7643,9 @@ subroutine init_derived_params_after_xml()
                                    , collatz                   ! ! function
    use plant_hydro          , only : psi2rwc                   & ! function
                                    , rwc2psi                   ! ! function
-   use canopy_air_coms      , only : ustmin                    & ! intent(in)
+   use canopy_air_coms      , only : psim8                     & ! function
+                                   , psih8                     & ! function
+                                   , ustmin                    & ! intent(in)
                                    , ugbmin                    & ! intent(in)
                                    , ubmin                     & ! intent(in)
                                    , gamm                      & ! intent(in)
@@ -7671,6 +7656,8 @@ subroutine init_derived_params_after_xml()
                                    , leaf_drywhc               & ! intent(in)
                                    , veg_height_min            & ! intent(in)
                                    , minimum_canopy_depth      & ! intent(in)
+                                   , zetac_um8                 & ! intent(in)
+                                   , zetac_uh8                 & ! intent(in)
                                    , ustmin8                   & ! intent(out)
                                    , ugbmin8                   & ! intent(out)
                                    , ubmin8                    & ! intent(out)
@@ -7679,8 +7666,13 @@ subroutine init_derived_params_after_xml()
                                    , ribmax8                   & ! intent(out)
                                    , tprandtl8                 & ! intent(out)
                                    , veg_height_min8           & ! intent(out)
-                                   , minimum_canopy_depth8     ! ! intent(out)
-   use rk4_coms             , only : rk4leaf_drywhc            & ! intent(out)
+                                   , minimum_canopy_depth8     & ! intent(out)
+                                   , psimc_um                  & ! intent(out)
+                                   , psihc_uh                  & ! intent(out)
+                                   , psimc_um8                 & ! intent(out)
+                                   , psihc_uh8                 ! ! intent(out)
+   use rk4_coms             , only : tiny_offset               & ! intent(in)
+                                   , rk4leaf_drywhc            & ! intent(out)
                                    , rk4leaf_maxwhc            & ! intent(out)
                                    , rk4min_veg_lwater         ! ! intent(out)
    implicit none
@@ -9170,6 +9162,19 @@ subroutine init_derived_params_after_xml()
    ! kg/m2ground, so we scale it with LAI.                                                 !
    !---------------------------------------------------------------------------------------!
    rk4min_veg_lwater     = -rk4leaf_drywhc ! Minimum leaf water mass            [kg/m2leaf]
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Initialise these function-dependent parameters only after the single- and double- !
+   ! precision parameters that may be read from either the atmospheric model namelist or   !
+   ! XML are already defined.                                                              !
+   !---------------------------------------------------------------------------------------!
+   psimc_um8  = psim8(zetac_um8,.false.)
+   psimc_um   = sngloff(psimc_um8,tiny_offset)
+   psihc_uh8  = psih8(zetac_uh8,.false.)
+   psihc_uh   = sngloff(psihc_uh8,tiny_offset)
    !---------------------------------------------------------------------------------------!
 
    return
