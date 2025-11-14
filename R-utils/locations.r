@@ -576,12 +576,8 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
    #----- iphen.scheme is the phenology scheme for tropical broadleaf trees. --------------#
    flagvar[["iphen.scheme"]]    = list( descr   = "Phenology scheme"
                                       , numeric = TRUE
-                                      , values  = seq(from=-1,to=3,by=1)
-                                      , names   = c("Evergreen"
-                                                  ,"Drought - ED-2.0"
-                                                  ,"Prescribed"
-                                                  ,"Drought - ED-2.1"
-                                                  ,"Light + drought")
+                                      , values  = seq(from=0,to=1,by=1)
+                                      , names   = c("Predicted","Prescribed")
                                       )#end list
    #----- idiversity is an outside flag to tell how many PFTs were allowed. ---------------#
    flagvar[["idiversity"]]      = list( descr   = "PFTs used"

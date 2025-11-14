@@ -984,7 +984,6 @@ subroutine init_physiology_params()
    use detailed_coms  , only : idetailed           ! ! intent(in)
    use ed_misc_coms, only    : ffilout             ! ! intent(in)
    use physiology_coms, only : iphysiol            & ! intent(in)
-                             , klowco2in           & ! intent(in)
                              , c34smin_lint_co2    & ! intent(out)
                              , c34smax_lint_co2    & ! intent(out)
                              , c34smax_gsw         & ! intent(out)
@@ -1042,6 +1041,7 @@ subroutine init_physiology_params()
                              , print_photo_debug   & ! intent(out)
                              , photo_prefix        ! ! intent(out)
    use consts_coms    , only : umol_2_mol          & ! intent(in)
+                             , mol_2_umol          & ! intent(in)
                              , t00                 & ! intent(in)
                              , rmol                & ! intent(in)
                              , mmdoc               & ! intent(in)
@@ -1218,8 +1218,13 @@ subroutine init_physiology_params()
    !    The following parameter is the k coefficient in Foley et al. (1996) that is used   !
    ! to determine the CO2-limited photosynthesis for C4 grasses.  Notice that Foley et al. !
    ! (1996) applied Vm0 so the slope is a function of temperature like in Collatz (1992).  !
+   !                                                                                       !
+   !    The default parameter is taken from Collatz (1992), Table 1, and converted to the  !
+   ! units needed by ED2, so the slope is independent on Vcmax.                            !
+   ! Collatz's PEPCase rate constant for CO2 (kp): 0.7 mol/m2/s.                           !
+   ! Collatz's Maximum Rubisco capacity (Vmax): 39 umol/m2/s.                              !
    !---------------------------------------------------------------------------------------!
-   klowco2      = klowco2in 
+   klowco2      = 0.7 / 39. * mol_2_umol
    !---------------------------------------------------------------------------------------!
 
 
@@ -2215,9 +2220,6 @@ subroutine init_pft_alloc_params()
                              , economics_scheme      & ! intent(in)
                              , ibigleaf              & ! intent(in)
                              , ivegt_dynamics        ! ! intent(in)
-   use canopy_air_coms, only : lwidth_grass          & ! intent(in)
-                             , lwidth_bltree         & ! intent(in)
-                             , lwidth_nltree         ! ! intent(in)
 
    implicit none
    !----- Local variables. ----------------------------------------------------------------!
@@ -3756,8 +3758,8 @@ subroutine init_pft_alloc_params()
 
 
    !----- Leaf width [m].  This controls the boundary layer conductance. ------------------!
-   leaf_width(:) = merge( lwidth_grass                                                     &
-                        , merge(lwidth_nltree,lwidth_bltree,is_conifer(:))                 &
+   leaf_width(:) = merge( 0.05                                                             &
+                        , merge(0.05,0.10,is_conifer(:))                                   &
                         , is_grass(:) )
    !---------------------------------------------------------------------------------------!
 
@@ -3885,24 +3887,7 @@ subroutine init_pft_photo_params()
                              , umol_2_mol                & ! intent(in)
                              , yr_sec                    ! ! intent(in)
    use physiology_coms, only : iphysiol                  & ! intent(in)
-                             , vmfact_c3                 & ! intent(in)
-                             , vmfact_c4                 & ! intent(in)
-                             , mphoto_trc3               & ! intent(in)
-                             , mphoto_tec3               & ! intent(in)
-                             , mphoto_c4                 & ! intent(in)
-                             , bphoto_blc3               & ! intent(in)
-                             , bphoto_nlc3               & ! intent(in)
-                             , bphoto_c4                 & ! intent(in)
-                             , gamma_c3                  & ! intent(in)
-                             , gamma_c4                  & ! intent(in)
-                             , d0_grass                  & ! intent(in)
-                             , d0_tree                   & ! intent(in)
-                             , alpha_c3                  & ! intent(in)
-                             , alpha_c4                  & ! intent(in)
-                             , kw_grass                  & ! intent(in)
-                             , kw_tree                   & ! intent(in)
-                             , q10_c3                    & ! intent(in)
-                             , q10_c4                    & ! intent(in)
+                             , h2o_plant_lim             & ! intent(in)
                              , tphysref                  ! ! intent(in)
    implicit none
    !---------------------------------------------------------------------------------------!
@@ -3946,7 +3931,7 @@ subroutine init_pft_photo_params()
 
 
    !----- Critical VPD, for stomata closure due to dry air. -------------------------------!
-   D0(:) = merge(d0_grass,d0_tree,is_grass(:))
+   D0(:) = merge(0.016,0.016,is_grass(:))
    !---------------------------------------------------------------------------------------!
 
 
@@ -4009,7 +3994,7 @@ subroutine init_pft_photo_params()
       !    doi:10.1890/0012- 9615(2001)071[0557:AMFSVD]2.0.CO;2 (M01).                     !
       !------------------------------------------------------------------------------------!
       vm_hor(:) = 3000.
-      vm_q10(:) = merge(q10_c4,q10_c3,photosyn_pathway(:) == 4)
+      vm_q10(:) = merge(2.21,2.21,photosyn_pathway(:) == 4)
       !------------------------------------------------------------------------------------!
    case (1,3)
       !------------------------------------------------------------------------------------!
@@ -4147,8 +4132,7 @@ subroutine init_pft_photo_params()
    ! factor.  This will work even for plants whose Vm0 is not an explicit function of SLA  !
    ! (i.e. when vm0_v1 is 0), as long as SLA itself is not 0 (and it shouldn't be).        !
    !---------------------------------------------------------------------------------------!
-   Vm0(:) = vm0_v0(:) * SLA(:) ** vm0_v1(:)                                                &
-          * ssfact * merge(vmfact_c4,vmfact_c3,photosyn_pathway(:) == 4)
+   Vm0(:) = vm0_v0(:) * SLA(:) ** vm0_v1(:) * ssfact
    !---------------------------------------------------------------------------------------!
 
 
@@ -4233,23 +4217,23 @@ subroutine init_pft_photo_params()
       if (is_grass(ipft) .and. (photosyn_pathway(ipft) == 3)) then
          a_pft     = a_c3grss
          b_pft     = b_c3grss
-         gamma_pft = gamma_c3
+         gamma_pft = 0.015
       elseif (is_grass(ipft)) then
          a_pft     = a_c4grss
          b_pft     = b_c4grss
-         gamma_pft = gamma_c4
+         gamma_pft = 0.025
       elseif (is_conifer(ipft)) then
          a_pft     = a_needle
          b_pft     = b_needle
-         gamma_pft = gamma_c3
+         gamma_pft = 0.015
       elseif (is_tropical(ipft)) then
          a_pft     = a_bltrop
          b_pft     = b_bltrop
-         gamma_pft = gamma_c3
+         gamma_pft = 0.015
       else
          a_pft     = a_bltemp
          b_pft     = b_bltemp
-         gamma_pft = gamma_c3
+         gamma_pft = 0.015
       end if
       !------------------------------------------------------------------------------------!
 
@@ -4327,22 +4311,23 @@ subroutine init_pft_photo_params()
    !---------------------------------------------------------------------------------------!
    !    The slope factor of the stomatal conductance (the "m" term in L95).                !
    !---------------------------------------------------------------------------------------!
-   stomatal_slope(:) = merge( mphoto_trc3, mphoto_tec3                                     &
+   stomatal_slope(:) = merge( 8.0                                                          &
+                            , 7.2                                                          &
                             , (is_tropical(:) .or. is_grass(:)) .and. (.not. is_conifer(:)))
-   stomatal_slope(:) = merge( mphoto_c4,stomatal_slope(:),photosyn_pathway(:) == 4)
+   stomatal_slope(:) = merge( 4.0,stomatal_slope(:),photosyn_pathway(:) == 4)
    !---------------------------------------------------------------------------------------!
 
 
 
    !----- Define the residual stomatal conductance (aka the b term, given in umol/m2/s). --!
-   cuticular_cond(:) = merge( bphoto_c4                                                    &
-                            , merge(bphoto_nlc3,bphoto_blc3,is_conifer(:))                 &
+   cuticular_cond(:) = merge( 10000.                                                       &
+                            , merge(1000.,10000.,is_conifer(:))                            &
                             , photosyn_pathway(:) == 4 )
    !---------------------------------------------------------------------------------------!
 
 
    !------ Set quantum yield fraction. ----------------------------------------------------!
-   quantum_efficiency(:) = merge(alpha_c4,alpha_c3,photosyn_pathway(:) == 4)
+   quantum_efficiency(:) = merge(0.040,0.080,photosyn_pathway(:) == 4)
    !---------------------------------------------------------------------------------------!
 
 
@@ -4359,11 +4344,30 @@ subroutine init_pft_photo_params()
 
 
    !---------------------------------------------------------------------------------------!
-   !     The KW parameter. Medvigy et al. (2009) and Moorcroft et al. (2001), and the      !
-   ! namelist, give the number in m2/yr/kg_C_root.  Here we must convert it to             !
-   !  m2/s/kg_C_root.                                                                      !
+   !     The KW parameter. The numbers inside the "merge" command are provided in          !
+   ! m2/yr/kg_C_root to be consistent with M09 and M01, but these are immediately          !
+   ! converted to m2/s/kg_C_root.  In case h2o_plant_lim is set to 5 (L20), the default    !
+   ! values are substantially lower due to a different formulation of the water supply     !
+   ! function.                                                                             !
+   !                                                                                       !
+   ! References:                                                                           !
+   !                                                                                       !
+   ! Medvigy DM, Wofsy SC, Munger JW, Hollinger DY , Moorcroft PR. 2009. Mechanistic       !
+   !    scaling of ecosystem function and dynamics in space and time: Ecosystem demography !
+   !    model version 2. J. Geophys. Res.-Biogeosci., 114: G01002.                         !
+   !    doi:10.1029/2008JG000812 (M09).                                                    !
+   !                                                                                       !
+   ! Moorcroft PR, Hurtt GC , Pacala SW. 2001. A method for scaling vegetation dynamics:   !
+   !    The Ecosystem Demography model (ED). Ecol. Monogr., 71: 557–586.                   !
+   !    doi:10.2307/3100036 (M01).                                                         !
+   !                                                                                       !
    !---------------------------------------------------------------------------------------!
-   water_conductance(:) = merge(kw_grass,kw_tree,is_grass(:)) / yr_sec
+   select case (h2o_plant_lim)
+   case (5)
+      water_conductance(:) = merge( 25., 20.,is_grass(:)) / yr_sec
+   case default
+      water_conductance(:) = merge(900.,600.,is_grass(:)) / yr_sec
+   end select
    !---------------------------------------------------------------------------------------!
 
 
@@ -4393,9 +4397,7 @@ end subroutine init_pft_photo_params
 subroutine init_pft_resp_params()
    use ed_max_dims    , only : n_pft                     & ! intent(in)
                              , undef_real                ! ! intent(in)
-   use physiology_coms, only : iphysiol                  & ! intent(in)
-                             , rrffact                   & ! intent(in)
-                             , growthresp                ! ! intent(in)
+   use physiology_coms, only : iphysiol                  ! ! intent(in)
    use pft_coms       , only : is_tropical               & ! intent(in)
                              , is_grass                  & ! intent(in)
                              , is_conifer                & ! intent(in)
@@ -4436,7 +4438,7 @@ subroutine init_pft_resp_params()
    !     GPP:Growth respiration ratio.                                                     !
    !---------------------------------------------------------------------------------------!
    growth_resp_factor(:) = merge(0.4503    ,merge(onethird,0.0,is_grass(:)),is_conifer (:))
-   growth_resp_factor(:) = merge(growthresp,          growth_resp_factor(:),is_tropical(:))
+   growth_resp_factor(:) = merge(0.3000,              growth_resp_factor(:),is_tropical(:))
    !---------------------------------------------------------------------------------------!
 
 
@@ -4561,16 +4563,16 @@ subroutine init_pft_resp_params()
 
    !---------------------------------------------------------------------------------------!
    !    This variable sets the contribution of roots to respiration at the reference       !
-   ! temperature of 15C.  Its units is umol_CO2/kg_fine_roots/s.                           !
+   ! temperature of 15C.  Units: umol_CO2/kg_fine_roots/s.                                 !
    !---------------------------------------------------------------------------------------!
    select case (iphysiol)
    case (0,1)
       !----- Arrhenius function. ----------------------------------------------------------!
-      root_respiration_factor(:) = 0.528 * rrffact
+      root_respiration_factor(:) = 0.528
       !------------------------------------------------------------------------------------!
    case (2,3)
       !----- Q10 function. ----------------------------------------------------------------!
-      root_respiration_factor(:) = 0.2455212 * rrffact
+      root_respiration_factor(:) = 0.2455212
       !------------------------------------------------------------------------------------!
    end select
    !---------------------------------------------------------------------------------------!
@@ -4658,11 +4660,10 @@ subroutine init_pft_mort_params()
    real                   :: aquad
    real                   :: bquad
    real                   :: cquad
-   real                   :: discr
    real                   :: lambda_ref
    real                   :: lambda_eff
-   real                   :: leff_neg
-   real                   :: leff_pos
+   real                   :: leff_one
+   real                   :: leff_two
    real, dimension(n_pft) :: rho_use
    integer                :: ipft
    !----- Local constants for C18 mortality (see below). ----------------------------------!
@@ -4681,6 +4682,8 @@ subroutine init_pft_mort_params()
                                                        !    near-extinction but not so 
                                                        !    high that it would be 
                                                        !    difficult to display in output
+   real, parameter        :: discard      = huge(1.0)  ! Meaningless value for discarding
+                                                       !    a root of the quadratic solver.
    !---------------------------------------------------------------------------------------!
 
 
@@ -4937,23 +4940,55 @@ subroutine init_pft_mort_params()
          ! instead, we will wait until the patch age is older than time2canopy.  We want,  !
          ! however, to make the mean patch age to be 1/treefall_disturbance_rate.  The     !
          ! equation below can be retrieved by integrating the steady-state probability     !
-         ! distribution function.  The equation is quadratic and the discriminant will     !
-         ! never be zero and the treefall_disturbance_rate will be always positive because !
-         ! the values of time2canopy and treefall_disturbance_rate have already been       !
-         ! tested in ed_opspec.F90.                                                        !
+         ! distribution function.                                                          !
          !---------------------------------------------------------------------------------!
          aquad    = time2canopy * time2canopy * lambda_ref  - 2. * time2canopy
          bquad    = 2. * time2canopy * lambda_ref - 2.
          cquad    = 2. * lambda_ref
-         !------ Find the discriminant. ---------------------------------------------------!
-         discr    = bquad * bquad - 4. * aquad * cquad
-         leff_neg = - 0.5 * (bquad - sqrt(discr)) / aquad
-         leff_pos = - 0.5 * (bquad + sqrt(discr)) / aquad
          !---------------------------------------------------------------------------------!
-         !      Use the maximum value, but don't let the value to be too large otherwise   !
-         ! the negative exponential will cause underflow.                                  !
+
+
+         !------ Solve the quadratic equation. --------------------------------------------!
+         call solve_quadratic(aquad,bquad,cquad,discard,leff_one,leff_two)
          !---------------------------------------------------------------------------------!
-         lambda_eff = min(lnexp_max,max(leff_neg,leff_pos))
+
+
+         !---------------------------------------------------------------------------------!
+         !      The discriminant should be always positive and the                         !
+         ! treefall_disturbance_rate will be always positive because the values of         !
+         ! time2canopy and treefall_disturbance_rate have already been tested in           !
+         ! ed_opspec.F90.  In any case, we add a check in here to ensure at least one of   !
+         ! the solutions is valid.                                                         !
+         !---------------------------------------------------------------------------------!
+         if ( ( leff_one /= discard ) .or. ( leff_two /= discard ) ) then
+            !------------------------------------------------------------------------------!
+            !      Use the maximum value, but don't let the value to be too large other-   !
+            ! wise the negative exponential will cause underflow.                          !
+            !------------------------------------------------------------------------------!
+            lambda_eff = min(lnexp_max,max(leff_one,leff_two))
+            !---------------------------------------------------------------------------------!
+         else
+            !----- Broadcast the bad news. ------------------------------------------------!
+            write(unit=*,fmt='(a)'          ) ''
+            write(unit=*,fmt='(a)'          ) ''
+            write(unit=*,fmt='(a)'          ) '==========================================='
+            write(unit=*,fmt='(a)'          ) '==========================================='
+            write(unit=*,fmt='(a)'          ) '   Discriminant is negative.'
+            write(unit=*,fmt='(a)'          ) '-------------------------------------------'
+            write(unit=*,fmt='(a,1x,f12.5)' ) 'TIME2CANOPY = ', time2canopy
+            write(unit=*,fmt='(a,1x,f12.5)' ) 'LAMBA_REF   = ', lambda_ref
+            write(unit=*,fmt='(a,1x,es12.5)') 'A           = ', aquad
+            write(unit=*,fmt='(a,1x,es12.5)') 'B           = ', bquad
+            write(unit=*,fmt='(a,1x,es12.5)') 'C           = ', cquad
+            write(unit=*,fmt='(a,1x,es12.5)') 'DISCR       = ', bquad*bquad-4.*aquad*cquad
+            write(unit=*,fmt='(a)'          ) '==========================================='
+            write(unit=*,fmt='(a)'          ) '==========================================='
+            write(unit=*,fmt='(a)'          ) ''
+            write(unit=*,fmt='(a)'          ) ''
+            call fatal_error(' Negative discriminant when seeking effective lambda.'       &
+                            ,'init_pft_mort_params','ed_params.f90')
+            !------------------------------------------------------------------------------!
+         end if
          !---------------------------------------------------------------------------------!
       else
          lambda_eff = lambda_ref
@@ -5758,11 +5793,12 @@ end subroutine init_pft_spheat_params
 !   This subroutine sets up some PFT and leaf dependent properties.                        !
 !------------------------------------------------------------------------------------------!
 subroutine init_pft_phen_params()
-   use phenology_coms , only : iphen_scheme         ! ! intent(in)
    use ed_misc_coms   , only : igrass               ! ! intent(in)
+   use physiology_coms, only : plant_hydro_scheme   ! ! intent(in)
    use pft_coms       , only : phenology            & ! intent(out)
                              , is_grass             & ! intent(in)
                              , is_conifer           & ! intent(in)
+                             , is_savannah          & ! intent(in)
                              , is_tropical          & ! intent(in)
                              , high_psi_threshold   & ! intent(out)
                              , low_psi_threshold    & ! intent(out)
@@ -5778,8 +5814,36 @@ subroutine init_pft_phen_params()
 
 
    !---------------------------------------------------------------------------------------!
-   !     Tree phenology is the same for both cases, but in the new grass allometry they    !
-   ! must be evergreens.                                                                   !
+   !     Default tree phenology. The following codes are used.                             !
+   !                                                                                       !
+   ! 0 - Evergreen                                                                         !
+   ! 1 - Drought deciduous (M01 scheme, hard abscission and flushing).                     !
+   ! 2 - Cold deciduous (B00 scheme).                                                      !
+   ! 3 - Light-controlled (K12).                                                           !
+   ! 4 - Semi-deciduous (L19 scheme, abscission and flushing can be partial).              !
+   ! 5 - Semi-deciduous (partial abscission and flushing controlled by plant hydraulics).  !
+   ! 6 - Hydraulic semi-deciduous combined with light-controlled.                          !
+   !                                                                                       !
+   ! References:                                                                           !
+   !                                                                                       !
+   ! Botta A, Viovy N, Ciais P, Friedlingstein P , Monfray P. 2000. A global prognostic    !
+   !    scheme of leaf onset using satellite data. Glob. Change Biol., 6: 709-725.         !
+   !    doi:10.1046/j.1365-2486.2000.00362.x (B00).                                        !
+   !                                                                                       !
+   ! Kim Y, Knox RG, Longo M, Medvigy D, Hutyra LR, Pyle EH, Wofsy SC, Bras RL , Moorcroft !
+   !    PR. 2012. Seasonal carbon dynamics and water fluxes in an Amazon rainforest. Glob. !
+   !    Change Biol., 18: 1322–1334. doi:10.1111/j.1365-2486.2011.02629.x (K12).           !
+   !                                                                                       !
+   ! Longo M, Knox RG, Medvigy DM, Levine NM, Dietze MC, Kim Y, Swann ALS, Zhang K,        !
+   !    Rollinson CR, Bras RL et al . 2019. The biophysics, ecology, and biogeochemistry   !
+   !    of functionally diverse, vertically and horizontally heterogeneous ecosystems: the !
+   !    Ecosystem Demography model, version 2.2 – part 1: Model description. Geosci. Model !
+   !    Dev., 12: 4309–4346. doi:10.5194/gmd-12-4309-2019 (L19).                           !
+   !                                                                                       !
+   ! Moorcroft PR, Hurtt GC , Pacala SW. 2001. A method for scaling vegetation dynamics:   !
+   !    The Ecosystem Demography model (ED). Ecol. Monogr., 71: 557-586.                   !
+   !    doi:10.2307/3100036 (M01).                                                         !
+   !                                                                                       !
    !---------------------------------------------------------------------------------------!
    do ipft=1,n_pft
       if (is_conifer(ipft)) then  ! Conifers. Currently they are always evergreen
@@ -5788,39 +5852,24 @@ subroutine init_pft_phen_params()
          phenology(ipft) = 0
       elseif (.not. (is_tropical(ipft) .or. is_grass(ipft)) ) then ! Cold deciduous
          phenology(ipft) = 2
-      else
-         !----- Lianas, Tropical broadleaf trees, and old-scheme (aka bonsai) grasses. ----!
-         select case (iphen_scheme)
-         case (-1) ! Assume that they are all evergreen
+      elseif (is_tropical(ipft)) then
+         if (is_savannah(ipft) .or. is_grass(ipft)) then
+            !------------------------------------------------------------------------------!
+            !     Savannahs and tropical grasses are by default set to be semi-deciduous.  !
+            ! The scheme is set depending on plant hydraulics.                             !
+            !------------------------------------------------------------------------------!
+            select case (plant_hydro_scheme)
+            case (1,2)
+               phenology(ipft) = 5
+            case default
+               phenology(ipft) = 4
+            end select
+            !------------------------------------------------------------------------------!
+         else
+            !----- Other trees and lianas are assumed evergreen. --------------------------!
             phenology(ipft) = 0
-         case (0,1) ! Old drought-deciduous scheme 
-            phenology(ipft) = 1
-         case (2)   ! New drought-deciduous scheme
-            phenology(ipft) = 4
-         case (3)
             !------------------------------------------------------------------------------!
-            !     Environmental Light phenology scheme.                                    !
-            !                                                                              !
-            ! Kim, Y., R. G. Knox, M. Longo, D. Medvigy, L. R. Hutyra, E. H. Pyle,         !
-            !    S. C. Wofsy, R. L. Bras, and P. R. Moorcroft. Seasonal carbon dynamics    !
-            !    and water fluxes in an Amazon rainforest. Glob. Change Biol.,             !
-            !    18(4):1322-1334, Apr 2012. doi:10.1111/j.1365-2486.2011.02629.x.          !
-            !------------------------------------------------------------------------------!
-            phenology(ipft) = 3
-            !------------------------------------------------------------------------------!
-         case (4)
-            !------------------------------------------------------------------------------!
-            !   Xiangtao Xu's plant-hydraulics-driven drought phenology.                   !
-            !------------------------------------------------------------------------------!
-            phenology(ipft) = 5
-            !------------------------------------------------------------------------------!
-         case (5)
-            !------------------------------------------------------------------------------!
-            !   Combined light and plant-hydraulics driven drought phenology.              !
-            !------------------------------------------------------------------------------!
-            phenology(ipft) = 6
-            !------------------------------------------------------------------------------!
-         end select
+         end if
          !---------------------------------------------------------------------------------!
       end if
       !------------------------------------------------------------------------------------!
@@ -5834,6 +5883,8 @@ subroutine init_pft_phen_params()
    ! set it to be 0 otherwise (default)                                                    !
    !---------------------------------------------------------------------------------------!
    storage_reflush_times(:) = merge(2.0,0.0,phenology(:) == 5)
+   !---------------------------------------------------------------------------------------!
+
 
    !---------------------------------------------------------------------------------------!
    !     Phenology-related parameters for phenology(ipft) = 5.                             !
@@ -6039,6 +6090,7 @@ end subroutine init_pft_repro_params
 !    This subroutine will assign some canopy air related parameters.                       !
 !------------------------------------------------------------------------------------------!
 subroutine init_can_air_params()
+   use ed_max_dims    , only : undef_real            ! ! intent(in)
    use consts_coms    , only : onethird              & ! intent(in)
                              , twothirds             & ! intent(in)
                              , onesixth              & ! intent(in)
@@ -6047,12 +6099,12 @@ subroutine init_can_air_params()
    use rk4_coms       , only : tiny_offset           ! ! intent(in)
    use canopy_air_coms, only : psim8                 & ! function
                              , psih8                 & ! function
-                             , ugbmin                & ! intent(in)
-                             , ubmin                 & ! intent(in)
-                             , ustmin                & ! intent(in)
-                             , gamm                  & ! intent(in)
-                             , gamh                  & ! intent(in)
-                             , tprandtl              & ! intent(in)
+                             , ugbmin                & ! intent(inout)
+                             , ubmin                 & ! intent(inout)
+                             , ustmin                & ! intent(inout)
+                             , gamm                  & ! intent(inout)
+                             , gamh                  & ! intent(inout)
+                             , tprandtl              & ! intent(inout)
                              , vh2vr                 & ! intent(out)
                              , vh2dh                 & ! intent(out)
                              , ribmax                & ! intent(out)
@@ -6062,16 +6114,11 @@ subroutine init_can_air_params()
                              , gbhmos_min            & ! intent(out)
                              , gbhmos_min8           & ! intent(out)
                              , veg_height_min        & ! intent(out)
-                             , veg_height_min8       & ! intent(out)
                              , minimum_canopy_depth  & ! intent(out)
-                             , minimum_canopy_depth8 & ! intent(out)
                              , exar                  & ! intent(out)
                              , covr                  & ! intent(out)
                              , exar8                 & ! intent(out)
                              , ez                    & ! intent(out)
-                             , ustmin8               & ! intent(out)
-                             , ugbmin8               & ! intent(out)
-                             , ubmin8                & ! intent(out)
                              , ez8                   & ! intent(out)
                              , vh2vr8                & ! intent(out)
                              , vh2dh8                & ! intent(out)
@@ -6145,10 +6192,6 @@ subroutine init_can_air_params()
                              , csh8                  & ! intent(out)
                              , dl798                 & ! intent(out)
                              , beta_s8               & ! intent(out)
-                             , gamm8                 & ! intent(out)
-                             , gamh8                 & ! intent(out)
-                             , ribmax8               & ! intent(out)
-                             , tprandtl8             & ! intent(out)
                              , abh918                & ! intent(out)
                              , bbh918                & ! intent(out)
                              , cbh918                & ! intent(out)
@@ -6222,6 +6265,44 @@ subroutine init_can_air_params()
    !----- External functions. -------------------------------------------------------------!
    real   , external :: cbrt
    real   , external :: sngloff
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     These variables are initialised here only when running ED2 without coupling with  !
+   ! BRAMS. Otherwise they are defined through the namelist so they are consistent with    !
+   ! the RAMSIN namelist settings.                                                         !
+   !                                                                                       !
+   !     The following variables control the minimum values of various velocities in the   !
+   ! canopy.  This is needed to avoid the air to be extremely still, or to avoid singular- !
+   ! ities.  When defining the values, keep in mind that UBMIN >= UGBMIN >= USTMIN.        !
+   !                                                                                       !
+   ! UBMIN       -- minimum wind speed at the top of the canopy air space           [ m/s] !
+   ! UGBMIN      -- minimum wind speed at the leaf level                            [ m/s] !
+   ! USTMIN      -- minimum friction velocity, u*, in m/s.                          [ m/s] !
+   !                                                                                       !
+   !     These variables are used to control the similarity theory model.  For the meaning !
+   ! of these parameters, check Beljaars and Holtslag (1991, J. Appl. Meteorol.).          !
+   !                                                                                       !
+   ! GAMM        -- gamma coefficient for momentum, unstable case (dimensionless)          !
+   !                Ignored when ISTAR = 1                                                 !
+   ! GAMH        -- gamma coefficient for heat, unstable case (dimensionless)              !
+   !                Ignored when ISTAR = 1                                                 !
+   ! TPRANDTL    -- Turbulent Prandtl number                                               !
+   !                Ignored when ISTAR = 1                                                 !
+   ! RIBMAX      -- maximum bulk Richardson number.                                        !
+   ! LEAF_MAXWHC -- Maximum water that can be intercepted by leaves, in kg/m2leaf.         !
+   !---------------------------------------------------------------------------------------!
+   if (ubmin       == undef_real) ubmin       = 0.65
+   if (ugbmin      == undef_real) ugbmin      = 0.25
+   if (ustmin      == undef_real) ustmin      = 0.10
+   if (gamm        == undef_real) gamm        = 13.0
+   if (gamh        == undef_real) gamh        = 13.0
+   if (tprandtl    == undef_real) tprandtl    = 1.00
+   if (ribmax      == undef_real) ribmax      = 0.50
+   if (leaf_maxwhc == undef_real) leaf_maxwhc = 0.11
    !---------------------------------------------------------------------------------------!
 
 
@@ -6462,12 +6543,7 @@ subroutine init_can_air_params()
 
 
    !----- Set the double precision variables. ---------------------------------------------!
-   veg_height_min8       = dble(veg_height_min      )
-   minimum_canopy_depth8 = dble(minimum_canopy_depth)
    exar8                 = dble(exar                )
-   ubmin8                = dble(ubmin               )
-   ugbmin8               = dble(ugbmin              )
-   ustmin8               = dble(ustmin              )
    ez8                   = dble(ez                  )
    vh2vr8                = dble(vh2vr               )
    vh2dh8                = dble(vh2dh               )
@@ -6476,10 +6552,6 @@ subroutine init_can_air_params()
    csh8                  = dble(csh                 )
    dl798                 = dble(dl79                )
    beta_s8               = dble(beta_s              )
-   gamm8                 = dble(gamm                )
-   gamh8                 = dble(gamh                )
-   ribmax8               = dble(ribmax              )
-   tprandtl8             = dble(tprandtl            )
    abh918                = dble(abh91               )
    bbh918                = dble(bbh91               )
    cbh918                = dble(cbh91               )
@@ -6567,15 +6639,7 @@ end subroutine init_can_air_params
 !------------------------------------------------------------------------------------------!
 subroutine init_can_rad_params()
 
-   use canopy_radiation_coms , only : ltrans_vis                  & ! intent(in)
-                                    , ltrans_nir                  & ! intent(in)
-                                    , lreflect_vis                & ! intent(in)
-                                    , lreflect_nir                & ! intent(in)
-                                    , orient_tree                 & ! intent(in)
-                                    , orient_grass                & ! intent(in)
-                                    , clump_tree                  & ! intent(in)
-                                    , clump_grass                 & ! intent(in)
-                                    , leaf_reflect_nir            & ! intent(out)
+   use canopy_radiation_coms , only : leaf_reflect_nir            & ! intent(out)
                                     , leaf_trans_nir              & ! intent(out)
                                     , leaf_reflect_vis            & ! intent(out)
                                     , leaf_trans_vis              & ! intent(out)
@@ -6631,9 +6695,9 @@ subroutine init_can_rad_params()
          clumping_factor(ipft) = 7.350d-1
          !---------------------------------------------------------------------------------!
       elseif (is_tropical(ipft) .and. is_grass(ipft)) then ! Tropical grasses. 
-         clumping_factor(ipft) = dble(clump_grass)
+         clumping_factor(ipft) = 8.0d-1
       elseif (is_tropical(ipft)) then ! Lianas and tropical trees. 
-         clumping_factor(ipft) = dble(clump_tree)
+         clumping_factor(ipft) = 8.0d-1
       else ! Temperate broadleaf (trees pr grasses). 
          clumping_factor(ipft) = 8.400d-1
       end if
@@ -6655,9 +6719,9 @@ subroutine init_can_rad_params()
       elseif (is_conifer(ipft)) then ! Araucaria, (CLM value for evergreen needleleaf).
          orient_factor(ipft) = 1.0d-2
       elseif (is_grass(ipft)) then ! Tropical grasses. 
-         orient_factor(ipft) = dble(orient_grass)
+         orient_factor(ipft) = -3.0d-1
       else ! Lianas and tropical broadleaf trees. 
-         orient_factor(ipft) = dble(orient_tree)
+         orient_factor(ipft) = 1.0d-1
       end if
    end do
    !---------------------------------------------------------------------------------------!
@@ -6691,10 +6755,10 @@ subroutine init_can_rad_params()
    ! - Roberts, D. A., B. W. Nelson, J. B. Adams, F. Palmer, 1998: Spectral changes with   !
    !      leaf aging in Amazon caatinga. Trees, 12, 315-325.                               !
    !---------------------------------------------------------------------------------------!
-   leaf_reflect_vis(:) = merge( merge(9.00d-2,dble(lreflect_vis),is_conifer(:))            &
+   leaf_reflect_vis(:) = merge( merge(9.00d-2,1.00d-1,is_conifer(:))                       &
                               , 1.10d-1                                                    &
                               , is_tropical(:) )
-   leaf_reflect_nir(:) = merge( dble(lreflect_nir)                                         &
+   leaf_reflect_nir(:) = merge( 4.00d-1                                                    &
                               , 5.77d-1                                                    &
                               , is_tropical(:) .and. (.not. is_conifer(:)) )
    !---------------------------------------------------------------------------------------!
@@ -6730,10 +6794,10 @@ subroutine init_can_rad_params()
    ! - Roberts, D. A., B. W. Nelson, J. B. Adams, F. Palmer, 1998: Spectral changes with   !
    !      leaf aging in Amazon caatinga. Trees, 12, 315-325.                               !
    !---------------------------------------------------------------------------------------!
-   leaf_trans_vis(:) = merge( merge(5.00d-2,dble(ltrans_vis),is_conifer(:))                &
+   leaf_trans_vis(:) = merge( merge(5.00d-2,5.00d-2,is_conifer(:))                         &
                             , 1.60d-1                                                      &
                             , is_tropical(:) )
-   leaf_trans_nir(:) = merge( dble(ltrans_nir)                                             &
+   leaf_trans_nir(:) = merge( 2.00d-1                                                      &
                             , 2.48d-1                                                      &
                             , is_tropical(:) .and. (.not. is_conifer(:)) )
    !---------------------------------------------------------------------------------------!
@@ -6895,8 +6959,6 @@ subroutine init_dt_thermo_params()
    use soil_coms      , only : water_stab_thresh      & ! intent(in)
                              , snowmin                & ! intent(in)
                              , tiny_sfcwater_mass     ! ! intent(in)
-   use canopy_air_coms, only : leaf_drywhc            & ! intent(in)
-                             , leaf_maxwhc            ! ! intent(in)
    use ed_misc_coms   , only : dtlsm                  & ! intent(in)
                              , ffilout                & ! intent(in)
                              , nsub_euler             & ! intent(in)
@@ -6924,8 +6986,6 @@ subroutine init_dt_thermo_params()
                              , rk4water_stab_thresh   & ! intent(out)
                              , rk4tiny_sfcw_mass      & ! intent(out)
                              , rk4tiny_sfcw_depth     & ! intent(out)
-                             , rk4leaf_drywhc         & ! intent(out)
-                             , rk4leaf_maxwhc         & ! intent(out)
                              , rk4snowmin             & ! intent(out)
                              , rk4min_can_temp        & ! intent(out)
                              , rk4max_can_temp        & ! intent(out)
@@ -6938,7 +6998,6 @@ subroutine init_dt_thermo_params()
                              , rk4max_soil_temp       & ! intent(out)
                              , rk4min_veg_temp        & ! intent(out)
                              , rk4max_veg_temp        & ! intent(out)
-                             , rk4min_veg_lwater      & ! intent(out)
                              , rk4min_sfcw_temp       & ! intent(out)
                              , rk4max_sfcw_temp       & ! intent(out)
                              , rk4min_sfcw_moist      & ! intent(out)
@@ -6973,8 +7032,6 @@ subroutine init_dt_thermo_params()
    !---------------------------------------------------------------------------------------!
    rk4water_stab_thresh  = dble(water_stab_thresh )
    rk4tiny_sfcw_mass     = dble(tiny_sfcwater_mass)
-   rk4leaf_drywhc        = dble(leaf_drywhc       )
-   rk4leaf_maxwhc        = dble(leaf_maxwhc       )
    rk4snowmin            = dble(snowmin           )
    rk4tiny_sfcw_depth    = rk4tiny_sfcw_mass  * wdnsi8
    !---------------------------------------------------------------------------------------!
@@ -7087,14 +7144,6 @@ subroutine init_dt_thermo_params()
    ! (**) Please, don't be too strict here.  The model currently doesn't have radiation    !
    !      fog, so supersaturation may happen.  This is a problem we may want to address in !
    !      the future, though...                                                            !
-   !---------------------------------------------------------------------------------------!
-
-
-   !---------------------------------------------------------------------------------------!
-   !     Minimum water mass at the leaf surface.  This is given in kg/m2leaf rather than   !
-   ! kg/m2ground, so we scale it with LAI.                                                 !
-   !---------------------------------------------------------------------------------------!
-   rk4min_veg_lwater = -rk4leaf_drywhc            ! Minimum leaf water mass     [kg/m2leaf]
    !---------------------------------------------------------------------------------------!
 
 
@@ -7590,10 +7639,7 @@ subroutine init_derived_params_after_xml()
                                    , k_rh_active               & ! intent(out)
                                    , rh08                      & ! intent(out)
                                    , rh_q108                   ! ! intent(out)
-   use phenology_coms       , only : iphen_scheme              & ! intent(in)
-                                   , repro_scheme              & ! intent(in)
-                                   , radint                    & ! intent(in)
-                                   , radslp                    & ! intent(in)
+   use phenology_coms       , only : repro_scheme              & ! intent(in)
                                    , radavg_window             & ! intent(in)
                                    , turnamp_window            & ! intent(in)
                                    , turnamp_min               & ! intent(in)
@@ -7601,6 +7647,8 @@ subroutine init_derived_params_after_xml()
                                    , llspan_window             & ! intent(in)
                                    , vm0_window                & ! intent(in)
                                    , sla_window                & ! intent(in)
+                                   , radint                    & ! intent(out)
+                                   , radslp                    & ! intent(out)
                                    , radavg_wgt                & ! intent(out)
                                    , turnamp_wgt               & ! intent(out)
                                    , llspan_wgt                & ! intent(out)
@@ -7612,6 +7660,29 @@ subroutine init_derived_params_after_xml()
                                    , collatz                   ! ! function
    use plant_hydro          , only : psi2rwc                   & ! function
                                    , rwc2psi                   ! ! function
+   use canopy_air_coms      , only : ustmin                    & ! intent(in)
+                                   , ugbmin                    & ! intent(in)
+                                   , ubmin                     & ! intent(in)
+                                   , gamm                      & ! intent(in)
+                                   , gamh                      & ! intent(in)
+                                   , ribmax                    & ! intent(in)
+                                   , tprandtl                  & ! intent(in)
+                                   , leaf_maxwhc               & ! intent(in)
+                                   , leaf_drywhc               & ! intent(in)
+                                   , veg_height_min            & ! intent(in)
+                                   , minimum_canopy_depth      & ! intent(in)
+                                   , ustmin8                   & ! intent(out)
+                                   , ugbmin8                   & ! intent(out)
+                                   , ubmin8                    & ! intent(out)
+                                   , gamm8                     & ! intent(out)
+                                   , gamh8                     & ! intent(out)
+                                   , ribmax8                   & ! intent(out)
+                                   , tprandtl8                 & ! intent(out)
+                                   , veg_height_min8           & ! intent(out)
+                                   , minimum_canopy_depth8     ! ! intent(out)
+   use rk4_coms             , only : rk4leaf_drywhc            & ! intent(out)
+                                   , rk4leaf_maxwhc            & ! intent(out)
+                                   , rk4min_veg_lwater         ! ! intent(out)
    implicit none
    !----- Local variables. ----------------------------------------------------------------!
    character(len=2)                  :: char_pathway
@@ -7761,40 +7832,49 @@ subroutine init_derived_params_after_xml()
 
    !---------------------------------------------------------------------------------------!
    !      Minimum and maximum radiation should be defined according to the                 !
-   ! economics_scheme, as the model formulation is different.  But set dummy values for    !
-   ! both in case this simulation is not using light-controlled phenology.                 !
+   ! economics_scheme, as the model formulation is different.                              !
    !---------------------------------------------------------------------------------------!
-   select case (iphen_scheme)
-   case (3,5)
+   select case (economics_scheme)
+   case (1)
       !------------------------------------------------------------------------------------!
-      !    Light phenology is enabled.                                                     !
+      !    Log-linear model.                                                               !
+      !                                                                                    !
+      ! RADINT -- Multiplier.                                                              !
+      ! RADSLP -- Exponent.                                                                !
+      ! TurnoverAmplitude = RADINT * rshort ** RADSLP                                      !
       !------------------------------------------------------------------------------------!
-      select case (economics_scheme)
-      case (1)
-         !---------------------------------------------------------------------------------!
-         !      Turnover amplitude is a log-linear function of radiation, based on litter  !
-         ! fall data directly related to radiation.                                        !
-         !---------------------------------------------------------------------------------!
-         radto_min = (turnamp_min / radint) ** (1./radslp)
-         radto_max = (turnamp_max / radint) ** (1./radslp)
-         !---------------------------------------------------------------------------------!
-      case default
-         !---------------------------------------------------------------------------------!
-         !      Turnover amplitude is a linear function of radiation, like the original    !
-         ! approach.                                                                       !
-         !---------------------------------------------------------------------------------!
-         radto_min       = (turnamp_min - radint) / radslp
-         radto_max       = (turnamp_max - radint) / radslp
-         !---------------------------------------------------------------------------------!
-      end select
+      radint = 2.6292e-4
+      radslp = 1.553
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !      Turnover amplitude is a log-linear function of radiation, based on litter     !
+      ! fall data directly related to radiation.                                           !
+      !------------------------------------------------------------------------------------!
+      radto_min = (turnamp_min / radint) ** (1./radslp)
+      radto_max = (turnamp_max / radint) ** (1./radslp)
       !------------------------------------------------------------------------------------!
    case default
       !------------------------------------------------------------------------------------!
-      !    Light phenology is disabled.  Set dummy values for minimum and maximum          !
-      ! radiation so the turnover amplitude is never calculated.                           !
+      !    Linear model.                                                                   !
+      !                                                                                    !
+      ! RADINT -- Intercept                                                                !
+      ! RADSLP -- Slope.                                                                   !
+      ! TurnoverAmplitude = RADINT + RADSLP * rshort                                       !
       !------------------------------------------------------------------------------------!
-      radto_min = solar
-      radto_max = solar
+      radint = 2.6292e-4
+      radslp = 1.553
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !      Turnover amplitude is a linear function of radiation, like the original       !
+      ! approach.                                                                          !
+      !------------------------------------------------------------------------------------!
+      radto_min       = (turnamp_min - radint) / radslp
+      radto_max       = (turnamp_max - radint) / radslp
       !------------------------------------------------------------------------------------!
    end select
    !---------------------------------------------------------------------------------------!
@@ -9071,7 +9151,26 @@ subroutine init_derived_params_after_xml()
       close(unit=19,status='keep')
    end if
 
-
+   !---------------------------------------------------------------------------------------!
+   !     Non-PFT parameters that need to be converted to double precision.                 !
+   !---------------------------------------------------------------------------------------!
+   ubmin8                = dble(ubmin               )
+   ugbmin8               = dble(ugbmin              )
+   ustmin8               = dble(ustmin              )
+   gamm8                 = dble(gamm                )
+   gamh8                 = dble(gamh                )
+   ribmax8               = dble(ribmax              )
+   tprandtl8             = dble(tprandtl            )
+   veg_height_min8       = dble(veg_height_min      )
+   minimum_canopy_depth8 = dble(minimum_canopy_depth)
+   rk4leaf_drywhc        = dble(leaf_drywhc         )
+   rk4leaf_maxwhc        = dble(leaf_maxwhc         )
+   !---------------------------------------------------------------------------------------!
+   !     Minimum water mass at the leaf surface.  This is given in kg/m2leaf rather than   !
+   ! kg/m2ground, so we scale it with LAI.                                                 !
+   !---------------------------------------------------------------------------------------!
+   rk4min_veg_lwater     = -rk4leaf_drywhc ! Minimum leaf water mass            [kg/m2leaf]
+   !---------------------------------------------------------------------------------------!
 
    return
 end subroutine init_derived_params_after_xml

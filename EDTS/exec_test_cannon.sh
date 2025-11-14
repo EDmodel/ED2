@@ -514,70 +514,60 @@ SUBMIT_JOBS="n"
          metdriv="edts_datasets/met/caxtfe/CAXTFE_HEADER"
          metcyca=2000
          metcycz=2008
-         imetavg=1
          imetrad=0
          ;;
       gyf|hig)
          metdriv="edts_datasets/met/wfdei/frguiana/WFDEI_FRGUIANA_NOLAND_GPCC_HEADER"
          metcyca=1979
          metcycz=2013
-         imetavg=1
          imetrad=2
          ;;
       har|hih|hbg)
          metdriv="edts_datasets/met/har/HARVARD_MET_93_09_CO2"
          metcyca=1993
          metcycz=2009
-         imetavg=2
          imetrad=0
          ;;
       pet|hip)
          metdriv="edts_datasets/met/pet/Petrolina_HEADER"
          metcyca=2005
          metcycz=2011
-         imetavg=1
          imetrad=2
          ;;
       prg)
          metdriv="edts_datasets/met/wfdei/paragominas/WFDEI_PARAGOMINAS_NOLAND_GPCC_HEADER"
          metcyca=1979
          metcycz=2013
-         imetavg=1
          imetrad=2
          ;;
       s67|tnf)
          metdriv="edts_datasets/met/s67_nlevine/Santarem_KM67_HEADER"
          metcyca=2002
          metcycz=2004
-         imetavg=2
          imetrad=0
          ;;
       s83)
          metdriv="edts_datasets/met/wfdei/tapajos/WFDEI_TAPAJOS_NOLAND_GPCC_HEADER"
          metcyca=1979
          metcycz=2013
-         imetavg=1
          imetrad=2
          ;;
       tl2)
          metdriv="edts_datasets/met/toolik2/ED_MET_DRIVER_HEADER-toolik.obs.rad"
          metcyca=1997
          metcycz=2010
-         imetavg=3
          imetrad=0
          ;;
       ton)
          metdriv="edts_datasets/met/tonzi_kz/tonzi_driver_co2"
          metcyca=2000
          metcycz=2012
-         imetavg=0
          imetrad=0
          ;;
       *)
          metdriv="edts_datasets/met/mod_ds314/SHEF_NCEP_DRIVER_DS314"
          metcyca=1969
          metcycz=2008
-         imetavg=2
          imetrad=2
          ;;
       esac
@@ -1393,7 +1383,7 @@ do
       #----- Define meteorological driver settings. ---------------------------------------#
       metdriv_setting ${SITEID[i]}
       METDRIV=${metdriv}; METCYCA=${metcyca}; METCYCZ=${metcycz}
-      IMETAVG=${imetavg}; IMETRAD=${imetrad}
+      IMETRAD=${imetrad}
       #----- Define land use driver settings. ---------------------------------------------#
       lu_setting ${SITEID[i]}; LU_DATABASE=${lu_database}
       #----- Define prescribed-phenology settings. ----------------------------------------#
@@ -1611,10 +1601,6 @@ do
       sed -i '/NL%METCYCF/c\   NL%METCYCF = '"${METCYCZ}"                       ${FILEMAIN}
       sed -i '/NL%METCYCF/c\   NL%METCYCF = '"${METCYCZ}"                       ${FILETEST}
       sed -i '/NL%METCYCF/c\   NL%METCYCF = '"${METCYCZ}"                       ${FILEDBUG}
-      #----- Time-averaging flag (meteorological driver). ---------------------------------#
-      sed -i '/NL%IMETAVG/c\   NL%IMETAVG = '"${IMETAVG}"                       ${FILEMAIN}
-      sed -i '/NL%IMETAVG/c\   NL%IMETAVG = '"${IMETAVG}"                       ${FILETEST}
-      sed -i '/NL%IMETAVG/c\   NL%IMETAVG = '"${IMETAVG}"                       ${FILEDBUG}
       #----- Radiation decomposition scheme. ----------------------------------------------#
       sed -i '/NL%IMETRAD/c\   NL%IMETRAD = '"${IMETRAD}"                       ${FILEMAIN}
       sed -i '/NL%IMETRAD/c\   NL%IMETRAD = '"${IMETRAD}"                       ${FILETEST}
@@ -2110,7 +2096,7 @@ do
       #----- Define meteorological driver settings. ---------------------------------------#
       metdriv_setting ${HIFRID[i]}
       METDRIV=${metdriv}; METCYCA=${metcyca}; METCYCZ=${metcycz}
-      IMETAVG=${imetavg}; IMETRAD=${imetrad}
+      IMETRAD=${imetrad}
       #----- Define land use driver settings. ---------------------------------------------#
       lu_setting ${HIFRID[i]}; LU_DATABASE=${lu_database}
       #----- Define prescribed-phenology settings. ----------------------------------------#
@@ -2328,10 +2314,6 @@ do
       sed -i '/NL%METCYCF/c\   NL%METCYCF = '"${METCYCZ}"                       ${FILEMAIN}
       sed -i '/NL%METCYCF/c\   NL%METCYCF = '"${METCYCZ}"                       ${FILETEST}
       sed -i '/NL%METCYCF/c\   NL%METCYCF = '"${METCYCZ}"                       ${FILEDBUG}
-      #----- Time-averaging flag (meteorological driver). ---------------------------------#
-      sed -i '/NL%IMETAVG/c\   NL%IMETAVG = '"${IMETAVG}"                       ${FILEMAIN}
-      sed -i '/NL%IMETAVG/c\   NL%IMETAVG = '"${IMETAVG}"                       ${FILETEST}
-      sed -i '/NL%IMETAVG/c\   NL%IMETAVG = '"${IMETAVG}"                       ${FILEDBUG}
       #----- Radiation decomposition scheme. ----------------------------------------------#
       sed -i '/NL%IMETRAD/c\   NL%IMETRAD = '"${IMETRAD}"                       ${FILEMAIN}
       sed -i '/NL%IMETRAD/c\   NL%IMETRAD = '"${IMETRAD}"                       ${FILETEST}
@@ -2804,7 +2786,7 @@ do
       #----- Define meteorological driver settings. ---------------------------------------#
       metdriv_setting ${GRIDID[i]}
       METDRIV=${metdriv}; METCYCA=${metcyca}; METCYCZ=${metcycz}
-      IMETAVG=${imetavg}; IMETRAD=${imetrad}
+      IMETRAD=${imetrad}
       #----- Define land use driver settings. ---------------------------------------------#
       lu_setting ${GRIDID[i]}; LU_DATABASE=${lu_database}
       #----- Define prescribed-phenology settings. ----------------------------------------#
@@ -3046,10 +3028,6 @@ do
       sed -i '/NL%METCYCF/c\   NL%METCYCF = '"${METCYCZ}"                       ${FILEMAIN}
       sed -i '/NL%METCYCF/c\   NL%METCYCF = '"${METCYCZ}"                       ${FILETEST}
       sed -i '/NL%METCYCF/c\   NL%METCYCF = '"${METCYCZ}"                       ${FILEDBUG}
-      #----- Time-averaging flag (meteorological driver). ---------------------------------#
-      sed -i '/NL%IMETAVG/c\   NL%IMETAVG = '"${IMETAVG}"                       ${FILEMAIN}
-      sed -i '/NL%IMETAVG/c\   NL%IMETAVG = '"${IMETAVG}"                       ${FILETEST}
-      sed -i '/NL%IMETAVG/c\   NL%IMETAVG = '"${IMETAVG}"                       ${FILEDBUG}
       #----- Radiation decomposition scheme. ----------------------------------------------#
       sed -i '/NL%IMETRAD/c\   NL%IMETRAD = '"${IMETRAD}"                       ${FILEMAIN}
       sed -i '/NL%IMETRAD/c\   NL%IMETRAD = '"${IMETRAD}"                       ${FILETEST}
