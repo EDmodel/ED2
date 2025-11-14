@@ -13175,6 +13175,7 @@ module ed_state_vars
                               , slph_ref            & ! intent(in)
                               , slcec_ref           & ! intent(in)
                               , sldbd_ref           & ! intent(in)
+                              , isoilflg            & ! intent(in)
                               , islcolflg           ! ! intent(in)
       use ed_max_dims  , only : ed_nstyp            ! ! intent(in)
 
@@ -13264,6 +13265,14 @@ module ed_state_vars
       call vtable_edio_i_sca(ndcycle,nvar,igr,1,0                                              &
                             ,var_len,var_len_global,max_ptrs                               &
                             ,'NDCYCLE :90:hist:anal:dail:mont:dcyc:year')
+
+      nvar=nvar+1
+      call vtable_edio_i_sca(isoilflg(igr),nvar,igr,0,0                                   &
+                            ,var_len,var_len_global,max_ptrs                               &
+                            ,'ISOILFLG :90:hist:anal:dail:mont:dcyc:year')
+      call vtable_edio_i_sca(isoilflg(igr),nvar,igr,1,0                                   &
+                            ,var_len,var_len_global,max_ptrs                               &
+                            ,'ISOILFLG :90:hist:anal:dail:mont:dcyc:year')
 
       nvar=nvar+1
       call vtable_edio_i_sca(islcolflg(igr),nvar,igr,0,0                                   &

@@ -495,7 +495,7 @@ module landuse_init
                         ! a future option, though there is no strong reason to make this   !
                         ! survivorship anything other than 0.                              !
                         !------------------------------------------------------------------!
-                        read (cdum, fmt=*) (felling_s_ltharv(h),h=1,nharvest)
+                        read (cdum, fmt=*) (felling_s_gtharv(h),h=1,nharvest)
                         !------------------------------------------------------------------!
                      case default
                         !----- Key is not recognised. Stop the model. ---------------------!

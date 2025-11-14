@@ -4660,11 +4660,10 @@ subroutine init_pft_mort_params()
    real                   :: aquad
    real                   :: bquad
    real                   :: cquad
-   real                   :: discr
    real                   :: lambda_ref
    real                   :: lambda_eff
-   real                   :: leff_neg
-   real                   :: leff_pos
+   real                   :: leff_one
+   real                   :: leff_two
    real, dimension(n_pft) :: rho_use
    integer                :: ipft
    !----- Local constants for C18 mortality (see below). ----------------------------------!
@@ -4683,6 +4682,8 @@ subroutine init_pft_mort_params()
                                                        !    near-extinction but not so 
                                                        !    high that it would be 
                                                        !    difficult to display in output
+   real, parameter        :: discard      = huge(1.0)  ! Meaningless value for discarding
+                                                       !    a root of the quadratic solver.
    !---------------------------------------------------------------------------------------!
 
 
@@ -4939,23 +4940,55 @@ subroutine init_pft_mort_params()
          ! instead, we will wait until the patch age is older than time2canopy.  We want,  !
          ! however, to make the mean patch age to be 1/treefall_disturbance_rate.  The     !
          ! equation below can be retrieved by integrating the steady-state probability     !
-         ! distribution function.  The equation is quadratic and the discriminant will     !
-         ! never be zero and the treefall_disturbance_rate will be always positive because !
-         ! the values of time2canopy and treefall_disturbance_rate have already been       !
-         ! tested in ed_opspec.F90.                                                        !
+         ! distribution function.                                                          !
          !---------------------------------------------------------------------------------!
          aquad    = time2canopy * time2canopy * lambda_ref  - 2. * time2canopy
          bquad    = 2. * time2canopy * lambda_ref - 2.
          cquad    = 2. * lambda_ref
-         !------ Find the discriminant. ---------------------------------------------------!
-         discr    = bquad * bquad - 4. * aquad * cquad
-         leff_neg = - 0.5 * (bquad - sqrt(discr)) / aquad
-         leff_pos = - 0.5 * (bquad + sqrt(discr)) / aquad
          !---------------------------------------------------------------------------------!
-         !      Use the maximum value, but don't let the value to be too large otherwise   !
-         ! the negative exponential will cause underflow.                                  !
+
+
+         !------ Solve the quadratic equation. --------------------------------------------!
+         call solve_quadratic(aquad,bquad,cquad,discard,leff_one,leff_two)
          !---------------------------------------------------------------------------------!
-         lambda_eff = min(lnexp_max,max(leff_neg,leff_pos))
+
+
+         !---------------------------------------------------------------------------------!
+         !      The discriminant should be always positive and the                         !
+         ! treefall_disturbance_rate will be always positive because the values of         !
+         ! time2canopy and treefall_disturbance_rate have already been tested in           !
+         ! ed_opspec.F90.  In any case, we add a check in here to ensure at least one of   !
+         ! the solutions is valid.                                                         !
+         !---------------------------------------------------------------------------------!
+         if ( ( leff_one /= discard ) .or. ( leff_two /= discard ) ) then
+            !------------------------------------------------------------------------------!
+            !      Use the maximum value, but don't let the value to be too large other-   !
+            ! wise the negative exponential will cause underflow.                          !
+            !------------------------------------------------------------------------------!
+            lambda_eff = min(lnexp_max,max(leff_one,leff_two))
+            !---------------------------------------------------------------------------------!
+         else
+            !----- Broadcast the bad news. ------------------------------------------------!
+            write(unit=*,fmt='(a)'          ) ''
+            write(unit=*,fmt='(a)'          ) ''
+            write(unit=*,fmt='(a)'          ) '==========================================='
+            write(unit=*,fmt='(a)'          ) '==========================================='
+            write(unit=*,fmt='(a)'          ) '   Discriminant is negative.'
+            write(unit=*,fmt='(a)'          ) '-------------------------------------------'
+            write(unit=*,fmt='(a,1x,f12.5)' ) 'TIME2CANOPY = ', time2canopy
+            write(unit=*,fmt='(a,1x,f12.5)' ) 'LAMBA_REF   = ', lambda_ref
+            write(unit=*,fmt='(a,1x,es12.5)') 'A           = ', aquad
+            write(unit=*,fmt='(a,1x,es12.5)') 'B           = ', bquad
+            write(unit=*,fmt='(a,1x,es12.5)') 'C           = ', cquad
+            write(unit=*,fmt='(a,1x,es12.5)') 'DISCR       = ', bquad*bquad-4.*aquad*cquad
+            write(unit=*,fmt='(a)'          ) '==========================================='
+            write(unit=*,fmt='(a)'          ) '==========================================='
+            write(unit=*,fmt='(a)'          ) ''
+            write(unit=*,fmt='(a)'          ) ''
+            call fatal_error(' Negative discriminant when seeking effective lambda.'       &
+                            ,'init_pft_mort_params','ed_params.f90')
+            !------------------------------------------------------------------------------!
+         end if
          !---------------------------------------------------------------------------------!
       else
          lambda_eff = lambda_ref

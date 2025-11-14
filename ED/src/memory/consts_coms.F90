@@ -381,7 +381,7 @@ Module consts_coms
    !---------------------------------------------------------------------------------------!
    real, parameter :: srtwo     = 1.414213562373095 ! Square root of 2.         [      ---]
    real, parameter :: srthree   = 1.732050807568877 ! Square root of 3.         [      ---]
-   real, parameter :: sqrt2o2   = 0.5 * srtwo       ! ½ Square root of 2.       [      ---]
+   real, parameter :: sqrt2o2   = 0.5 * srtwo       ! 1/2 * Square root of 2.   [      ---]
    real, parameter :: srtwoi    = 1./srtwo          ! 1./ Square root of 2.     [      ---]
    real, parameter :: srthreei  = 1./srthree        ! 1./ Square root of 3.     [      ---]
    real, parameter :: onethird  = 1./3.             ! 1/3                       [      ---]
@@ -394,12 +394,12 @@ Module consts_coms
    !---------------------------------------------------------------------------------------!
    ! Universal constants                                                                   !
    !---------------------------------------------------------------------------------------!
-   real, parameter :: stefan    = 5.6696e-8         ! Stefan-Boltzmann constant [ W/m²/K^4]
-   real, parameter :: boltzmann = 1.3806503e-23     ! Boltzmann constant        [m²kg/s²/K]
-   real, parameter :: t00       = 273.15            ! 0°C                       [       °C]
-   real, parameter :: rmol      = 8.314510          ! Molar gas constant        [  J/mol/K]
-   real, parameter :: volmol    = 0.022710980       ! Molar volume at STP       [       m³]
-   real, parameter :: volmoll   = volmol*1e3        ! Molar volume at STP       [        L]
+   real, parameter :: stefan    = 5.6696e-8        ! Stefan-Boltzmann constant [   W/m2/K4]
+   real, parameter :: boltzmann = 1.3806503e-23    ! Boltzmann constant        [m2 kg/s2/K]
+   real, parameter :: t00       = 273.15           ! 0 degC                    [      degC]
+   real, parameter :: rmol      = 8.314510         ! Molar gas constant        [   J/mol/K]
+   real, parameter :: volmol    = 0.022710980      ! Molar volume at STP       [        m3]
+   real, parameter :: volmoll   = volmol*1e3       ! Molar volume at STP       [         L]
    !---------------------------------------------------------------------------------------!
 
 
@@ -438,11 +438,11 @@ Module consts_coms
    !---------------------------------------------------------------------------------------!
    ! General Earth properties                                                              !
    !---------------------------------------------------------------------------------------!
-   real, parameter :: vonk      = 0.40        ! Von Kármán constant             [      ---]
-   real, parameter :: grav      = 9.80665     ! Gravity acceleration            [     m/s²]
+   real, parameter :: vonk      = 0.40        ! Von Karman constant             [      ---]
+   real, parameter :: grav      = 9.80665     ! Gravity acceleration            [     m/s2]
    real, parameter :: erad      = 6370997.    ! Earth radius                    [        m]
    real, parameter :: erad2     = 2.*erad     ! Earth diameter                  [        m]
-   real, parameter :: solar     = 1.3533e3    ! Solar constant                  [     W/m²]
+   real, parameter :: solar     = 1.3533e3    ! Solar constant                  [     W/m2]
    real, parameter :: p00       = 1.e5        ! Reference pressure              [       Pa]
    real, parameter :: prefsea   = 101325.     ! Reference sea level pressure    [       Pa]
    real, parameter :: p00i      = 1. / p00    ! 1/p00                           [     1/Pa]
@@ -458,7 +458,7 @@ Module consts_coms
    !        third edition, Academic Press, Amsterdam, 418pp.  (Chapters 3 and 10).         !
    !                                                                                       !
    !     Air diffusion properties. These properties are temperature-dependent in reality,  !
-   ! but for simplicity we assume them constants, using the value at 20°C.                 !
+   ! but for simplicity we assume them constants, using the value at 20 degC.              !
    !                                                                                       !
    ! Thermal diffusivity - Computed from equation on page 32 of MU08;                      !
    ! Kinematic viscosity - Computed from equation on page 32 of MU08;                      !
@@ -466,9 +466,9 @@ Module consts_coms
    !                                 10.11 (MU08).                                         !
    ! These terms could be easily made function of temperature in the future if needed be.  !
    !---------------------------------------------------------------------------------------!
-   real, parameter :: th_diff0  = 1.89e-5     ! Air thermal diffusivity         [     m²/s]
+   real, parameter :: th_diff0  = 1.89e-5     ! Air thermal diffusivity         [     m2/s]
    real, parameter :: dth_diff  = 0.007       ! Temperature dependency slope    [      1/K]
-   real, parameter :: kin_visc0 = 1.33e-5     ! Kinematic viscosity             [     m²/s]
+   real, parameter :: kin_visc0 = 1.33e-5     ! Kinematic viscosity             [     m2/s]
    real, parameter :: dkin_visc = 0.007       ! Temperature dependency slope    [      1/K]
    !---------------------------------------------------------------------------------------!
 
@@ -516,8 +516,8 @@ Module consts_coms
    !---------------------------------------------------------------------------------------!
    ! Liquid water properties                                                               !
    !---------------------------------------------------------------------------------------!
-   real, parameter :: wdns     = 1.000e3    ! Liquid water density              [    kg/m³]
-   real, parameter :: wdnsi    = 1./wdns    ! Inverse of liquid water density   [    m³/kg]
+   real, parameter :: wdns     = 1.000e3    ! Liquid water density              [    kg/m3]
+   real, parameter :: wdnsi    = 1./wdns    ! Inverse of liquid water density   [    m3/kg]
    real, parameter :: cliq     = 4.186e3    ! Liquid water specific heat (Cl)   [   J/kg/K]
    real, parameter :: cliqi    = 1./cliq    ! Inverse of water heat capacity    [   kg K/J]
    !---------------------------------------------------------------------------------------!
@@ -527,12 +527,12 @@ Module consts_coms
    !---------------------------------------------------------------------------------------!
    ! Ice properties                                                                        !
    !---------------------------------------------------------------------------------------!
-   real, parameter :: idns     = 9.167e2      ! "Hard" ice density              [    kg/m³]
-   real, parameter :: idnsi    = 1./idns      ! Inverse of ice density          [    m³/kg]
-   real, parameter :: fdns     = 2.000e2      ! Frost density                   [    kg/m³]
-   real, parameter :: fdnsi    = 1./fdns      ! Inverse of frost density        [    m³/kg]
-   real, parameter :: fsdns    = 1.000e2      ! Fresh snow density              [    kg/m³]
-   real, parameter :: fsdnsi   = 1./fsdns     ! Inverse of liquid water density [    m³/kg]
+   real, parameter :: idns     = 9.167e2      ! "Hard" ice density              [    kg/m3]
+   real, parameter :: idnsi    = 1./idns      ! Inverse of ice density          [    m3/kg]
+   real, parameter :: fdns     = 2.000e2      ! Frost density                   [    kg/m3]
+   real, parameter :: fdnsi    = 1./fdns      ! Inverse of frost density        [    m3/kg]
+   real, parameter :: fsdns    = 1.000e2      ! Fresh snow density              [    kg/m3]
+   real, parameter :: fsdnsi   = 1./fsdns     ! Inverse of liquid water density [    m3/kg]
    real, parameter :: cice     = 2.093e3      ! Ice specific heat (Ci)          [   J/kg/K]
    real, parameter :: cicei    = 1. / cice    ! Inverse of ice heat capacity    [   kg K/J]
    !---------------------------------------------------------------------------------------!
@@ -547,8 +547,8 @@ Module consts_coms
    real, parameter :: t3plei    = 1./t3ple       ! 1./T3                        [      1/K]
    real, parameter :: es3ple    = 611.65685464   ! Vapour pressure at T3 (es3)  [       Pa]
    real, parameter :: es3plei   = 1./es3ple      ! 1./es3                       [     1/Pa]
-   real, parameter :: epes3ple  = ep * es3ple    ! epsilon × es3                [ Pa kg/kg]
-   real, parameter :: rh2ot3ple = rh2o * t3ple   ! Rv × T3                      [     J/kg]
+   real, parameter :: epes3ple  = ep * es3ple    ! epsilon * es3                [ Pa kg/kg]
+   real, parameter :: rh2ot3ple = rh2o * t3ple   ! Rv * T3                      [     J/kg]
    real, parameter :: alli      = 3.34e5         ! Lat. heat - fusion       (Lf)[     J/kg]
    real, parameter :: alvl3     = 2.50e6         ! Lat. heat - vaporisation (Lv)[     J/kg]
    real, parameter :: alvi3     = alli + alvl3   ! Lat. heat - sublimation  (Ls)[     J/kg]
@@ -558,8 +558,8 @@ Module consts_coms
    real, parameter :: lvordry   = alvl3 / rdry   ! Lv/Ra                        [        K]
    real, parameter :: lvorvap   = alvl3 / rh2o   ! Lv/Rv                        [        K]
    real, parameter :: lsorvap   = alvi3 / rh2o   ! Ls/Rv                        [        K]
-   real, parameter :: lvt3ple   = alvl3 * t3ple  ! Lv × T3                      [   K J/kg]
-   real, parameter :: lst3ple   = alvi3 * t3ple  ! Ls × T3                      [   K J/kg]
+   real, parameter :: lvt3ple   = alvl3 * t3ple  ! Lv * T3                      [   K J/kg]
+   real, parameter :: lst3ple   = alvi3 * t3ple  ! Ls * T3                      [   K J/kg]
    real, parameter :: uiicet3   = cice * t3ple   ! u at triple point, only ice  [     J/kg]
    real, parameter :: uiliqt3   = uiicet3 + alli ! u at triple point, only liq. [     J/kg]
    real, parameter :: dcpvl     = cph2o - cliq   ! difference of sp. heat       [   J/kg/K]
@@ -671,16 +671,16 @@ Module consts_coms
    !---------------------------------------------------------------------------------------!
    !     Carbon-related unit conversions.                                                  !
    !---------------------------------------------------------------------------------------!
-   real, parameter :: mol_2_umol     = 1.e6                 ! mol         => µmol
-   real, parameter :: umol_2_mol     = 1.e-6                ! µmol        => mol
-   real, parameter :: umol_2_kgC     = 1.20107e-8           ! µmol(CO2)   => kg(C)
-   real, parameter :: Watts_2_Ein    = 4.6e-6               ! W/m2        => mol/m²/s
-   real, parameter :: Ein_2_Watts    = 1./Watts_2_Ein       ! mol/m²/s    => W/m2
-   real, parameter :: kgC_2_umol     = 1. / umol_2_kgC      ! kg(C)       => µmol(CO2)
-   real, parameter :: kgom2_2_tonoha = 10.                  ! kg(C)/m²    => ton(C)/ha
-   real, parameter :: tonoha_2_kgom2 = 0.1                  ! ton(C)/ha   => kg(C)/m²
-   real, parameter :: umols_2_kgCyr  = umol_2_kgC * yr_sec  ! µmol(CO2)/s => kg(C)/yr
-   real, parameter :: kgCday_2_umols = kgC_2_umol / day_sec ! kg(C)/day   => µmol(CO2)/s
+   real, parameter :: mol_2_umol     = 1.e6                 ! mol         => umol
+   real, parameter :: umol_2_mol     = 1.e-6                ! umol        => mol
+   real, parameter :: umol_2_kgC     = 1.20107e-8           ! umol(CO2)   => kg(C)
+   real, parameter :: Watts_2_Ein    = 4.6e-6               ! W/m2        => mol/m2/s
+   real, parameter :: Ein_2_Watts    = 1./Watts_2_Ein       ! mol/m2/s    => W/m2
+   real, parameter :: kgC_2_umol     = 1. / umol_2_kgC      ! kg(C)       => umol(CO2)
+   real, parameter :: kgom2_2_tonoha = 10.                  ! kg(C)/m2    => ton(C)/ha
+   real, parameter :: tonoha_2_kgom2 = 0.1                  ! ton(C)/ha   => kg(C)/m2
+   real, parameter :: umols_2_kgCyr  = umol_2_kgC * yr_sec  ! umol(CO2)/s => kg(C)/yr
+   real, parameter :: kgCday_2_umols = kgC_2_umol / day_sec ! kg(C)/day   => umol(CO2)/s
    !---------------------------------------------------------------------------------------!
 
 #endif
