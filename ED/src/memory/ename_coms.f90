@@ -225,7 +225,6 @@ module ename_coms
       integer                                           :: ishuffle
       integer                                           :: metcyc1
       integer                                           :: metcycf
-      integer                                           :: imetavg
       integer                                           :: imetrad
       real                                              :: initial_co2
 
@@ -484,7 +483,6 @@ module ename_coms
       enl%ishuffle                  = undef_integer
       enl%metcyc1                   = undef_integer
       enl%metcycf                   = undef_integer
-      enl%imetavg                   = undef_integer
       enl%imetrad                   = undef_integer
       enl%initial_co2               = undef_real
 

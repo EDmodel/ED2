@@ -1272,8 +1272,7 @@ subroutine ed_opspec_misc
    use met_driver_coms       , only : imetrad                      ! ! intent(in)
 #else
    use met_driver_coms       , only : imetrad                      & ! intent(in)
-                                    , ishuffle                     & ! intent(in)
-                                    , imetavg                      ! ! intent(in)
+                                    , ishuffle                     ! ! intent(in)
 #endif
 
    implicit none
@@ -2371,14 +2370,6 @@ end do
       ifaterr = ifaterr +1
       call opspec_fatal(reason,'opspec_misc')
    end if
-   if (imetavg < -1 .or. imetavg > 3) then
-      write (reason,fmt='(a,1x,i4,a)')                                                     &
-                    'Invalid IMETAVG, it must be between -1 and 3.  Yours is set to'       &
-                    ,imetavg,'...'
-      ifaterr = ifaterr +1
-      call opspec_fatal(reason,'opspec_misc')
-   end if
-
 #endif
 
    if (imetrad < 0 .or. imetrad > 5) then

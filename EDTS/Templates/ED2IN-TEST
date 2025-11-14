@@ -1717,21 +1717,6 @@ $ED_NL
    ! IMETCYCF    -- Last year for which meteorological driver files exist.  In addition,   !
    !                the model assumes that files exist for all years between METCYC1 and   !
    !                METCYCF.                                                               !
-   ! IMETAVG     -- How the input radiation was originally averaged.  You must tell this   !
-   !                because ED-2.1 can make a interpolation accounting for the cosine of   !
-   !                zenith angle.                                                          !
-   !               -1.  (Deprecated) I don't know, use linear interpolation.               !
-   !                0.  No average, the values are instantaneous                           !
-   !                1.  Averages ending at the reference time                              !
-   !                2.  Averages beginning at the reference time                           !
-   !                3.  Averages centred at the reference time                             !
-   !                                                                                       !
-   !                IMPORTANT: The user must obtain the correct information for each       !
-   !                           meteorological driver before running the model, and set     !
-   !                           this variable consistently.  Inconsistent settings are      !
-   !                           known to cause numerical instabilities, particularly at     !
-   !                           around sunrise and sunset times.                            !
-   !                                                                                       !
    ! IMETRAD     -- What should the model do with the input short wave radiation?          !
    !                0.  (ED-2.2 default, when radiation components were measured)          !
    !                    Nothing, use it as is.                                             !
@@ -1757,7 +1742,6 @@ $ED_NL
    NL%ISHUFFLE    = 0
    NL%METCYC1     = 1970
    NL%METCYCF     = 2013
-   NL%IMETAVG     = 1
    NL%IMETRAD     = 5
    NL%INITIAL_CO2 = 410.
    !---------------------------------------------------------------------------------------!

@@ -84,7 +84,6 @@ subroutine copy_nl(copy_type)
                                    , metcyc1                   & ! intent(out)
                                    , metcycf                   & ! intent(out)
                                    , imettype                  & ! intent(out)
-                                   , imetavg                   & ! intent(out)
                                    , imetrad                   & ! intent(out)
                                    , initial_co2               & ! intent(out)
                                    , lapse_scheme              ! ! intent(out)
@@ -467,7 +466,6 @@ subroutine copy_nl(copy_type)
       ishuffle                  = nl%ishuffle
       metcyc1                   = nl%metcyc1
       metcycf                   = nl%metcycf
-      imetavg                   = nl%imetavg
       imetrad                   = nl%imetrad
       initial_co2               = nl%initial_co2
       
