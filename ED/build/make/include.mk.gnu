@@ -26,41 +26,33 @@ LIBUTILS=$(BASE)/libutils-$(UTILS_VERSION)-opt.a
 
 # Activate appropriate parts below, comment out others.
 
-# NCAR Graphics.
 
-#---------------------------------------------------------------
-# If you are using a standard installation of NCAR Graphics, set:
-#       LOADER=ncargf90
-# in the machine-dependent sections below
-#LIBNCARG=
-#---------------------------------------------------------------
-# If you are using the NCAR dummy libraries...
+#------------------------------------------------------------------------------------------#
+#     HDF5 libraries                                                                       #
+#                                                                                          #
+#     Since ED-2.1, this is no longer optional for real simulations.  You must have HDF5   #
+# libraries compiled with the same compiler you set for F_COMP and C_COMP.  You may still  #
+# be able to compile without HDF5 but it will not run.                                     #
+#------------------------------------------------------------------------------------------#
+ZLIB_PATH=/usr/local
+HDF5_PATH=/usr/local
+HDF5_INCS=-I$(HDF5_PATH)/include
+HDF5C_INCS=$(HDF5_INCS)
+HDF5_LIBS=-L$(ZLIB_PATH)/lib -lz -L$(HDF5_PATH)/lib -lhdf5_fortran -lhdf5 -lhdf5_hl
+#------------------------------------------------------------------------------------------#
 
-NCARG_DIR=$(BASE)
-#LIBNCARG=-L$(NCARG_DIR) -lncarg-$(UTILS_VERSION) -lncarg_c-$(UTILS_VERSION) \
-#                        -lncarg_gks-$(UTILS_VERSION)
-#LIBNCARG=-L$(NCARG_DIR) -lncarg-$(UTILS_VERSION) 
-LIBNCARG=$(BASE)/libncarg-$(UTILS_VERSION).a
-#---------------------------------------------------------------
-# If you are using a real distribution of NCAR Graphics...
-#NCARG_DIR=/usr/local/ncarg-4.3.0/lib
-#LIBNCARG=-L$(NCARG_DIR) -lncarg -lncarg_gks -lncarg_c -L/usr/X11R6/lib -lX11 -ldl
-#---------------------------------------------------------------
 
-# HDF libraries-------------------------------------------------
-# HDF4 library: Instructions to install: www.cptec.inpe.br/brams
-# If you run "configure" script, you don't need to edit line bellow
-HDF_LIBS=-L./.hdf4_libs -lmfhdf -ldf -lz -ljpeg -lsz
-# --------------------------------------------------------------
-
-# netCDF libraries ---------------------------------------------
-# If you have netCDF set USENC=.TRUE. and type the lib folder
-# at NC_LIBS, with the leading -L (e.g. -L/usr/local/lib).
-# If you don't have it, leave USENC=.FALSE. and type a dummy
-# folder for NC_LIBS (e.g. -L/dev/null or leave it blank)
-USENC=.FALSE.
-NC_LIBS=-L/dev/null
-# --------------------------------------------------------------
+#------------------------------------------------------------------------------------------#
+#     Linear Algebra Package (LAPACK) libraries.                                           #
+#                                                                                          #
+#     Lapack is a well-established package for solving linear systems in Fortran. This is  #
+# more efficient than the former built-in solution, and thus it became the new default.    #
+# Consequently, it is now required to link the lapack libraries during compilation.        #
+#------------------------------------------------------------------------------------------#
+LAPACK_PATH=/usr/local/opt/lapack
+LAPACK_INCS=-I$(LAPACK_PATH)/include
+LAPACK_LIBS=-L$(LAPACK_PATH)/lib -llapack -lblas
+#------------------------------------------------------------------------------------------#
 
 # MPI_Wtime. ---------------------------------------------------
 # If USE_MPIWTIME=1, then it will use MPI libraries to compute
