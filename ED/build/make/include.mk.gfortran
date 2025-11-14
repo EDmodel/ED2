@@ -1,86 +1,102 @@
-#Makefile include include.mk.opt
-############################## Change Log ##################################
-# 1.0.0.2
-#
-# 000908 MJB include.mk-mrc ##
-#            Added MAKE environment varaible.
-#            Added free format option to F_OPTS for some platforms. ##
-# 000907 MJB include.mk-mrc ##
-#            Changed the defualts to no NCAR Graphics and no parallel.
-#            Also commented out the machine specifics to force the user to
-#            select the appropriate machine for them. ##
-# 000823 MJB include.mk-mrc ##
-#            New - defines all make environment varaibles and is included
-#            in all make files. ##
-#
-############################################################################
+#==========================================================================================#
+#==========================================================================================#
+#    Makefile include.mk.opt.gfortran                                                      #
+#                                                                                          #
+#    Compilation controls for GNU-based Fortran/C.                                         #
+#------------------------------------------------------------------------------------------#
 
-# Define make (gnu make works best).
 
+
+#----- Define make (gnu make works best). -------------------------------------------------#
 MAKE=/usr/bin/make
+#------------------------------------------------------------------------------------------#
 
-# libraries.
 
+
+#----- Main path for compilation. ---------------------------------------------------------#
 BASE=$(ED_ROOT)/build/
+#------------------------------------------------------------------------------------------#
 
-# Activate appropriate parts below, comment out others.
 
-#---------------------------------------------------------------
-# If you are using a real distribution of NCAR Graphics...
-#NCARG_DIR=/usr/local/ncarg-4.3.0/lib
-#LIBNCARG=-L$(NCARG_DIR) -lncarg -lncarg_gks -lncarg_c -L/usr/X11R6/lib -lX11 -ldl
-#---------------------------------------------------------------
+#------------------------------------------------------------------------------------------#
+#    HDF 5 libraries.                                                                      #
+#                                                                                          #
+#    Since ED-2.1, this is no longer optional.  You must provide HDF5 libraries, which     #
+# have been compiled with the same compiler defined in F_COMP and C_COMP (see below).      #
+#------------------------------------------------------------------------------------------#
+HDF5_PATH=/path/to/hdf5-compiled-with-gcc-gfortran
+HDF5_INCS=-I$(HDF5_PATH)/include
+HDF5_LIBS= -lz -lm -L$(HDF5_PATH)/lib -lhdf5 -lhdf5_fortran -lhdf5_hl
+#------------------------------------------------------------------------------------------#
 
-# HDF libraries  -----------------------------------------------
-# HDF4 library: Instructions to install: www.cptec.inpe.br/brams
-# If you run "configure" script, you don't need to edit line bellow
-#HDF_LIBS=-L.hdf4_libs -lmfhdf -ldf -lz -ljpeg -lsz
-# --------------------------------------------------------------
 
-# HDF 5  Libraries
-HDF5_HOME=/usr
-HDF5_INCS=-I${HDF5_HOME}/include
-HDF5C_INCS=-I${HDF5_HOME}/include
-HDF5_LIBS=-lhdf5 -lhdf5_fortran -lhdf5_hl -lz
 
+#------------------------------------------------------------------------------------------#
+#     If you have a version of hdf5 compiled in parallel, then you may benefit from        #
+# collective I/O, then use this flag = 1.  Otherwise, set it to zero.                      #
+#------------------------------------------------------------------------------------------#
 USE_COLLECTIVE_MPIO=0
- 
-#---------------------------------------------------------------
-
-# netCDF libraries ---------------------------------------------
-# If you have netCDF set USENC=1 and type the lib folder
-# at NC_LIBS, with the leading -L (e.g. -L/usr/local/lib).
-# If you don't have it, leave USENC=0 and type a dummy
-# folder for NC_LIBS (e.g. -L/dev/null or leave it blank)
-USENC=0
-NC_LIBS=-L/dev/null
-# --------------------------------------------------------------
-
-# interface ----------------------------------------------------
-# This should be 1 unless you are running with -gen-interfaces.
-# Interfaces usually make the compilation to crash when the 
-# -gen-interfaces option are on, so this flag bypass all 
-# interfaces in the code.
-USE_INTERF=1
-
-# MPI_Wtime. ---------------------------------------------------
-# If USE_MPIWTIME=1, then it will use MPI libraries to compute
-# the wall time (the only double-precision intrinsic).  In case
-# you don't have it, leave USE_MPIWTIME=0, in which case it will
-# use a simpler, single-precision function.
-USE_MPIWTIME=1
+#------------------------------------------------------------------------------------------#
 
 
-# GFORTRAN DEVELOPERS: REMOVE ffree-line-length-0
-# CODE IS INTENDED TO BE LINE WIDTH COMPLIANT WITHIN 132 
+
+#------------------------------------------------------------------------------------------#
+#     CMACH. This tells the code which type of machine is being used. This is useful for   #
+# setting up a few system-dependent pre-compilation instructions.  Current options include #
+# the following:                                                                           #
+#                                                                                          #
+# LINUX  -- Linux or Unix systems.                                                         #
+# MACOSX -- Mac OS system. This applies more limited memory requests so the code can       #
+#           compile and run on personal computers.                                         #
+# DOCKER -- Specific setting for building the containerised version of ED2. Do not use     #
+#           this for regular builds.                                                       #
+# CINTEG -- Specific setting for building the continuous integration version of ED2. Do    #
+#           not use this for regular builds.                                               #
+#                                                                                          #
+#     We currently do not support compilation in Windows. If you know how to set up ED2 to #
+# run on Windows machines, please submit a pull request!.                                  #
+#------------------------------------------------------------------------------------------#
+CMACH=LINUX
+#------------------------------------------------------------------------------------------#
 
 
-#----------------- gfortran on Linux -----------
-CMACH=PC_GFORTRAN
+
+
+
+#################################### COMPILER SETTINGS #####################################
+#------------------------------------------------------------------------------------------#
+#   FC_TYPE -- Specify from which family of compilers the code should be built. Current    #
+#              options include:                                                            #
+#              GNU       -- gfortran and gcc.                                              #
+#              GFORTRAN  -- same as GNU.                                                   #
+#              INTEL     -- ifort and icc.                                                 #
+#              IFORT     -- same as INTEL.                                                 #
+#              PGI       -- pgf90 and pgcc.                                                #
+#              PGF90     -- same as PGI.                                                   #
+#   F_COMP  -- Fortran compiler. If empty, the code builder will automatically select the  #
+#              default compiler names based on FC_TYPE. If you intend to compile ED2 with  #
+#              openmpi, then set this to mpif90.                                           #
+#   C_COMP  -- C compiler. If empty, the code builder will automatically select the        #
+#              default compiler names based on FC_TYPE. If you intend to compile ED2 with  #
+#              openmpi, then set this to mpicc.                                            #
+#   LOADER  -- Fortran compiler to build the executable. By default, this is the same as   #
+#              F_COMP.                                                                     #
+#   LIBS    -- Libraries that should be linked to the compilation. Most of the time, this  #
+#              should be left empty.                                                       #
+#   MOD_EXT -- Suffix for external modules. This should be typically set to mod.           #
+#------------------------------------------------------------------------------------------#
 FC_TYPE=GNU
-F_COMP=mpif90
-C_COMP=mpicc 
-LOADER=mpif90
+F_COMP=gfortran
+C_COMP=gcc
+LOADER=$(F_COMP)
+LIBS=
+MOD_EXT=mod
+#------------------------------------------------------------------------------------------#
+
+
+
+
+
 ##################################### COMPILER OPTIONS #####################################
 #------------------------------------------------------------------------------------------#
 # A/B/C/D. Debugging, strictest compilation flags, lowest performance.                     #
@@ -93,84 +109,41 @@ ifeq ($(KIND_COMP),$(filter $(KIND_COMP), A B C D))
    F_OPTS=-g -ffree-line-length-none -fno-whole-file -O0 -fopenmp -ffpe-trap=invalid,zero,overflow -fbounds-check #-std=f2003
    C_OPTS=-fopenmp -g -O0 -ffpe-trap=invalid,zero,overflow -fbounds-check
    LOADER_OPTS=${F_OPTS}
-endif
-ifeq ($(KIND_COMP),E)
+else ifeq ($(KIND_COMP),E)
    F_OPTS=-g -ffree-line-length-none -fno-whole-file -O2 -fopenmp #-ffpe-trap=invalid,zero,overflow -fbounds-check  #-O2
    C_OPTS=-g -O2 -fopenmp #-ffpe-trap=invalid,zero,overflow -fbounds-check #-O2
    LOADER_OPTS=${F_OPTS}
+else
+   $(error Option KIND_COMP provided ($(KIND_COMP)) is invalid)."
 endif
+#------------------------------------------------------------------------------------------#
+############################################################################################
 
 
-LIBS=
-MOD_EXT=mod
-
-# Ancillary Compiler options
-#USE_INTERF=1
-#F_OPTS= -ffree-form -O3 -fconvert=little-endian -frecord-marker=4
-#C_OPTS= -O3 -DLITTLE 
-#LOADER_OPTS= -ffree-form -O3 -fconvert=little-endian -frecord-marker=4
-#C_LOADER_OPTS=-v 
 
 
-# If compiling for a single-CPU platform only (without MPI):
-
-#-----------------------------------------------------------------
-#PAR_LIBS=
-#PAR_DEFS=
-#-----------------------------------------------------------------
-
-# Else if using MPI libraries:
-
-#---------------SGI-----------------------------------------------
-#with mpich parallel stuff
-#MPI_PATH=/n/Moorcroft_Lab/Users/mlongo/util/mpich
-#PAR_INCS=-I$(MPI_PATH)/include
-#PAR_LIBS=-L$(MPI_PATH)/lib/IRIXN32/ch_shmem -lmpi
-#  or with SGI Parallel stuff
-#PAR_LIBS=-L/usr/lib32 -lmpi
-#  need this for both
-#PAR_DEFS=-DRAMS_MPI
-#-----------------------------------------------------------------
-
-#---------------IBM-----------------------------------------------
-#MPI_PATH=/usr/local/mpich
-#PAR_INCS=-I$(MPI_PATH)/include
-#PAR_LIBS=-L$(MPI_PATH)/lib/rs6000/ch_p4 -lmpi 
-#PAR_DEFS=-DRAMS_MPI
-#-----------------------------------------------------------------
-
-#---------------Sun-----------------------------------------------
-#MPI_PATH=/usr/local/mpich
-#PAR_INCS=-I$(MPI_PATH)/include
-#PAR_LIBS=-L$(MPI_PATH)/lib/solaris/ch_p4 -lmpi 
-#PAR_DEFS=-DRAMS_MPI
-#-----------------------------------------------------------------
-
-#---------------HP-Exemplar---------------------------------------
-#MPI_PATH=/opt/mpi
-#PAR_INCS=-I$(MPI_PATH)/include
-#PAR_LIBS=$(MPI_PATH)/lib/pa1.1/libmpi.a
-#PAR_DEFS=-DRAMS_MPI
-#-----------------------------------------------------------------
-
-#---------------LINUX Portland Group pgf77/gcc--------------------
-#MPI_PATH=/n/Moorcroft_Lab/Users/mlongo/util/mpich-1.2.7p1/intel_9.1.036_64
-#PAR_INCS=-I$(MPI_PATH)/include
-#PAR_LIBS=-L$(MPI_PATH)/lib -lmpich -lpmpich
-#PAR_DEFS=-DRAMS_MPI
-#-----------------------------------------------------------------
-
-#---------------If using scritps 'mpicc' e 'mpif90'---------------'
+#------------------------------------------------------------------------------------------#
+#    MPI configuration. Most users should leave all of the settings below empty.           #
+# The only exception is when users want to compile ED2 with OpenMPI/MPICH and, for         #
+# whichever reason, they cannot set F_COMP=mpif90 and C_COMP=mpicc.                        #
+#                                                                                          #
+#   In case you truly need to set these variables, the commented-out example below shows   #
+# how to set these variables:                                                              #
+#                                                                                          #
+# MPI_PATH=/path/to/openmpi                                                                #
+# PAR_INCS=-I$(MPI_PATH)/include                                                           #
+# PAR_LIBS=-L$(MPI_PATH)/lib -lmpi (-lmpi_f90 or -lmpi_usempif08 may be needed too).       #
+#------------------------------------------------------------------------------------------#
 MPI_PATH=
 PAR_INCS=
 PAR_LIBS=
-PAR_DEFS=-DRAMS_MPI
-#-----------------------------------------------------------------
+#------------------------------------------------------------------------------------------#
 
-# For IBM,HP,SGI,ALPHA,LINUX use these:
+
+
+#------------------------------------------------------------------------------------------#
+#     Archive options. This is typically "ar rs", so do not change it unless you know your #
+# system has a different standard.                                                         #
+#------------------------------------------------------------------------------------------#
 ARCHIVE=ar rs
-# For NEC SX-6
-#ARCHIVE=sxar rs
-# For SUN,CONVEX
-#ARCHIVE=ar r'
-
+#------------------------------------------------------------------------------------------#

@@ -20,18 +20,61 @@ ifeq ($(F_LOWO_OPTS),)
 endif
 #------------------------------------------------------------------------------------------#
 
-ifeq ($(OPT),"dbg")
-	INCLUDES = ""
+
+
+#------------------------------------------------------------------------------------------#
+#     Make variables CMACH and FC_TYPE are correctly set.                                  #
+#------------------------------------------------------------------------------------------#
+ifeq ($(CMACH),)
+   CMACH_ERROR=1
+else ifeq($(CMACH),$(filter $(KIND_COMP), LINUX MACOSX DOCKER CINTEG))
+   CMACH_ERROR=0
+
+   ifeq ($(FC_TYPE),)
+   else ifeq ($(FC_TYPE),$(filter $(FC_TYPE), GFORTRAN GNU))
+   else ifeq ($(FC_TYPE),$(filter $(FC_TYPE), IFORT INTEL))
+   else ifeq ($(FC_TYPE),$(filter $(FC_TYPE), PGI PGF90))
+
+else
+   CMACH_ERROR=1
 endif
+#------------------------------------------------------------------------------------------#
+
+
+
+#------------------------------------------------------------------------------------------#
+#     Gracefully fail if CMACH and FC_TYPE are not correctly set. This will allow users to #
+# make sure they selected a supported version.                                             #
+#------------------------------------------------------------------------------------------#
+ifeq ($(CMACH_ERROR),1)
+   @echo ""
+   @echo "---~---"
+   @echo "   FATAL ERROR!"
+   @echo "---~---"
+   @echo "   Variable CMACH is either not defined or has an invalid value in your"
+   @echo " include.mk.[PLATFORM]. Please set to one of the following values"
+   @echo ""
+   @echo " CMACH=LINUX   (For Unix or Linux machines)"
+   @echo " CMACH=MACOSX  (For MacOS machines)"
+   @echo ""
+   @echo "   It is possible to set CMACH to DOCKER and CINTEG, but these are special and"
+   @echo " specific cases and should not be used unless you are working on these specific"
+   @echo " cases."
+   @echo "---~---"
+   @echo ""
+   $(error Variable CMACH is not properly set in your include.mk.[PLATFORM] file.)"
+endif
+#------------------------------------------------------------------------------------------#
+
 
 #----- Compiler commands. -----------------------------------------------------------------#
 INCLUDES         = $(PAR_INCS) -I$(ED_INCS) $(HDF5_INCS) $(MPI_INCS) 
 F90_COMMAND      = $(F_COMP) -c $(F_OPTS) $(INCLUDES) $(PAR_DEFS)
 F90_LOWO_COMMAND = $(F_COMP) -c $(F_LOWO_OPTS) $(INCLUDES) $(PAR_DEFS)
-FPP_COMMAND      = $(F_COMP) -c -DUSE_INTERF=$(USE_INTERF) -DUSENC=$(USENC) -D$(CMACH)     \
-                   -D$(FC_TYPE) -DUSE_COLLECTIVE_MPIO=$(USE_COLLECTIVE_MPIO)               \
+FPP_COMMAND      = $(F_COMP) -c -D$(CMACH) -D$(FC_TYPE)                                    \
+                   -DUSE_COLLECTIVE_MPIO=$(USE_COLLECTIVE_MPIO)                            \
                    -DUSE_MPIWTIME=$(USE_MPIWTIME) $(F_OPTS) $(INCLUDES) $(PAR_DEFS)
-FPP_LOWO_COMMAND = $(F_COMP) -c -DUSE_INTERF=$(USE_INTERF) -DUSENC=$(USENC) -D$(CMACH)     \
+FPP_LOWO_COMMAND = $(F_COMP) -c -D$(CMACH) -D$(FC_TYPE)                                    \
                    -DUSE_COLLECTIVE_MPIO=$(USE_COLLECTIVE_MPIO)                            \
                    -DUSE_MPIWTIME=$(USE_MPIWTIME) $(F_LOWO_OPTS) $(INCLUDES) $(PAR_DEFS)
 CXX_COMMAND      = $(C_COMP) -c $(C_OPTS) -D$(CMACH) $(HDF5_INCS) $(INCLUDES) $(PAR_DEFS)
@@ -75,7 +118,7 @@ gendep:
 $(EXE): $(LIBMODEL) $(MAINOBJ) 
 	@echo ""
 	$(LOADER) -o $(EXE) edmain.o $(LOADER_OPTS) $(INCLUDES) $(LIBMODEL) $(HDF5_LIBS)   \
-	$(PAR_LIBS) $(NC_LIBS) $(LIBS) $(LOADER_OPTS)
+	$(PAR_LIBS) $(LIBS) $(LOADER_OPTS)
 	@echo ""
 	@echo Finished building === $(EXE)
 	@echo ""
