@@ -51,6 +51,7 @@ subroutine copy_nl(copy_type)
                                    , undef_integer             & ! intent(in)
                                    , skip_integer              & ! intent(in)
                                    , skip_real                 & ! intent(in)
+                                   , undef_real                & ! intent(in)
                                    , maxgrds                   ! ! intent(in)
    use ename_coms           , only : nl                        ! ! intent(in)
    use soil_coms            , only : find_soil_class           & ! function
@@ -66,7 +67,6 @@ subroutine copy_nl(copy_type)
                                    , sldbd                     & ! intent(out)
                                    , slmstr                    & ! intent(out)
                                    , stgoff                    & ! intent(out)
-                                   , zrough                    & ! intent(out)
                                    , soil_database             & ! intent(out)
                                    , slcol_database            & ! intent(out)
                                    , isoilstateinit            & ! intent(out)
@@ -115,27 +115,6 @@ subroutine copy_nl(copy_type)
                                    , carbon_mortality_scheme   & ! intent(out)
                                    , hydraulic_mortality_scheme& ! intent(out)
                                    , n_plant_lim               & ! intent(out)
-                                   , vmfact_c3                 & ! intent(out)
-                                   , vmfact_c4                 & ! intent(out)
-                                   , mphoto_trc3               & ! intent(out)
-                                   , mphoto_tec3               & ! intent(out)
-                                   , mphoto_c4                 & ! intent(out)
-                                   , bphoto_blc3               & ! intent(out)
-                                   , bphoto_nlc3               & ! intent(out)
-                                   , bphoto_c4                 & ! intent(out)
-                                   , kw_grass                  & ! intent(out)
-                                   , kw_tree                   & ! intent(out)
-                                   , gamma_c3                  & ! intent(out)
-                                   , gamma_c4                  & ! intent(out)
-                                   , d0_grass                  & ! intent(out)
-                                   , d0_tree                   & ! intent(out)
-                                   , alpha_c3                  & ! intent(out)
-                                   , alpha_c4                  & ! intent(out)
-                                   , klowco2in                 & ! intent(out)
-                                   , rrffact                   & ! intent(out)
-                                   , growthresp                & ! intent(out)
-                                   , q10_c3                    & ! intent(out)
-                                   , q10_c4                    & ! intent(out)
                                    , quantum_efficiency_T      ! ! intent(out)
    use phenology_coms       , only : iphen_scheme              & ! intent(out)
                                    , iphenys1                  & ! intent(out)
@@ -144,8 +123,6 @@ subroutine copy_nl(copy_type)
                                    , iphenyff                  & ! intent(out)
                                    , phenpath                  & ! intent(out)
                                    , repro_scheme              & ! intent(out)
-                                   , radint                    & ! intent(out)
-                                   , radslp                    & ! intent(out)
                                    , thetacrit                 ! ! intent(out)
    use decomp_coms          , only : n_decomp_lim              & ! intent(out)
                                    , decomp_scheme             ! ! intent(out)
@@ -279,21 +256,10 @@ subroutine copy_nl(copy_type)
                                    , gamh                      & ! intent(out)
                                    , tprandtl                  & ! intent(out)
                                    , ribmax                    & ! intent(out)
-                                   , lwidth_grass              & ! intent(out)
-                                   , lwidth_bltree             & ! intent(out)
-                                   , lwidth_nltree             & ! intent(out)
                                    , leaf_maxwhc               ! ! intent(out)
    use canopy_layer_coms    , only : crown_mod                 ! ! intent(out)
    use canopy_radiation_coms, only : icanrad                   & ! intent(out)
-                                   , ihrzrad                   & ! intent(out)
-                                   , ltrans_vis                & ! intent(out)
-                                   , ltrans_nir                & ! intent(out)
-                                   , lreflect_vis              & ! intent(out)
-                                   , lreflect_nir              & ! intent(out)
-                                   , orient_tree               & ! intent(out)
-                                   , orient_grass              & ! intent(out)
-                                   , clump_tree                & ! intent(out)
-                                   , clump_grass               ! ! intent(out)
+                                   , ihrzrad                   ! ! intent(out)
    use rk4_coms             , only : ibranch_thermo            & ! intent(out)
                                    , ipercol                   & ! intent(out)
                                    , rk4_tolerance             ! ! intent(out)
@@ -432,14 +398,6 @@ subroutine copy_nl(copy_type)
       crown_mod                 = nl%crown_mod
       icanrad                   = nl%icanrad
       ihrzrad                   = nl%ihrzrad
-      ltrans_vis                = nl%ltrans_vis
-      ltrans_nir                = nl%ltrans_nir
-      lreflect_vis              = nl%lreflect_vis
-      lreflect_nir              = nl%lreflect_nir
-      orient_tree               = nl%orient_tree
-      orient_grass              = nl%orient_grass
-      clump_tree                = nl%clump_tree
-      clump_grass               = nl%clump_grass
       igoutput                  = nl%igoutput
       gfilout                   = nl%gfilout
       h2o_plant_lim             = nl%h2o_plant_lim
@@ -453,34 +411,8 @@ subroutine copy_nl(copy_type)
       ddmort_const              = nl%ddmort_const
       carbon_mortality_scheme   = nl%carbon_mortality_scheme
       hydraulic_mortality_scheme= nl%hydraulic_mortality_scheme
-      vmfact_c3                 = nl%vmfact_c3
-      vmfact_c4                 = nl%vmfact_c4
-      mphoto_trc3               = nl%mphoto_trc3
-      mphoto_tec3               = nl%mphoto_tec3
-      mphoto_c4                 = nl%mphoto_c4
-      bphoto_blc3               = nl%bphoto_blc3
-      bphoto_nlc3               = nl%bphoto_nlc3
-      bphoto_c4                 = nl%bphoto_c4
-      kw_grass                  = nl%kw_grass
-      kw_tree                   = nl%kw_tree
-      gamma_c3                  = nl%gamma_c3
-      gamma_c4                  = nl%gamma_c4
-      d0_grass                  = nl%d0_grass
-      d0_tree                   = nl%d0_tree
-      alpha_c3                  = nl%alpha_c3
-      alpha_c4                  = nl%alpha_c4
-      klowco2in                 = nl%klowco2in
-      rrffact                   = nl%rrffact
-      growthresp                = nl%growthresp
-      lwidth_grass              = nl%lwidth_grass
-      lwidth_bltree             = nl%lwidth_bltree
-      lwidth_nltree             = nl%lwidth_nltree
-      q10_c3                    = nl%q10_c3
-      q10_c4                    = nl%q10_c4
       thetacrit                 = nl%thetacrit
       quantum_efficiency_T      = nl%quantum_efficiency_T
-      radint                    = nl%radint
-      radslp                    = nl%radslp
       n_plant_lim               = nl%n_plant_lim
       n_decomp_lim              = nl%n_decomp_lim
       include_fire              = nl%include_fire
@@ -507,11 +439,6 @@ subroutine copy_nl(copy_type)
       icanturb                  = nl%icanturb
       isfclyrm                  = nl%isfclyrm
       ied_grndvap               = nl%ied_grndvap
-      gamm                      = nl%gamm
-      gamh                      = nl%gamh
-      tprandtl                  = nl%tprandtl
-      ribmax                    = nl%ribmax
-      leaf_maxwhc               = nl%leaf_maxwhc
       ipercol                   = nl%ipercol
 
       include_these_pft         = nl%include_these_pft
@@ -523,10 +450,7 @@ subroutine copy_nl(copy_type)
       treefall_disturbance_rate = nl%treefall_disturbance_rate
       time2canopy               = nl%time2canopy
       runoff_time               = nl%runoff_time
-      ubmin                     = nl%ubmin
-      ugbmin                    = nl%ugbmin
-      ustmin                    = nl%ustmin
-      
+
       growth_resp_scheme        = nl%growth_resp_scheme
       storage_resp_scheme       = nl%storage_resp_scheme
 
@@ -559,7 +483,6 @@ subroutine copy_nl(copy_type)
       maxcohort                 = nl%maxcohort
       min_site_area             = nl%min_site_area
       min_patch_area            = nl%min_patch_area
-      zrough                    = nl%zrough
 
       dt_census                 = nl%dt_census
       yr1st_census              = nl%yr1st_census
@@ -616,6 +539,24 @@ subroutine copy_nl(copy_type)
       end_time%time  = real(int(real(itimez) * 0.01)) * hr_sec                             &
                      + (real(itimez) * 0.01 - real(int(real(itimez)*0.01)))                &
                      * 100.0 * min_sec
+
+      !------------------------------------------------------------------------------------!
+      !     These variables are parameters that must be initialised through XML in ED2     !
+      ! stand alone. However, in coupled model simulations, these values must be           !
+      ! consistent with the values set in RAMSIN (these are defined outside ED2 in coupled !
+      ! runs).  To keep compatibility with BRAMS, we set them with dummy values in offline !
+      ! runs, update the defaults in ed_params.f90, and allow them to be overwritten by    !
+      ! XML.                                                                               !
+      !------------------------------------------------------------------------------------!
+      ubmin                     = undef_real
+      ugbmin                    = undef_real
+      ustmin                    = undef_real
+      gamm                      = undef_real
+      gamh                      = undef_real
+      tprandtl                  = undef_real
+      ribmax                    = undef_real
+      leaf_maxwhc               = undef_real
+      !------------------------------------------------------------------------------------!
 
    case ('NOT_HISTORY')
       !------------------------------------------------------------------------------------!
