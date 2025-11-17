@@ -5,7 +5,7 @@
 
 
 #----- Define make (gnu make works best). -------------------------------------------------#
-MAKE=/usr/local/bin/make
+MAKE=$(HOMEBREW_PREFIX)/bin/make
 #------------------------------------------------------------------------------------------#
 
 #----- Libraries. -------------------------------------------------------------------------#
@@ -20,8 +20,8 @@ BASE=$(ED_ROOT)/build/
 # libraries compiled with the same compiler you set for F_COMP and C_COMP.  You may still  #
 # be able to compile without HDF5 but it will not run.                                     #
 #------------------------------------------------------------------------------------------#
-ZLIB_PATH=/usr/local
-HDF5_PATH=/usr/local
+ZLIB_PATH=$(HOMEBREW_PREFIX)
+HDF5_PATH=$(HOMEBREW_PREFIX)
 HDF5_INCS=-I$(HDF5_PATH)/include
 HDF5C_INCS=$(HDF5_INCS)
 HDF5_LIBS=-L$(ZLIB_PATH)/lib -lz -L$(HDF5_PATH)/lib -lhdf5_fortran -lhdf5 -lhdf5_hl
@@ -63,9 +63,9 @@ USE_INTERF=1
 #################################### COMPILER SETTINGS #####################################
 CMACH=MAC_OS_X
 FC_TYPE=GNU
-F_COMP=/usr/local/bin/gfortran-14
-C_COMP=/usr/local/bin/gcc-14
-LOADER=/usr/local/bin/gfortran-14
+F_COMP=$(HOMEBREW_PREFIX)/bin/gfortran-15
+C_COMP=$(HOMEBREW_PREFIX)/bin/gcc-15
+LOADER=$(HOMEBREW_PREFIX)/bin/gfortran-15
 LIBS=
 MOD_EXT=mod
 ############################################################################################
