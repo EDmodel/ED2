@@ -43,7 +43,7 @@ jobs:
       with:
         name: ed2-binary
     - name: Install dependencies
-      run: sudo apt-get install -y --no-install-recommends gfortran libhdf5-openmpi-dev libopenmpi-dev
+      run: sudo apt-get install -y --no-install-recommends gfortran libhdf5-openmpi-dev libopenmpi-dev libblas-dev liblapack-dev
     - name: Run ED2
       working-directory: ./EDTS/
       run: |
