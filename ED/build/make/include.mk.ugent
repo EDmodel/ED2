@@ -42,17 +42,14 @@ endif
 #                                                                                          #
 #     Lapack is a well-established package for solving linear systems in Fortran. This is  #
 # more efficient than the former built-in solution, and thus it became the new default.    #
-# Consequently, it is now required to link the lapack libraries during compilation.        #
+#                                                                                          #
+#     For those compiling the code with Intel compilers (ifort/icc), leave these empty and #
+# add -qmkl to F_OPTS and LOADER_OPTS instead. Otherwise, provide the path to Lapack       #
+# installation.                                                                            #
 #------------------------------------------------------------------------------------------#
-ifeq ($(UNAME_S),Linux)
-   LAPACK_INCS=
-	LAPACK_LIBS=-llapack -lblas
-endif
-ifeq ($(UNAME_S),Darwin)
-	LAPACK_PATH=/usr/local/lapack-X.X.X
-	LAPACK_INCS=-I$(LAPACK_PATH)/include
-	LAPACK_LIBS=-L$(LAPACK_PATH)/lib -llapack -lblas
-endif
+LAPACK_PATH=
+LAPACK_INCS=
+LAPACK_LIBS=
 #------------------------------------------------------------------------------------------#
 
 
@@ -102,15 +99,15 @@ endif
 #################################    DEBUG BUILD   #########################################
 ifeq ($(KIND_COMP),A)
 	USE_INTERF=0
-	F_OPTS= -FR -O0 -check -g -debug extended -debug-parameters -traceback -ftrapuv -u      \
-			-fp-stack-check -assume byterecl -warn unused -warn uncalled -gen-interfaces
+	F_OPTS= -FR -O0 -qmkl -check -g -debug extended -debug-parameters -traceback -ftrapuv   \
+         -u -fp-stack-check -assume byterecl -warn unused -warn uncalled -gen-interfaces
 	C_OPTS= -O0 -g -traceback
 	#---------------------------------------------------------------------------------------#
 endif
 ############################   LEGACY DEBUG BUILD   #########################################
 ifeq ($(KIND_COMP),B)
 	USE_INTERF=0
-	F_OPTS= -FR -O0 -recursive  -check all -g -debug extended -debug-parameters used        \
+	F_OPTS= -FR -O0 -recursive -qmkl -check all -g -debug extended -debug-parameters used   \
 			-fpe0 -no-ftz -traceback -ftrapuv -fp-stack-check -implicitnone                 \
 			-assume byterecl -warn unused -warn uncalled -warn usage -gen-interfaces
 	C_OPTS= -O0 -DLITTLE  -g -traceback
@@ -119,33 +116,33 @@ endif
 ########################   DEBUG BUILD WITH INTEL PROFILING   ###############################
 ifeq ($(KIND_COMP),C)
 	USE_INTERF=0
-	F_OPTS= -O0 -check -g -prof-gen=srcpos -debug extended -debug-parameters -traceback -u  \
-			-ftrapuv -fp-stack-check -assume byterecl -gen-interfaces
+	F_OPTS= -O0 -qmkl -check -g -prof-gen=srcpos -debug extended -debug-parameters          \
+         -traceback -u -ftrapuv -fp-stack-check -assume byterecl -gen-interfaces
 	C_OPTS= -O0 -g -traceback
 	#---------------------------------------------------------------------------------------#
 endif
 ############################### LEGACY OPTIMIZED BUILD   ####################################
 ifeq ($(KIND_COMP),D)
 	USE_INTERF=1
-	F_OPTS= -FR -O3 -recursive -traceback -assume byterecl
+	F_OPTS= -FR -O3 -recursive -qmkl -traceback -assume byterecl
 	C_OPTS= -O3 -DLITTLE -traceback
-	F_LOWO_OPTS=-FR -O2 -recursive -traceback -assume byterecl
+	F_LOWO_OPTS=-FR -O2 -recursive -qmkl -traceback -assume byterecl
 	#---------------------------------------------------------------------------------------#
 endif
 ######################################   OPTIMIZED BUILD   ##################################
 ifeq ($(KIND_COMP),E)
 	USE_INTERF=1
-	F_OPTS= -O3 -xHost -g -assume byterecl
+	F_OPTS= -O3 -xHost -qmkl -g -assume byterecl
 	C_OPTS= -O3 -xHost -g
-	F_LOWO_OPTS= -O2 -xHost -g
+	F_LOWO_OPTS= -O2 -xHost -qmkl -g
 	#---------------------------------------------------------------------------------------#
 endif
 ###########################   OPTIMIZED BUILD WITH OpenMP   #################################
 ifeq ($(KIND_COMP),F)
 	USE_INTERF=1
-	F_OPTS= -O3 -xHost -g -assume byterecl -qopenmp
-	C_OPTS= -O3 -xHost -g -qopenmp
-	F_LOWO_OPTS= -O2 -xHost -g -qopenmp
+	F_OPTS= -O3 -xHost -qmkl -g -assume byterecl -qopenmp
+	C_OPTS= -O3 -xHost -qmkl -g -qopenmp
+	F_LOWO_OPTS= -O2 -xHost -qmkl -g -qopenmp
 	#---------------------------------------------------------------------------------------#
 endif
 #------------------------------------------------------------------------------------------#

@@ -35,11 +35,14 @@ HDF5_LIBS=-L$(ZLIB_PATH)/lib -lz -L$(HDF5_PATH)/lib -lhdf5 -lhdf5_fortran -lhdf5
 #                                                                                          #
 #     Lapack is a well-established package for solving linear systems in Fortran. This is  #
 # more efficient than the former built-in solution, and thus it became the new default.    #
-# Consequently, it is now required to link the lapack libraries during compilation.        #
+#                                                                                          #
+#     For those compiling the code with Intel compilers (ifort/icc), leave these empty and #
+# compile the code with the Math Kernel Library option instead (-mkl or -qmkl depending on #
+# the ifort/icc version). Otherwise, provide the path to Lapack installation.              #
 #------------------------------------------------------------------------------------------#
-LAPACK_PATH=/scratch/bramsolam/marcos.longo/Util/lapack-3.12.0/intel
-LAPACK_INCS=-I$(LAPACK_PATH)/include
-LAPACK_LIBS=-L$(LAPACK_PATH)/lib -llapack -lblas
+LAPACK_PATH=
+LAPACK_INCS=
+LAPACK_LIBS=
 #------------------------------------------------------------------------------------------#
 
 
@@ -97,53 +100,54 @@ endif
 #------------------------------------------------------------------------------------------#
 ifeq ($(KIND_COMP),A)
    USE_INTERF=0
-   F_OPTS= -FR -O0 -recursive  -check all -g -debug extended -debug-parameters used        \
+   F_OPTS= -FR -O0 -recursive -qmkl -check all -g -debug extended -debug-parameters used   \
            -fpe0 -no-ftz -traceback -ftrapuv -fp-stack-check -implicitnone                 \
            -assume byterecl -warn unused -warn uncalled -warn usage -gen-interfaces        \
            -static
    C_OPTS= -O0 -DLITTLE  -g -traceback -static
-   LOADER_OPTS=-FR -O0 -recursive  -check all -g -debug extended -debug-parameters used    \
-               -fpe0 -no-ftz -traceback -ftrapuv -fp-stack-check -implicitnone             \
-               -assume byterecl -warn unused -warn uncalled -warn usage -gen-interfaces
+   LOADER_OPTS=-FR -O0 -recursive -qmkl -check all -g -debug extended                      \
+               -debug-parameters used -fpe0 -no-ftz -traceback -ftrapuv -fp-stack-check    \
+               -implicitnone -assume byterecl -warn unused -warn uncalled -warn usage      \
+               -gen-interfaces
    #---------------------------------------------------------------------------------------#
 endif
 ifeq ($(KIND_COMP),B)
    USE_INTERF=0
-   F_OPTS= -FR -O0 -recursive  -check all -g -debug extended -debug-parameters used        \
+   F_OPTS= -FR -O0 -recursive -qmkl -check all -g -debug extended -debug-parameters used   \
            -fpe0 -no-ftz -traceback -ftrapuv -fp-stack-check -implicitnone                 \
            -assume byterecl -warn unused -warn uncalled -warn usage -static
    C_OPTS= -O0 -DLITTLE  -g -traceback -static
-   LOADER_OPTS=-FR -O0 -recursive  -check all -g -debug extended -debug-parameters used    \
-               -fpe0 -no-ftz -traceback -ftrapuv -fp-stack-check -implicitnone             \
-               -assume byterecl -warn unused -warn uncalled -warn usage
+   LOADER_OPTS=-FR -O0 -recursive -qmkl -check all -g -debug extended                      \
+               -debug-parameters used -fpe0 -no-ftz -traceback -ftrapuv -fp-stack-check    \
+               -implicitnone -assume byterecl -warn unused -warn uncalled -warn usage
    #---------------------------------------------------------------------------------------#
 endif
 ifeq ($(KIND_COMP),C)
    USE_INTERF=1
-   F_OPTS= -FR -O0 -recursive  -check all -g -debug extended -debug-parameters used        \
+   F_OPTS= -FR -O0 -recursive -qmkl -check all -g -debug extended -debug-parameters used   \
            -fpe0 -no-ftz -traceback -ftrapuv -fp-stack-check -implicitnone                 \
            -assume byterecl -static
    C_OPTS= -O0 -DLITTLE  -g -traceback -static
-   LOADER_OPTS=-FR -O0 -recursive  -check all -g -debug extended -debug-parameters used    \
-               -fpe0 -no-ftz -traceback -ftrapuv -fp-stack-check -implicitnone             \
-               -assume byterecl
+   LOADER_OPTS=-FR -O0 -recursive -qmkl -check all -g -debug extended                      \
+               -debug-parameters used -fpe0 -no-ftz -traceback -ftrapuv -fp-stack-check    \
+               -implicitnone -assume byterecl
    #---------------------------------------------------------------------------------------#
 endif
 ifeq ($(KIND_COMP),D)
    USE_INTERF=1
-   F_OPTS= -FR -O0 -recursive -check all -fpe0 -no-ftz -traceback -ftrapuv -fp-stack-check \
-           -implicitnone -assume byterecl -static
+   F_OPTS= -FR -O0 -recursive -qmkl -check all -fpe0 -no-ftz -traceback -ftrapuv           \
+           -fp-stack-check -implicitnone -assume byterecl -static
    C_OPTS= -O0 -DLITTLE  -g -traceback -static
-   LOADER_OPTS=-FR -O0 -recursive -check all -fpe0 -no-ftz -traceback -ftrapuv             \
+   LOADER_OPTS=-FR -O0 -recursive -qmkl -check all -fpe0 -no-ftz -traceback -ftrapuv       \
                -fp-stack-check -implicitnone -assume byterecl
    #---------------------------------------------------------------------------------------#
 endif
 ifeq ($(KIND_COMP),E)
    USE_INTERF=1
-   F_OPTS= -FR -O3 -recursive -traceback -assume byterecl -static
+   F_OPTS= -FR -O3 -recursive -qmkl -traceback -assume byterecl -static
    C_OPTS= -O3 -DLITTLE -traceback -static
-   F_LOWO_OPTS=-FR -O2 -recursive -traceback -assume byterecl -static
-   LOADER_OPTS= -FR -O3 -recursive -traceback -assume byterecl
+   F_LOWO_OPTS=-FR -O2 -recursive -qmkl -traceback -assume byterecl -static
+   LOADER_OPTS= -FR -O3 -recursive -qmkl -traceback -assume byterecl
    #---------------------------------------------------------------------------------------#
 endif
 #------------------------------------------------------------------------------------------#

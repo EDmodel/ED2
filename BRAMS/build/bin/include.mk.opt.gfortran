@@ -61,7 +61,10 @@ HDF5_LIBS=-lz -L/opt/hdf5/1.8.1/ompi-tcp-gnu41/lib \
 #                                                                                          #
 #     Lapack is a well-established package for solving linear systems in Fortran. This is  #
 # more efficient than the former built-in solution, and thus it became the new default.    #
-# Consequently, it is now required to link the lapack libraries during compilation.        #
+#                                                                                          #
+#     For those compiling the code with Intel compilers (ifort/icc), leave these empty and #
+# compile the code with the Math Kernel Library option instead (-mkl or -qmkl depending on #
+# the ifort/icc version). Otherwise, provide the path to Lapack installation.              #
 #------------------------------------------------------------------------------------------#
 LAPACK_PATH=/usr/local/opt/lapack
 LAPACK_INCS=-I$(LAPACK_PATH)/include

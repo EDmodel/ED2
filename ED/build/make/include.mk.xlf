@@ -66,8 +66,11 @@ HDF5_LIBS=-lz /sw/hdf5-1.8.0-xlf/lib/libhdf5_fortran.a \
 #     Linear Algebra Package (LAPACK) libraries.                                           #
 #                                                                                          #
 #     Lapack is a well-established package for solving linear systems in Fortran. This is  #
-# more efficient than the former built-in solution, but now it is required to load the     #
-# external lapack libraries.                                                               #
+# more efficient than the former built-in solution, and thus it became the new default.    #
+#                                                                                          #
+#     For those compiling the code with Intel compilers (ifort/icc), leave these empty and #
+# add -qmkl to F_OPTS and LOADER_OPTS instead. Otherwise, provide the path to Lapack       #
+# installation.                                                                            #
 #------------------------------------------------------------------------------------------#
 LAPACK_PATH=/sw/lapack-X.X.X
 LAPACK_INCS=-I$(LAPACK_PATH)/include
