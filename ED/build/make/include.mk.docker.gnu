@@ -23,6 +23,22 @@ HDF5_LIBS= -L/usr/lib/$(shell uname -m)-linux-gnu/hdf5/openmpi -lhdf5_fortran -l
 
 #------------------------------------------------------------------------------------------#
 
+
+#------------------------------------------------------------------------------------------#
+#     Linear Algebra Package (LAPACK) libraries.                                           #
+#                                                                                          #
+#     Lapack is a well-established package for solving linear systems in Fortran. This is  #
+# more efficient than the former built-in solution, and thus it became the new default.    #
+#                                                                                          #
+#     For those compiling the code with Intel compilers (ifort/icc), leave these empty and #
+# compile the code with the Math Kernel Library option instead (-mkl or -qmkl depending on #
+# the ifort/icc version). Otherwise, provide the path to Lapack installation.              #
+#------------------------------------------------------------------------------------------#
+LAPACK_PATH=/usr/local/opt/lapack
+LAPACK_INCS=-I$(LAPACK_PATH)/include
+LAPACK_LIBS=-L$(LAPACK_PATH)/lib -llapack -lblas
+#------------------------------------------------------------------------------------------#
+
 #------------------------------------------------------------------------------------------#
 #      If you have a version of hdf5 compiled in parallel, then you may benefit from       #
 # collective I/O, then use this flag = 1.  Otherwise, set it to zero.                      #

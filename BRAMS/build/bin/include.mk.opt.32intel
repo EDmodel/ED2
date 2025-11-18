@@ -54,6 +54,22 @@ HDF5_LIBS=-L/n/Moorcroft_Lab/Users/mlongo/util/hdflib/hdf5_32/hdf5/lib \
 # may benefit from collective I/O, then use this flag = 1
 # Otherwise, set it to zero.
 
+
+#------------------------------------------------------------------------------------------#
+#     Linear Algebra Package (LAPACK) libraries.                                           #
+#                                                                                          #
+#     Lapack is a well-established package for solving linear systems in Fortran. This is  #
+# more efficient than the former built-in solution, and thus it became the new default.    #
+#                                                                                          #
+#     For those compiling the code with Intel compilers (ifort/icc), leave these empty and #
+# compile the code with the Math Kernel Library option instead (-mkl or -qmkl depending on #
+# the ifort/icc version). Otherwise, provide the path to Lapack installation.              #
+#------------------------------------------------------------------------------------------#
+LAPACK_PATH=
+LAPACK_INCS=
+LAPACK_LIBS=
+#------------------------------------------------------------------------------------------#
+
 USE_COLLECTIVE_MPIO=0
  
 #---------------------------------------------------------------
@@ -222,11 +238,11 @@ MOD_EXT=mod
 #                  face problems. If it successfully compiles, then you can switch to B.   #
 #------------------------------------------------------------------------------------------#
 #USE_INTERF=0
-#F_OPTS= -FR -O0 -recursive -Vaxlib  -check all -g -fpe0 -ftz -gen-interfaces            \
+#F_OPTS= -FR -O0 -recursive -qmkl -Vaxlib  -check all -g -fpe0 -ftz -gen-interfaces        \
         -warn interfaces -debug extended -debug inline_debug_info -debug-parameters all \
         -traceback -ftrapuv -fp-stack-check -implicitnone -openmp -static
 #C_OPTS= -O0 -DLITTLE  -g -traceback -debug extended -static
-#LOADER_OPTS= -FR -O0 -Vaxlib  -check all -g -fpe0 -ftz -gen-interfaces \
+#LOADER_OPTS= -FR -O0 -recursive -qmkl -Vaxlib  -check all -g -fpe0 -ftz -gen-interfaces \
             -warn interfaces -debug extended -debug inline_debug_info  \
             -debug-parameters all -traceback -ftrapuv -fp-stack-check -implicitnone -openmp -static
 #C_LOADER_OPTS=-v -g -traceback
@@ -241,13 +257,13 @@ MOD_EXT=mod
 #    Note, however, that if you change arguments you should first try A.                   #
 #------------------------------------------------------------------------------------------#
 USE_INTERF=1
-F_OPTS= -FR -O0 -recursive -Vaxlib  -check all -g -fpe0 -ftz  -debug extended \
+F_OPTS= -FR -O0 -recursive -qmkl -Vaxlib  -check all -g -fpe0 -ftz  -debug extended \
          -debug inline_debug_info -static -debug-parameters all -traceback -ftrapuv \
          -fp-stack-check -implicitnone -openmp
 C_OPTS= -O0 -DLITTLE  -g -traceback -debug extended -static
-LOADER_OPTS= -FR -O0 -Vaxlib -static -check all -g -fpe0 -ftz -debug extended        \
-              -debug inline_debug_info -debug-parameters all -traceback -ftrapuv \
-              -fp-stack-check -implicitnone -openmp
+LOADER_OPTS= -FR -O0 -recursive -qmkl -Vaxlib -static -check all -g -fpe0 -ftz \
+              -debug extended -debug inline_debug_info -debug-parameters all -traceback \
+              -ftrapuv -fp-stack-check -implicitnone -openmp
 C_LOADER_OPTS=-v -g -traceback -static
 #------------------------------------------------------------------------------------------#
 
@@ -259,11 +275,11 @@ C_LOADER_OPTS=-v -g -traceback -static
 #    failing or giving instabilities, or funny results after a long time.                  #
 #------------------------------------------------------------------------------------------#
 #USE_INTERF=1
-#F_OPTS= -FR -O2 -recursive -Vaxlib  -check all -g -fpe0 -ftz  -debug extended \
+#F_OPTS= -FR -O2 -recursive -qmkl -Vaxlib  -check all -g -fpe0 -ftz  -debug extended \
         -debug inline_debug_info -debug-parameters all -traceback -ftrapuv \
         -fp-stack-check -implicitnone -openmp -static
 #C_OPTS= -O2 -DLITTLE  -g -traceback -debug extended -static
-#LOADER_OPTS= -FR -O2 -Vaxlib  -check all -g -fpe0 -ftz -debug extended        \
+#LOADER_OPTS= -FR -O2 -Vaxlib -recursive -qmkl -check all -g -fpe0 -ftz -debug extended        \
              -debug inline_debug_info -debug-parameters all -traceback -ftrapuv \
              -fp-stack-check -implicitnone -openmp -static
 #C_LOADER_OPTS=-v -g -traceback -static
@@ -276,10 +292,10 @@ C_LOADER_OPTS=-v -g -traceback -static
 #    or if you have a good idea of which problem you are dealing with.                     #
 #------------------------------------------------------------------------------------------#
 #USE_INTERF=1
-#F_OPTS= -FR -O2 -recursive -Vaxlib -check all -fpe0 -ftz  -traceback -ftrapuv \
+#F_OPTS= -FR -O2 -recursive -qmkl -Vaxlib -check all -fpe0 -ftz  -traceback -ftrapuv \
          -fp-stack-check -implicitnone -openmp
 #C_OPTS= -O2 -DLITTLE -traceback
-#LOADER_OPTS= -FR -O2 -Vaxlib  -check all -fpe0 -ftz -traceback -ftrapuv \
+#LOADER_OPTS= -FR -O2 -Vaxlib -recursive -qmkl -check all -fpe0 -ftz -traceback -ftrapuv \
               -fp-stack-check -implicitnone -openmp
 #C_LOADER_OPTS=-v -traceback
 #------------------------------------------------------------------------------------------#
@@ -292,9 +308,9 @@ C_LOADER_OPTS=-v -g -traceback -static
 #           velopers.                                                                      #
 #------------------------------------------------------------------------------------------#
 #USE_INTERF=1
-#F_OPTS= -FR -O3 -recursive -Vaxlib -traceback
+#F_OPTS= -FR -O3 -recursive -qmkl -Vaxlib -traceback
 #C_OPTS= -O3 -DLITTLE -traceback
-#LOADER_OPTS= -FR -O3 -Vaxlib  -traceback
+#LOADER_OPTS= -FR -O3 -recursive -qmkl -Vaxlib -traceback
 #C_LOADER_OPTS=-v -traceback
 #------------------------------------------------------------------------------------------#
 
