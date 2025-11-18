@@ -23,8 +23,7 @@ BASE=$(ED_ROOT)/build/
 # HDF5 libraries compiled with the same compiler you set for F_COMP and C_COMP.  You may   #
 # still be able to compile without HDF5 but the code is not going to run.                  #
 #------------------------------------------------------------------------------------------#
-#HDF5_PATH=/n/sw/fasrcsw/apps/MPI/intel/17.0.2-fasrc01/impi/2017.2.174-fasrc01/hdf5/1.10.1-fasrc01
-HDF5_PATH=/n/home00/mlongo/Util/Modules/hdf5/1.10.2_intel
+HDF5_PATH=$(HOME)/Util/Modules/hdf5/1.14.6_intel
 HDF5_INCS=-I$(HDF5_PATH)/include
 HDF5_LIBS= -lz -lm -L$(HDF5_PATH)/lib -lhdf5 -lhdf5_fortran -lhdf5_hl
 #------------------------------------------------------------------------------------------#
@@ -58,13 +57,10 @@ USE_COLLECTIVE_MPIO=0
 
 #################################### COMPILER SETTINGS #####################################
 CMACH=ODYSSEY
-#F_COMP=mpif90 -fc=ifort
-#C_COMP=mpicc -cc=icc
-#LOADER=mpif90 -fc=ifort
 FC_TYPE=INTEL
-F_COMP=mpif90
-C_COMP=mpicc
-LOADER=mpif90
+F_COMP=ifx
+C_COMP=icx
+LOADER=ifx
 LIBS=
 MOD_EXT=mod
 #------------------------------------------------------------------------------------------#
@@ -103,50 +99,48 @@ endif
 #------------------------------------------------------------------------------------------#
 ifeq ($(KIND_COMP),A)
    USE_INTERF=0
-   F_OPTS= -FR -O0 -recursive -qmkl -check all,noarg_temp_created -g -debug extended       \
-           -debug-parameters all -fpe0 -no-ftz -traceback -ftrapuv -fp-stack-check         \
-           -implicitnone -assume byterecl -warn unused -warn uncalled -warn usage          \
-           -warn declarations -gen-interfaces -qopenmp -diag-error=all -static
+   F_OPTS= -FR -O0 -recursive -qmkl -check all,noarg_temp_created -g -debug full           \
+           -debug-parameters all -fpe0 -no-ftz -traceback -ftrapuv -implicitnone           \
+           -assume byterecl -warn unused -warn uncalled -warn usage -warn declarations     \
+           -gen-interfaces -qopenmp -diag-error=all -static
    C_OPTS= -O0 -DLITTLE  -g -traceback -qopenmp  -static
-   LOADER_OPTS=-FR -O0 -recursive -qmkl -check all,noarg_temp_created -g -debug extended   \
-               -debug-parameters all -fpe0 -no-ftz -traceback -ftrapuv -fp-stack-check     \
-               -implicitnone -assume byterecl -warn unused -warn uncalled -warn usage      \
-               -warn declarations -gen-interfaces -qopenmp -diag-error=all
+   LOADER_OPTS=-FR -O0 -recursive -qmkl -check all,noarg_temp_created -g -debug full       \
+               -debug-parameters all -fpe0 -no-ftz -traceback -ftrapuv -implicitnone       \
+               -assume byterecl -warn unused -warn uncalled -warn usage -warn declarations \
+               -gen-interfaces -qopenmp -diag-error=all
    #---------------------------------------------------------------------------------------#
 endif
 ifeq ($(KIND_COMP),B)
    USE_INTERF=0
-   F_OPTS= -FR -O0 -recursive -qmkl -check all,noarg_temp_created -g -debug extended       \
-           -debug-parameters all  -fpe0 -no-ftz -traceback -ftrapuv -fp-stack-check        \
-           -implicitnone -assume byterecl -warn unused -warn uncalled -warn usage          \
-           -warn interfaces -warn declarations -warn errors -qopenmp -static
+   F_OPTS= -FR -O0 -recursive -qmkl -check all,noarg_temp_created -g -debug full           \
+           -debug-parameters all  -fpe0 -no-ftz -traceback -ftrapuv -implicitnone          \
+           -assume byterecl -warn unused -warn uncalled -warn usage -warn interfaces       \
+           -warn declarations -warn errors -qopenmp -static
    C_OPTS= -O0 -DLITTLE  -g -traceback -qopenmp -static
-   LOADER_OPTS=-FR -O0 -recursive -qmkl -check all,noarg_temp_created -g -debug extended   \
-               -debug-parameters all -fpe0 -no-ftz -traceback -ftrapuv -fp-stack-check     \
-               -implicitnone -assume byterecl -warn unused -warn uncalled -warn usage      \
-               -warn interfaces -warn declarations -warn errors -qopenmp
+   LOADER_OPTS=-FR -O0 -recursive -qmkl -check all,noarg_temp_created -g -debug full       \
+               -debug-parameters all -fpe0 -no-ftz -traceback -ftrapuv -implicitnone       \
+               -assume byterecl -warn unused -warn uncalled -warn usage -warn interfaces   \
+               -warn declarations -warn errors -qopenmp
    #---------------------------------------------------------------------------------------#
 endif
 ifeq ($(KIND_COMP),C)
    USE_INTERF=1
-   F_OPTS= -FR -O0 -recursive -qmkl -check all,noarg_temp_created -g -debug extended       \
-           -debug-parameters all -fpe0 -no-ftz -traceback -ftrapuv -fp-stack-check         \
-           -implicitnone -assume byterecl -qopenmp -diag-error=all -static
+   F_OPTS= -FR -O0 -recursive -qmkl -check all,noarg_temp_created -g -debug full           \
+           -debug-parameters all -fpe0 -no-ftz -traceback -ftrapuv -implicitnone           \
+           -assume byterecl -qopenmp -diag-error=all -static
    C_OPTS= -O0 -DLITTLE  -g -traceback -qopenmp -static
-   LOADER_OPTS=-FR -O0 -recursive -qmkl -check all,noarg_temp_created -g -debug extended   \
-               -debug-parameters all -fpe0 -no-ftz -traceback -ftrapuv -fp-stack-check     \
-               -implicitnone -assume byterecl -qopenmp -diag-error=all 
+   LOADER_OPTS=-FR -O0 -recursive -qmkl -check all,noarg_temp_created -g -debug full       \
+               -debug-parameters all -fpe0 -no-ftz -traceback -ftrapuv -implicitnone       \
+               -assume byterecl -qopenmp -diag-error=all 
    #---------------------------------------------------------------------------------------#
 endif
 ifeq ($(KIND_COMP),D)
    USE_INTERF=1
    F_OPTS= -FR -O0 -recursive -qmkl -check all,noarg_temp_created -fpe0 -no-ftz -traceback \
-           -ftrapuv -fp-stack-check -implicitnone -assume byterecl -qopenmp                \
-           -diag-error=all -static
+           -ftrapuv -implicitnone -assume byterecl -qopenmp -diag-error=all -static
    C_OPTS= -O0 -DLITTLE  -g -traceback -qopenmp -static
    LOADER_OPTS=-FR -O0 -recursive -qmkl -check all,noarg_temp_created -fpe0 -no-ftz        \
-               -traceback -ftrapuv -fp-stack-check -implicitnone -assume byterecl -qopenmp \
-               -diag-error=all
+               -traceback -ftrapuv -implicitnone -assume byterecl -qopenmp -diag-error=all
    #---------------------------------------------------------------------------------------#
 endif
 ifeq ($(KIND_COMP),E)
@@ -171,8 +165,8 @@ endif
 MPI_PATH=
 PAR_INCS=
 PAR_LIBS=
-#PAR_DEFS=
-PAR_DEFS=-DRAMS_MPI
+PAR_DEFS=
+#PAR_DEFS=-DRAMS_MPI
 #------------------------------------------------------------------------------------------#
 
 
