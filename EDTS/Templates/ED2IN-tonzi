@@ -840,12 +840,12 @@ $ED_NL
 
 
    !---------------------------------------------------------------------------------------!
-   ! IGRASS -- This controls the dynamics and growth calculation for grasses.  A new       !
-   !           grass scheme is now available where bdead = 0, height is a function of bleaf!
-   !           and growth happens daily.  ALS (3/3/12)                                     !
-   ! 0: grasses behave like trees as in ED2.1 (old scheme)                                 !
+   ! IGRASS -- This controls the dynamics and growth calculation for grasses.              !
    !                                                                                       !
-   ! 1: new grass scheme as described above                                                !
+   ! 0. (Legacy) Original ED-1/ED-2.0 method, grasses are miniature trees, grasses have    !
+   !    heartwood biomass (albeit small), and growth happens monthly.                      !
+   ! 1. (ED-2.2 default).  Heartwood biomass is always 0, height is a function of leaf     !
+   !    biomass , and growth happens daily. With this option, grasses must be evergreen.   !
    !---------------------------------------------------------------------------------------!
    NL%IGRASS          = 0
    !---------------------------------------------------------------------------------------!
@@ -854,69 +854,15 @@ $ED_NL
 
 
    !---------------------------------------------------------------------------------------!
-   ! IPHEN_SCHEME -- It controls the phenology scheme.  Even within each scheme, the       !
-   !                 actual phenology will be different depending on the PFT.              !
+   ! IPHEN_SCHEME -- It controls how phenology is updated for non-evergreen PFTs.          !
+   !                 This variable NO LONGER controls which leaf phenology strategy each   !
+   !                 PFT adopts. This is defined directly by PFT-parameter phenology.      !
    !                                                                                       !
-   ! -1: (ED-2.2 default for evergreen tropical).                                          !
-   !     grasses   - evergreen;                                                            !
-   !     tropical  - evergreen;                                                            !
-   !     conifers  - evergreen;                                                            !
-   !     hardwoods - cold-deciduous (Botta et al.);                                        !
-   !                                                                                       !
-   !  0: (Deprecated).                                                                     !
-   !     grasses   - drought-deciduous (old scheme);                                       !
-   !     tropical  - drought-deciduous (old scheme);                                       !
-   !     conifers  - evergreen;                                                            !
-   !     hardwoods - cold-deciduous;                                                       !
-   !                                                                                       !
-   !  1: (ED-2.2 default for prescribed phenology; deprecated for tropical PFTs).          !
-   !     phenology is prescribed for cold-deciduous broadleaf trees.                       !
-   !                                                                                       !
-   !  2: (ED-2.2 default).                                                                 !
-   !     grasses   - drought-deciduous (new scheme);                                       !
-   !     tropical  - drought-deciduous (new scheme);                                       !
-   !     conifers  - evergreen;                                                            !
-   !     hardwoods - cold-deciduous;                                                       !
-   !                                                                                       !
-   !  3: (Beta).                                                                           !
-   !     grasses   - drought-deciduous (new scheme);                                       !
-   !     tropical  - drought-deciduous (light phenology);                                  !
-   !     conifers  - evergreen;                                                            !
-   !     hardwoods - cold-deciduous;                                                       !
-   !                                                                                       !
-   !  4: (Beta).                                                                           !
-   !     grasses   - drought-deciduous (hydraulics scheme);                                !
-   !     tropical  - drought-deciduous (hydraulics scheme);                                !
-   !     conifers  - evergreen;                                                            !
-   !     hardwoods - cold-deciduous;                                                       !
-   !                                                                                       !
-   !  5: (Beta).                                                                           !
-   !     grasses   - drought-deciduous (hydraulics scheme);                                !
-   !     tropical  - drought-deciduous (hydraulics scheme + light phenology);              !
-   !     conifers  - evergreen;                                                            !
-   !     hardwoods - cold-deciduous;                                                       !
-   !                                                                                       !
-   !                                                                                       !
-   !  Old scheme: plants shed their leaves once instantaneous amount of available water    !
-   !              becomes less than a critical value.                                      !
-   !  New scheme: plants shed their leaves once a 10-day running average of available      !
-   !              water becomes less than a critical value.                                !
-   !  Hydraulics scheme: plants shed their leaves once predawn leaf water potential is     !
-   !              lower than tugor loss point for 10 consecutive days                      !
+   !  0. Predicted internally for all plant functional types.                              !
+   !  1. Phenology is prescribed for cold-deciduous broadleaf trees and predicted for all  !
+   !     other PFTs.                                                                       !
    !---------------------------------------------------------------------------------------!
-   NL%IPHEN_SCHEME    = 2     
-   !---------------------------------------------------------------------------------------!
-
-
-   !---------------------------------------------------------------------------------------!
-   !     Parameters that control the phenology response to radiation, used only when       !
-   ! IPHEN_SCHEME = 3.                                                                     !
-   !                                                                                       !
-   ! RADINT -- Intercept                                                                   !
-   ! RADSLP -- Slope.                                                                      !
-   !---------------------------------------------------------------------------------------!
-   NL%RADINT          = -11.3868
-   NL%RADSLP          = 0.0824
+   NL%IPHEN_SCHEME    = 0
    !---------------------------------------------------------------------------------------!
 
 
@@ -978,37 +924,29 @@ $ED_NL
    !                     possibility to apply finite crown area to all radiation fluxes.   !
    !                 2.  Updated two-stream model (Liou 2002), with the possibility to     !
    !                     apply finite crown area to all radiation fluxes.                  !
-   ! LTRANS_VIS   -- Leaf transmittance for tropical plants - Visible/PAR                  !
-   ! LTRANS_NIR   -- Leaf transmittance for tropical plants - Near Infrared                !
-   ! LREFLECT_VIS -- Leaf reflectance for tropical plants - Visible/PAR                    !
-   ! LREFLECT_NIR -- Leaf reflectance for tropical plants - Near Infrared                  !
-   ! ORIENT_TREE  -- Leaf orientation factor for tropical trees.  Extremes are:            !
-   !                 -1.  All leaves are oriented in the vertical                          !
-   !                  0.  Leaf orientation is perfectly random                             !
-   !                  1.  All leaves are oriented in the horizontal                        !
-   !                  In practice, acceptable values range from -0.4 and 0.6               !
-   ! ORIENT_GRASS -- Leaf orientation factor for tropical grasses.  Extremes are:          !
-   !                 -1.  All leaves are oriented in the vertical                          !
-   !                  0.  Leaf orientation is perfectly random                             !
-   !                  1.  All leaves are oriented in the horizontal                        !
-   !                  In practice, acceptable values range from -0.4 and 0.6               !
-   ! CLUMP_TREE   -- Clumping factor for tropical trees.  Extremes are:                    !
-   !                 lim -> 0.  Black hole (0 itself is unacceptable)                      !
-   !                        1.  Homogeneously spread over the layer (i.e., no clumping)    !
-   ! CLUMP_GRASS  -- Clumping factor for tropical grasses.  Extremes are:                  !
-   !                 lim -> 0.  Black hole (0 itself is unacceptable)                      !
-   !                        1.  Homogeneously spread over the layer (i.e., no clumping)    !
+   ! IHRZRAD      -- Specifies how horizontal canopy radiation is solved.                  !
+   !                 0.  (ED-2.2 default) No horizontal patch shading.  All patches        !
+   !                     receive the same amount of light at the top.                      !
+   !                 1.  (Beta) A realized map of the plant community is built by randomly !
+   !                     assigning gaps associated with gaps (number of gaps proportional  !
+   !                     to the patch area), and populating them with individuals,         !
+   !                     respecting the cohort distribution in each patch.  The crown      !
+   !                     closure index is calculated for the entire landscape and used     !
+   !                     to change the amount of direct light reaching the top of the      !
+   !                     canopy.  Patches are then split into 1-3 patches based on the     !
+   !                     light condition, so expect simulations to be slower. (Morton et   !
+   !                     al., in review).                                                  !
+   !                 2.  (Beta) Similar to option 1, except that height for trees with     !
+   !                     DBH > DBH_crit are rescaled to calculate CCI.                     !
+   !                 3.  (Beta) This creates patches following IHRZRAD = 1, but then       !
+   !                     assumes that the light scaling factor is 1 for all patches. This  !
+   !                     is only useful to isolate the effect of heterogeneous             !
+   !                     illumination from the patch count.                                !
+   !                 4.  (Beta) Similar to option 3, but it applies the same method as     !
+   !                     IHRZRAD=2.                                                        !
    !---------------------------------------------------------------------------------------!
    NL%ICANRAD        =  2
    NL%IHRZRAD        = 0
-   NL%LTRANS_VIS     =  0.050
-   NL%LTRANS_NIR     =  0.230
-   NL%LREFLECT_VIS   =  0.100
-   NL%LREFLECT_NIR   =  0.460
-   NL%ORIENT_TREE    =  0.100
-   NL%ORIENT_GRASS   =  0.000
-   NL%CLUMP_TREE     =  0.800
-   NL%CLUMP_GRASS    =  1.000
    !---------------------------------------------------------------------------------------!
 
 
@@ -1188,73 +1126,6 @@ $ED_NL
    !                               mean xylem percentage loss of conductance (PLC)         !
    !---------------------------------------------------------------------------------------!
    NL%HYDRAULIC_MORTALITY_SCHEME = 0
-
-
-   !---------------------------------------------------------------------------------------!
-   !     The following variables are factors that control photosynthesis and respiration.  !
-   ! Notice that some of them are relative values whereas others are absolute.             !
-   !                                                                                       !
-   ! VMFACT_C3     -- Factor multiplying the default Vm0 for C3 plants (1.0 = default).    !
-   ! VMFACT_C4     -- Factor multiplying the default Vm0 for C4 plants (1.0 = default).    !
-   ! MPHOTO_TRC3   -- Stomatal slope (M) for tropical C3 plants                            !
-   ! MPHOTO_TEC3   -- Stomatal slope (M) for conifers and temperate C3 plants              !
-   ! MPHOTO_C4     -- Stomatal slope (M) for C4 plants.                                    !
-   ! BPHOTO_BLC3   -- cuticular conductance for broadleaf C3 plants  [umol/m2/s]           !
-   ! BPHOTO_NLC3   -- cuticular conductance for needleleaf C3 plants [umol/m2/s]           !
-   ! BPHOTO_C4     -- cuticular conductance for C4 plants            [umol/m2/s]           !
-   ! KW_GRASS      -- Water conductance for trees, in m2/yr/kgC_root.  This is used only   !
-   !                  when H2O_PLANT_LIM is not 0.                                         !
-   ! KW_TREE       -- Water conductance for grasses, in m2/yr/kgC_root.  This is used only !
-   !                  when H2O_PLANT_LIM is not 0.                                         !
-   ! GAMMA_C3      -- The dark respiration factor (gamma) for C3 plants.  Subtropical      !
-   !                  conifers will be scaled by GAMMA_C3 * 0.028 / 0.02                   !
-   ! GAMMA_C4      -- The dark respiration factor (gamma) for C4 plants.                   !
-   ! D0_GRASS      -- The transpiration control in gsw (D0) for ALL grasses.               !
-   ! D0_TREE       -- The transpiration control in gsw (D0) for ALL trees.                 !
-   ! ALPHA_C3      -- Quantum yield of ALL C3 plants.  This is only applied when           !
-   !                  QUANTUM_EFFICIENCY_T = 0.                                            !
-   ! ALPHA_C4      -- Quantum yield of C4 plants.  This is always applied.                 !
-   ! KLOWCO2IN     -- The coefficient that controls the PEP carboxylase limited rate of    !
-   !                  carboxylation for C4 plants.                                         !
-   ! RRFFACT       -- Factor multiplying the root respiration factor for ALL PFTs.         !
-   !                  (1.0 = default).                                                     !
-   ! GROWTHRESP    -- The actual growth respiration factor (C3/C4 tropical PFTs only).     !
-   !                  (1.0 = default).                                                     !
-   ! LWIDTH_GRASS  -- Leaf width for grasses, in metres.  This controls the leaf boundary  !
-   !                  layer conductance (gbh and gbw).                                     !
-   ! LWIDTH_BLTREE -- Leaf width for trees, in metres.  This controls the leaf boundary    !
-   !                  layer conductance (gbh and gbw).  This is applied to broadleaf trees !
-   !                  only.                                                                !
-   ! LWIDTH_NLTREE -- Leaf width for trees, in metres.  This controls the leaf boundary    !
-   !                  layer conductance (gbh and gbw).  This is applied to conifer trees   !
-   !                  only.                                                                !
-   ! Q10_C3        -- Q10 factor for C3 plants (used only if IPHYSIOL is set to 2 or 3).   !
-   ! Q10_C4        -- Q10 factor for C4 plants (used only if IPHYSIOL is set to 2 or 3).   !
-   !---------------------------------------------------------------------------------------!
-   NL%VMFACT_C3       = 1.00
-   NL%VMFACT_C4       = 1.00
-   NL%MPHOTO_TRC3     = 9.0
-   NL%MPHOTO_TEC3     = 7.2
-   NL%MPHOTO_C4       = 5.2
-   NL%BPHOTO_BLC3     = 10000.
-   NL%BPHOTO_NLC3     = 1000.
-   NL%BPHOTO_C4       = 10000.
-   NL%KW_GRASS        = 900.
-   NL%KW_TREE         = 600.
-   NL%GAMMA_C3        = 0.0145
-   NL%GAMMA_C4        = 0.0350
-   NL%D0_GRASS        = 0.016
-   NL%D0_TREE         = 0.016
-   NL%ALPHA_C3        = 0.080
-   NL%ALPHA_C4        = 0.055
-   NL%KLOWCO2IN       = 4000.
-   NL%RRFFACT         = 1.000
-   NL%GROWTHRESP      = 0.333
-   NL%LWIDTH_GRASS    = 0.05
-   NL%LWIDTH_BLTREE   = 0.10
-   NL%LWIDTH_NLTREE   = 0.05
-   NL%Q10_C3          = 2.4
-   NL%Q10_C4          = 2.4
    !---------------------------------------------------------------------------------------!
 
 
@@ -1474,28 +1345,6 @@ $ED_NL
 
 
    !---------------------------------------------------------------------------------------!
-   !     The following variables are used to control the similarity theory model.  For the !
-   ! meaning of these parameters, check Beljaars and Holtslag (1991).                      !
-   ! GAMM        -- gamma coefficient for momentum, unstable case (dimensionless)          !
-   !                Ignored when ISTAR = 1                                                 !
-   ! GAMH        -- gamma coefficient for heat, unstable case (dimensionless)              !
-   !                Ignored when ISTAR = 1                                                 !
-   ! TPRANDTL    -- Turbulent Prandtl number                                               !
-   !                Ignored when ISTAR = 1                                                 !
-   ! RIBMAX      -- maximum bulk Richardson number.                                        !
-   ! LEAF_MAXWHC -- Maximum water that can be intercepted by leaves, in kg/m2leaf.         !
-   !---------------------------------------------------------------------------------------!
-   NL%GAMM            = 13.0
-   NL%GAMH            = 13.0
-   NL%TPRANDTL        = 0.74
-   NL%RIBMAX          = 0.50
-   NL%LEAF_MAXWHC     = 0.11
-   !---------------------------------------------------------------------------------------!
-
-
-
-
-   !---------------------------------------------------------------------------------------!
    ! IPERCOL -- This controls percolation and infiltration.                                !
    !            0.  Default method.  Assumes soil conductivity constant and for the        !
    !                temporary surface water, it sheds liquid in excess of a 1:9 liquid-    !
@@ -1596,15 +1445,6 @@ $ED_NL
 
 
    !---------------------------------------------------------------------------------------!
-   !  ZROUGH -- constant roughness, in metres, if for all domain                           !
-   !---------------------------------------------------------------------------------------!
-   NL%ZROUGH = 0.1
-   !---------------------------------------------------------------------------------------!
-
-
-
-
-   !---------------------------------------------------------------------------------------!
    !     Treefall disturbance parameters.                                                  !
    ! TREEFALL_DISTURBANCE_RATE -- Sign-dependent treefall disturbance rate:                !
    !                              > 0. usual disturbance rate, in 1/years;                 !
@@ -1633,23 +1473,6 @@ $ED_NL
    !                want runoff to happen, set this to 0.                                  !
    !---------------------------------------------------------------------------------------!
    NL%RUNOFF_TIME    = 1800
-   !---------------------------------------------------------------------------------------!
-
-
-
-
-   !---------------------------------------------------------------------------------------!
-   !     The following variables control the minimum values of various velocities in the   !
-   ! canopy.  This is needed to avoid the air to be extremely still, or to avoid singular- !
-   ! ities.  When defining the values, keep in mind that UBMIN >= UGBMIN >= USTMIN.        !
-   !                                                                                       !
-   !  UBMIN  -- minimum wind speed at the top of the canopy air space               [ m/s] !
-   !  UGBMIN -- minimum wind speed at the leaf level                                [ m/s] !
-   !  USTMIN -- minimum friction velocity, u*, in m/s.                              [ m/s] !
-   !---------------------------------------------------------------------------------------!
-   NL%UBMIN          = 0.65
-   NL%UGBMIN         = 0.25
-   NL%USTMIN         = 0.05
    !---------------------------------------------------------------------------------------!
 
 
@@ -1698,14 +1521,6 @@ $ED_NL
    !                   the  model is run.                                                  !
    ! IMETCYC1    -- First year with meteorological information                             !
    ! IMETCYCF    -- Last year with meteorological information                              !
-   ! IMETAVG     -- How the input radiation was originally averaged.  You must tell this   !
-   !                because ED-2.1 can make a interpolation accounting for the cosine of   !
-   !                zenith angle.                                                          !
-   !               -1.  I don't know, use linear interpolation.                            !
-   !                0.  No average, the values are instantaneous                           !
-   !                1.  Averages ending at the reference time                              !
-   !                2.  Averages beginning at the reference time                           !
-   !                3.  Averages centred at the reference time                             !
    ! IMETRAD     -- What should the model do with the input short wave radiation?          !
    !                0.  Nothing, use it as is.                                             !
    !                1.  Add them together, then use the SiB method to break radiation down !
@@ -1722,7 +1537,6 @@ $ED_NL
    NL%ISHUFFLE    = 0
    NL%METCYC1     = 2001
    NL%METCYCF     = 2002
-   NL%IMETAVG     = 1
    NL%IMETRAD     = 0
    NL%INITIAL_CO2 = 380
    !---------------------------------------------------------------------------------------!

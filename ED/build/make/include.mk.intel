@@ -1,6 +1,6 @@
 #==========================================================================================#
 #==========================================================================================#
-#    Makefile include.mk.opt.intel                                                         #
+#    Makefile include.mk.intel                                                             #
 #                                                                                          #
 #    Compilation controls for intel-based Fortran/C.                                       #
 #------------------------------------------------------------------------------------------#
@@ -18,15 +18,34 @@ BASE=$(ED_ROOT)/build/
 #------------------------------------------------------------------------------------------#
 
 
+
 #------------------------------------------------------------------------------------------#
 #    HDF 5 libraries.                                                                      #
 #                                                                                          #
 #    Since ED-2.1, this is no longer optional.  You must provide HDF5 libraries, which     #
 # have been compiled with the same compiler defined in F_COMP and C_COMP (see below).      #
 #------------------------------------------------------------------------------------------#
-HDF5_PATH=/path/to/hdf5-compiled-with-icc-ifort
+HDF5_PATH=/path/to/hdf5-compiled-with-icx-ifx
 HDF5_INCS=-I$(HDF5_PATH)/include
 HDF5_LIBS= -lz -lm -L$(HDF5_PATH)/lib -lhdf5 -lhdf5_fortran -lhdf5_hl
+#------------------------------------------------------------------------------------------#
+
+
+
+#------------------------------------------------------------------------------------------#
+#     Linear Algebra Package (LAPACK) libraries.                                           #
+#                                                                                          #
+#     Lapack is a well-established package for solving linear systems in Fortran. This is  #
+# more efficient than the former built-in solution, and thus it became the new default.    #
+#                                                                                          #
+#     For those compiling the code with Intel compilers (ifx/icx, or ifort/icc in older    #
+# systems), leave these empty and compile the code with the Math Kernel Library option     #
+# instead (-mkl or -qmkl depending on the ifx/ifort version). Otherwise, provide the path  #
+# to Lapack installation.                                                                  #
+#------------------------------------------------------------------------------------------#
+LAPACK_PATH=
+LAPACK_INCS=
+LAPACK_LIBS=
 #------------------------------------------------------------------------------------------#
 
 
@@ -47,7 +66,7 @@ USE_COLLECTIVE_MPIO=0
 # the following:                                                                           #
 #                                                                                          #
 # LINUX  -- Linux or Unix systems.                                                         #
-# MACOSX -- Mac OS system. This applies more limited memory requests so the code can       #
+# MACOS  -- MacOS system. This applies more limited memory requests so the code can        #
 #           compile and run on personal computers.                                         #
 # DOCKER -- Specific setting for building the containerised version of ED2. Do not use     #
 #           this for regular builds.                                                       #
@@ -66,11 +85,8 @@ CMACH=LINUX
 #   FC_TYPE -- Specify from which family of compilers the code should be built. Current    #
 #              options include:                                                            #
 #              GNU       -- gfortran and gcc.                                              #
-#              GFORTRAN  -- same as GNU.                                                   #
-#              INTEL     -- ifort and icc.                                                 #
-#              IFORT     -- same as INTEL.                                                 #
-#              PGI       -- pgf90 and pgcc.                                                #
-#              PGF90     -- same as PGI.                                                   #
+#              INTEL     -- ifx and icx (or ifort and icc in older systems)                #
+#              PGI       -- pgfortran and pgcc.                                            #
 #   F_COMP  -- Fortran compiler. If empty, the code builder will automatically select the  #
 #              default compiler names based on FC_TYPE. If you intend to compile ED2 with  #
 #              openmpi, then set this to mpif90.                                           #
@@ -84,8 +100,8 @@ CMACH=LINUX
 #   MOD_EXT -- Suffix for external modules. This should be typically set to mod.           #
 #------------------------------------------------------------------------------------------#
 FC_TYPE=INTEL
-F_COMP=ifort
-C_COMP=icc
+F_COMP=ifx
+C_COMP=icx
 LOADER=$(F_COMP)
 LIBS=
 MOD_EXT=mod
@@ -119,55 +135,49 @@ MOD_EXT=mod
 #           problems, which means that this is an option suitable for end users, not de-   #
 #           velopers.                                                                      #
 #------------------------------------------------------------------------------------------#
-ifeq ($(KIND_COMP),)
-   KIND_COMP=E
-endif
-#------------------------------------------------------------------------------------------#
 ifeq ($(KIND_COMP),A)
-   F_OPTS= -FR -O0 -recursive  -check all,noarg_temp_created -g -debug extended            \
-           -debug-parameters all -fpe0 -no-ftz -traceback -ftrapuv -fp-stack-check         \
-           -implicitnone -assume byterecl -warn unused -warn uncalled -warn usage          \
-           -warn declarations -gen-interfaces -qopenmp -diag-error=all -static
+   F_OPTS= -FR -O0 -recursive -qmkl -check all,noarg_temp_created -g -debug full           \
+           -debug-parameters all -fpe0 -no-ftz -traceback -ftrapuv -implicitnone           \
+           -assume byterecl -warn unused -warn uncalled -warn usage -warn declarations     \
+           -gen-interfaces -qopenmp -diag-error=all -static
    C_OPTS= -O0 -DLITTLE  -g -traceback -qopenmp  -static
-   LOADER_OPTS=-FR -O0 -recursive  -check all,noarg_temp_created -g -debug extended        \
-               -debug-parameters all -fpe0 -no-ftz -traceback -ftrapuv -fp-stack-check     \
-               -implicitnone -assume byterecl -warn unused -warn uncalled -warn usage      \
-               -warn declarations -gen-interfaces -qopenmp -diag-error=all
+   LOADER_OPTS=-FR -O0 -recursive -qmkl -check all,noarg_temp_created -g -debug full       \
+               -debug-parameters all -fpe0 -no-ftz -traceback -ftrapuv -implicitnone       \
+               -assume byterecl -warn unused -warn uncalled -warn usage -warn declarations \
+               -gen-interfaces -qopenmp -diag-error=all
    #---------------------------------------------------------------------------------------#
 else ifeq ($(KIND_COMP),B)
-   F_OPTS= -FR -O0 -recursive  -check all,noarg_temp_created -g -debug extended            \
-           -debug-parameters all  -fpe0 -no-ftz -traceback -ftrapuv -fp-stack-check        \
-           -implicitnone -assume byterecl -warn unused -warn uncalled -warn usage          \
-           -warn interfaces -warn declarations -qopenmp -diag-error=all -static
+   F_OPTS= -FR -O0 -recursive -qmkl -check all,noarg_temp_created -g -debug full           \
+           -debug-parameters all  -fpe0 -no-ftz -traceback -ftrapuv -implicitnone          \
+           -assume byterecl -warn unused -warn uncalled -warn usage -warn interfaces       \
+           -warn declarations -warn errors -qopenmp -static
    C_OPTS= -O0 -DLITTLE  -g -traceback -qopenmp -static
-   LOADER_OPTS=-FR -O0 -recursive  -check all,noarg_temp_created -g -debug extended        \
-               -debug-parameters all -fpe0 -no-ftz -traceback -ftrapuv -fp-stack-check     \
-               -implicitnone -assume byterecl -warn unused -warn uncalled -warn usage      \
-               -warn interfaces -warn declarations -qopenmp -diag-error=all 
+   LOADER_OPTS=-FR -O0 -recursive -qmkl -check all,noarg_temp_created -g -debug full       \
+               -debug-parameters all -fpe0 -no-ftz -traceback -ftrapuv -implicitnone       \
+               -assume byterecl -warn unused -warn uncalled -warn usage -warn interfaces   \
+               -warn declarations -warn errors -qopenmp
    #---------------------------------------------------------------------------------------#
 else ifeq ($(KIND_COMP),C)
-   F_OPTS= -FR -O0 -recursive  -check all,noarg_temp_created -g -debug extended            \
-           -debug-parameters all -fpe0 -no-ftz -traceback -ftrapuv -fp-stack-check         \
-           -implicitnone -assume byterecl -qopenmp -diag-error=all -static
+   F_OPTS= -FR -O0 -recursive -qmkl -check all,noarg_temp_created -g -debug full           \
+           -debug-parameters all -fpe0 -no-ftz -traceback -ftrapuv -implicitnone           \
+           -assume byterecl -qopenmp -diag-error=all -static
    C_OPTS= -O0 -DLITTLE  -g -traceback -qopenmp -static
-   LOADER_OPTS=-FR -O0 -recursive  -check all,noarg_temp_created -g -debug extended        \
-               -debug-parameters all -fpe0 -no-ftz -traceback -ftrapuv -fp-stack-check     \
-               -implicitnone -assume byterecl -qopenmp -diag-error=all 
+   LOADER_OPTS=-FR -O0 -recursive -qmkl -check all,noarg_temp_created -g -debug full       \
+               -debug-parameters all -fpe0 -no-ftz -traceback -ftrapuv -implicitnone       \
+               -assume byterecl -qopenmp -diag-error=all 
    #---------------------------------------------------------------------------------------#
 else ifeq ($(KIND_COMP),D)
-   F_OPTS= -FR -O0 -recursive -check all,noarg_temp_created -fpe0 -no-ftz -traceback       \
-           -ftrapuv -fp-stack-check -implicitnone -assume byterecl -qopenmp                \
-           -diag-error=all -static
+   F_OPTS= -FR -O0 -recursive -qmkl -check all,noarg_temp_created -fpe0 -no-ftz -traceback \
+           -ftrapuv -implicitnone -assume byterecl -qopenmp -diag-error=all -static
    C_OPTS= -O0 -DLITTLE  -g -traceback -qopenmp -static
-   LOADER_OPTS=-FR -O0 -recursive -check all,noarg_temp_created -fpe0 -no-ftz -traceback   \
-               -ftrapuv -fp-stack-check -implicitnone -assume byterecl -qopenmp            \
-               -diag-error=all
+   LOADER_OPTS=-FR -O0 -recursive -qmkl -check all,noarg_temp_created -fpe0 -no-ftz        \
+               -traceback -ftrapuv -implicitnone -assume byterecl -qopenmp -diag-error=all
    #---------------------------------------------------------------------------------------#
 else ifeq ($(KIND_COMP),E)
-   F_OPTS= -FR -O3 -recursive -traceback -assume byterecl -qopenmp -static
+   F_OPTS= -FR -O3 -recursive -qmkl -traceback -assume byterecl -qopenmp -static
    C_OPTS= -O3 -DLITTLE -traceback -qopenmp -static
-   F_LOWO_OPTS=-FR -O2 -recursive -traceback -assume byterecl -qopenmp -static
-   LOADER_OPTS=-FR -O3 -recursive -traceback -assume byterecl -qopenmp
+   F_LOWO_OPTS=-FR -O2 -recursive -qmkl -traceback -assume byterecl -qopenmp -static
+   LOADER_OPTS=-FR -O3 -recursive -qmkl -traceback -assume byterecl -qopenmp
    #---------------------------------------------------------------------------------------#
 else
    $(error Option KIND_COMP provided ($(KIND_COMP)) is invalid)."

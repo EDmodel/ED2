@@ -70,7 +70,8 @@ module twostream_rad
       integer                                                   :: i2p1
       integer                                                   :: i2m1
       integer                                                   :: i2p2
-      logical                                                   :: sing
+      integer                                                   :: info
+      integer     , dimension(2*ncoh+2)                         :: pivot
       real(kind=8), dimension(ncoh+1)                           :: black
       real(kind=8), dimension(ncoh+1)                           :: expl_plus
       real(kind=8), dimension(ncoh+1)                           :: expl_minus
@@ -284,12 +285,14 @@ module twostream_rad
 
 
       !------------------------------------------------------------------------------------!
-      !       Solve the linear system.  In the future we could use a band diagonal solver, !
-      ! which is a lot cheaper than the regular Gauss elimination, but for the time being, !
-      ! we go with a tested method.                                                        !
+      !       Solve the linear system.  We invoke the Linear Algebra Package (LAPACK)      !
+      ! procedure for solving the system efficiently.  LAPACK rewrites the right hand side !
+      ! vector with the solution, so we first copy the right hand side to the output       !
+      ! vector.                                                                            !
       !------------------------------------------------------------------------------------!
-      call lisys_solver8(nsiz,mmat,yvec,xvec,sing)
-      if (sing) then
+      xvec(:) = yvec(:)
+      call dgesv(nsiz,1,mmat,nsiz,pivot,xvec,nsiz,info)
+      if (info > 0) then
          call fatal_error('LW radiation failed... The matrix is singular!'                 &
                          ,'lw_two_stream','twostream_rad.f90')
       end if
@@ -437,7 +440,8 @@ module twostream_rad
       integer                                                    :: i2p1
       integer                                                    :: i2m1
       integer                                                    :: i2p2
-      logical                                                    :: sing
+      integer                                                    :: info
+      integer     , dimension(2*ncoh+2)                          :: pivot
       real(kind=4), dimension(ncoh)                              :: nir_beam_flip
       real(kind=4), dimension(ncoh)                              :: nir_diff_flip
       real(kind=8), dimension(ncoh+1)                            :: expl_plus
@@ -783,12 +787,14 @@ module twostream_rad
 
 
          !---------------------------------------------------------------------------------!
-         !       Solve the linear system.  In the future we could use a tridiagonal        !
-         ! solver, which is a lot cheaper than the regular Gauss elimination, but for the  !
-         ! time being, we go with a tested method.                                         !
+         !       Solve the linear system.  We invoke the Linear Algebra Package (LAPACK)   !
+         ! procedure for solving the system efficiently.  LAPACK rewrites the right hand   !
+         ! side vector with the solution, so we first copy the right hand side to the      !
+         ! output vector.                                                                  !
          !---------------------------------------------------------------------------------!
-         call lisys_solver8(nsiz,mmat,yvec,xvec,sing)
-         if (sing) then
+         xvec(:) = yvec(:)
+         call dgesv(nsiz,1,mmat,nsiz,pivot,xvec,nsiz,info)
+         if (info > 0) then
             call fatal_error('SW radiation failed... The matrix is singular!'              &
                             ,'sw_two_stream','twostream_rad.f90')
          end if

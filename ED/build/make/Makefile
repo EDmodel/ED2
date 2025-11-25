@@ -25,21 +25,24 @@ endif
 #------------------------------------------------------------------------------------------#
 #     Make variables CMACH and FC_TYPE are correctly set.                                  #
 #------------------------------------------------------------------------------------------#
+FATAL_ERROR=0
 ifeq ($(CMACH),)
    CMACH_ERROR=1
-else ifeq($(CMACH),$(filter $(KIND_COMP), LINUX MACOSX DOCKER CINTEG))
+   FATAL_ERROR=1
+else ifeq ($(CMACH),$(filter $(CMACH), LINUX MACOS DOCKER CINTEG))
    CMACH_ERROR=0
 
-   ifeq ($(FC_TYPE),)
-   else ifeq ($(FC_TYPE),$(filter $(FC_TYPE), GFORTRAN GNU))
-   else ifeq ($(FC_TYPE),$(filter $(FC_TYPE), IFORT INTEL))
-   else ifeq ($(FC_TYPE),$(filter $(FC_TYPE), PGI PGF90))
-
+   ifeq ($(FC_TYPE),$(filter $(FC_TYPE), GNU INTEL PGI))
+      FCTYPE_ERROR=0
+   else
+      FCTYPE_ERROR=1
+      FATAL_ERROR=1
+   endif
 else
    CMACH_ERROR=1
+   FATAL_ERROR=1
 endif
 #------------------------------------------------------------------------------------------#
-
 
 
 #------------------------------------------------------------------------------------------#
@@ -54,21 +57,53 @@ ifeq ($(CMACH_ERROR),1)
    @echo "   Variable CMACH is either not defined or has an invalid value in your"
    @echo " include.mk.[PLATFORM]. Please set to one of the following values"
    @echo ""
-   @echo " CMACH=LINUX   (For Unix or Linux machines)"
-   @echo " CMACH=MACOSX  (For MacOS machines)"
+   @echo " CMACH=LINUX  (For Linux machines)"
+   @echo " CMACH=MACOS  (For MacOS machines)"
    @echo ""
    @echo "   It is possible to set CMACH to DOCKER and CINTEG, but these are special and"
    @echo " specific cases and should not be used unless you are working on these specific"
    @echo " cases."
    @echo "---~---"
    @echo ""
-   $(error Variable CMACH is not properly set in your include.mk.[PLATFORM] file.)"
+endif
+ifeq ($(FCTYPE_ERROR),1)
+      @echo ""
+      @echo "---~---"
+      @echo "   FATAL ERROR!"
+      @echo "---~---"
+      @echo "   Variable FC_TYPE is either not defined or has an invalid value in your"
+      @echo " include.mk.[PLATFORM]. Please set to one of the following values"
+      @echo ""
+      @echo " FC_TYPE=GNU   # To compile ED2 with gfortran/gcc"
+      @echo " FC_TYPE=INTEL # To compile ED2 with ifx/icx (or ifort/icc in older systems)"
+      @echo " FC_TYPE=PGI   # To compile ED2 with pgfortran/pgcc"
+      @echo ""
+      @echo "    New types may be added in the future (feel free to contribute with other"
+      @echo " compilers)."
+      @echo "---~---"
+      @echo ""
+endif
+ifeq ($(FATAL_ERROR),1)
+   $(error CMACH and/or FC_TYPE are not properly set in your include.mk.[PLATFORM] file.)"
 endif
 #------------------------------------------------------------------------------------------#
 
 
+
+#----- Set parallel flag based on the settings. -------------------------------------------#
+ifeq ($(F_COMP),$(filter $(F_COMP), mpif90 mpifortran))
+   PAR_DEFS=-DRAMS_MPI
+else ifdef $(PAR_LIBS)
+   PAR_DEFS=-DRAMS_MPI
+else
+   PAR_DEFS=
+endif
+#------------------------------------------------------------------------------------------#
+
+
+
 #----- Compiler commands. -----------------------------------------------------------------#
-INCLUDES         = $(PAR_INCS) -I$(ED_INCS) $(HDF5_INCS) $(MPI_INCS) 
+INCLUDES         = $(PAR_INCS) -I$(ED_INCS) $(HDF5_INCS) $(MPI_INCS) $(LAPACK_INCS)
 F90_COMMAND      = $(F_COMP) -c $(F_OPTS) $(INCLUDES) $(PAR_DEFS)
 F90_LOWO_COMMAND = $(F_COMP) -c $(F_LOWO_OPTS) $(INCLUDES) $(PAR_DEFS)
 FPP_COMMAND      = $(F_COMP) -c -D$(CMACH) -D$(FC_TYPE)                                    \
@@ -117,8 +152,8 @@ gendep:
 
 $(EXE): $(LIBMODEL) $(MAINOBJ) 
 	@echo ""
-	$(LOADER) -o $(EXE) edmain.o $(LOADER_OPTS) $(INCLUDES) $(LIBMODEL) $(HDF5_LIBS)   \
-	$(PAR_LIBS) $(LIBS) $(LOADER_OPTS)
+	$(LOADER) -o $(EXE) edmain.o $(LOADER_OPTS) $(INCLUDES) $(LIBMODEL) $(HDF5_LIBS)        \
+	$(LAPACK_LIBS) $(PAR_LIBS) $(LIBS) $(LOADER_OPTS)
 	@echo ""
 	@echo Finished building === $(EXE)
 	@echo ""

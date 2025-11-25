@@ -51,19 +51,7 @@ subroutine timing(icall,t1)
    real   , intent(out)  :: t1
    real   , dimension(2) :: et(2)
 
-#if defined(VAX)
-   integer :: iad0
-#endif
-
-#if defined(IBM)
-   real   , external     :: mclock
-#elif defined(CRAY)
-   real   , external     :: cputime
-#elif defined(__APPLE__)
-   real                  :: etime
-#elif defined(PC_GFORTRAN)
-   real                  :: etime
-#elif defined(__GFORTRAN__)
+#if defined(GNU)
    real                  :: etime
 #else
    real   ,external      :: etime
@@ -72,29 +60,10 @@ subroutine timing(icall,t1)
    select case (icall)
    !----- Start call. ---------------------------------------------------------------------!
    case (1)
-#if defined(CRAY)
-      call cpu_time(T1)
-#elif defined(VAX)
-      iad0=0
-      call lib$init_timer(iad0)
-#elif defined(IBM)
-      T1=mclock(et)/100.
-#else
       T1=ETIME(et)
-#endif
-
    !----- End call. -----------------------------------------------------------------------!
    case (2)
-#if defined(VAX)
-      call LIB$SHOW_TIMER(IAD0,2)
-#elif defined(CRAY)
-      call cpu_time(T1)
-#elif defined(IBM)
-      T1=mclock(et)/100.
-#else
       T1=ETIME(et)
-#endif
-
    end select
 
    return

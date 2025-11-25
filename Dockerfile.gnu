@@ -18,6 +18,8 @@ RUN apt-get update \
        build-essential \
        gfortran \
        libhdf5-openmpi-dev \
+       libblas-dev \
+       liblapack-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # copy the source only, this prevents a full rebuild in case of changes to Dockerfile or non source files
@@ -41,6 +43,8 @@ FROM ubuntu:22.04
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
        libhdf5-openmpi-103 \
+       libblas-dev \
+       liblapack-dev \
        libgomp1 \
     && rm -rf /var/lib/apt/lists/*
 

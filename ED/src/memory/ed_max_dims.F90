@@ -48,7 +48,7 @@ module ed_max_dims
    integer, parameter :: maxdimp = brams_maxdimp
    integer, parameter :: nxyzpm  = brams_nxyzpm 
    integer, parameter :: maxmach = brams_maxmach
-#elif defined(MAC_OS_X)
+#elif defined(MACOS)
    ! Restrict maximum size to avoid stack memory issues
    integer, parameter :: maxgrds  = 3
    integer, parameter :: nxpmax   = 50
@@ -252,7 +252,7 @@ module ed_max_dims
    !---------------------------------------------------------------------------------------!
    integer, parameter :: huge_polygon = nxpmax * nypmax
    integer, parameter :: huge_site    = ed_nstyp
-#if defined(MAC_OS_X)
+#if defined(MACOS)
    integer, parameter :: huge_patch   = 200
    integer, parameter :: huge_cohort  = 20000
    integer, parameter :: max_water    = 5
@@ -266,7 +266,7 @@ module ed_max_dims
 
 
    !----- Maximum number of land use polygons that can be read by filelist. ---------------!
-#if defined(MAC_OS_X)
+#if defined(MACOS)
    integer, parameter :: huge_lu = 999
 #else
    integer, parameter :: huge_lu = 99999
@@ -284,7 +284,7 @@ module ed_max_dims
    !----- Maximum number of files that can be read by filelist. ---------------------------!
 #if defined(COUPLED)
    integer, parameter :: maxfiles = brams_maxfiles
-#elif defined(MAC_OS_X)
+#elif defined(MACOS)
    integer, parameter :: maxfiles = 999
 #else
    integer, parameter :: maxfiles = 99999
@@ -293,7 +293,7 @@ module ed_max_dims
 
 
    !----- Maximum observation times that can be stored by the obs_timelist ----------------!
-#if defined(MAC_OS_X)
+#if defined(MACOS)
    integer, parameter :: max_obstime = 999
 #else
    integer, parameter :: max_obstime = 99999

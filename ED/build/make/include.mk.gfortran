@@ -1,6 +1,6 @@
 #==========================================================================================#
 #==========================================================================================#
-#    Makefile include.mk.opt.gfortran                                                      #
+#    Makefile include.mk.gfortran                                                          #
 #                                                                                          #
 #    Compilation controls for GNU-based Fortran/C.                                         #
 #------------------------------------------------------------------------------------------#
@@ -41,12 +41,30 @@ USE_COLLECTIVE_MPIO=0
 
 
 #------------------------------------------------------------------------------------------#
+#     Linear Algebra Package (LAPACK) libraries.                                           #
+#                                                                                          #
+#     Lapack is a well-established package for solving linear systems in Fortran. This is  #
+# more efficient than the former built-in solution, and thus it became the new default.    #
+#                                                                                          #
+#     For those compiling the code with Intel compilers (ifort/icc or ifx/icx), leave      #
+# these empty and compile the code with the Math Kernel Library option instead (-mkl or    #
+# -qmkl depending on the ifort/icc version). Otherwise, provide the path to Lapack         #
+# installation.                                                                            #
+#------------------------------------------------------------------------------------------#
+LAPACK_PATH=/usr/local/opt/lapack
+LAPACK_INCS=-I$(LAPACK_PATH)/include
+LAPACK_LIBS=-L$(LAPACK_PATH)/lib -llapack -lblas
+#------------------------------------------------------------------------------------------#
+
+
+
+#------------------------------------------------------------------------------------------#
 #     CMACH. This tells the code which type of machine is being used. This is useful for   #
 # setting up a few system-dependent pre-compilation instructions.  Current options include #
 # the following:                                                                           #
 #                                                                                          #
 # LINUX  -- Linux or Unix systems.                                                         #
-# MACOSX -- Mac OS system. This applies more limited memory requests so the code can       #
+# MACOS  -- MacOS system. This applies more limited memory requests so the code can        #
 #           compile and run on personal computers.                                         #
 # DOCKER -- Specific setting for building the containerised version of ED2. Do not use     #
 #           this for regular builds.                                                       #
@@ -69,7 +87,7 @@ CMACH=LINUX
 #              options include:                                                            #
 #              GNU       -- gfortran and gcc.                                              #
 #              GFORTRAN  -- same as GNU.                                                   #
-#              INTEL     -- ifort and icc.                                                 #
+#              INTEL     -- ifx and icx (or ifort and icc in older systems)                #
 #              IFORT     -- same as INTEL.                                                 #
 #              PGI       -- pgf90 and pgcc.                                                #
 #              PGF90     -- same as PGI.                                                   #
@@ -110,8 +128,8 @@ ifeq ($(KIND_COMP),$(filter $(KIND_COMP), A B C D))
    C_OPTS=-fopenmp -g -O0 -ffpe-trap=invalid,zero,overflow -fbounds-check
    LOADER_OPTS=${F_OPTS}
 else ifeq ($(KIND_COMP),E)
-   F_OPTS=-g -ffree-line-length-none -fno-whole-file -O2 -fopenmp #-ffpe-trap=invalid,zero,overflow -fbounds-check  #-O2
-   C_OPTS=-g -O2 -fopenmp #-ffpe-trap=invalid,zero,overflow -fbounds-check #-O2
+   F_OPTS=-ffree-line-length-none -fno-whole-file -O2 -fopenmp #-ffpe-trap=invalid,zero,overflow -fbounds-check  #-O2
+   C_OPTS=-O2 -fopenmp #-ffpe-trap=invalid,zero,overflow -fbounds-check #-O2
    LOADER_OPTS=${F_OPTS}
 else
    $(error Option KIND_COMP provided ($(KIND_COMP)) is invalid)."

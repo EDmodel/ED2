@@ -11,31 +11,15 @@
 
 #include <stdio.h>
 #include <math.h>
-#ifdef CRAY
+
+#if defined(MACOS)
 #include <stdlib.h>
-#endif
-#if defined(IBM) || defined(__APPLE__)
 #include <malloc/malloc.h>
 #else
 #include <malloc.h>
 #endif
 
-#ifdef MAC_OS_X
-#include <stdlib.h>
-#endif
-
-#ifdef SUNHPC
-#include <sched.h>
-#include <syscall.h>
-#endif
-
 /*#include <unistd.h>*/
-
-#ifdef SGI
-#include <stdlib.h>
-#include <errno.h>
-#include <string.h>
-#endif
 
 /* Prototypes not needed except for C++
 int vfscale(float *,int ,double *,double *);
@@ -60,15 +44,9 @@ int iralloc(int *memtot,int *ia,int *ioff)
 
 /* Compute the offset for Fortran */
 
-#ifdef CRAY
-  ifaddr = (int)ia;
-  imaddr = (int)iaddr;
-  *ioff=(imaddr-ifaddr);
-#else
-  ifaddr = (int )ia;
-  imaddr = (int )iaddr;
-  *ioff = (imaddr-ifaddr)/sizeof(float);
-#endif
+ifaddr = (int )ia;
+imaddr = (int )iaddr;
+*ioff = (imaddr-ifaddr)/sizeof(float);
 
 /* Find first empty location in address array */
 
@@ -106,9 +84,7 @@ void irsleep(int *seconds)
 {
    extern int sleep(int);
 
-#if !defined (PC_NT1)
    sleep( *seconds );
-#endif
 
    return;
 }
@@ -116,19 +92,6 @@ void irsleep(int *seconds)
 /* ******************************************************* */
 
 FILE *ramsfile;
-
-#ifdef STARDENT 
-
-int rams_c_open(filename,faccess)
-     struct  { char *string; int len; } *filename,*faccess;
-{
-  extern FILE *ramsfile;
-  
-  /* printf(" C_open - %s %s \n",filename->string,faccess->string); */
-  ramsfile=fopen(filename->string,faccess->string);
-  return(0);
-}
-#else
 
 int rams_c_open(char *filename,char *faccess)
 
@@ -139,7 +102,6 @@ int rams_c_open(char *filename,char *faccess)
  /* perror("rams_c_open"); */
   return(0);
 }
-#endif
 
 /*********************************************************/
 
@@ -534,8 +496,7 @@ void filelist_c_( int *inum, int *indices, char *prefix, char *chario){
 }
 
 /* This is for the omp thread/processor pinning check. */
-/* MLO.  This didn't work in the SUNHPC cluster, disabling it for now */
-#if defined(SUNHPC) || defined(__APPLE__)
+#if defined(MACOS)
 int findmycpu_ ()
 {
 	int cpu;
@@ -552,4 +513,3 @@ int findmycpu_ ()
     return cpu;
 }
 #endif
-

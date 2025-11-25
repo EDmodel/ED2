@@ -7,7 +7,7 @@
 !###########################################################################
 */
 
-#if defined(SUN) || defined(ALPHA) || defined(IBM) || defined (PC_LINUX1) || defined(CRAY)
+#if defined(LINUX)
 
 #define fegetenv fegetenv_
 #define form_tmpname form_tmpname_
@@ -54,58 +54,5 @@
 #define par_error par_error_
 #define par_pause par_pause_
 #define par_ready par_ready_
-
-#endif
-
-#if defined(CRAY2)
-
-#define fegetenv FEGETENV
-#define form_tmpname FORM_TMPNAME
-#define irsleep IRSLEEP
-#define iralloc IRALLOC
-#define irfree IRFREE
-#define rams_c_open RAMS_C_OPEN
-#define rams_c_close RAMS_C_CLOSE
-#define rams_c_pos RAMS_C_POS
-#define rams_c_tell RAMS_C_TELL
-#define rams_c_read RAMS_C_READ
-#define rams_c_read_char RAMS_C_READ_CHAR
-#define rams_c_write RAMS_C_WRITE
-#define vfirecr VFIRECR
-#define vforecr VFORECR
-#define readdted1 READDTED1_
-#define rams_master RAMS_MASTER_
-#define rams_node RAMS_NODE_
-#define walltime WALLTIME_
-#define par_init_fortran PAR_INIT_FORTRAN_
-#define par_init_put PAR_INIT_PUT_
-#define par_send PAR_SEND_
-#define par_put_int PAR_PUT_INT_
-#define par_put_float PAR_PUT_FLOAT_
-#define par_put_char PAR_PUT_CHAR_
-
-#define par_send_noblock PAR_SEND_NOBLOCK_
-
-#define par_send_noblock_c2f PAR_SEND_NOBLOCK_C2F_
-
-#define par_get_noblock PAR_GET_NOBLOCK_
-
-#define par_get_noblock_c2f PAR_GET_NOBLOCK_C2F_
-
-#define par_assoc_buff PAR_ASSOC_BUFF_
-
-#define par_wait PAR_WAIT_
-
-#define par_wait_c2f PAR_WAIT_C2F_
-
-#define par_get_new PAR_GET_NEW_
-#define par_get_int PAR_GET_INT_
-#define par_get_float PAR_GET_FLOAT_
-#define par_get_char PAR_GET_CHAR_
-#define par_init PAR_INIT_
-#define par_enroll PAR_ENROLL_
-#define par_exit PAR_EXIT_
-#define par_pause PAR_PAUSE_
-#define par_ready PAR_READY_
 
 #endif

@@ -1,14 +1,14 @@
 #==========================================================================================#
 #==========================================================================================#
-#    Makefile include.mk.opt.macosx                                                        #
+#    Makefile include.mk.macos                                                             #
 #                                                                                          #
-#    Compilation controls for MacOS X using gfortran/gcc installed from Homebrew.          #
+#    Compilation controls for MacOS using gfortran/gcc installed from Homebrew.            #
 # Make sure to install HomeBrew (see instructions on https://brew.sh) and install the      #
-# following packages: 
-# - gcc
-# - hdf5
-# - lapack (upcoming)
-# - open-mpi (not required, needed if planning on using OpenMPI).
+# following packages:                                                                      #
+# - gcc                                                                                    #
+# - hdf5                                                                                   #
+# - lapack                                                                                 #
+# - open-mpi (not required, needed if planning on using OpenMPI).                          #
 #------------------------------------------------------------------------------------------#
 
 
@@ -32,7 +32,25 @@ BASE=$(ED_ROOT)/build/
 #------------------------------------------------------------------------------------------#
 HDF5_PATH=$(HOMEBREW_PREFIX)
 HDF5_INCS=-I$(HDF5_PATH)/include
-HDF5_LIBS= -lz -lm -L$(HDF5_PATH)/lib -lhdf5 -lhdf5_fortran -lhdf5_hl
+HDF5_LIBS=-lz -lm -L$(HDF5_PATH)/lib -lhdf5 -lhdf5_fortran -lhdf5_hl
+#------------------------------------------------------------------------------------------#
+
+
+
+#------------------------------------------------------------------------------------------#
+#     Linear Algebra Package (LAPACK) libraries.                                           #
+#                                                                                          #
+#     Lapack is a well-established package for solving linear systems in Fortran. This is  #
+# more efficient than the former built-in solution, and thus it became the new default.    #
+#                                                                                          #
+#     For those compiling the code with Intel compilers (ifx/icx, or ifort/icc in older    #
+# systems), leave these empty and compile the code with the Math Kernel Library option     #
+# instead (-mkl or -qmkl depending on the ifx/ifort version). Otherwise, provide the path  #
+# to Lapack installation.                                                                  #
+#------------------------------------------------------------------------------------------#
+LAPACK_PATH=$(HOMEBREW_PREFIX)/opt/lapack
+LAPACK_INCS=-I$(LAPACK_PATH)/include
+LAPACK_LIBS=-L$(LAPACK_PATH)/lib -llapack -lblas
 #------------------------------------------------------------------------------------------#
 
 
@@ -53,7 +71,7 @@ USE_COLLECTIVE_MPIO=0
 # the following:                                                                           #
 #                                                                                          #
 # LINUX  -- Linux or Unix systems.                                                         #
-# MACOSX -- Mac OS system. This applies more limited memory requests so the code can       #
+# MACOS  -- MacOS system. This applies more limited memory requests so the code can        #
 #           compile and run on personal computers.                                         #
 # DOCKER -- Specific setting for building the containerised version of ED2. Do not use     #
 #           this for regular builds.                                                       #
@@ -63,7 +81,7 @@ USE_COLLECTIVE_MPIO=0
 #     We currently do not support compilation in Windows. If you know how to set up ED2 to #
 # run on Windows machines, please submit a pull request!.                                  #
 #------------------------------------------------------------------------------------------#
-CMACH=MACOSX
+CMACH=MACOS
 #------------------------------------------------------------------------------------------#
 
 
@@ -86,8 +104,8 @@ CMACH=MACOSX
 #   MOD_EXT -- Suffix for external modules. This should be typically set to mod.           #
 #------------------------------------------------------------------------------------------#
 FC_TYPE=GNU
-F_COMP=$(HOMEBREW_PREFIX)/bin/gfortran
-C_COMP=$(HOMEBREW_PREFIX)/bin/gcc
+F_COMP=$(HOMEBREW_PREFIX)/bin/gfortran-15
+C_COMP=$(HOMEBREW_PREFIX)/bin/gcc-15
 LOADER=$(F_COMP)
 LIBS=
 MOD_EXT=mod
@@ -102,11 +120,7 @@ MOD_EXT=mod
 # A/B/C/D. Debugging, strictest compilation flags, lowest performance.                     #
 # E.       Running, most relaxed compilation flags, highest performance.                   #
 #------------------------------------------------------------------------------------------#
-ifeq ($(KIND_COMP),)
-   KIND_COMP=E
-endif
-#------------------------------------------------------------------------------------------#
-ifeq ($(KIND_COMP),A)
+ifeq ($(KIND_COMP),$(filter $(KIND_COMP), A B C D))
    F_OPTS= -O0 -ffree-line-length-none -g -fimplicit-none -Wall -finit-real=snan           \
            -finit-integer=-2147483648 -ffpe-trap=invalid,zero,overflow,underflow           \
            -fcheck=all -frecursive -fsignaling-nans -Werror -fopenmp -fbacktrace -static

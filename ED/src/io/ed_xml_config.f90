@@ -70,7 +70,18 @@ recursive subroutine read_ed_xml_config(filename)
   use fusion_fission_coms
   use grid_coms, only : ngrids
   use ed_max_dims, only : str_len
-  use canopy_air_coms, only : f_bndlyr_init
+  use canopy_air_coms, only : f_bndlyr_init        & ! intent(inout)
+                            , ubmin                & ! intent(inout)
+                            , ugbmin               & ! intent(inout)
+                            , ustmin               & ! intent(inout)
+                            , gamm                 & ! intent(inout)
+                            , gamh                 & ! intent(inout)
+                            , tprandtl             & ! intent(inout)
+                            , ribmax               & ! intent(inout)
+                            , leaf_maxwhc          & ! intent(inout)
+                            , leaf_drywhc          & ! intent(inout)
+                            , veg_height_min       & ! intent(inout)
+                            , minimum_canopy_depth ! ! intent(inout)
 
   use soil_coms  !, only: infiltration_method, dewmax, water_stab_thresh
 !  use ed_data
@@ -194,7 +205,7 @@ recursive subroutine read_ed_xml_config(filename)
   end if
 
 
-  !*******  MET PARAMS
+  !*******  Canopy air PARAMS
   call libxml2f90__ll_selectlist(TRIM(FILENAME))       
   call libxml2f90__ll_selecttag('ACT','config',1) !select upper level tag
   call libxml2f90__ll_exist('DOWN','can_air',ntag)    !get number of met tags
@@ -203,8 +214,31 @@ recursive subroutine read_ed_xml_config(filename)
      do i=1,ntag
         call libxml2f90__ll_selecttag('DOWN','can_air',i)
 
-        call getConfigREAL  ('f_bndlyr_init','can_air',i,rval,texist)
-        if (texist) f_bndlyr_init = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('f_bndlyr_init'       ,'can_air',i,rval,texist)
+        if (texist) f_bndlyr_init        = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('ubmin'               ,'can_air',i,rval,texist)
+        if (texist) ubmin                = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('ugbmin'              ,'can_air',i,rval,texist)
+        if (texist) ugbmin               = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('ustmin'              ,'can_air',i,rval,texist)
+        if (texist) ustmin               = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('gamm'                ,'can_air',i,rval,texist)
+        if (texist) gamm                 = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('gamh'                ,'can_air',i,rval,texist)
+        if (texist) gamh                 = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('tprandtl'            ,'can_air',i,rval,texist)
+        if (texist) tprandtl             = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('ribmax'              ,'can_air',i,rval,texist)
+        if (texist) ribmax               = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('leaf_maxwhc'         ,'can_air',i,rval,texist)
+        if (texist) leaf_maxwhc          = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('leaf_drywhc'         ,'can_air',i,rval,texist)
+        if (texist) leaf_drywhc          = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('veg_height_min'      ,'can_air',i,rval,texist)
+        if (texist) veg_height_min       = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('minimum_canopy_depth','can_air',i,rval,texist)
+        if (texist) minimum_canopy_depth = sngloff(rval,tiny_offset)
+
         call libxml2f90__ll_selecttag('UP','config',1) !move back up to top level
 
       end do
@@ -1496,6 +1530,10 @@ recursive subroutine read_ed_xml_config(filename)
         if(texist) iphen_scheme = ival
 
         ! Light phenology
+        call getConfigREAL  ('radint','phenology',i,rval,texist)
+        if(texist)  radint = sngloff(rval,tiny_offset)
+        call getConfigREAL  ('radslp','phenology',i,rval,texist)
+        if(texist)  radslp = sngloff(rval,tiny_offset)
         call getConfigREAL  ('radavg_window','phenology',i,rval,texist)
         if(texist)  radavg_window = sngloff(rval,tiny_offset)
         call getConfigREAL  ('turnamp_window','phenology',i,rval,texist)
@@ -1803,9 +1841,20 @@ subroutine write_ed_xml_config
 !  use ed_data
   use ed_misc_coms !, only: ied_init_mode,ffilout,integration_scheme,sfilin,sfilout,thsums_database
   use rk4_coms     !, only : rk4min_veg_temp
-  use budget_utils   , only : tol_subday_budget & ! intent(in)
-                            , tol_carbon_budget ! ! intent(in)
-  use canopy_air_coms, only : f_bndlyr_init     ! ! intent(in)
+  use budget_utils   , only : tol_subday_budget     & ! intent(in)
+                            , tol_carbon_budget     ! ! intent(in)
+  use canopy_air_coms, only : f_bndlyr_init         & ! intent(in)
+                            , ubmin                 & ! intent(in)
+                            , ugbmin                & ! intent(in)
+                            , ustmin                & ! intent(in)
+                            , gamm                  & ! intent(in)
+                            , gamh                  & ! intent(in)
+                            , tprandtl              & ! intent(in)
+                            , ribmax                & ! intent(in)
+                            , leaf_maxwhc           & ! intent(in)
+                            , leaf_drywhc           & ! intent(in)
+                            , veg_height_min        & ! intent(in)
+                            , minimum_canopy_depth  ! ! intent(in)
 
   implicit none
 !  integer :: ival
@@ -1864,7 +1913,19 @@ subroutine write_ed_xml_config
 
   !************   CANOPY AIR  *****************
   call libxml2f90_ll_opentag("can_air")
-        call putConfigREAL  ("f_bndlyr_init"  ,f_bndlyr_init  )
+        call putConfigREAL  ("f_bndlyr_init"       ,f_bndlyr_init       )
+        call putConfigREAL  ('ubmin'               ,ubmin               )
+        call putConfigREAL  ('ugbmin'              ,ugbmin              )
+        call putConfigREAL  ('ustmin'              ,ustmin              )
+        call putConfigREAL  ('gamm'                ,gamm                )
+        call putConfigREAL  ('gamh'                ,gamh                )
+        call putConfigREAL  ('tprandtl'            ,tprandtl            )
+        call putConfigREAL  ('ribmax'              ,ribmax              )
+        call putConfigREAL  ('leaf_maxwhc'         ,leaf_maxwhc         )
+        call putConfigREAL  ('leaf_drywhc'         ,leaf_drywhc         )
+        call putConfigREAL  ('veg_height_min'      ,veg_height_min      )
+        call putConfigREAL  ('minimum_canopy_depth',minimum_canopy_depth)
+
   call libxml2f90_ll_closetag("can_air")
 
 
@@ -2448,6 +2509,8 @@ subroutine write_ed_xml_config
      call putConfigREAL("phen_b"                  ,phen_b                  )
      call putConfigREAL("phen_c"                  ,phen_c                  )
      call putConfigINT("iphen_scheme"             ,iphen_scheme            )
+     call putConfigREAL("radint"                  ,radint                  )
+     call putConfigREAL("radslp"                  ,radslp                  )
      call putConfigREAL("radavg_window"           ,radavg_window           )
      call putConfigREAL("turnamp_window"          ,turnamp_window          )
      call putConfigREAL("turnamp_min"             ,turnamp_min             )
