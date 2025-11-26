@@ -166,3 +166,13 @@ R-utils/read.q.quick.r
 #Xiangtao Ignores
 ED/build/ed2_gfortran
 ED/build/ed2_ifort
+#Include.mk ignores (and exceptions)
+ED/build/make/include.mk.*
+!ED/build/make/include.mk.docker.gnu
+!ED/build/make/include.mk.docker.intel
+!ED/build/make/include.mk.gnu
+!ED/build/make/include.mk.intel
+!ED/build/make/include.mk.macos
+!ED/build/make/include.mk.pgi
+!ED/build/make/include.mk.travisci
+
