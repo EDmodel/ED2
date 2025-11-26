@@ -28,11 +28,7 @@ subroutine ugetarg(i,arg)
    character(len=*) :: arg
        
 
-#if defined(HP)
-   call getarg(i+1,arg)
-#else
    call getarg(i,arg)
-#endif
 
    return
 end subroutine ugetarg

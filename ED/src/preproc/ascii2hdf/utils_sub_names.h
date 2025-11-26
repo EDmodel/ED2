@@ -36,7 +36,7 @@
 ! the software authors, Robert L. Walko (robert.walko@duke.edu)
 ! or Roni Avissar (avissar@duke.edu).
 !===============================================================================*/
-#if defined(LINUX)
+#if defined(LINUX) || defined(DOCKER) || defined(CINTEG)
 
 #define fegetenv fegetenv_
 #define form_tmpname form_tmpname_
