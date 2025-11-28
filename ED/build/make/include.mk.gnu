@@ -58,6 +58,7 @@ LAPACK_LIBS=-L$(LAPACK_PATH)/lib -llapack -lblas
 
 
 
+#################################### MACHINE SETTINGS ######################################
 #------------------------------------------------------------------------------------------#
 #     CMACH. This tells the code which type of machine is being used. This is useful for   #
 # setting up a few system-dependent pre-compilation instructions.  Current options include #
@@ -66,13 +67,9 @@ LAPACK_LIBS=-L$(LAPACK_PATH)/lib -llapack -lblas
 # LINUX  -- Linux or Unix systems.                                                         #
 # MACOS  -- MacOS system. This applies more limited memory requests so the code can        #
 #           compile and run on personal computers.                                         #
-# DOCKER -- Specific setting for building the containerised version of ED2. Do not use     #
-#           this for regular builds.                                                       #
-# CINTEG -- Specific setting for building the continuous integration version of ED2. Do    #
-#           not use this for regular builds.                                               #
 #                                                                                          #
 #     We currently do not support compilation in Windows. If you know how to set up ED2 to #
-# run on Windows machines, please submit a pull request!.                                  #
+# run on Windows machines, please submit a pull request.                                   #
 #------------------------------------------------------------------------------------------#
 CMACH=LINUX
 #------------------------------------------------------------------------------------------#
