@@ -20,18 +20,95 @@ ifeq ($(F_LOWO_OPTS),)
 endif
 #------------------------------------------------------------------------------------------#
 
-ifeq ($(OPT),"dbg")
-	INCLUDES = ""
+
+
+#------------------------------------------------------------------------------------------#
+#     Make variables CMACH and FC_TYPE are correctly set.                                  #
+#------------------------------------------------------------------------------------------#
+ifeq ($(CMACH),)
+   CMACH_ERROR=Y
+else ifeq ($(CMACH),$(filter $(CMACH), LINUX MACOS))
+   CMACH_ERROR=N
+else
+   CMACH_ERROR=Y
 endif
+ifeq ($(FC_TYPE),)
+   FCTYPE_ERROR=Y
+else ifeq ($(FC_TYPE),$(filter $(FC_TYPE), GNU INTEL PGI))
+   FCTYPE_ERROR=N
+else
+   FCTYPE_ERROR=Y
+endif
+#------------------------------------------------------------------------------------------#
+
+
+#------------------------------------------------------------------------------------------#
+#     Gracefully fail if CMACH and FC_TYPE are not correctly set. This will allow users to #
+# make sure they selected a supported version.                                             #
+#------------------------------------------------------------------------------------------#
+FATAL_ERROR=N
+ifeq ($(CMACH_ERROR),Y)
+   $(info )
+   $(info ---~---)
+   $(info    FATAL ERROR!)
+   $(info ---~---)
+   $(info    Variable CMACH is either not defined or has an invalid value in your)
+   $(info  include.mk.[PLATFORM]. Please set to one of the following values)
+   $(info )
+   $(info  CMACH=LINUX  -- For Linux machines)
+   $(info  CMACH=MACOS  -- For MacOS machines)
+   $(info )
+   $(info    We currently do not support compilation in Windows. If you know how to set)
+   $(info  up ED2 to run on Windows machines, please submit a pull request.)
+   $(info ---~---)
+   $(info )
+   FATAL_ERROR=Y
+endif
+ifeq ($(FCTYPE_ERROR),Y)
+   $(info )
+   $(info ---~---)
+   $(info    FATAL ERROR!)
+   $(info ---~---)
+   $(info    Variable FC_TYPE is either not defined or has an invalid value in your)
+   $(info  include.mk.[PLATFORM]. Please set to one of the following values)
+   $(info )
+   $(info  FC_TYPE=GNU   -- To compile ED2 with gfortran/gcc)
+   $(info  FC_TYPE=INTEL -- To compile ED2 with ifx/icx, or ifort/icc in older systems)
+   $(info  FC_TYPE=PGI   -- To compile ED2 with pgfortran/pgcc)
+   $(info )
+   $(info     New types may be added in the future. Feel free to contribute with other)
+   $(info  compilers.)
+   $(info ---~---)
+   $(info )
+   FATAL_ERROR=Y
+endif
+ifeq ($(FATAL_ERROR),Y)
+   $(error CMACH and/or FC_TYPE are not properly set in your include.mk.[PLATFORM] file.)
+endif
+#------------------------------------------------------------------------------------------#
+
+
+
+#----- Set parallel flag based on the settings. -------------------------------------------#
+ifeq ($(F_COMP),$(filter $(F_COMP), mpif90 mpifortran))
+   PAR_DEFS=-DRAMS_MPI
+else ifdef $(PAR_LIBS)
+   PAR_DEFS=-DRAMS_MPI
+else
+   PAR_DEFS=
+endif
+#------------------------------------------------------------------------------------------#
+
+
 
 #----- Compiler commands. -----------------------------------------------------------------#
 INCLUDES         = $(PAR_INCS) -I$(ED_INCS) $(HDF5_INCS) $(MPI_INCS) $(LAPACK_INCS)
 F90_COMMAND      = $(F_COMP) -c $(F_OPTS) $(INCLUDES) $(PAR_DEFS)
 F90_LOWO_COMMAND = $(F_COMP) -c $(F_LOWO_OPTS) $(INCLUDES) $(PAR_DEFS)
-FPP_COMMAND      = $(F_COMP) -c -DUSE_INTERF=$(USE_INTERF) -DUSENC=$(USENC) -D$(CMACH)     \
-                   -D$(FC_TYPE) -DUSE_COLLECTIVE_MPIO=$(USE_COLLECTIVE_MPIO)               \
+FPP_COMMAND      = $(F_COMP) -c -D$(CMACH) -D$(FC_TYPE)                                    \
+                   -DUSE_COLLECTIVE_MPIO=$(USE_COLLECTIVE_MPIO)                            \
                    -DUSE_MPIWTIME=$(USE_MPIWTIME) $(F_OPTS) $(INCLUDES) $(PAR_DEFS)
-FPP_LOWO_COMMAND = $(F_COMP) -c -DUSE_INTERF=$(USE_INTERF) -DUSENC=$(USENC) -D$(CMACH)     \
+FPP_LOWO_COMMAND = $(F_COMP) -c -D$(CMACH) -D$(FC_TYPE)                                    \
                    -DUSE_COLLECTIVE_MPIO=$(USE_COLLECTIVE_MPIO)                            \
                    -DUSE_MPIWTIME=$(USE_MPIWTIME) $(F_LOWO_OPTS) $(INCLUDES) $(PAR_DEFS)
 CXX_COMMAND      = $(C_COMP) -c $(C_OPTS) -D$(CMACH) $(HDF5_INCS) $(INCLUDES) $(PAR_DEFS)

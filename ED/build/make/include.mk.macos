@@ -1,14 +1,20 @@
 #==========================================================================================#
 #==========================================================================================#
-#    Makefile include.mk.docker.intel                                                      #
+#    Makefile include.mk.macos                                                             #
 #                                                                                          #
-#    Compilation controls for intel-based Fortran/C for building the Docker container.     #
+#    Compilation controls for MacOS using gfortran/gcc installed from Homebrew.            #
+# Make sure to install HomeBrew (see instructions on https://brew.sh) and install the      #
+# following packages:                                                                      #
+# - gcc                                                                                    #
+# - hdf5                                                                                   #
+# - lapack                                                                                 #
+# - open-mpi (not required, needed if planning on using OpenMPI).                          #
 #------------------------------------------------------------------------------------------#
 
 
 
 #----- Define make (gnu make works best). -------------------------------------------------#
-MAKE=/usr/bin/make
+MAKE=$(HOMEBREW_PREFIX)/bin/gmake
 #------------------------------------------------------------------------------------------#
 
 
@@ -18,17 +24,15 @@ BASE=$(ED_ROOT)/build/
 #------------------------------------------------------------------------------------------#
 
 
-
 #------------------------------------------------------------------------------------------#
 #    HDF 5 libraries.                                                                      #
 #                                                                                          #
 #    Since ED-2.1, this is no longer optional.  You must provide HDF5 libraries, which     #
 # have been compiled with the same compiler defined in F_COMP and C_COMP (see below).      #
 #------------------------------------------------------------------------------------------#
-HDF5_PATH=/opt/HDF_Group/HDF5/1.10.9
-HDF5_INCS=-I$(HDF5_PATH)/include/static
-HDF5_LIBS=-L$(HDF5_PATH)/lib -lhdf5_fortran -lhdf5_f90cstub -lhdf5_hl -lhdf5 \
-          -lz -lszaec -laec -lm
+HDF5_PATH=$(HOMEBREW_PREFIX)
+HDF5_INCS=-I$(HDF5_PATH)/include
+HDF5_LIBS=-lz -lm -L$(HDF5_PATH)/lib -lhdf5 -lhdf5_fortran -lhdf5_hl
 #------------------------------------------------------------------------------------------#
 
 
@@ -44,9 +48,9 @@ HDF5_LIBS=-L$(HDF5_PATH)/lib -lhdf5_fortran -lhdf5_f90cstub -lhdf5_hl -lhdf5 \
 # instead (-mkl or -qmkl depending on the ifx/ifort version). Otherwise, provide the path  #
 # to Lapack installation.                                                                  #
 #------------------------------------------------------------------------------------------#
-LAPACK_PATH=
-LAPACK_INCS=
-LAPACK_LIBS=
+LAPACK_PATH=$(HOMEBREW_PREFIX)/opt/lapack
+LAPACK_INCS=-I$(LAPACK_PATH)/include
+LAPACK_LIBS=-L$(LAPACK_PATH)/lib -llapack -lblas
 #------------------------------------------------------------------------------------------#
 
 
@@ -73,7 +77,7 @@ USE_COLLECTIVE_MPIO=0
 #     We currently do not support compilation in Windows. If you know how to set up ED2 to #
 # run on Windows machines, please submit a pull request.                                   #
 #------------------------------------------------------------------------------------------#
-CMACH=LINUX
+CMACH=MACOS
 #------------------------------------------------------------------------------------------#
 
 
@@ -81,11 +85,10 @@ CMACH=LINUX
 #------------------------------------------------------------------------------------------#
 #   FC_TYPE -- Specify from which family of compilers the code should be built. Current    #
 #              options include:                                                            #
-#              GNU       -- gfortran and gcc.                                              #
-#              INTEL     -- ifx and icx (or ifort and icc in older systems)                #
-#              PGI       -- pgfortran and pgcc.                                            #
-#   F_COMP  -- Fortran compiler. If empty, the code builder will automatically select the  #
-#              default compiler names based on FC_TYPE. If you intend to compile ED2 with  #
+#              GNU   -- gfortran and gcc.                                                  #
+#              INTEL -- ifort and icc.                                                     #
+#              PGI   -- pgf90 and pgcc.                                                    #
+#   F_COMP  -- Fortran compiler. If empty, the code builder will automatically select the  ##              default compiler names based on FC_TYPE. If you intend to compile ED2 with  #
 #              openmpi, then set this to mpif90.                                           #
 #   C_COMP  -- C compiler. If empty, the code builder will automatically select the        #
 #              default compiler names based on FC_TYPE. If you intend to compile ED2 with  #
@@ -96,9 +99,9 @@ CMACH=LINUX
 #              should be left empty.                                                       #
 #   MOD_EXT -- Suffix for external modules. This should be typically set to mod.           #
 #------------------------------------------------------------------------------------------#
-FC_TYPE=INTEL
-F_COMP=ifort
-C_COMP=icc
+FC_TYPE=GNU
+F_COMP=$(HOMEBREW_PREFIX)/bin/gfortran-15
+C_COMP=$(HOMEBREW_PREFIX)/bin/gcc-15
 LOADER=$(F_COMP)
 LIBS=
 MOD_EXT=mod
@@ -106,77 +109,26 @@ MOD_EXT=mod
 
 
 
+
+
 ##################################### COMPILER OPTIONS #####################################
 #------------------------------------------------------------------------------------------#
-# A/B. Pickiest - Use this whenever you change arguments on functions and subroutines.     #
-#                 This will perform the same tests as B but it will also check whether all #
-#                 arguments match between subroutine declaration and subroutine calls.     #
-#                 WARNING: In order to really check all interfaces you must compile with   #
-#                          this option twice:                                              #
-#                 1. Compile (./install.sh A)                                              #
-#                 2. Prepare second compilation(./2ndcomp.sh)                              #
-#                 3. Compile one more time (./install.sh B)                                #
-#                 If the compilation fails either at step 3, then your code has interface  #
-#                 problems. If it successfully compiles, then the code is fine for         #
-#                 interfaces.                                                              #
-# C. Pickiest with no interface - This will compile fast but the run will be slow due to   #
-#    the -O0 option. However, by setting -O0 you will take full advantage of the intel     #
-#    debugger.                                                                             #
-#    Ideally, you should compile your code with this option whenever you make any changes. #
-#    Note, however, that if you change arguments you should first try A.                   #
-# D. Fast check - This will check pretty much the same as C, but it will not set up        #
-#    anything for the debugger. Use this only if you really don't want to deal with idb or #
-#    if you have a good idea of which problem you are dealing with.                        #
-# E. Fast - This is all about performance, use only when you are sure that the model has   #
-#           no code problem, and you want results asap. This will not check for any        #
-#           problems, which means that this is an option suitable for end users, not de-   #
-#           velopers.                                                                      #
+# A/B/C/D. Debugging, strictest compilation flags, lowest performance.                     #
+# E.       Running, most relaxed compilation flags, highest performance.                   #
 #------------------------------------------------------------------------------------------#
-ifeq ($(KIND_COMP),A)
-   F_OPTS= -FR -O0 -recursive -qmkl -check all,noarg_temp_created -g -debug extended       \
-           -debug-parameters all -fpe0 -no-ftz -traceback -ftrapuv -fp-stack-check         \
-           -implicitnone -assume byterecl -warn unused -warn uncalled -warn usage          \
-           -warn declarations -gen-interfaces -qopenmp -diag-error=all -static
-   C_OPTS= -O0 -DLITTLE  -g -traceback -qopenmp  -static
-   LOADER_OPTS=-FR -O0 -recursive -qmkl -check all,noarg_temp_created -g -debug extended   \
-               -debug-parameters all -fpe0 -no-ftz -traceback -ftrapuv -fp-stack-check     \
-               -implicitnone -assume byterecl -warn unused -warn uncalled -warn usage      \
-               -warn declarations -gen-interfaces -qopenmp -diag-error=all -static
-   #---------------------------------------------------------------------------------------#
-else ifeq ($(KIND_COMP),B)
-   F_OPTS= -FR -O0 -recursive -qmkl -check all,noarg_temp_created -g -debug extended       \
-           -debug-parameters all  -fpe0 -no-ftz -traceback -ftrapuv -fp-stack-check        \
-           -implicitnone -assume byterecl -warn unused -warn uncalled -warn usage          \
-           -warn interfaces -warn declarations -qopenmp -diag-error=all -static
-   C_OPTS= -O0 -DLITTLE  -g -traceback -qopenmp -static
-   LOADER_OPTS=-FR -O0 -recursive -qmkl -check all,noarg_temp_created -g -debug extended   \
-               -debug-parameters all -fpe0 -no-ftz -traceback -ftrapuv -fp-stack-check     \
-               -implicitnone -assume byterecl -warn unused -warn uncalled -warn usage      \
-               -warn interfaces -warn declarations -qopenmp -diag-error=all -static
-   #---------------------------------------------------------------------------------------#
-else ifeq ($(KIND_COMP),C)
-   F_OPTS= -FR -O0 -recursive -qmkl -check all,noarg_temp_created -g -debug extended       \
-           -debug-parameters all -fpe0 -no-ftz -traceback -ftrapuv -fp-stack-check         \
-           -implicitnone -assume byterecl -qopenmp -diag-error=all -static
-   C_OPTS= -O0 -DLITTLE  -g -traceback -qopenmp -static
-   LOADER_OPTS=-FR -O0 -recursive -qmkl -check all,noarg_temp_created -g -debug extended   \
-               -debug-parameters all -fpe0 -no-ftz -traceback -ftrapuv -fp-stack-check     \
-               -implicitnone -assume byterecl -qopenmp -diag-error=all -static
-   #---------------------------------------------------------------------------------------#
-else ifeq ($(KIND_COMP),D)
-   F_OPTS= -FR -O0 -recursive -qmkl -check all,noarg_temp_created -fpe0 -no-ftz -traceback \
-           -ftrapuv -fp-stack-check -implicitnone -assume byterecl -qopenmp                \
-           -diag-error=all -static
-   C_OPTS= -O0 -DLITTLE  -g -traceback -qopenmp -static
-   LOADER_OPTS=-FR -O0 -recursive -qmkl -check all,noarg_temp_created -fpe0 -no-ftz        \
-               -traceback -ftrapuv -fp-stack-check -implicitnone -assume byterecl -qopenmp \
-               -diag-error=all -static
+ifeq ($(KIND_COMP),$(filter $(KIND_COMP), A B C D))
+   F_OPTS= -O0 -ffree-line-length-none -g -fimplicit-none -Wall -finit-real=snan           \
+           -finit-integer=-2147483648 -ffpe-trap=invalid,zero,overflow,underflow           \
+           -fcheck=all -frecursive -fsignaling-nans -Werror -fopenmp -fbacktrace -static
+   C_OPTS= -O0 -DLITTLE -g -fbacktrace -static
+   LOADER_OPTS= -O0 -ffree-line-length-none -g -fimplicit-none -Wall -finit-real=snan      \
+                -finit-integer=-2147483648 -ffpe-trap=invalid,zero,overflow,underflow      \
+                -fcheck=all -frecursive -fsignaling-nans -Werror -fopenmp -fbacktrace
    #---------------------------------------------------------------------------------------#
 else ifeq ($(KIND_COMP),E)
-   F_OPTS=-FR -O3 -recursive -qmkl -traceback -assume byterecl -qopenmp -static
-   C_OPTS=-O3 -DLITTLE -traceback -qmkl -qopenmp -static
-   F_LOWO_OPTS=-FR -O2 -recursive -qmkl -traceback -assume byterecl -qopenmp -static
-   LOADER_OPTS=-FR -O3 -recursive -qmkl -traceback -assume byterecl -qopenmp -static
+   F_OPTS= -O3 -ffree-line-length-none -frecursive -fopenmp -fbacktrace -static
+   C_OPTS= -O3 -DLITTLE -g -fbacktrace -static
+   LOADER_OPTS= -O3 -ffree-line-length-none -frecursive -fopenmp -fbacktrace
    #---------------------------------------------------------------------------------------#
 else
    $(error Option KIND_COMP provided ($(KIND_COMP)) is invalid)."
@@ -197,7 +149,7 @@ endif
 #                                                                                          #
 # MPI_PATH=/path/to/openmpi                                                                #
 # PAR_INCS=-I$(MPI_PATH)/include                                                           #
-# PAR_LIBS=-L$(MPI_PATH)/lib -lmpi (-lmpi_f90 or -lmpi_usempif08 may be needed too).       #
+# PAR_LIBS=-L$(MPI_PATH)/lib -lmpi (sometimes -lmpif90 is also needed).                    #
 #------------------------------------------------------------------------------------------#
 MPI_PATH=
 PAR_INCS=

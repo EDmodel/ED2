@@ -1,8 +1,8 @@
 #==========================================================================================#
 #==========================================================================================#
-#    Makefile include.mk.opt.hpc                                                           #
+#    Makefile include.mk.travisci                                                          #
 #                                                                                          #
-#    Compilation controls optimised for TravisCI.                                          #
+#    Compilation controls optimised for Continuous Integration.                            #
 #------------------------------------------------------------------------------------------#
 
 #----- Define make (gnu make works best). -------------------------------------------------#
@@ -35,9 +35,10 @@ HDF5_LIBS=-lz -L/usr/lib/x86_64-linux-gnu/hdf5/openmpi -lhdf5 -lhdf5_fortran -lh
 #     Lapack is a well-established package for solving linear systems in Fortran. This is  #
 # more efficient than the former built-in solution, and thus it became the new default.    #
 #                                                                                          #
-#     For those compiling the code with Intel compilers (ifort/icc), leave these empty and #
-# add -qmkl to F_OPTS and LOADER_OPTS instead. Otherwise, provide the path to Lapack       #
-# installation.                                                                            #
+#     For those compiling the code with Intel compilers (ifx/icx, or ifort/icc in older    #
+# systems), leave these empty and compile the code with the Math Kernel Library option     #
+# instead (-mkl or -qmkl depending on the ifx/ifort version). Otherwise, provide the path  #
+# to Lapack installation.                                                                  #
 #------------------------------------------------------------------------------------------#
 LAPACK_PATH=/usr/local
 LAPACK_INCS=-I$(LAPACK_PATH)/include
@@ -55,23 +56,46 @@ USE_COLLECTIVE_MPIO=0
 
 
 
-
+#################################### MACHINE SETTINGS ######################################
 #------------------------------------------------------------------------------------------#
-#      This should be 1 unless you are running with -gen-interfaces.  Interfaces usually   #
-# make the compilation to crash when the -gen-interfaces option are on, so this flag       #
-# bypass all interfaces in the code.                                                       #
+#     CMACH. This tells the code which type of machine is being used. This is useful for   #
+# setting up a few system-dependent pre-compilation instructions.  Current options include #
+# the following:                                                                           #
+#                                                                                          #
+# LINUX  -- Linux or Unix systems.                                                         #
+# MACOS  -- MacOS system. This applies more limited memory requests so the code can        #
+#           compile and run on personal computers.                                         #
+#                                                                                          #
+#     We currently do not support compilation in Windows. If you know how to set up ED2 to #
+# run on Windows machines, please submit a pull request.                                   #
 #------------------------------------------------------------------------------------------#
-USE_INTERF=1
+CMACH=LINUX
 #------------------------------------------------------------------------------------------#
-
 
 
 #################################### COMPILER SETTINGS #####################################
-CMACH=TRAVISCI
+#------------------------------------------------------------------------------------------#
+#   FC_TYPE -- Specify from which family of compilers the code should be built. Current    #
+#              options include:                                                            #
+#              GNU       -- gfortran and gcc.                                              #
+#              INTEL     -- ifx and icx (or ifort and icc in older systems)                #
+#              PGI       -- pgf90 and pgcc.                                                #
+#   F_COMP  -- Fortran compiler. If empty, the code builder will automatically select the  #
+#              default compiler names based on FC_TYPE. If you intend to compile ED2 with  #
+#              openmpi, then set this to mpif90.                                           #
+#   C_COMP  -- C compiler. If empty, the code builder will automatically select the        #
+#              default compiler names based on FC_TYPE. If you intend to compile ED2 with  #
+#              openmpi, then set this to mpicc.                                            #
+#   LOADER  -- Fortran compiler to build the executable. By default, this is the same as   #
+#              F_COMP.                                                                     #
+#   LIBS    -- Libraries that should be linked to the compilation. Most of the time, this  #
+#              should be left empty.                                                       #
+#   MOD_EXT -- Suffix for external modules. This should be typically set to mod.           #
+#------------------------------------------------------------------------------------------#
 FC_TYPE=GNU
 F_COMP=gfortran
 C_COMP=gcc
-LOADER=gfortran
+LOADER=$(F_COMP)
 LIBS=
 MOD_EXT=mod
 #------------------------------------------------------------------------------------------#
@@ -83,10 +107,6 @@ MOD_EXT=mod
 # A/B/C/D. Strict compilation.  It turns on several checks and turn off optimisation.      #
 # E. Performance compilation. It turns off most checks, allowing faster runs.              #
 #------------------------------------------------------------------------------------------#
-ifeq ($(KIND_COMP),)
-   KIND_COMP=E
-endif
-#------------------------------------------------------------------------------------------#
 ifeq ($(KIND_COMP),$(filter $(KIND_COMP), A B C D))
    F_OPTS= -O0 -ffree-line-length-none -g -fimplicit-none -Wall -finit-real=snan           \
            -finit-integer=-2147483648 -ffpe-trap=invalid,zero,overflow,underflow           \
@@ -96,8 +116,7 @@ ifeq ($(KIND_COMP),$(filter $(KIND_COMP), A B C D))
                 -finit-integer=-2147483648 -ffpe-trap=invalid,zero,overflow,underflow      \
                 -fcheck=all -frecursive -fsignaling-nans -Werror -fopenmp -fbacktrace
    #---------------------------------------------------------------------------------------#
-endif
-ifeq ($(KIND_COMP),E)
+else ifeq ($(KIND_COMP),E)
    F_OPTS= -O3 -ffree-line-length-none -frecursive -fopenmp -fbacktrace -static
    C_OPTS= -O3 -DLITTLE -g -fbacktrace -static
    LOADER_OPTS= -O3 -ffree-line-length-none -frecursive -fopenmp -fbacktrace
@@ -110,25 +129,27 @@ endif
 
 
 #------------------------------------------------------------------------------------------#
-#     If using mpicc and mpif90 as compilers (recommended), leave MPI_PATH, PAR_INCS, and  #
-# PAR_LIBS blank, otherwise provide the includes and libraries for mpi.  Either way, don't #
-# change PAR_DEFS unless you know what you are doing.                                      #
+#    MPI configuration. Most users should leave all of the settings below empty.           #
+# The only exception is when users want to compile ED2 with OpenMPI/MPICH and, for         #
+# whichever reason, they cannot set F_COMP=mpif90 and C_COMP=mpicc.                        #
+#                                                                                          #
+#   In case you truly need to set these variables, the commented-out example below shows   #
+# how to set these variables:                                                              #
+#                                                                                          #
+# MPI_PATH=/path/to/openmpi                                                                #
+# PAR_INCS=-I$(MPI_PATH)/include                                                           #
+# PAR_LIBS=-L$(MPI_PATH)/lib -lmpi (-lmpi_f90 or -lmpi_usempif08 may be needed too).       #
 #------------------------------------------------------------------------------------------#
 MPI_PATH=
 PAR_INCS=
 PAR_LIBS=
-PAR_DEFS=
 #------------------------------------------------------------------------------------------#
 
 
 
 #------------------------------------------------------------------------------------------#
-#     Archive options.                                                                     #
+#     Archive options. This is typically "ar rs", so do not change it unless you know your #
+# system has a different standard.                                                         #
 #------------------------------------------------------------------------------------------#
-#------ For IBM, HP, SGI, ALPHA, LINUX, and MAC_OS_X use these. ---------------------------#
 ARCHIVE=ar rs
-#------ For NEC SX-6. ---------------------------------------------------------------------#
-#ARCHIVE=sxar rs
-#------ For SUN, CONVEX. ------------------------------------------------------------------#
-#ARCHIVE=ar r'
 #------------------------------------------------------------------------------------------#

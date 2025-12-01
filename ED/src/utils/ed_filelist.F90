@@ -66,9 +66,11 @@ subroutine ed_filelist(fnames,file_prefix,nfile)
 
 
 !----- Use preprocessor tool. Windows require different way to list... --------------------!
-#if defined (PC_NT1)
+#if defined(WINDOWS)
    !---------------------------------------------------------------------------------------!
    ! First change all "/" to "\" so same namelist can be used for Unix/Linux/Windows       !
+   ! Note that ED2 currently does not support Windows machines, but this is kept just in   !
+   ! case someone is ever interested in trying to make the code run in Windows.            !
    !---------------------------------------------------------------------------------------!
    do nc=1,iprelen
       if(file_prefix(nc:nc) == '/') file_prefix(nc:nc)='\'
