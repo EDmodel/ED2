@@ -606,8 +606,8 @@ contains
     character(*),intent(in)        :: id
     real(8),intent(in)             :: value
     integer(4)                     :: size_ 
-    character(32)                  :: ch
-    character, dimension(32)       :: chvec
+    character(256)                 :: ch
+    character, dimension(256)      :: chvec
     integer                        :: s
     !............................................
     
@@ -630,7 +630,7 @@ contains
     character(*),intent(in)        :: id
     integer(4),intent(in)          :: n
     real(8),intent(in)             :: value(n)
-    character(32)                  :: ch(n)
+    character(256)                 :: ch(n)
     integer(4)                     :: i,l,ipos
     character(1),allocatable       :: ch1(:)
     !............................................
@@ -3609,7 +3609,7 @@ end subroutine libxml2f90__ll_report
 !====================================================================
 
 
-subroutine libxml2f90_ll_report_rec_wrap(LL_ID,nfil,nind)
+recursive subroutine libxml2f90_ll_report_rec_wrap(LL_ID,nfil,nind)
   implicit none
   character(*),intent(in)       :: ll_id !the id of the linklist
   integer(4),intent(in)         :: nfil !the file unit we report to
@@ -3623,7 +3623,7 @@ end subroutine libxml2f90_ll_report_rec_wrap
 !====================================================================
 
 
-subroutine libxml2f90_ll_report_rec(LL_ID,nfil,nind)
+recursive subroutine libxml2f90_ll_report_rec(LL_ID,nfil,nind)
   use ll_module
   use libxml2f90_module, only: twrite_paw,indstep 
   implicit none

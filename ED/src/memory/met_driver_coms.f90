@@ -25,13 +25,6 @@ module met_driver_coms
                                               ! 2 -- Randomly pick the years, using a 
                                               !      different sequence each time the 
                                               !      model is run.
-   integer                :: imetavg          ! Type of average of the input fluxes:
-                                              ! 0 -- No average, the values are 
-                                              !      instantaneous
-                                              ! 1 -- Averages ending at the reference time
-                                              ! 2 -- Averages beginning at the reference 
-                                              !      time
-                                              ! 3 -- Averages centred at the reference time
    integer                :: imetrad          ! How should I use the radiation data?
                                               ! 0 -- As is
                                               ! 1 -- Add them together, then use SiB method
@@ -58,6 +51,8 @@ module met_driver_coms
    real               :: dt_radinterp         ! Time step used to perform the daytime 
                                               !    average of the secant of the zenith
                                               !    angle. 
+   real               :: met_land_min         ! Minimum land fraction for a met driver
+                                              !    point to be considered land
    !---------------------------------------------------------------------------------------!
 
 
@@ -78,6 +73,14 @@ module met_driver_coms
 
    !---------------------------------------------------------------------------------------!
    !      Variables that define the meteorological dataset.                                !
+   !                                                                                       !
+   ! met_avgtype defines the type of average of the input fluxes.  This supersedes the     !
+   !    former IMETAVG variable in ED2IN. This new variable must be included in the        !
+   !    meteorological drivers.                                                            !
+   ! 0 -- No average, the values are instantaneous (deprecated).                           !
+   ! 1 -- Averages ending at the reference time                                            !
+   ! 2 -- Averages beginning at the reference time                                         !
+   ! 3 -- Averages centred at the reference time                                           !
    !---------------------------------------------------------------------------------------!
    integer :: nformats
    character(len=metname_len), allocatable, dimension(:)   :: met_names
@@ -88,13 +91,16 @@ module met_driver_coms
    real                      , allocatable, dimension(:)   :: met_dy
    real                      , allocatable, dimension(:)   :: met_xmin
    real                      , allocatable, dimension(:)   :: met_ymin
+   integer                   , allocatable, dimension(:)   :: met_avgtype
    integer                   , allocatable, dimension(:)   :: met_nv
    real                      , allocatable, dimension(:,:) :: met_frq
    integer                   , allocatable, dimension(:,:) :: met_interp
    integer                   , allocatable, dimension(:)   :: metyears
-   logical                   , allocatable, dimension(:)   :: no_ll
-   real                      , allocatable, dimension(:,:) :: lat2d
+   logical                   , allocatable, dimension(:)   :: met_ll_header
+   logical                   , allocatable, dimension(:)   :: met_land_mask
    real                      , allocatable, dimension(:,:) :: lon2d
+   real                      , allocatable, dimension(:,:) :: lat2d
+   real                      , allocatable, dimension(:,:) :: land2d
    !---------------------------------------------------------------------------------------!
 
 

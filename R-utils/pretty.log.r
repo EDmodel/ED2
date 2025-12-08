@@ -14,15 +14,15 @@ pretty.log = function(x,base=10,n=5,forcelog=FALSE){
    # gives a more legible scale.                                                           #
    #---------------------------------------------------------------------------------------#
    if (base == 10 && dlog.neat %wr% c(0.1,0.5) && (! forcelog)){
-      sel  = abs(log.neat - as.integer(log.neat)) %<% (0.5 * dlog.neat)
+      sel  = abs(log.neat - as.integer(log.neat)) %lt% (0.5 * dlog.neat)
       tens = sort(c(neat[sel],base^(c(floor(min(log.neat)),ceiling(max(log.neat))))))
 
       #------------------------------------------------------------------------------------#
       #      Fix scale so it looks nicer if dtens is 2 or 3.                               #
       #------------------------------------------------------------------------------------#
-      if (dlog.neat %<% 0.15){
+      if (dlog.neat %lt% 0.15){
          mult    = c(1,2,3,5,7)
-      }else if (dlog.neat %<% 0.35){
+      }else if (dlog.neat %lt% 0.35){
          mult    = c(1,2,5)
       }else{
          mult    = c(1,3)
@@ -33,7 +33,7 @@ pretty.log = function(x,base=10,n=5,forcelog=FALSE){
       vlevels   = vlevels[aa:zz]
       still.log = TRUE
       #------------------------------------------------------------------------------------#
-   }else if(dlog.neat %<% 0.1 && (! forcelog)){
+   }else if(dlog.neat %lt% 0.1 && (! forcelog)){
       #-----  The plot is hardly log, use normal units instead. ---------------------------#
       vlevels = pretty(x=x,n=n)
       still.log = FALSE

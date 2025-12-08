@@ -51,10 +51,6 @@ subroutine ed_filelist(fnames,file_prefix,nfile)
 
 
 
-   !----- Determine the files based on the prefix -----------------------------------------!
-   write (unit=*,fmt='(a,1x,a)') ' [-] filelist_f: Checking prefix: ',trim(file_prefix)
-   !---------------------------------------------------------------------------------------!
-
 
 
    !----- Find the length of the prefix. --------------------------------------------------!
@@ -62,12 +58,19 @@ subroutine ed_filelist(fnames,file_prefix,nfile)
    if(iprelen == 0) iprelen=len(file_prefix)
    !---------------------------------------------------------------------------------------!
 
+   !----- Determine the files based on the prefix -----------------------------------------!
+   write (unit=*,fmt='(a,1x,a )') ' [-] filelist_f: Checking prefix: ',trim(file_prefix)
+   write (unit=*,fmt='(a,1x,i5)') '                 Prefix length:   ',iprelen
+   !---------------------------------------------------------------------------------------!
+
 
 
 !----- Use preprocessor tool. Windows require different way to list... --------------------!
-#if defined (PC_NT1)
+#if defined(WINDOWS)
    !---------------------------------------------------------------------------------------!
    ! First change all "/" to "\" so same namelist can be used for Unix/Linux/Windows       !
+   ! Note that ED2 currently does not support Windows machines, but this is kept just in   !
+   ! case someone is ever interested in trying to make the code run in Windows.            !
    !---------------------------------------------------------------------------------------!
    do nc=1,iprelen
       if(file_prefix(nc:nc) == '/') file_prefix(nc:nc)='\'
@@ -132,7 +135,11 @@ subroutine ed_filelist(fnames,file_prefix,nfile)
    !      Print the first 10 files on screen, so the user can check whether it makes sense !
    ! or not.                                                                               !
    !---------------------------------------------------------------------------------------!
-   write (unit=*,fmt='(a)') ' +  Showing first 10 files:'
+   if (n > 10) then
+      write (unit=*,fmt='(a,i5,a)') ' +  Showing first 10 files (out of ',n,'):'
+   else
+      write (unit=*,fmt='(a,i5,a)') ' +  Showing all ',n,' files:'
+   end if
    do nf=1,n
       fnames(nf) = trim(filelist(indices(nf):indices(nf+1)-1))
 
@@ -193,10 +200,19 @@ subroutine ed1_fileinfo(text,nfiles,full_list,ntype,type_list,tlon_list,tlat_lis
    select case(text)
    case ('.site')
       okdot = 4
-   case ('.pss','.css','.txt')
+   case ('.sss','.pss','.css','.txt')
       okdot = 3
    case ('.lu')
       okdot = 2
+   case default
+      write (unit=*,fmt='(a)'       ) '----------------------------------------------'
+      write (unit=*,fmt='(a)'       ) '   Unrecognised extension for ED1 file style! '
+      write (unit=*,fmt='(a)'       ) '----------------------------------------------'
+      write (unit=*,fmt='(a,1x,a)'  ) ' TEXT           = ',trim(text)
+      write (unit=*,fmt='(a,1x,i12)') ' NFILES         = ',nfiles
+      write (unit=*,fmt='(a,1x,a)'  ) ' FULL_LIST(1st) = ',trim(full_list(1))
+      write (unit=*,fmt='(a)'       ) '----------------------------------------------'
+      call fatal_error('Invalid file extension','ed1_fileinfo','ed_filelist.F90')
    end select
 
 

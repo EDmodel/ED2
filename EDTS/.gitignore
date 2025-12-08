@@ -1,0 +1,17 @@
+.DS_Store
+.idea
+*.log
+tmp/
+
+# Common inputs
+common/
+common.tar.gz
+
+# Specific site inputs
+umbs/
+umbs.tar.gz
+tonzi/
+tonzi.tar.gz
+
+test-logs/
+test-outputs/

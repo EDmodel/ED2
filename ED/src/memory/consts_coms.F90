@@ -147,6 +147,8 @@ Module consts_coms
                         , b_del_alvi3      => del_alvi3      & ! intent(in)
                         , b_tsupercool_liq => tsupercool_liq & ! intent(in)
                         , b_tsupercool_vap => tsupercool_vap & ! intent(in)
+                        , b_cph2o_tscvap   => cph2o_tscvap   & ! intent(in)
+                        , b_cpdiff_epim1   => cpdiff_epim1   & ! intent(in)
                         , b_ttripoli       => ttripoli       & ! intent(in)
                         , b_htripoli       => htripoli       & ! intent(in)
                         , b_htripolii      => htripolii      & ! intent(in)
@@ -160,6 +162,12 @@ Module consts_coms
                         , b_lnexp_max      => lnexp_max      & ! intent(in)
                         , b_huge_num       => huge_num       & ! intent(in)
                         , b_tiny_num       => tiny_num       & ! intent(in)
+                        , b_almost_zero    => almost_zero    & ! intent(in)
+                        , b_almost_one     => almost_one     & ! intent(in)
+                        , b_s_tol_trunc    => b_s_tol_trunc  & ! intent(in)
+                        , b_r_tol_trunc    => b_r_tol_trunc  & ! intent(in)
+                        , b_s_tol_trunc8   => b_s_tol_trunc8 & ! intent(in)
+                        , b_r_tol_trunc8   => b_r_tol_trunc8 & ! intent(in)
                         , b_mol_2_umol     => mol_2_umol     & ! intent(in)
                         , b_umol_2_mol     => umol_2_mol     & ! intent(in)
                         , b_umol_2_kgC     => umol_2_kgC     & ! intent(in)
@@ -173,170 +181,178 @@ Module consts_coms
 
    implicit none
    !----- Copy the variables from BRAMS. --------------------------------------------------!
-   real, parameter :: pi1            = b_pi1
-   real, parameter :: pii            = b_pii
-   real, parameter :: halfpi         = b_halfpi
-   real, parameter :: twopi          = b_twopi
-   real, parameter :: pio180         = b_pio180
-   real, parameter :: onerad         = b_onerad
-   real, parameter :: pi4            = b_pi4
-   real, parameter :: pi4o3          = b_pi4o3
-   real, parameter :: pio4           = b_pio4
-   real, parameter :: pio6           = b_pio6
-   real, parameter :: pio6i          = b_pio6i
-   real, parameter :: sqrtpii        = b_sqrtpii
-   real, parameter :: sqrthalfpi     = b_sqrthalfpi
-   real, parameter :: sqrttwopi      = b_sqrttwopi
-   real, parameter :: euler_gam      = b_euler_gam
-   real, parameter :: srtwo          = b_srtwo
-   real, parameter :: srthree        = b_srthree
-   real, parameter :: sqrt2o2        = b_sqrt2o2
-   real, parameter :: srtwoi         = b_srtwoi
-   real, parameter :: srthreei       = b_srthreei
-   real, parameter :: onethird       = b_onethird
-   real, parameter :: twothirds      = b_twothirds
-   real, parameter :: onesixth       = b_onesixth
-   real, parameter :: stefan         = b_stefan
-   real, parameter :: boltzmann      = b_boltzmann
-   real, parameter :: avogrado       = b_avogrado
-   real, parameter :: loschmidt      = b_loschmidt
-   real, parameter :: loschcgs       = b_loschcgs
-   real, parameter :: t00            = b_t00
-   real, parameter :: rmol           = b_rmol
-   real, parameter :: rmolcgs        = b_rmolcgs
-   real, parameter :: volmol         = b_volmol
-   real, parameter :: volmoll        = b_volmoll
-   real, parameter :: mmdry          = b_mmdry
-   real, parameter :: mmo2           = b_mmo2
-   real, parameter :: mmo3           = b_mmo3
-   real, parameter :: mmh2o          = b_mmh2o
-   real, parameter :: mmco2          = b_mmco2
-   real, parameter :: mmdrycgs       = b_mmdrycgs
-   real, parameter :: mmo2cgs        = b_mmo2cgs
-   real, parameter :: mmo3cgs        = b_mmo3cgs
-   real, parameter :: mmh2ocgs       = b_mmh2ocgs
-   real, parameter :: mmco2cgs       = b_mmco2cgs
-   real, parameter :: mmdoc          = b_mmdoc
-   real, parameter :: mmcod          = b_mmcod
-   real, parameter :: mmdry1000      = b_mmdry1000
-   real, parameter :: mmcod1em6      = b_mmcod1em6
-   real, parameter :: mmdryi         = b_mmdryi
-   real, parameter :: mmh2oi         = b_mmh2oi
-   real, parameter :: mmco2i         = b_mmco2i
-   real, parameter :: yr_day         = b_yr_day
-   real, parameter :: day_sec        = b_day_sec
-   real, parameter :: day_hr         = b_day_hr
-   real, parameter :: hr_sec         = b_hr_sec
-   real, parameter :: hr_min         = b_hr_min
-   real, parameter :: min_sec        = b_min_sec
-   real, parameter :: yr_sec         = b_yr_sec
-   real, parameter :: vonk           = b_vonk
-   real, parameter :: grav           = b_grav
-   real, parameter :: gcgs           = b_gcgs
-   real, parameter :: gg             = b_gg
-   real, parameter :: erad           = b_erad
-   real, parameter :: spcon          = b_spcon
-   real, parameter :: spconkm        = b_spconkm
-   real, parameter :: eradi          = b_eradi
-   real, parameter :: erad2          = b_erad2
-   real, parameter :: ss60           = b_ss60
-   real, parameter :: omega          = b_omega
-   real, parameter :: viscos         = b_viscos
-   real, parameter :: solar          = b_solar
-   real, parameter :: p00            = b_p00
-   real, parameter :: prefsea        = b_prefsea
-   real, parameter :: p00i           = b_p00i
-   real, parameter :: th_diff0       = b_th_diff0
-   real, parameter :: dth_diff       = b_dth_diff
-   real, parameter :: kin_visc0      = b_kin_visc0
-   real, parameter :: dkin_visc      = b_dkin_visc
-   real, parameter :: rdry           = b_rdry
-   real, parameter :: rdryi          = b_rdryi
-   real, parameter :: cpdry          = b_cpdry
-   real, parameter :: cvdry          = b_cvdry
-   real, parameter :: cpog           = b_cpog
-   real, parameter :: rocp           = b_rocp
-   real, parameter :: rocv           = b_rocv
-   real, parameter :: cpocv          = b_cpocv
-   real, parameter :: cpor           = b_cpor
-   real, parameter :: cvor           = b_cvor
-   real, parameter :: gocp           = b_gocp
-   real, parameter :: gordry         = b_gordry
-   real, parameter :: cpdryi         = b_cpdryi
-   real, parameter :: cpdryi4        = b_cpdryi4
-   real, parameter :: p00or          = b_p00or
-   real, parameter :: p00k           = b_p00k
-   real, parameter :: p00ki          = b_p00ki
-   real, parameter :: rh2o           = b_rh2o
-   real, parameter :: cph2o          = b_cph2o
-   real, parameter :: cph2oi         = b_cph2oi
-   real, parameter :: cvh2o          = b_cvh2o
-   real, parameter :: gorh2o         = b_gorh2o
-   real, parameter :: ep             = b_ep
-   real, parameter :: epi            = b_epi
-   real, parameter :: epim1          = b_epim1
-   real, parameter :: toodry         = b_toodry
-   real, parameter :: toowet         = b_toowet
-   real, parameter :: wdns           = b_wdns
-   real, parameter :: wdnsi          = b_wdnsi
-   real, parameter :: cliq           = b_cliq
-   real, parameter :: cliqi          = b_cliqi
-   real, parameter :: idns           = b_idns
-   real, parameter :: idnsi          = b_idnsi
-   real, parameter :: fdns           = b_fdns
-   real, parameter :: fdnsi          = b_fdnsi
-   real, parameter :: fsdns          = b_fsdns
-   real, parameter :: fsdnsi         = b_fsdnsi
-   real, parameter :: cice           = b_cice
-   real, parameter :: cicei          = b_cicei
-   real, parameter :: t3ple          = b_t3ple
-   real, parameter :: t3plei         = b_t3plei
-   real, parameter :: es3ple         = b_es3ple
-   real, parameter :: es3plei        = b_es3plei
-   real, parameter :: epes3ple       = b_epes3ple
-   real, parameter :: rh2ot3ple      = b_rh2ot3ple
-   real, parameter :: alli           = b_alli
-   real, parameter :: alvl3          = b_alvl3
-   real, parameter :: alvi3          = b_alvi3
-   real, parameter :: allii          = b_allii
-   real, parameter :: aklv           = b_aklv
-   real, parameter :: akiv           = b_akiv
-   real, parameter :: lvordry        = b_lvordry
-   real, parameter :: lvorvap        = b_lvorvap
-   real, parameter :: lsorvap        = b_lsorvap
-   real, parameter :: lvt3ple        = b_lvt3ple
-   real, parameter :: lst3ple        = b_lst3ple
-   real, parameter :: uiicet3        = b_uiicet3
-   real, parameter :: uiliqt3        = b_uiliqt3
-   real, parameter :: dcpvl          = b_dcpvl
-   real, parameter :: dcpvi          = b_dcpvi
-   real, parameter :: del_alvl3      = b_del_alvl3
-   real, parameter :: del_alvi3      = b_del_alvi3
-   real, parameter :: tsupercool_liq = b_tsupercool_liq
-   real, parameter :: tsupercool_vap = b_tsupercool_vap
-   real, parameter :: ttripoli       = b_ttripoli
-   real, parameter :: htripoli       = b_htripoli
-   real, parameter :: htripolii      = b_htripolii
-   real, parameter :: tkmin          = b_tkmin
-   real, parameter :: sigwmin        = b_sigwmin
-   real, parameter :: abslmomin      = b_abslmomin
-   real, parameter :: ltscalemax     = b_ltscalemax
-   real, parameter :: abswltlmin     = b_abswltlmin
-   real, parameter :: lturbmin       = b_lturbmin
-   real, parameter :: lnexp_min      = b_lnexp_min
-   real, parameter :: lnexp_max      = b_lnexp_max
-   real, parameter :: huge_num       = b_huge_num
-   real, parameter :: tiny_num       = b_tiny_num
-   real, parameter :: mol_2_umol     = b_mol_2_umol
-   real, parameter :: umol_2_mol     = b_umol_2_mol
-   real, parameter :: umol_2_kgC     = b_umol_2_kgC
-   real, parameter :: Watts_2_Ein    = b_Watts_2_Ein
-   real, parameter :: Ein_2_Watts    = b_Ein_2_Watts
-   real, parameter :: kgC_2_umol     = b_kgC_2_umol
-   real, parameter :: kgom2_2_tonoha = b_kgom2_2_tonoha
-   real, parameter :: tonoha_2_kgom2 = b_tonoha_2_kgom2
-   real, parameter :: umols_2_kgCyr  = b_umols_2_kgCyr
-   real, parameter :: kgCday_2_umols = b_kgCday_2_umols
+   real        , parameter :: pi1            = b_pi1
+   real        , parameter :: pii            = b_pii
+   real        , parameter :: halfpi         = b_halfpi
+   real        , parameter :: twopi          = b_twopi
+   real        , parameter :: pio180         = b_pio180
+   real        , parameter :: onerad         = b_onerad
+   real        , parameter :: pi4            = b_pi4
+   real        , parameter :: pi4o3          = b_pi4o3
+   real        , parameter :: pio4           = b_pio4
+   real        , parameter :: pio6           = b_pio6
+   real        , parameter :: pio6i          = b_pio6i
+   real        , parameter :: sqrtpii        = b_sqrtpii
+   real        , parameter :: sqrthalfpi     = b_sqrthalfpi
+   real        , parameter :: sqrttwopi      = b_sqrttwopi
+   real        , parameter :: euler_gam      = b_euler_gam
+   real        , parameter :: srtwo          = b_srtwo
+   real        , parameter :: srthree        = b_srthree
+   real        , parameter :: sqrt2o2        = b_sqrt2o2
+   real        , parameter :: srtwoi         = b_srtwoi
+   real        , parameter :: srthreei       = b_srthreei
+   real        , parameter :: onethird       = b_onethird
+   real        , parameter :: twothirds      = b_twothirds
+   real        , parameter :: onesixth       = b_onesixth
+   real        , parameter :: stefan         = b_stefan
+   real        , parameter :: boltzmann      = b_boltzmann
+   real        , parameter :: avogrado       = b_avogrado
+   real        , parameter :: loschmidt      = b_loschmidt
+   real        , parameter :: loschcgs       = b_loschcgs
+   real        , parameter :: t00            = b_t00
+   real        , parameter :: rmol           = b_rmol
+   real        , parameter :: rmolcgs        = b_rmolcgs
+   real        , parameter :: volmol         = b_volmol
+   real        , parameter :: volmoll        = b_volmoll
+   real        , parameter :: mmdry          = b_mmdry
+   real        , parameter :: mmo2           = b_mmo2
+   real        , parameter :: mmo3           = b_mmo3
+   real        , parameter :: mmh2o          = b_mmh2o
+   real        , parameter :: mmco2          = b_mmco2
+   real        , parameter :: mmdrycgs       = b_mmdrycgs
+   real        , parameter :: mmo2cgs        = b_mmo2cgs
+   real        , parameter :: mmo3cgs        = b_mmo3cgs
+   real        , parameter :: mmh2ocgs       = b_mmh2ocgs
+   real        , parameter :: mmco2cgs       = b_mmco2cgs
+   real        , parameter :: mmdoc          = b_mmdoc
+   real        , parameter :: mmcod          = b_mmcod
+   real        , parameter :: mmdry1000      = b_mmdry1000
+   real        , parameter :: mmcod1em6      = b_mmcod1em6
+   real        , parameter :: mmdryi         = b_mmdryi
+   real        , parameter :: mmh2oi         = b_mmh2oi
+   real        , parameter :: mmco2i         = b_mmco2i
+   real        , parameter :: yr_day         = b_yr_day
+   real        , parameter :: day_sec        = b_day_sec
+   real        , parameter :: day_hr         = b_day_hr
+   real        , parameter :: hr_sec         = b_hr_sec
+   real        , parameter :: hr_min         = b_hr_min
+   real        , parameter :: min_sec        = b_min_sec
+   real        , parameter :: yr_sec         = b_yr_sec
+   real        , parameter :: vonk           = b_vonk
+   real        , parameter :: grav           = b_grav
+   real        , parameter :: gcgs           = b_gcgs
+   real        , parameter :: gg             = b_gg
+   real        , parameter :: erad           = b_erad
+   real        , parameter :: spcon          = b_spcon
+   real        , parameter :: spconkm        = b_spconkm
+   real        , parameter :: eradi          = b_eradi
+   real        , parameter :: erad2          = b_erad2
+   real        , parameter :: ss60           = b_ss60
+   real        , parameter :: omega          = b_omega
+   real        , parameter :: viscos         = b_viscos
+   real        , parameter :: solar          = b_solar
+   real        , parameter :: p00            = b_p00
+   real        , parameter :: prefsea        = b_prefsea
+   real        , parameter :: p00i           = b_p00i
+   real        , parameter :: th_diff0       = b_th_diff0
+   real        , parameter :: dth_diff       = b_dth_diff
+   real        , parameter :: kin_visc0      = b_kin_visc0
+   real        , parameter :: dkin_visc      = b_dkin_visc
+   real        , parameter :: rdry           = b_rdry
+   real        , parameter :: rdryi          = b_rdryi
+   real        , parameter :: cpdry          = b_cpdry
+   real        , parameter :: cvdry          = b_cvdry
+   real        , parameter :: cpog           = b_cpog
+   real        , parameter :: rocp           = b_rocp
+   real        , parameter :: rocv           = b_rocv
+   real        , parameter :: cpocv          = b_cpocv
+   real        , parameter :: cpor           = b_cpor
+   real        , parameter :: cvor           = b_cvor
+   real        , parameter :: gocp           = b_gocp
+   real        , parameter :: gordry         = b_gordry
+   real        , parameter :: cpdryi         = b_cpdryi
+   real        , parameter :: cpdryi4        = b_cpdryi4
+   real        , parameter :: p00or          = b_p00or
+   real        , parameter :: p00k           = b_p00k
+   real        , parameter :: p00ki          = b_p00ki
+   real        , parameter :: rh2o           = b_rh2o
+   real        , parameter :: cph2o          = b_cph2o
+   real        , parameter :: cph2oi         = b_cph2oi
+   real        , parameter :: cvh2o          = b_cvh2o
+   real        , parameter :: gorh2o         = b_gorh2o
+   real        , parameter :: ep             = b_ep
+   real        , parameter :: epi            = b_epi
+   real        , parameter :: epim1          = b_epim1
+   real        , parameter :: toodry         = b_toodry
+   real        , parameter :: toowet         = b_toowet
+   real        , parameter :: wdns           = b_wdns
+   real        , parameter :: wdnsi          = b_wdnsi
+   real        , parameter :: cliq           = b_cliq
+   real        , parameter :: cliqi          = b_cliqi
+   real        , parameter :: idns           = b_idns
+   real        , parameter :: idnsi          = b_idnsi
+   real        , parameter :: fdns           = b_fdns
+   real        , parameter :: fdnsi          = b_fdnsi
+   real        , parameter :: fsdns          = b_fsdns
+   real        , parameter :: fsdnsi         = b_fsdnsi
+   real        , parameter :: cice           = b_cice
+   real        , parameter :: cicei          = b_cicei
+   real        , parameter :: t3ple          = b_t3ple
+   real        , parameter :: t3plei         = b_t3plei
+   real        , parameter :: es3ple         = b_es3ple
+   real        , parameter :: es3plei        = b_es3plei
+   real        , parameter :: epes3ple       = b_epes3ple
+   real        , parameter :: rh2ot3ple      = b_rh2ot3ple
+   real        , parameter :: alli           = b_alli
+   real        , parameter :: alvl3          = b_alvl3
+   real        , parameter :: alvi3          = b_alvi3
+   real        , parameter :: allii          = b_allii
+   real        , parameter :: aklv           = b_aklv
+   real        , parameter :: akiv           = b_akiv
+   real        , parameter :: lvordry        = b_lvordry
+   real        , parameter :: lvorvap        = b_lvorvap
+   real        , parameter :: lsorvap        = b_lsorvap
+   real        , parameter :: lvt3ple        = b_lvt3ple
+   real        , parameter :: lst3ple        = b_lst3ple
+   real        , parameter :: uiicet3        = b_uiicet3
+   real        , parameter :: uiliqt3        = b_uiliqt3
+   real        , parameter :: dcpvl          = b_dcpvl
+   real        , parameter :: dcpvi          = b_dcpvi
+   real        , parameter :: del_alvl3      = b_del_alvl3
+   real        , parameter :: del_alvi3      = b_del_alvi3
+   real        , parameter :: tsupercool_liq = b_tsupercool_liq
+   real        , parameter :: tsupercool_vap = b_tsupercool_vap
+   real        , parameter :: cph2o_tscvap   = b_cph2o_tscvap
+   real        , parameter :: cpdiff_epim1   = b_cpdiff_epim1
+   real        , parameter :: ttripoli       = b_ttripoli
+   real        , parameter :: htripoli       = b_htripoli
+   real        , parameter :: htripolii      = b_htripolii
+   real        , parameter :: tkmin          = b_tkmin
+   real        , parameter :: sigwmin        = b_sigwmin
+   real        , parameter :: abslmomin      = b_abslmomin
+   real        , parameter :: ltscalemax     = b_ltscalemax
+   real        , parameter :: abswltlmin     = b_abswltlmin
+   real        , parameter :: lturbmin       = b_lturbmin
+   real        , parameter :: lnexp_min      = b_lnexp_min
+   real        , parameter :: lnexp_max      = b_lnexp_max
+   real        , parameter :: huge_num       = b_huge_num
+   real        , parameter :: tiny_num       = b_tiny_num
+   real        , parameter :: almost_zero    = b_almost_zero
+   real        , parameter :: almost_one     = b_almost_one
+   real        , parameter :: s_tol_trunc    = b_s_tol_trunc 
+   real        , parameter :: r_tol_trunc    = b_r_tol_trunc 
+   real(kind=8), parameter :: s_tol_trunc8   = b_s_tol_trunc8
+   real(kind=8), parameter :: r_tol_trunc8   = b_r_tol_trunc8
+   real        , parameter :: mol_2_umol     = b_mol_2_umol
+   real        , parameter :: umol_2_mol     = b_umol_2_mol
+   real        , parameter :: umol_2_kgC     = b_umol_2_kgC
+   real        , parameter :: Watts_2_Ein    = b_Watts_2_Ein
+   real        , parameter :: Ein_2_Watts    = b_Ein_2_Watts
+   real        , parameter :: kgC_2_umol     = b_kgC_2_umol
+   real        , parameter :: kgom2_2_tonoha = b_kgom2_2_tonoha
+   real        , parameter :: tonoha_2_kgom2 = b_tonoha_2_kgom2
+   real        , parameter :: umols_2_kgCyr  = b_umols_2_kgCyr
+   real        , parameter :: kgCday_2_umols = b_kgCday_2_umols
    !---------------------------------------------------------------------------------------!
 
 #else
@@ -346,6 +362,7 @@ Module consts_coms
    ! Trigonometric constants                                                               !
    !---------------------------------------------------------------------------------------!
    real, parameter :: pi1        = 3.14159265358979  ! Pi                       [      ---]
+   real, parameter :: pii        = 1. / pi1          ! 1 /Pi                    [      ---]
    real, parameter :: halfpi     = pi1/2             ! Pi/2                     [      ---]
    real, parameter :: twopi      = pi1* 2.           ! 2 Pi                     [      ---]
    real, parameter :: sqrtpii    = 0.564189583547756 ! 1/(pi**0.5)              [      ---]
@@ -364,7 +381,7 @@ Module consts_coms
    !---------------------------------------------------------------------------------------!
    real, parameter :: srtwo     = 1.414213562373095 ! Square root of 2.         [      ---]
    real, parameter :: srthree   = 1.732050807568877 ! Square root of 3.         [      ---]
-   real, parameter :: sqrt2o2   = 0.5 * srtwo       ! ½ Square root of 2.       [      ---]
+   real, parameter :: sqrt2o2   = 0.5 * srtwo       ! 1/2 * Square root of 2.   [      ---]
    real, parameter :: srtwoi    = 1./srtwo          ! 1./ Square root of 2.     [      ---]
    real, parameter :: srthreei  = 1./srthree        ! 1./ Square root of 3.     [      ---]
    real, parameter :: onethird  = 1./3.             ! 1/3                       [      ---]
@@ -377,12 +394,12 @@ Module consts_coms
    !---------------------------------------------------------------------------------------!
    ! Universal constants                                                                   !
    !---------------------------------------------------------------------------------------!
-   real, parameter :: stefan    = 5.6696e-8         ! Stefan-Boltzmann constant [ W/m²/K^4]
-   real, parameter :: boltzmann = 1.3806503e-23     ! Boltzmann constant        [m²kg/s²/K]
-   real, parameter :: t00       = 273.15            ! 0°C                       [       °C]
-   real, parameter :: rmol      = 8.314510          ! Molar gas constant        [  J/mol/K]
-   real, parameter :: volmol    = 0.022710980       ! Molar volume at STP       [       m³]
-   real, parameter :: volmoll   = volmol*1e3        ! Molar volume at STP       [        L]
+   real, parameter :: stefan    = 5.6696e-8        ! Stefan-Boltzmann constant [   W/m2/K4]
+   real, parameter :: boltzmann = 1.3806503e-23    ! Boltzmann constant        [m2 kg/s2/K]
+   real, parameter :: t00       = 273.15           ! 0 degC                    [      degC]
+   real, parameter :: rmol      = 8.314510         ! Molar gas constant        [   J/mol/K]
+   real, parameter :: volmol    = 0.022710980      ! Molar volume at STP       [        m3]
+   real, parameter :: volmoll   = volmol*1e3       ! Molar volume at STP       [         L]
    !---------------------------------------------------------------------------------------!
 
 
@@ -421,11 +438,11 @@ Module consts_coms
    !---------------------------------------------------------------------------------------!
    ! General Earth properties                                                              !
    !---------------------------------------------------------------------------------------!
-   real, parameter :: vonk      = 0.40        ! Von Kármán constant             [      ---]
-   real, parameter :: grav      = 9.80665     ! Gravity acceleration            [     m/s²]
+   real, parameter :: vonk      = 0.40        ! Von Karman constant             [      ---]
+   real, parameter :: grav      = 9.80665     ! Gravity acceleration            [     m/s2]
    real, parameter :: erad      = 6370997.    ! Earth radius                    [        m]
    real, parameter :: erad2     = 2.*erad     ! Earth diameter                  [        m]
-   real, parameter :: solar     = 1.3533e3    ! Solar constant                  [     W/m²]
+   real, parameter :: solar     = 1.3533e3    ! Solar constant                  [     W/m2]
    real, parameter :: p00       = 1.e5        ! Reference pressure              [       Pa]
    real, parameter :: prefsea   = 101325.     ! Reference sea level pressure    [       Pa]
    real, parameter :: p00i      = 1. / p00    ! 1/p00                           [     1/Pa]
@@ -441,7 +458,7 @@ Module consts_coms
    !        third edition, Academic Press, Amsterdam, 418pp.  (Chapters 3 and 10).         !
    !                                                                                       !
    !     Air diffusion properties. These properties are temperature-dependent in reality,  !
-   ! but for simplicity we assume them constants, using the value at 20°C.                 !
+   ! but for simplicity we assume them constants, using the value at 20 degC.              !
    !                                                                                       !
    ! Thermal diffusivity - Computed from equation on page 32 of MU08;                      !
    ! Kinematic viscosity - Computed from equation on page 32 of MU08;                      !
@@ -449,9 +466,9 @@ Module consts_coms
    !                                 10.11 (MU08).                                         !
    ! These terms could be easily made function of temperature in the future if needed be.  !
    !---------------------------------------------------------------------------------------!
-   real, parameter :: th_diff0  = 1.89e-5     ! Air thermal diffusivity         [     m²/s]
+   real, parameter :: th_diff0  = 1.89e-5     ! Air thermal diffusivity         [     m2/s]
    real, parameter :: dth_diff  = 0.007       ! Temperature dependency slope    [      1/K]
-   real, parameter :: kin_visc0 = 1.33e-5     ! Kinematic viscosity             [     m²/s]
+   real, parameter :: kin_visc0 = 1.33e-5     ! Kinematic viscosity             [     m2/s]
    real, parameter :: dkin_visc = 0.007       ! Temperature dependency slope    [      1/K]
    !---------------------------------------------------------------------------------------!
 
@@ -499,8 +516,8 @@ Module consts_coms
    !---------------------------------------------------------------------------------------!
    ! Liquid water properties                                                               !
    !---------------------------------------------------------------------------------------!
-   real, parameter :: wdns     = 1.000e3    ! Liquid water density              [    kg/m³]
-   real, parameter :: wdnsi    = 1./wdns    ! Inverse of liquid water density   [    m³/kg]
+   real, parameter :: wdns     = 1.000e3    ! Liquid water density              [    kg/m3]
+   real, parameter :: wdnsi    = 1./wdns    ! Inverse of liquid water density   [    m3/kg]
    real, parameter :: cliq     = 4.186e3    ! Liquid water specific heat (Cl)   [   J/kg/K]
    real, parameter :: cliqi    = 1./cliq    ! Inverse of water heat capacity    [   kg K/J]
    !---------------------------------------------------------------------------------------!
@@ -510,12 +527,12 @@ Module consts_coms
    !---------------------------------------------------------------------------------------!
    ! Ice properties                                                                        !
    !---------------------------------------------------------------------------------------!
-   real, parameter :: idns     = 9.167e2      ! "Hard" ice density              [    kg/m³]
-   real, parameter :: idnsi    = 1./idns      ! Inverse of ice density          [    m³/kg]
-   real, parameter :: fdns     = 2.000e2      ! Frost density                   [    kg/m³]
-   real, parameter :: fdnsi    = 1./fdns      ! Inverse of frost density        [    m³/kg]
-   real, parameter :: fsdns    = 1.000e2      ! Fresh snow density              [    kg/m³]
-   real, parameter :: fsdnsi   = 1./fsdns     ! Inverse of liquid water density [    m³/kg]
+   real, parameter :: idns     = 9.167e2      ! "Hard" ice density              [    kg/m3]
+   real, parameter :: idnsi    = 1./idns      ! Inverse of ice density          [    m3/kg]
+   real, parameter :: fdns     = 2.000e2      ! Frost density                   [    kg/m3]
+   real, parameter :: fdnsi    = 1./fdns      ! Inverse of frost density        [    m3/kg]
+   real, parameter :: fsdns    = 1.000e2      ! Fresh snow density              [    kg/m3]
+   real, parameter :: fsdnsi   = 1./fsdns     ! Inverse of liquid water density [    m3/kg]
    real, parameter :: cice     = 2.093e3      ! Ice specific heat (Ci)          [   J/kg/K]
    real, parameter :: cicei    = 1. / cice    ! Inverse of ice heat capacity    [   kg K/J]
    !---------------------------------------------------------------------------------------!
@@ -530,8 +547,8 @@ Module consts_coms
    real, parameter :: t3plei    = 1./t3ple       ! 1./T3                        [      1/K]
    real, parameter :: es3ple    = 611.65685464   ! Vapour pressure at T3 (es3)  [       Pa]
    real, parameter :: es3plei   = 1./es3ple      ! 1./es3                       [     1/Pa]
-   real, parameter :: epes3ple  = ep * es3ple    ! epsilon × es3                [ Pa kg/kg]
-   real, parameter :: rh2ot3ple = rh2o * t3ple   ! Rv × T3                      [     J/kg]
+   real, parameter :: epes3ple  = ep * es3ple    ! epsilon * es3                [ Pa kg/kg]
+   real, parameter :: rh2ot3ple = rh2o * t3ple   ! Rv * T3                      [     J/kg]
    real, parameter :: alli      = 3.34e5         ! Lat. heat - fusion       (Lf)[     J/kg]
    real, parameter :: alvl3     = 2.50e6         ! Lat. heat - vaporisation (Lv)[     J/kg]
    real, parameter :: alvi3     = alli + alvl3   ! Lat. heat - sublimation  (Ls)[     J/kg]
@@ -541,8 +558,8 @@ Module consts_coms
    real, parameter :: lvordry   = alvl3 / rdry   ! Lv/Ra                        [        K]
    real, parameter :: lvorvap   = alvl3 / rh2o   ! Lv/Rv                        [        K]
    real, parameter :: lsorvap   = alvi3 / rh2o   ! Ls/Rv                        [        K]
-   real, parameter :: lvt3ple   = alvl3 * t3ple  ! Lv × T3                      [   K J/kg]
-   real, parameter :: lst3ple   = alvi3 * t3ple  ! Ls × T3                      [   K J/kg]
+   real, parameter :: lvt3ple   = alvl3 * t3ple  ! Lv * T3                      [   K J/kg]
+   real, parameter :: lst3ple   = alvi3 * t3ple  ! Ls * T3                      [   K J/kg]
    real, parameter :: uiicet3   = cice * t3ple   ! u at triple point, only ice  [     J/kg]
    real, parameter :: uiliqt3   = uiicet3 + alli ! u at triple point, only liq. [     J/kg]
    real, parameter :: dcpvl     = cph2o - cliq   ! difference of sp. heat       [   J/kg/K]
@@ -580,6 +597,14 @@ Module consts_coms
    !---------------------------------------------------------------------------------------!
    real, parameter :: tsupercool_liq = t3ple - (uiicet3 + alli ) * cliqi
    real, parameter :: tsupercool_vap = t3ple - (uiicet3 + alvi3) * cph2oi
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !      These terms are used to convert extensive enthalpy and water to temperature.     !
+   !---------------------------------------------------------------------------------------!
+   real, parameter :: cph2o_tscvap = cph2o * tsupercool_vap
+   real, parameter :: cpdiff_epim1 = cph2o - epi * cpdry
    !---------------------------------------------------------------------------------------!
 
 
@@ -622,18 +647,40 @@ Module consts_coms
 
 
    !---------------------------------------------------------------------------------------!
+   !     These are useful to test numbers with a safe margin.                              !
+   !---------------------------------------------------------------------------------------!
+   real, parameter :: almost_zero = epsilon(1.)
+   real, parameter :: almost_one  = 1.-almost_zero
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Tolerance for truncation errors.  "s" are the strict tolerance (literally the     !
+   ! machine epsilon), whereas the "r" are the relaxed tolerance (two orders of magnitude  !
+   ! up from the strict tolerance).                                                        !
+   !---------------------------------------------------------------------------------------!
+   real(kind=4), parameter :: s_tol_trunc  = epsilon(1.)
+   real(kind=4), parameter :: r_tol_trunc  = 100. * s_tol_trunc
+   real(kind=8), parameter :: s_tol_trunc8 = epsilon(1.d0)
+   real(kind=8), parameter :: r_tol_trunc8 = 1.d2 * s_tol_trunc8
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
    !     Carbon-related unit conversions.                                                  !
    !---------------------------------------------------------------------------------------!
-   real, parameter :: mol_2_umol     = 1.e6                 ! mol         => µmol
-   real, parameter :: umol_2_mol     = 1.e-6                ! µmol        => mol
-   real, parameter :: umol_2_kgC     = 1.20107e-8           ! µmol(CO2)   => kg(C)
-   real, parameter :: Watts_2_Ein    = 4.6e-6               ! W/m2        => mol/m²/s
-   real, parameter :: Ein_2_Watts    = 1./Watts_2_Ein       ! mol/m²/s    => W/m2
-   real, parameter :: kgC_2_umol     = 1. / umol_2_kgC      ! kg(C)       => µmol(CO2)
-   real, parameter :: kgom2_2_tonoha = 10.                  ! kg(C)/m²    => ton(C)/ha
-   real, parameter :: tonoha_2_kgom2 = 0.1                  ! ton(C)/ha   => kg(C)/m²
-   real, parameter :: umols_2_kgCyr  = umol_2_kgC * yr_sec  ! µmol(CO2)/s => kg(C)/yr
-   real, parameter :: kgCday_2_umols = kgC_2_umol / day_sec ! kg(C)/day   => µmol(CO2)/s
+   real, parameter :: mol_2_umol     = 1.e6                 ! mol         => umol
+   real, parameter :: umol_2_mol     = 1.e-6                ! umol        => mol
+   real, parameter :: umol_2_kgC     = 1.20107e-8           ! umol(CO2)   => kg(C)
+   real, parameter :: Watts_2_Ein    = 4.6e-6               ! W/m2        => mol/m2/s
+   real, parameter :: Ein_2_Watts    = 1./Watts_2_Ein       ! mol/m2/s    => W/m2
+   real, parameter :: kgC_2_umol     = 1. / umol_2_kgC      ! kg(C)       => umol(CO2)
+   real, parameter :: kgom2_2_tonoha = 10.                  ! kg(C)/m2    => ton(C)/ha
+   real, parameter :: tonoha_2_kgom2 = 0.1                  ! ton(C)/ha   => kg(C)/m2
+   real, parameter :: umols_2_kgCyr  = umol_2_kgC * yr_sec  ! umol(CO2)/s => kg(C)/yr
+   real, parameter :: kgCday_2_umols = kgC_2_umol / day_sec ! kg(C)/day   => umol(CO2)/s
    !---------------------------------------------------------------------------------------!
 
 #endif
@@ -739,6 +786,8 @@ Module consts_coms
    real(kind=8), parameter :: del_alvi38      = dble(del_alvi3     )
    real(kind=8), parameter :: tsupercool_liq8 = dble(tsupercool_liq)
    real(kind=8), parameter :: tsupercool_vap8 = dble(tsupercool_vap)
+   real(kind=8), parameter :: cph2o_tscvap8   = dble(cph2o_tscvap  )
+   real(kind=8), parameter :: cpdiff_epim18   = dble(cpdiff_epim1  )
    real(kind=8), parameter :: ttripoli8       = dble(ttripoli      )
    real(kind=8), parameter :: htripoli8       = dble(htripoli      )
    real(kind=8), parameter :: htripolii8      = dble(htripolii     )
@@ -750,12 +799,15 @@ Module consts_coms
    real(kind=8), parameter :: lnexp_max8      = dble(lnexp_max     )
    real(kind=8), parameter :: huge_num8       = dble(huge_num      )
    real(kind=8), parameter :: tiny_num8       = dble(tiny_num      )
+   real(kind=8), parameter :: almost_zero8    = dble(almost_zero   )
+   real(kind=8), parameter :: almost_one8     = dble(almost_one    )
    real(kind=8), parameter :: euler_gam8      = dble(euler_gam     )
    real(kind=8), parameter :: mol_2_umol8     = dble(mol_2_umol    )
    real(kind=8), parameter :: umol_2_mol8     = dble(umol_2_mol    )
    real(kind=8), parameter :: umol_2_kgC8     = dble(umol_2_kgC    )
    real(kind=8), parameter :: Watts_2_Ein8    = dble(Watts_2_Ein   )
    real(kind=8), parameter :: Ein_2_Watts8    = dble(Ein_2_Watts   )
+   real(kind=8), parameter :: kgCday_2_umols8 = dble(kgCday_2_umols)
    !---------------------------------------------------------------------------------------!
 
 

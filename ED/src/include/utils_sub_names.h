@@ -7,7 +7,7 @@
 !###########################################################################
 */
 
-#if defined(SUN) || defined(ALPHA) || defined(IBM) || defined (PC_LINUX1) || defined(CRAY)
+#if defined(LINUX)
 
 #define fegetenv fegetenv_
 #define form_tmpname form_tmpname_
@@ -55,9 +55,7 @@
 #define par_pause par_pause_
 #define par_ready par_ready_
 
-#endif
-
-#if defined(CRAY2)
+#elif defined(WINDOWS)
 
 #define fegetenv FEGETENV
 #define form_tmpname FORM_TMPNAME
@@ -73,39 +71,41 @@
 #define rams_c_write RAMS_C_WRITE
 #define vfirecr VFIRECR
 #define vforecr VFORECR
-#define readdted1 READDTED1_
-#define rams_master RAMS_MASTER_
-#define rams_node RAMS_NODE_
-#define walltime WALLTIME_
-#define par_init_fortran PAR_INIT_FORTRAN_
-#define par_init_put PAR_INIT_PUT_
-#define par_send PAR_SEND_
-#define par_put_int PAR_PUT_INT_
-#define par_put_float PAR_PUT_FLOAT_
-#define par_put_char PAR_PUT_CHAR_
-
-#define par_send_noblock PAR_SEND_NOBLOCK_
-
-#define par_send_noblock_c2f PAR_SEND_NOBLOCK_C2F_
-
-#define par_get_noblock PAR_GET_NOBLOCK_
-
-#define par_get_noblock_c2f PAR_GET_NOBLOCK_C2F_
-
-#define par_assoc_buff PAR_ASSOC_BUFF_
-
-#define par_wait PAR_WAIT_
-
-#define par_wait_c2f PAR_WAIT_C2F_
-
-#define par_get_new PAR_GET_NEW_
-#define par_get_int PAR_GET_INT_
-#define par_get_float PAR_GET_FLOAT_
-#define par_get_char PAR_GET_CHAR_
-#define par_init PAR_INIT_
-#define par_enroll PAR_ENROLL_
-#define par_exit PAR_EXIT_
-#define par_pause PAR_PAUSE_
-#define par_ready PAR_READY_
+#define readdted1 READDTED1
+#define rams_master RAMS_MASTER
+#define rams_node RAMS_NODE
+#define walltime WALLTIME
+#define par_init_fortran PAR_INIT_FORTRAN
+#define par_init_put PAR_INIT_PUT
+#define par_send PAR_SEND
+#define par_put_int PAR_PUT_INT
+#define par_put_float PAR_PUT_FLOAT
+#define par_put_char PAR_PUT_CHAR
+#define par_send_noblock PAR_SEND_NOBLOCK
+#define par_get_noblock PAR_GET_NOBLOCK
+#define par_assoc_buff PAR_ASSOC_BUFF
+#define par_wait PAR_WAIT
+#define par_get_new PAR_GET_NEW
+#define par_get_int PAR_GET_INT
+#define par_get_float PAR_GET_FLOAT
+#define par_get_char PAR_GET_CHAR
+#define par_init PAR_INIT
+#define par_enroll PAR_ENROLL
+#define par_exit PAR_EXIT
+#define par_pause PAR_PAUSE
+#define par_ready PAR_READY
+#define fh5f_open_         FH5F_OPEN
+#define fh5f_create_       FH5F_CREATE
+#define fh5f_close_        FH5F_CLOSE
+#define fh5d_open_         FH5D_OPEN
+#define fh5d_close_        FH5D_CLOSE
+#define fh5s_get_ndims_    FH5S_GET_NDIMS
+#define fh5s_get_dims_     FH5S_GET_DIMS
+#define fh5_prepare_read_  FH5_PREPARE_READ
+#define fh5d_read_         FH5D_READ
+#define fh5_close_read_    FH5_CLOSE_READ
+#define fh5_prepare_write_ FH5_PREPARE_WRITE
+#define fh5_write_         FH5_WRITE
+#define fh5_close_write_   FH5_CLOSE_WRITE
 
 #endif

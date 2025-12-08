@@ -323,12 +323,12 @@ alltimes <<- function(datin,lon,lat,ed21=TRUE,zeronight=FALSE,meanval=FALSE,imet
    zenith            = ed.zen   (when=datout$when,lon=lon,lat=lat,ed21=ed21
                                 ,zeronight=zeronight,meanval=meanval,imetavg=imetavg
                                 ,nmean=nmean,...)
-   datout$cosz       =   zenith$cosz
-   datout$zen        =   zenith$zen
-   datout$sunhgt     =   zenith$hgt
-   datout$nighttime  =   zenith$night
-   datout$daytime    =   zenith$day
-   datout$twilight   = (! zenith$night) & (! zenith$day)
+   datout$cosz       = zenith$cosz
+   datout$zen        = zenith$zen
+   datout$sunhgt     = zenith$hgt
+   datout$nighttime  = zenith$night
+   datout$daytime    = zenith$day
+   datout$twilight   = zenith$twilight
    datout$diel       = as.integer(! datout$nighttime) + as.integer(datout$daytime)
    datout$highsun    = zenith$cosz >= cosz.highsun
    datout$riseset    = zenith$cosz >= cosz.twilight & zenith$cosz < cosz.highsun
@@ -493,6 +493,80 @@ fnyear.2.chron <<- function(fortnight,year,loc="centre"){
 
    return(when.out)
 }#end fnyear.2.chron
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
+#      Function that returns day of month given doy and year.                              #
+#------------------------------------------------------------------------------------------#
+doy2day <<- function(doy,year){
+   #----- Both doy and year must be present. ----------------------------------------------#
+   dummy = stopifnot(! missing(doy ))
+   dummy = stopifnot(! missing(year))
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #     If fortnight is actually a chron object, find the fortnight index.                #
+   #---------------------------------------------------------------------------------------#
+   if ( ( length(doy) %% length(year) ) != 0){
+      stop( " Dimensions of variable \"year\" must be a divisor of \"doy\" dimensions.")
+   }else{
+      year = rep(year,times=length(doy))[seq_along(doy)]
+   }#end if ( ( length(doy) %% length(year) ) != 0)
+   #---------------------------------------------------------------------------------------#
+
+   zero = chron(paste(12,31,year-1,sep="/"))
+   when = chron(zero + doy)
+   ans  = numdays(when)
+
+   return(ans)
+}#end doy2day
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
+#      Function that returns month given doy and year.                                     #
+#------------------------------------------------------------------------------------------#
+doy2month <<- function(doy,year){
+   #----- Both doy and year must be present. ----------------------------------------------#
+   dummy = stopifnot(! missing(doy ))
+   dummy = stopifnot(! missing(year))
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #     If fortnight is actually a chron object, find the fortnight index.                #
+   #---------------------------------------------------------------------------------------#
+   if ( ( length(doy) %% length(year) ) != 0){
+      stop( " Dimensions of variable \"year\" must be a divisor of \"doy\" dimensions.")
+   }else{
+      year = rep(year,times=length(doy))[seq_along(doy)]
+   }#end if ( ( length(doy) %% length(year) ) != 0)
+   #---------------------------------------------------------------------------------------#
+
+   zero = chron(paste(12,31,year-1,sep="/"))
+   when = chron(zero + doy)
+   ans  = nummonths(when)
+
+   return(ans)
+}#end doy2month
 #==========================================================================================#
 #==========================================================================================#
 

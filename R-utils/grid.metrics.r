@@ -3,12 +3,23 @@
 #     This function returns the cloud metrics from a point cloud.                          #
 #------------------------------------------------------------------------------------------#
 grid.metrics <<- function( x
-                         , pixres   = 1
-                         , min.pts  = 4 * pixres^2
-                         , maxblock = 50
-                         , verbose  = FALSE
+                         , pixres     = 1
+                         , probs      = if (summ.only){
+                                           c(0.95,0.99)
+                                        }else{
+                                           c(0.01,0.05,0.10,0.25,0.50,0.75,0.90,0.95,0.99)
+                                        }#end if
+                         , min.pts    = 4 * pixres^2
+                         , use.mapply = FALSE
+                         , maxblock   = 50
+                         , verbose    = FALSE
+                         , summ.only  = TRUE
                          , ...
                          ){
+
+   #----- Track time to process the block. ------------------------------------------------#
+   gm.total = proc.time()
+   #---------------------------------------------------------------------------------------#
 
    #---------------------------------------------------------------------------------------#
    #     Make sure some cloud.metrics options are properly set for grid metrics.           #
@@ -47,14 +58,16 @@ grid.metrics <<- function( x
    #---------------------------------------------------------------------------------------#
    if (warn > 0){
       dotdotdot = modifyList( x   = dotdotdot
-                            , val = list( x        = x
-                                        , pixres   = pixres
-                                        , min.pts  = min.pts
-                                        , maxblock = maxblock
-                                        , verbose  = verbose
-                                        , mat.out  = FALSE
-                                        , zzdens   = NULL
-                                        , mhdens   = NULL
+                            , val = list( x         = x
+                                        , pixres    = pixres
+                                        , probs     = probs
+                                        , min.pts   = min.pts
+                                        , maxblock  = maxblock
+                                        , verbose   = verbose
+                                        , mat.out   = FALSE
+                                        , zzdens    = NULL
+                                        , mhdens    = NULL
+                                        , summ.only = summ.only
                                         )
                             )#end modifyList
       ans       = do.call(what="grid.metrics",args=dotdotdot)
@@ -68,7 +81,7 @@ grid.metrics <<- function( x
    x$x = round(x$x / pixres) * pixres
    x$y = round(x$y / pixres) * pixres
    when.round = proc.time() - when.round
-   if (verbose) cat("    + Rounding took ",when.round[3],"s... \n",sep="")
+   if (verbose) cat0("    + Rounding took ",when.round[3],"s...")
    #---------------------------------------------------------------------------------------#
 
 
@@ -80,7 +93,7 @@ grid.metrics <<- function( x
    ny         = length(yuniq)
    x$idx      = match(x$x,xuniq) + nx * (match(x$y,yuniq))
    when.index = proc.time() - when.index
-   if (verbose) cat("    + Finding indices took ",when.index[3],"s... \n",sep="")
+   if (verbose) cat0("    + Finding indices took ",when.index[3],"s...")
    #---------------------------------------------------------------------------------------#
 
 
@@ -89,7 +102,7 @@ grid.metrics <<- function( x
    when.split1d = proc.time()
    pc.list      = split(x=x,f=x$idx)
    when.split1d = proc.time() - when.split1d
-   if (verbose) cat("    + Splitting point cloud ",when.split1d[3],"s... \n",sep="")
+   if (verbose) cat0("    + Splitting point cloud ",when.split1d[3],"s...")
    #---------------------------------------------------------------------------------------#
 
 
@@ -104,11 +117,16 @@ grid.metrics <<- function( x
    #---------------------------------------------------------------------------------------#
    #      Run the first element to initialise the output matrix.                           #
    #---------------------------------------------------------------------------------------#
-   if (verbose) cat("    + Initialising matrix...","\n",sep="")
+   if (verbose) cat0("    + Initialising matrix...")
    if (nlist >= 1){
       dotdotdot    = list(...)
       dotdotdot    = modifyList( x   = dotdotdot
-                               , val = list(x=pc.list[[1]],min.pts=min.pts,mat.out=FALSE)
+                               , val = list( x         = pc.list[[1]]
+                                           , probs     = probs
+                                           , min.pts   = min.pts
+                                           , mat.out   = FALSE
+                                           , summ.only = summ.only
+                                           )#end list
                                )#end modifyList
       template     = do.call(what="cloud.metrics",args=dotdotdot)
       cm.table     = matrix( ncol     = nlist
@@ -124,23 +142,66 @@ grid.metrics <<- function( x
    #---------------------------------------------------------------------------------------#
    #      Loop over remaining elements using for loop.                                     #
    #---------------------------------------------------------------------------------------#
-   if (verbose) cat("    + Aggregating data: ","\n",sep="")
-   nshow = sort(c(1,nlist,pretty(c(1,nlist),n=10)))
-   nshow = nshow[nshow %wr% c(1,nlist)]
    when.block = proc.time()
-   for (n in sequence(nlist)){
-      if (verbose && (n %in% nshow)){
-         cat("      - Processing pixel ",n,"/",nlist,"... \n",sep=" ")
-      }#end if (verbose && (n %in% nshow))
-      dotdotdot    = list(...)
-      dotdotdot    = modifyList( x   = dotdotdot
-                               , val = list(x=pc.list[[n]],min.pts=min.pts,mat.out=FALSE)
-                               )#end modifyList
-      cm.table[,n] = do.call(what="cloud.metrics",args=dotdotdot)
-      rm(dotdotdot)
-   }#end for (n in sequence(nloop))
+   if (verbose) cat0("    + Aggregating data: ")
+   if (use.mapply){
+      #----- Use mapply to process blocks. ------------------------------------------------#
+      nlwr.all = seq(from=2,to=nlist,by=nloop)
+      for (n in nlwr.all){
+         #----- Bounds for this block. ----------------------------------------------------#
+         nlwr   = n
+         nupr   = min(nlwr + nloop - 1,nlist)
+         nseq = seq(from=nlwr,to=nupr,by=1)
+         if (verbose){
+            cat0("      - Processing pixel ",nlwr,"-",nupr," of ",nlist,"...")
+         }#end if (verbose && (n %in% nshow))
+         #---------------------------------------------------------------------------------#
+
+
+
+         #----- Prepare arguments. --------------------------------------------------------#
+         dotdotdot     = list(...)
+         dotdotdot     = modifyList( x   = dotdotdot
+                                  , val = list( probs     = probs
+                                              , min.pts   = min.pts
+                                              , mat.out   = FALSE
+                                              , summ.only = summ.only
+                                              )#end list
+                                  )#end modifyList
+         #---------------------------------------------------------------------------------#
+
+
+         #------ Find cloud metrics for this group. ---------------------------------------#
+         cm.now        = t(mapply(FUN=cloud.metrics,x=pc.list[nseq],MoreArgs=dotdotdot))
+         cm.table[,nseq] = cm.now
+         rm(cm.now,dotdotdot)
+         #---------------------------------------------------------------------------------#
+      }#end for (n in sequence(nloop))
+      #------------------------------------------------------------------------------------#
+   }else{
+      #----- Aggregate grid block by grid block. ------------------------------------------#
+      nshow = sort(c(1,nlist,pretty(c(1,nlist),n=10)))
+      nshow = nshow[nshow %wr% c(1,nlist)]
+      for (n in sequence(nlist)){
+         if (verbose && (n %in% nshow)){
+            cat0("      - Processing pixel ",n,"/",nlist,"...")
+         }#end if (verbose && (n %in% nshow))
+         dotdotdot    = list(...)
+         dotdotdot    = modifyList( x   = dotdotdot
+                                  , val = list( x         = pc.list[[n]]
+                                              , probs     = probs
+                                              , min.pts   = min.pts
+                                              , mat.out   = FALSE
+                                              , summ.only = summ.only
+                                              )#end list
+                                  )#end modifyList
+         cm.table[,n] = do.call(what="cloud.metrics",args=dotdotdot)
+         rm(dotdotdot)
+      }#end for (n in sequence(nloop))
+      #------------------------------------------------------------------------------------#
+   }#end if
    when.block = proc.time() - when.block
-   if (verbose) cat("    + Running cloud metrics took ",when.block[3],"s... \n",sep="")
+   if (verbose) cat0("    + Running cloud metrics took ",when.block[3],"s...")
    #---------------------------------------------------------------------------------------#
 
 
@@ -157,13 +218,15 @@ grid.metrics <<- function( x
    names(max.cm.table   ) = paste("max"   ,rownames(cm.table),sep=".")
    ans                    = c(mean.cm.table,sdev.cm.table,median.cm.table,max.cm.table)
    when.aggr              = proc.time() - when.aggr
-   if (verbose) cat("    + Aggregating data took ",when.aggr[3],"s... \n",sep="")
+   if (verbose) cat0("    + Aggregating data took ",when.aggr[3],"s...")
    #---------------------------------------------------------------------------------------#
 
 
 
    #----- Free memory and return table. ---------------------------------------------------#
    rm(cm.table,mean.cm.table,sdev.cm.table,median.cm.table,max.cm.table)
+   gm.total = proc.time() - gm.total
+   if (verbose) cat0("    + Total time to find metrics ",gm.total[3],"s...")
    return(ans)
    #---------------------------------------------------------------------------------------#
 }#end grid.metrics

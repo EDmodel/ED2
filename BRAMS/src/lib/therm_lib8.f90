@@ -15,8 +15,9 @@ module therm_lib8
                        , maxfpo4    => maxfpo    & ! intent(in)
                        , maxit4     => maxit     & ! intent(in)
                        , maxlev4    => maxlev    & ! intent(in)
-                       , newthermo4 => newthermo ! ! intent(in)
-  
+                       , newthermo4 => newthermo & ! intent(in)
+                       , fthva_rp4  => fthva_rp  ! ! intent(in)
+
    !---------------------------------------------------------------------------------------!
    !     Relative tolerance for iterative methods. The smaller the value, the more         !
    ! accurate the result, but it will slow down the run.  Notice that we are using the     !
@@ -112,6 +113,17 @@ module therm_lib8
                                                       ,  .1392546d-08,  .4315126d-11       &
                                                       ,  .5961476d-14                /)
    !---------------------------------------------------------------------------------------!
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !   Weighting factor for atmospheric ThetaV (as opposed to canopy air space ThetaV).    !
+   !---------------------------------------------------------------------------------------!
+   real(kind=4), parameter :: fthva_rp8 = dble(fthva_rp4)
    !=======================================================================================!
    !=======================================================================================!
 
@@ -2448,6 +2460,41 @@ module therm_lib8
 
    !=======================================================================================!
    !=======================================================================================!
+   !     This function finds the dry-air molar density (mol/m3), using the ideal gas law.  !
+   !---------------------------------------------------------------------------------------!
+   real(kind=8) function idealdmolsh8(pres,temp,qvpr)
+      use rconstants, only : rmol8 & ! intent(in)
+                           , ep8   ! ! intent(in)
+      implicit none
+      !----- Arguments --------------------------------------------------------------------!
+      real(kind=8), intent(in)           :: pres ! Pressure                        [    Pa]
+      real(kind=8), intent(in)           :: temp ! Temperature                     [     K]
+      real(kind=8), intent(in)           :: qvpr ! Vapour specific mass            [ kg/kg]
+      !----- Local variables. -------------------------------------------------------------!
+      real(kind=8)                       :: pdry ! Dry-air pressure                [    Pa]
+      !------------------------------------------------------------------------------------!
+
+
+      !----- Find the partial pressure of water vapour. -----------------------------------!
+      pdry = pres * (1.d0 - qvpr / (ep8 + (1.d0 - ep8) * qvpr))
+      !------------------------------------------------------------------------------------!
+
+
+      !----- Convert using a generalised function. ----------------------------------------!
+      idealdmolsh8 = pdry / (rmol8 * temp)
+      !------------------------------------------------------------------------------------!
+
+      return
+   end function idealdmolsh8
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
    !     This function computes reduces the pressure from the reference height to the      !
    ! canopy height by assuming hydrostatic equilibrium.  For simplicity, we assume that    !
    ! R and cp are constants (in reality they are dependent on humidity).                   !
@@ -2470,15 +2517,21 @@ module therm_lib8
       real(kind=8), intent(in) :: zcan     ! Height at canopy level              [       m]
       !------Local variables. -------------------------------------------------------------!
       real(kind=8)             :: pinc     ! Pressure increment                  [ Pa^R/cp]
+      real(kind=8)             :: thvref   ! Reference virtual pot. temperature  [       K]
+      real(kind=8)             :: thvcan   ! CAS virtual pot. temperature        [       K]
       real(kind=8)             :: thvbar   ! Average virtual pot. temperature    [       K]
       !------------------------------------------------------------------------------------!
 
+
+
       !------------------------------------------------------------------------------------!
       !      First we compute the average virtual potential temperature between the canopy !
-      ! top and the reference level.                                                       !
+      ! top and the reference level.  Because of the equation below, we average the        !
+      ! inverse of the potential temperature.                                              !
       !------------------------------------------------------------------------------------!
-      thvbar = 5.d-1 * ( thetaref * (1.d0 + epim18 * shvref)                               &
-                       + thetacan * (1.d0 + epim18 * shvcan) )
+      thvref = thetaref * (1.d0 + epim18 * shvref)
+      thvcan = thetacan * (1.d0 + epim18 * shvcan)
+      thvbar = thvref * thvcan / ( ( 1.d0 - fthva_rp8 ) * thvref + fthva_rp8 * thvcan )
       !------------------------------------------------------------------------------------!
 
 

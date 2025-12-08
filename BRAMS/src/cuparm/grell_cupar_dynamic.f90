@@ -29,7 +29,7 @@ subroutine grell_cupar_dynamic(cldd,clds,nclouds,dtime,maxens_cap,maxens_eff,max
       ,dzu_cld            & ! intent(in)  - Delta-height for updraft calculations [      m]
       ,exner              & ! intent(in)  - Forced Exner funtion                  [ J/kg/K]
       ,exnersur           & ! intent(in)  - Surface Exner function                [ J/kg/K]
-      ,mconv              & ! intent(in)  - Integrated moisture convergence       [kg/m²/s]
+      ,mconv              & ! intent(in)  - Integrated moisture convergence       [kg/m2/s]
       ,mkx                & ! intent(in)  - Number of vertical levels             [    ---]
       ,omeg               & ! intent(in)  - Vertical velocity in pressure, dp/dt: [   Pa/s]
       ,p                  & ! intent(in)  - Pressure with forcing                 [     Pa]
@@ -42,7 +42,7 @@ subroutine grell_cupar_dynamic(cldd,clds,nclouds,dtime,maxens_cap,maxens_eff,max
       ,qliqsur            & ! intent(in)  - surface liquid water mixing ratio     [  kg/kg]
       ,qice               & ! intent(in)  - Ice mixing ratio with forcing.        [  kg/kg]
       ,qicesur            & ! intent(in)  - surface ice mixing ratio              [  kg/kg]
-      ,rho                & ! intent(in)  - Air density                           [  kg/m³]
+      ,rho                & ! intent(in)  - Air density                           [  kg/m3]
       ,theiv              & ! intent(in)  - THETA-Eiv with forcing                [      K]
       ,theivsur           & ! intent(in)  - Surface ice-vapour equiv. pot. temp.  [      K]
       ,thil               & ! intent(in)  - THETA-il with forcing                 [      K]
@@ -56,12 +56,12 @@ subroutine grell_cupar_dynamic(cldd,clds,nclouds,dtime,maxens_cap,maxens_eff,max
       ,cdu                & ! intent(out) - Normalised updraft detrainment rate   [    ---]
       ,mentrd_rate        & ! intent(out) - Normalised downdraft entrainment rate [    ---]
       ,mentru_rate        & ! intent(out) - Normalised updraft entrainment rate   [    ---]
-      ,dbyd               & ! intent(out) - Buoyancy associated with downdrafts   [   m/s²]
-      ,dbyu               & ! intent(out) - Buoyancy associated with updrafts     [   m/s²]
+      ,dbyd               & ! intent(out) - Buoyancy associated with downdrafts   [   m/s2]
+      ,dbyu               & ! intent(out) - Buoyancy associated with updrafts     [   m/s2]
       ,etad_cld           & ! intent(out) - normalised downdraft mass flux        [    ---]
       ,etau_cld           & ! intent(out) - normalised updraft mass flux          [    ---]
-      ,rhod_cld           & ! intent(out) - Downdraft density                     [  kg/m³]
-      ,rhou_cld           & ! intent(out) - Updraft density                       [  kg/m³]
+      ,rhod_cld           & ! intent(out) - Downdraft density                     [  kg/m3]
+      ,rhou_cld           & ! intent(out) - Updraft density                       [  kg/m3]
       ,qliqd_cld          & ! intent(out) - Liquid water mixing ratio at dndraft  [  kg/kg]
       ,qliqu_cld          & ! intent(out) - Liquid water mixing ratio at updraft  [  kg/kg]
       ,qiced_cld          & ! intent(out) - Ice mixing ratio at downdraft         [  kg/kg]
@@ -72,8 +72,8 @@ subroutine grell_cupar_dynamic(cldd,clds,nclouds,dtime,maxens_cap,maxens_eff,max
       ,x_co2_cup          & ! intent(out) - CO2 mixing ratio                      [    ppm]
       ,x_co2d_cld         & ! intent(out) - CO2 mixing ratio                      [    ppm]
       ,x_co2u_cld         & ! intent(out) - CO2 mixing ratio                      [    ppm]
-      ,x_dbyd             & ! intent(out) - Buoyancy acceleration                 [   m/s²]
-      ,x_dbyu             & ! intent(out) - Buoyancy acceleration                 [   m/s²]
+      ,x_dbyd             & ! intent(out) - Buoyancy acceleration                 [   m/s2]
+      ,x_dbyu             & ! intent(out) - Buoyancy acceleration                 [   m/s2]
       ,x_exner_cup        & ! intent(out) - Exner function                        [   J/kg]
       ,x_p_cup            & ! intent(out) - Pressure                              [     Pa]
       ,x_pwav             & ! intent(out) - Integrated condensation               [  kg/kg]
@@ -99,9 +99,9 @@ subroutine grell_cupar_dynamic(cldd,clds,nclouds,dtime,maxens_cap,maxens_eff,max
       ,x_qsat_cup         & ! intent(out) - Saturation mixing ratio               [  kg/kg]
       ,x_qsatd_cld        & ! intent(out) - Sat. mixing ratio                     [  kg/kg]
       ,x_qsatu_cld        & ! intent(out) - Sat. mixing ratio                     [  kg/kg]
-      ,x_rho_cup          & ! intent(out) - Density                               [  kg/m³]
-      ,x_rhod_cld         & ! intent(out) - Density                               [  kg/m³]
-      ,x_rhou_cld         & ! intent(out) - Density                               [  kg/m³]
+      ,x_rho_cup          & ! intent(out) - Density                               [  kg/m3]
+      ,x_rhod_cld         & ! intent(out) - Density                               [  kg/m3]
+      ,x_rhou_cld         & ! intent(out) - Density                               [  kg/m3]
       ,x_t                & ! intent(out) - Temperature                           [      K]
       ,x_t_cup            & ! intent(out) - Temperature                           [      K]
       ,x_td_cld           & ! intent(out) - Temperature                           [      K]
@@ -192,7 +192,7 @@ subroutine grell_cupar_dynamic(cldd,clds,nclouds,dtime,maxens_cap,maxens_eff,max
    !---------------------------------------------------------------------------------------!
    !    Miscellaneous parameters                                                           !
    !---------------------------------------------------------------------------------------!
-   real, dimension(maxens_lsf) :: mbprime ! Arbitrary m. flux to modify environm. [kg/m²/s]
+   real, dimension(maxens_lsf) :: mbprime ! Arbitrary m. flux to modify environm. [kg/m2/s]
    real, dimension(maxens_lsf) :: one_b   ! 1-b, Krishnamurti et al. (1983)       [    ---]
    real, dimension(nclouds)    :: edt     ! Alias for the downdraft/updraft ratio.
    !------ Printing aux. variables. -------------------------------------------------------!
@@ -489,7 +489,7 @@ subroutine grell_cupar_dynamic(cldd,clds,nclouds,dtime,maxens_cap,maxens_eff,max
    !    efficiency, static control, and large-scale forcing.  Inside this subroutine we    !
    !    will find all members of the dynamic control for all clouds.  The outcome will be  !
    !    a vector of reference updraft mass flux for that member.                           !
-   !     mass flux will then have maxens_eff × maxens_lsf × maxens_dyn different values.   !
+   !     mass flux will then have maxens_eff * maxens_lsf * maxens_dyn different values.   !
    !---------------------------------------------------------------------------------------!
    stacloop2: do icap=1,maxens_cap
 
@@ -732,7 +732,7 @@ subroutine grell_dyncontrol_ensemble(nclouds,mgmzp,maxens_dyn,cldd,clds,dtime,cl
       end do mcloop
 
    !---------------------------------------------------------------------------------------!
-   ! 6. Ensemble, based on Grell and Dévényi (2002)                                        !
+   ! 6. Ensemble, based on Grell and Devenyi (2002)                                        !
    !    Here for each different dynamic control style, the first element is the standard,  !
    !    like in the previous cases, and the others are perturbations.                      !
    !---------------------------------------------------------------------------------------!
@@ -859,7 +859,7 @@ subroutine grell_grell_solver(nclouds,cldd,clds,dtime,fac,aatot0,aatot,mfke,ierr
    integer                              :: jsol    ! Yet another cloud index
    real                                 :: dtimei  ! Scratch, inverse of delta-t
    integer                              :: nsolv   ! # of clouds we are still solving.
-   logical                              :: is_sing ! Flag.  The kernel was singular. [T|F]
+   integer                              :: info    ! Lapack Flag for errors (0 means fine).
    !----- Auxilliary variables, containing flags and references. --------------------------!
    logical, dimension(nclouds)          :: okcld   ! This cloud is still ok to use.
    integer, dimension(nclouds)          :: cloud   ! Absolute cloud index.
@@ -868,6 +868,7 @@ subroutine grell_grell_solver(nclouds,cldd,clds,dtime,fac,aatot0,aatot,mfke,ierr
    real   , dimension(:)  , allocatable :: diagkke ! Diagonal of kke
    real   , dimension(:)  , allocatable :: mfo     ! Minus the large-scale forcing
    real   , dimension(:)  , allocatable :: mb      ! Mass flux
+   integer, dimension(:)  , allocatable :: pivot   ! Pivot (needed by Lapack, not used)
    integer, dimension(:)  , allocatable :: cldidx  ! Cloud index, to copy back to ensemble
    !---------------------------------------------------------------------------------------!
 
@@ -915,6 +916,7 @@ subroutine grell_grell_solver(nclouds,cldd,clds,dtime,fac,aatot0,aatot,mfke,ierr
       allocate(diagkke      (nsolv))
       allocate(mfo          (nsolv))
       allocate(mb           (nsolv))
+      allocate(pivot        (nsolv))
       allocate(cldidx       (nsolv))
 
       !----- Store the actual cloud number of the clouds that exist. ----------------------!
@@ -943,10 +945,13 @@ subroutine grell_grell_solver(nclouds,cldd,clds,dtime,fac,aatot0,aatot,mfke,ierr
 
 
       !------------------------------------------------------------------------------------!
-      !     Solve the linear system using a Gaussian elimination method.  The system, as   !
-      ! stated in Lord et al. (1982), is : K * Mb = -F.                                    !
+      !       Solve the linear system.  We invoke the Linear Algebra Package (LAPACK)      !
+      ! procedure for solving the system efficiently.  LAPACK rewrites the right hand side !
+      ! vector with the solution, so we first copy the right hand side to the output       !
+      ! vector.                                                                            !
       !------------------------------------------------------------------------------------!
-      call lisys_solver(nsolv,kke,mfo,mb,is_sing)
+      mb(:) = mfo(:)
+      call sgesv(nsolv,1,kke,nsolv,pivot,mb,nsolv,info)
       !------------------------------------------------------------------------------------!
 
 
@@ -954,7 +959,7 @@ subroutine grell_grell_solver(nclouds,cldd,clds,dtime,fac,aatot0,aatot,mfke,ierr
       !     First we check whether the solution is an appropriate one or something went    !
       ! wrong.                                                                             !
       !------------------------------------------------------------------------------------! 
-      if (is_sing) then
+      if (info > 0) then
          !---------------------------------------------------------------------------------!
          !     The matrix is singular or almost singular, so we cannot solve these clouds. !
          ! We can quit this routine after freeing the allocated arrays.                    !
@@ -963,6 +968,7 @@ subroutine grell_grell_solver(nclouds,cldd,clds,dtime,fac,aatot0,aatot,mfke,ierr
          deallocate(diagkke)
          deallocate(mfo    )
          deallocate(mb     )
+         deallocate(pivot  )
          deallocate(cldidx )
          !---------------------------------------------------------------------------------!
          exit queq_loop
@@ -983,6 +989,7 @@ subroutine grell_grell_solver(nclouds,cldd,clds,dtime,fac,aatot0,aatot,mfke,ierr
          deallocate(diagkke)
          deallocate(mfo    )
          deallocate(mb     )
+         deallocate(pivot  )
          deallocate(cldidx )
          !---------------------------------------------------------------------------------!
       else
@@ -1001,6 +1008,7 @@ subroutine grell_grell_solver(nclouds,cldd,clds,dtime,fac,aatot0,aatot,mfke,ierr
          deallocate(diagkke)
          deallocate(mfo    )
          deallocate(mb     )
+         deallocate(pivot  )
          deallocate(cldidx )
          !---------------------------------------------------------------------------------!
          exit queq_loop
@@ -1111,6 +1119,7 @@ subroutine grell_arakschu_solver(nclouds,cldd,clds,mgmzp,dtime,p_cup,clim,whlev,
       allocate(diagkke      (nsolv))
       allocate(mfo          (nsolv))
       allocate(mb           (nsolv))
+      allocate(pivot        (nsolv))
       allocate(cldidx       (nsolv))
 
       !----- Store the actual cloud number of those clouds 
@@ -1160,12 +1169,14 @@ subroutine grell_arakschu_solver(nclouds,cldd,clds,mgmzp,dtime,p_cup,clim,whlev,
 
 
 
-
       !------------------------------------------------------------------------------------!
-      !     Solve the linear system using a Gaussian elimination method.  The system, as   !
-      ! stated in Lord et al. (1982), is : K * Mb = -F.                                    !
+      !       Solve the linear system.  The system, as stated in Lord et al. (1982), is:   !
+      !  K * Mb = -F.  We invoke the Linear Algebra Package (LAPACK) procedure for solving !
+      ! the system efficiently.  LAPACK rewrites the right hand side vector with the       !
+      ! solution, so we first copy the right hand side to the output vector.               !
       !------------------------------------------------------------------------------------!
-      call lisys_solver(nsolv,kke,mfo,mb,is_sing)
+      mb(:) = mfo(:)
+      call sgesv(nsolv,1,kke,nsolv,pivot,mb,nsolv,info)
       !------------------------------------------------------------------------------------!
 
 
@@ -1173,7 +1184,7 @@ subroutine grell_arakschu_solver(nclouds,cldd,clds,mgmzp,dtime,p_cup,clim,whlev,
       !     First we check whether the solution is an appropriate one or something went    !
       ! wrong.                                                                             !
       !------------------------------------------------------------------------------------! 
-      if (is_sing) then
+      if (info > 0) then
          !---------------------------------------------------------------------------------!
          !     The matrix is singular or almost singular, so we cannot solve these clouds. !
          ! We can quit this routine after freeing the allocated arrays.                    !
@@ -1182,6 +1193,7 @@ subroutine grell_arakschu_solver(nclouds,cldd,clds,mgmzp,dtime,p_cup,clim,whlev,
          deallocate(diagkke)
          deallocate(mfo    )
          deallocate(mb     )
+         deallocate(pivot  )
          deallocate(cldidx )
          exit queq_loop
       elseif (any(mb < 0.) .or. any(diagkke == 0.)) then
@@ -1200,6 +1212,7 @@ subroutine grell_arakschu_solver(nclouds,cldd,clds,mgmzp,dtime,p_cup,clim,whlev,
          deallocate(diagkke)
          deallocate(mfo    )
          deallocate(mb     )
+         deallocate(pivot  )
          deallocate(cldidx )
          !---------------------------------------------------------------------------------!
       else
@@ -1218,6 +1231,7 @@ subroutine grell_arakschu_solver(nclouds,cldd,clds,mgmzp,dtime,p_cup,clim,whlev,
          deallocate(diagkke)
          deallocate(mfo    )
          deallocate(mb     )
+         deallocate(pivot  )
          deallocate(cldidx )
          !---------------------------------------------------------------------------------!
          exit queq_loop
@@ -1321,6 +1335,7 @@ subroutine grell_inre_solver(nclouds,cldd,clds,tscal,fac,aatot0,mfke,ierr,upmf,u
       allocate(diagkke      (nsolv))
       allocate(mfo          (nsolv))
       allocate(mb           (nsolv))
+      allocate(pivot        (nsolv))
       allocate(cldidx       (nsolv))
       !------------------------------------------------------------------------------------!
 
@@ -1350,10 +1365,13 @@ subroutine grell_inre_solver(nclouds,cldd,clds,tscal,fac,aatot0,mfke,ierr,upmf,u
 
 
       !------------------------------------------------------------------------------------!
-      !     Solve the linear system using a Gaussian elimination method.  The system, as   !
-      ! stated in Lord et al. (1982), is : K * Mb = -F.                                    !
+      !       Solve the linear system.  The system, as stated in Lord et al. (1982), is:   !
+      !  K * Mb = -F.  We invoke the Linear Algebra Package (LAPACK) procedure for solving !
+      ! the system efficiently.  LAPACK rewrites the right hand side vector with the       !
+      ! solution, so we first copy the right hand side to the output vector.               !
       !------------------------------------------------------------------------------------!
-      call lisys_solver(nsolv,kke,mfo,mb,is_sing)
+      mb(:) = mfo(:)
+      call sgesv(nsolv,1,kke,nsolv,pivot,mb,nsolv,info)
       !------------------------------------------------------------------------------------!
 
 
@@ -1371,6 +1389,7 @@ subroutine grell_inre_solver(nclouds,cldd,clds,tscal,fac,aatot0,mfke,ierr,upmf,u
          deallocate(diagkke)
          deallocate(mfo    )
          deallocate(mb     )
+         deallocate(pivot  )
          deallocate(cldidx )
          exit inre_loop
       elseif (any(mb < 0.) .or. any(diagkke == 0.)) then
@@ -1389,6 +1408,7 @@ subroutine grell_inre_solver(nclouds,cldd,clds,tscal,fac,aatot0,mfke,ierr,upmf,u
          deallocate(diagkke)
          deallocate(mfo    )
          deallocate(mb     )
+         deallocate(pivot  )
          deallocate(cldidx )
          !---------------------------------------------------------------------------------!
       else
@@ -1407,6 +1427,7 @@ subroutine grell_inre_solver(nclouds,cldd,clds,tscal,fac,aatot0,mfke,ierr,upmf,u
          deallocate(diagkke)
          deallocate(mfo    )
          deallocate(mb     )
+         deallocate(pivot  )
          deallocate(cldidx )
          !---------------------------------------------------------------------------------!
          exit inre_loop

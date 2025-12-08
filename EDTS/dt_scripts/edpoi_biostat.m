@@ -1,8 +1,14 @@
-function edpoi_biostat(filename,ipy,poistr,figname,visible,type)
+function edpoi_biostat(filename,ipy,poistr,figname,status,visible,type)
 
 global fasz;
-global pftname;
+global pftcolor;
 global pftshort;
+global dtycolor;
+global dtyshort;
+global npft;
+global npftmx;
+global ndty;
+
 
 % ========================================================
 %
@@ -10,36 +16,21 @@ global pftshort;
 % Also, if this is part of a set, give it a name poistr.
 
 
-ndbh = 11;
-npft = 17;
-
 % Get the vertical canopy layering
 zmin = 0.40;
 zmax = 1.0;
-hmax = 36.0;
+hmax = 42.0;
 stretch=1.1;
 [zzbot zztop] = canopy_layers(zmin,zmax,hmax,stretch);
 
 ymax = hmax+2;
 xmax = 0.5;
-greeniness = [0.75  0.9   0.2;  %C4            (1)
-	      0.2   0.8   0.2;
-	      0.2   0.6   0.2;
-	      0.2   0.4   0.2;
-	      0.7   0.8   0.7;  %C3 Temperate  (5)
-	      0.8   0.9   0  ;  %(6)
-	      0.7   0.9   0  ;  %(7)
-	      0.6   0.9   0  ;  %(8)
-	      0.5   0.9   0  ;  %(9)
-	      0.4   0.9   0  ;  %(10)
-	      0.5   0.7   0  ;  %(11)
-	      0.4   0.7   0  ;  %(12)
-	      0.3   0.7   0  ;  %(13)
-	      0.2   0.7   0  ;  %(14)
-	      0.1   0.7   0  ;  %(15)
-	      0.1   0.99  0.8;  %(16)
-	      0.5   0.7   0.5;  %(17)
-	     ];
+
+
+
+ddbh = 10;
+ndbh = 11;
+bdbh = linspace(ddbh,ndbh*ddbh,ndbh);
 
 % Read in raw data
 % ========================================================
@@ -69,6 +60,7 @@ dist_pa     = hdf5read(filename,'/DIST_TYPE');
 if(sum(paco_n)>0)
 agb_co      = hdf5read(filename,'/AGB_CO');
 height      = hdf5read(filename,'/HITE');
+dbh         = hdf5read(filename,'/DBH');
 pft_co      = hdf5read(filename,'/PFT');
 lai_co      = hdf5read(filename,'/LAI_CO');
 nplant      = hdf5read(filename,'/NPLANT');
@@ -77,6 +69,7 @@ end
 
 
 agb_pa = zeros(sum(sipa_n),1);
+area_dty = zeros(ndty,1);
 
 % Process data
 
@@ -89,38 +82,45 @@ isi_z = isi_a+pysi_n(ipy)-1;
 npatch = sum(sipa_n(isi_a:isi_z));
 lai_pa = zeros(npatch,1);
 
+agb_sz=zeros(npft,ndbh);
+agb_pft=zeros(npft,1);
 
 
-ip=0;
+ipg=0;
 for isi=isi_a:isi_z
-	
   ipa_a = sipa_id(isi);
   ipa_z = ipa_a+sipa_n(isi)-1;
   
   for ipa=ipa_a:ipa_z
+    ipg=ipg+1;
     
     ico_a = paco_id(ipa);
     ico_z = ico_a+paco_n(ipa)-1;
     
     afrac = area_pa(ipa)*area_si(isi);
+    idt = dist_pa(ipa);
+    area_dty(idt) = area_dty(idt) + afrac;
 
     if(paco_n(ipa)>0)
-    agb_pa(ipa) = sum(agb_co(ico_a:ico_z).*nplant(ico_a:ico_z));
+    agb_pa(ipg) = sum(agb_co(ico_a:ico_z).*nplant(ico_a:ico_z));
 
-ip=ip+1;
-lai_pa(ip) = sum(lai_co(ico_a:ico_z));
+    lai_pa(ipg) = sum(lai_co(ico_a:ico_z));
     
     for ico=ico_a:ico_z
       
       % Find the location in the profile where this cohorts
       % leaves start and stop
       ipft = pft_co(ico);
-      
       lai_pft(ipft)=lai_pft(ipft)+lai_co(ico)*afrac;
-      
       hbotcrown = h2crownbh(height(ico),pft_co(ico));
       htopcrown = height(ico);
-      
+
+      % Integrate size.
+      idbh = max(1,min(ceil(dbh(ico)./ddbh),ndbh));
+      agb_sz(ipft,idbh) = agb_sz(ipft,idbh) + nplant(ico)*agb_co(ico)*afrac;
+      agb_pft(ipft)     = agb_pft(ipft)     + nplant(ico)*agb_co(ico)*afrac;
+
+
       [jnk kapv] = sort((hbotcrown-zzbot(:))...
 			.*(zztop(:)-hbotcrown),1,'descend');
       kap=kapv(1);
@@ -141,47 +141,49 @@ lai_pa(ip) = sum(lai_co(ico_a:ico_z));
       
       f_depth = htopcrown-hbotcrown;  % full depth of crown
       s_depth = 0.0;                  % depth sum counter
+
+      if (f_depth > 0)
+
+         % Add some leaf area to the first partial layer
+         if kap~=kaf && kap~=kzp
+           p_depth     = zztop(kap)-hbotcrown;
+           if(p_depth<0);display(p_depth);pause;end;
+           s_depth     = s_depth+p_depth;
+           lai_vp(ipft,kap) = lai_vp(ipft,kap)+lai_co(ico)*(p_depth/f_depth)*afrac;
+         end
       
-      % Add some leaf area to the first partial layer
-      if kap~=kaf && kap~=kzp
-	p_depth     = zztop(kap)-hbotcrown;
-	if(p_depth<0);display(p_depth);pause;end;
-	s_depth     = s_depth+p_depth;
-	lai_vp(ipft,kap) = lai_vp(ipft,kap)+lai_co(ico)*(p_depth/f_depth)*afrac;
-      end
+         % Add some leaf area to all full layers
+         if(kzf>=kaf)
+           for k=kaf:kzf
+             p_depth     = min([zztop(k)-zzbot(k) f_depth]);
+             if(p_depth<0);display(p_depth);pause;end;
+             s_depth     = s_depth+p_depth;
+             lai_vp(ipft,k) = lai_vp(ipft,k)+lai_co(ico)*(p_depth/f_depth)*afrac;
+           end
+         end
       
-      % Add some leaf area to all full layers
-      if(kzf>=kaf)
-	for k=kaf:kzf
-	  p_depth     = min([zztop(k)-zzbot(k) f_depth]);
-	  if(p_depth<0);display(p_depth);pause;end;
-	  s_depth     = s_depth+p_depth;
-	  lai_vp(ipft,k) = lai_vp(ipft,k)+lai_co(ico)*(p_depth/f_depth)*afrac;
-	end
-      end
+         % Add some leaf area to the last partial layer
+         if kzp~=kzf && kzp~=kap
+           p_depth     = htopcrown-zzbot(kzp);
+           if(p_depth<0);display(p_depth);pause;end;
+           s_depth     = s_depth+p_depth;
+           lai_vp(ipft,kzp) = lai_vp(ipft,kzp)+lai_co(ico)*(p_depth/f_depth)*afrac;
+         end
+
+         % Final case for where the partial layers are the same
+         if kzp==kap
+           p_depth = f_depth;
+           s_depth = s_depth+p_depth;
+           lai_vp(ipft,kzp) = lai_vp(ipft,kzp)+lai_co(ico)*(p_depth/f_depth)*afrac;
+         end
       
-      % Add some leaf area to the last partial layer
-      if kzp~=kzf && kzp~=kap
-	p_depth     = htopcrown-zzbot(kzp);
-	if(p_depth<0);display(p_depth);pause;end;
-	s_depth     = s_depth+p_depth;
-	lai_vp(ipft,kzp) = lai_vp(ipft,kzp)+lai_co(ico)*(p_depth/f_depth)*afrac;
-      end
-      
-      % Final case for where the partial layers are the same
-      if kzp==kap
-	p_depth = f_depth;
-	s_depth = s_depth+p_depth;
-	lai_vp(ipft,kzp) = lai_vp(ipft,kzp)+lai_co(ico)*(p_depth/f_depth)*afrac;
-      end
-      
-      if(abs(s_depth-f_depth)>0.001)
-	display(sprintf(...
-	    'DEPTH ISSUE: s_depth %d f_depth %d\n',s_depth, ...
-	    f_depth));
-	pause;
-      end
-      
+         if(abs(s_depth-f_depth)>0.001)
+           display(sprintf(...
+               'DEPTH ISSUE: s_depth %d f_depth %d\n',s_depth, ...
+               f_depth));
+           pause;
+         end
+       end
     end   % for ico
       end % if(paco_n>0)
     
@@ -202,7 +204,7 @@ rectangle('Position',[0.0 0.0 1.0 1.0],'FaceColor',[0.7 0.7 0.7]);
 subplot('Position',[0.07 0.9 0.25 0.1]);
 axis off;
 text(0.0,0.6,...
-     sprintf('%s:  %5.2fN %5.2fE',poistr,lat(ipy),lon(ipy)),...
+     sprintf('%s (%s):  %5.2fN %5.2fE',poistr,status,lat(ipy),lon(ipy)),...
      'FontSize',fasz+1);
 
 npatch = length(area_pa);
@@ -211,7 +213,16 @@ for ipa=1:npatch
   pstr{ipa} = '';  %WE DONT NEED LABELS
 end
 
-comap = flipud(colormap('Summer'));
+comap = [140    81   10; ...
+         191   129   45; ...
+         223   194  125; ...
+         246   232  195; ...
+         235   245  245; ...
+         199   234  229; ...
+         128   205  193; ...
+          53   151  143; ...
+           1   102   94]./255;
+
 colormap(comap);
 
 % these pie plots look funny when multiple sites are used
@@ -225,46 +236,42 @@ dist_srt = dist_pa(id_srt);
 
 
 %  PATCH AGE  (UL)
-subplot('Position',[0.07 0.63 0.25 0.25]);
+subplot('Position',[0.05 0.65 0.25 0.25]);
 set(gca,'FontSize',fasz-1);
 paxp = zeros(size(area_pa));
 hp=pie(double(area_srt),paxp,pstr);
 title('Patch Age [years]','FontSize',fasz-1);
 setpiecolor(hp,npatch,age_srt,comap,fasz-1);
-colorbar('SouthOutside');
+colorbar('EastOutside');
 
 
 %  PATCH LAI  (UM)
-subplot('Position',[0.41 0.67 0.25 0.25]);
+subplot('Position',[0.35 0.65 0.25 0.25]);
 set(gca,'FontSize',fasz-1);
 paxp = zeros(size(area_pa));
 hp=pie(double(area_srt),paxp,pstr);
 title('Patch LAI [m2/m2]');
 setpiecolor(hp,npatch,lai_srt,comap,fasz-1);
-colorbar('SouthOutside');
+colorbar('EastOutside');
 
 % PATCH AGB   (UR)
-subplot('Position',[0.7 0.67 0.25 0.25]);
+subplot('Position',[0.65 0.65 0.25 0.25]);
 set(gca,'FontSize',fasz-1);
 paxp = zeros(size(area_pa));
 hp=pie(double(area_srt),paxp,pstr);
 title('Patch AGB [kg/m2]');
 setpiecolor(hp,npatch,agb_srt,comap,fasz-1);
-colorbar('SouthOutside');
+colorbar('EastOutside');
 
 % PATCH DISTURBANCE
-subplot('Position',[0.50 0.40 0.25 0.25]);
+subplot('Position',[0.35 0.45 0.15 0.15]);
 set(gca,'FontSize',fasz-1);
 paxp = zeros(size(agb_pa));
 hp=pie(double(area_srt),paxp,pstr);
 title('Disturbance Regime ');
-nco=length(comap);
-minc = 1;
-maxc = 6;
-caxis([minc maxc]);
 for ipa=1:npatch
-id = round((nco-1)*(dist_srt(ipa)-minc)/(maxc-minc))+1;
-comat(ipa,:) = comap(id,:);
+   ilu = dist_srt(ipa);
+   comat(ipa,:) = dtycolor(ilu,:);
 end
 for ip=1:npatch
  ip1 = ip*2-1;
@@ -272,29 +279,29 @@ for ip=1:npatch
  set(hp(ip1),'FaceColor',comat(ip,:));
  set(hp(ip2),'FontSize',fasz-1);
 end
-colorbar('YTick',[1 2 3 4 5 6],'YTickLabel',...
-	 {'Pasture','Plantation','Treefall','Burnt','Abandoned','Logged'},...
-	 'FontSize',fasz-1);%,'Location','East');
-
+colorbar('off');
 
 % LAI Profile (LR)
-subplot('Position',[0.1 0.12 0.35 0.35]);
+subplot('Position',[0.10 0.10 0.35 0.30]);
 set(gca,'FontSize',fasz-1);
 use_pft=find(lai_pft)';
 
 hold on;
 for k=1:length(zzbot)
-  xloc=0;
+  xleft=0;
+  ybottom=zzbot(k);
+  delta_y=zztop(k)-zzbot(k);
   lai_vp(:,k) = lai_vp(:,k)./(zztop(k)-zzbot(k));						  
   for ipft=use_pft
-    h1=rectangle('Position',[xloc,zzbot(k),lai_vp(ipft,k)+1e-5, ...
-		    zztop(k)-zzbot(k)],'FaceColor',greeniness(ipft,:),'EdgeColor', ...
-		 'k');
-    xloc=xloc+lai_vp(ipft,k)+1e-5;
+    delta_x=lai_vp(ipft,k)+1e-5;
+    h1=rectangle('Position' ,[xleft,ybottom,delta_x,delta_y], ...
+		 'FaceColor',pftcolor(ipft,:),...
+                 'EdgeColor',pftcolor(ipft,:));
+    xleft=xleft+delta_x;
   end
 end
-xlabel('LAI [m2/m3]','FontSize',fasz-1);
-ylabel('Elevation [m]','FontSize',fasz-1);
+xlabel('LAD [m2/m3]','FontSize',fasz-1);
+ylabel('Height [m]','FontSize',fasz-1);
 ylim([0 ymax]);
 xlim([0 max([0.25 1.1*max(sum(lai_vp,1)) ])]);
 grid on;
@@ -303,53 +310,80 @@ hold off;
 
 
 %AGB DISTRUBUTION
-
-bdbh = linspace(10,ndbh*10,ndbh);
-for i=1:ndbh-1
-  sdbh{i} = num2str(bdbh(i));
-end
-sdbh{ndbh}='+';
-p_ids  = find(use_pft<5 & use_pft>1);
-p_pfts = use_pft(p_ids);
-for i=1:length(p_ids)
-  spft{i} = sprintf('%s',pftshort{p_pfts(i)});
-end
-
-agb_rawt = zeros(length(p_ids),ndbh);
-for i=1:length(p_pfts)
-     agb_rawt(i,:) = agb_raw(use_pft(p_ids(i)),:);
-end
-
-if(prod(size(agb_rawt))>0)
-
-subplot('Position',[0.54 0.12 0.37 0.25]);
+subplot('Position',[0.55 0.10 0.35 0.30]);
 set(gca,'FontSize',fasz-1);
-bar(agb_rawt','stack');
-set(gca,'xticklabel',sdbh,'FontSize',fasz-1);
+use_pft=find(agb_pft)';
+hold on;
+for idbh=1:ndbh
+   ybottom=0;
+   xleft=bdbh(idbh)-ddbh;
+   for ipft=use_pft
+      delta_y=agb_sz(ipft,idbh)+1e-5;
+      v1=rectangle('Position' ,[xleft,ybottom,ddbh,delta_y],...
+                   'FaceColor',pftcolor(ipft,:),...
+                   'EdgeColor',pftcolor(ipft,:));
+      ybottom=ybottom+delta_y;
+   end
+end
+xlabel('DBH [cm]','FontSize',fasz-1);
+ylabel('AGB [kgC/m2]','FontSize',fasz-1);
+xlim([0 bdbh(ndbh)]);
+ylim([0 max([0.5 1.1*max(sum(agb_sz,1)) ])]);
 grid on;
 box on;
-xlabel('DBH [cm]','FontSize',fasz-1);
-xlim([0 12])
-%view(-65,55);
-title('AGB [kg/m2]','FontSize',fasz-1);
-legend(spft,'Location','NorthWest');
-end
+hold off;
+
 
 
 % LEGEND FOR THE LAI PROFILE
-ax3 = axes('Position',[0.1 0.46 0.2 0.10]);
+ax3 = axes('Position',[0.10 0.45 0.20 0.20]);
 xlim([0 1]);
 ylim([0 1]);
 axis off;
-yloc=1.0;
+dy=1.0 ./ npftmx;
+yloc=0;
 for ipft=use_pft
-  yloc=yloc-0.25;
-  rectangle('Position',[0.05 yloc 0.1 0.25],...
-	    'FaceColor',greeniness(ipft,:));
+  rectangle('Position',[0.05 yloc 0.1 dy],'FaceColor',pftcolor(ipft,:));
+
+  tlstr=sprintf('%s (%4.2f)', pftshort{ipft},lai_pft(ipft));
+  text(0.20,yloc + 0.5 .* dy,tlstr,'FontSize',fasz-3,...
+       'HorizontalAlignment','left','VerticalAlignment','middle');
+  yloc=yloc+dy;
+end
+
+
+
+% LEGEND FOR THE AGB PROFILE
+ax3 = axes('Position',[0.75 0.45 0.20 0.20]);
+axis off;
+xlim([0 1]);
+ylim([0 1]);
+dy=1.0 ./ npftmx;
+yloc=0;
+for ipft=use_pft
+  rectangle('Position',[0.05 yloc 0.1 dy],...
+            'FaceColor',pftcolor(ipft,:));
   
-  tlstr=sprintf('%s (%4.2f)', pftname{ipft},lai_pft(ipft));
-  text(0.20,yloc+0.05,tlstr,'FontSize',fasz-1);
-  
+  tlstr=sprintf('%s (%4.2f)', pftshort{ipft},agb_pft(ipft));
+  text(0.20,yloc + 0.5 .* dy,tlstr,'FontSize',fasz-3,...
+       'HorizontalAlignment','left','VerticalAlignment','middle');
+  yloc=yloc+dy;
+end
+
+
+% LEGEND FOR THE DTY
+use_dty = find(area_dty)';
+ax3 = axes('Position',[0.55 0.45 0.20 0.175]);
+xlim([0 1]);
+ylim([0 1]);
+axis off;
+yoff=1.0 ./ ndty;
+yloc=0;
+for idty=use_dty
+  rectangle('Position',[0.05 yloc 0.10 yoff],'FaceColor',dtycolor(idty,:));
+  text(0.20,yloc + 0.5 .* dy,dtyshort(idty),'FontSize',fasz-1,...
+       'HorizontalAlignment','left','VerticalAlignment','middle');
+  yloc=yloc+yoff;
 end
 
 
@@ -359,14 +393,12 @@ oldpaperpos = get(gcf,'PaperPosition');
 set(gcf,'Units','pixels');
 scrpos = get(gcf,'Position');
 newpos = scrpos/100;
-set(gcf,'PaperUnits','inches',...
-'PaperPosition',newpos)
+set(gcf,'PaperUnits','inches','PaperPosition',newpos)
 print('-dpng', sprintf('%s.png',figname), '-r300');
 print('-depsc', sprintf('%s.eps',figname), '-r300');
 drawnow;
-set(gcf,'Units',oldscreenunits,...
-'PaperUnits',oldpaperunits,...
-'PaperPosition',oldpaperpos)
+set(gcf,'Units',oldscreenunits,'PaperUnits',oldpaperunits,...
+    'PaperPosition',oldpaperpos)
 
 
 

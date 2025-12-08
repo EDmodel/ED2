@@ -35,13 +35,15 @@ subroutine node_sendst(isflag)
 
    use mem_scratch
    use mem_basic
+#if defined(RAMS_MPI)
+   use mpi
+#endif
 
    implicit none
 
    !----- Module variables. ---------------------------------------------------------------!
 #if defined(RAMS_MPI)
    include 'interface.h'
-   include 'mpif.h'
 #endif
    !----- Arguments -----------------------------------------------------------------------!
    integer, intent(in) :: isflag
@@ -215,12 +217,14 @@ subroutine node_getst(isflag)
    use node_mod
    use mem_scratch
    use mem_basic
+#if defined(RAMS_MPI)
+   use mpi
+#endif
    implicit none
 
    !----- Module variables. ---------------------------------------------------------------!
 #if defined(RAMS_MPI)
    include 'interface.h'
-   include 'mpif.h'
 #endif
    !----- Arguments -----------------------------------------------------------------------!
    integer                            , intent(in) :: isflag

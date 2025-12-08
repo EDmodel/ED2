@@ -136,8 +136,8 @@ pretty.box = function(n,horizontal=TRUE,byrow=TRUE,f.ncol=NULL,f.nrow=NULL
    centre = ! ( left | right )
    middle = ! ( bottom | top )
    if (nbcol == 1){
-      mar.left  = rep(5.1,times=n)
-      mar.right = rep(1.1,times=n)
+      mar.left  = rep(5.1,times=nbox)
+      mar.right = rep(1.1,times=nbox)
    }else if (nbcol == 2){
       mar.left  = 2.1 + 2 * left
       mar.right = 0.1 + 2 * right
@@ -146,8 +146,8 @@ pretty.box = function(n,horizontal=TRUE,byrow=TRUE,f.ncol=NULL,f.nrow=NULL
       mar.right = 0.6 + 0. * right
    }#end if
    if (nbrow == 1){
-      mar.bottom = rep(5.1,times=n)
-      mar.top    = rep(4.1,times=n)
+      mar.bottom = rep(5.1,times=nbox)
+      mar.top    = rep(4.1,times=nbox)
    }else if (nbrow == 2){
       mar.bottom = 2.1 + 2. * bottom
       mar.top    = 2.1 + 2. * top

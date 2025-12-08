@@ -23,12 +23,12 @@ subroutine master_getcflcpu()
 
 use mem_grid
 use rpara
+#if defined(RAMS_MPI)
+   use mpi
+#endif
 
 implicit none
 include 'interface.h'
-#if defined(RAMS_MPI)
-include 'mpif.h'
-#endif
 integer :: ngr,nm,k
 real, save, allocatable :: buff1(:),buff2(:)
 integer, save :: ncall=0
@@ -69,12 +69,14 @@ subroutine node_putcflcpu(totcpu,totwall)
 
 use mem_grid
 use node_mod
+#if defined(RAMS_MPI)
+   use mpi
+#endif
 
 implicit none
 
 #if defined(RAMS_MPI)
 include 'interface.h'
-include 'mpif.h'
 #endif
 real :: totcpu,totwall
 integer :: ierr
@@ -94,12 +96,12 @@ subroutine master_putdtsched(isendflg,isendlite,isendmean  &
                             ,isendboth,ntsend)
 use mem_grid
 use rpara
+#if defined(RAMS_MPI)
+   use mpi
+#endif
 
 implicit none
 
-#if defined(RAMS_MPI)
-include 'mpif.h'
-#endif
 integer :: ierr
 integer :: isendflg,isendlite,isendmean,isendboth,ntsend
 
@@ -135,13 +137,15 @@ subroutine node_getdtsched(isendflg,isendlite,isendmean,isendboth)
 
 use mem_grid
 use node_mod
+#if defined(RAMS_MPI)
+   use mpi
+#endif
 
 implicit none
 integer :: isendflg,isendlite,isendmean,isendboth,ntsend
 
 #if defined(RAMS_MPI)
 include 'interface.h'
-include 'mpif.h'
 #endif
 integer :: ierr
 

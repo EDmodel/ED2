@@ -2,6 +2,7 @@
 1
 /home/rknox/Datasets/CCSM3/H5/ccsm3_surf_SA_
 51 51 1.5 1.5 -100.75 -60.0
+1
 15
 'lat'  'lon'   'vbdsf'   'vddsf'   'prate'  'dlwrf'   'pres'    'ugrd'     'vgrd'   'sh'     'tmp'     'hgt'    'co2'    'nbdsf'   'nddsf'
 00.00   00.00   21600.0  21600.0   21600.0  21600.0   21600.0   21600.0    21600.0  21600.0   21600.0   50.0    21600.0  21600.0   21600.0
@@ -37,3 +38,6 @@
 # co2: surface co2 concentration [ppm]
 # lat: grid of latitude coordinates, if this variable is present line 3 is ignored
 # lon: grid of longitude coordinates, if this variable is present line 3 is ignored
+#
+# Note: if CO2 is provided in a single file format independently, it will NOT be cycled/shuffled
+# This can be useful when conducting historical runs when met needs to be cycled but not CO2

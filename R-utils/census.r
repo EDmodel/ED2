@@ -2,7 +2,7 @@
 #     This function finds the "census" from the population pop for each element of the     #
 # list of possible values categ.                                                           #
 #------------------------------------------------------------------------------------------#
-census = function(pop,categ){
+census.survey <<- function(pop,categ){
    #---------------------------------------------------------------------------------------#
    #    First check whether the categ vector contains duplicates.  In case it does, crash. #
    #---------------------------------------------------------------------------------------#

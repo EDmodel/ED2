@@ -1479,7 +1479,7 @@ end function cdf
 
 !==========================================================================================!
 !==========================================================================================!
-!   This function simply computes the cubic root of all numbers, including the negative    !
+!   This function simply computes the cube root of all numbers, including the negative     !
 ! ones.                                                                                    !
 !------------------------------------------------------------------------------------------!
 real function cbrt(x)

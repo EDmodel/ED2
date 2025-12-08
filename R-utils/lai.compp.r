@@ -8,15 +8,20 @@ lai.compp = function(partop,parmin,prss,mu,ipft){
 
    lailow   = 1.e-5
    laihigh  = 30.
-   testlow  = mylightroot(x=lailow,orient,clump,partop,parmin,prss,mu)
-   testhigh = mylightroot(x=laihigh,orient,clump,partop,parmin,prss,mu)
-   while (testlow*testhigh >= 0.){
-      lailow = lailow / 5.
+   
+   if (partop > parmin){
       testlow  = mylightroot(x=lailow,orient,clump,partop,parmin,prss,mu)
-   }#end while
+      testhigh = mylightroot(x=laihigh,orient,clump,partop,parmin,prss,mu)
+      while (testlow*testhigh >= 0.){
+         lailow = lailow / 5.
+         testlow  = mylightroot(x=lailow,orient,clump,partop,parmin,prss,mu)
+      }#end while
 
-   lai = uniroot(f=mylightroot,interval=c(lailow,laihigh),orient=orient,clump=clump
-                ,partop=partop,parmin=parmin,prss=prss,mu=mu,tol=1.e-7)$root
+      lai = uniroot(f=mylightroot,interval=c(lailow,laihigh),orient=orient,clump=clump
+                   ,partop=partop,parmin=parmin,prss=prss,mu=mu,tol=1.e-7)$root
+   }else{
+      lai = 0.
+   }#end if (partop > parmin)
    return(lai)
 }#end for
 #==========================================================================================#
@@ -85,9 +90,9 @@ mylightroot = function(x,orient,clump,partop,parmin,prss,mu){
 
    tau.diff = comp.tau.diff(lai=x,orient=orient,clump=clump)
    tau.beam = comp.tau.beam(lai=x,orient=orient,clump=clump,mu=mu)
-   mypar = par.split(cosz=mu,partop=partop,atm.prss=prss)
+   mypar    = par.split(cosz=mu,partop=partop,atm.prss=prss)
 
-   myfun = tau.diff * mypar$diff + tau.beam * mypar$beam - parmin
+   myfun    = tau.diff * mypar$diff + tau.beam * mypar$beam - parmin
    return(myfun)
 }#end if
 #==========================================================================================#

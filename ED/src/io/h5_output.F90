@@ -4,11 +4,7 @@
 ! and the type of output file to be created.  ED's default format is HDF5.                 !
 !------------------------------------------------------------------------------------------!
 subroutine h5_output(vtype)
-#if USE_HDF5
    use hdf5
-#endif
-   use an_header
-  
    use ed_var_tables, only : vt_info               & ! intent(in)
                            , var_table             & ! intent(in)
                            , var_table_vector      & ! intent(in)
@@ -34,6 +30,7 @@ subroutine h5_output(vtype)
                            , stride                & ! intent(in)
                            , globdims              ! ! intent(in)
 #if defined(RAMS_MPI)
+   use mpi
    use ed_node_coms , only : mynum                 & ! intent(in)
                            , nnodetot              & ! intent(in)
                            , recvnum               & ! intent(in)
@@ -54,10 +51,6 @@ subroutine h5_output(vtype)
                            , gdpy                  ! ! intent(in)
    implicit none
 
-   !------ Include standard common blocks. ------------------------------------------------!
-#if defined(RAMS_MPI)
-   include 'mpif.h'
-#endif
    !------ Arguments. ---------------------------------------------------------------------!
    character(len=*)                                 , intent(in) :: vtype
    !------ Local variables. ---------------------------------------------------------------!
@@ -88,9 +81,6 @@ subroutine h5_output(vtype)
    real(kind=8)                                                  :: dsec
    !------ Local variables (MPI only). ----------------------------------------------------!
 #if defined(RAMS_MPI)
-   integer                                                       :: mpierror
-   integer                                                       :: mpi_size
-   integer                                                       :: mpi_rank
    integer                                                       :: ierr
 #endif
    !------ HDF specific data types. -------------------------------------------------------!
@@ -789,7 +779,7 @@ subroutine h5_output(vtype)
       subaname = '  Monthly average analysis HDF write   '
 
    case ('DCYC')
-      subaname = '  Mean diurnal cycle analysis HDF write   '
+      subaname = '  Mean diurnal cycle analysis HDF write'
 
    case ('YEAR')
       subaname = '  Annual average analysis HDF write   '
@@ -886,8 +876,9 @@ subroutine geth5dims(idim_type,varlen,globid,var_len_global,dsetrank,varn,nrec,i
    !---------------------------------------------------------------------------------------!
 
    select case (idim_type) 
-   case(90,91,92,96) ! No polygon-site-patch or cohort dimension, or single-dim. vector
-      
+   case(90,91,92,96,98,980)
+      ! No polygon-site-patch or cohort dimension, or single-dim. vector
+
       dsetrank = 1
       chnkdims(1) = int(varlen,8)
       chnkoffs(1) = int(globid,8)
@@ -1075,11 +1066,23 @@ subroutine geth5dims(idim_type,varlen,globid,var_len_global,dsetrank,varn,nrec,i
       cnt(1:2)    = 1_8
       stride(1:2) = 1_8
 
-   case (19) ! (13 months,npolygons)  
+   case (19) ! (12 months,npolygons)  
       
       dsetrank = 2
-      globdims(1) = int(13,8)
-      chnkdims(1) = int(13,8)
+      globdims(1) = 12_8
+      chnkdims(1) = 12_8
+      chnkoffs(1) = 0_8
+      globdims(2) = int(var_len_global,8)
+      chnkdims(2) = int(varlen,8)
+      chnkoffs(2) = int(globid,8)
+      cnt(1:2)    = 1_8
+      stride(1:2) = 1_8
+
+   case (191) ! (13 months,npolygons)  
+      
+      dsetrank = 2
+      globdims(1) = 13_8
+      chnkdims(1) = 13_8
       chnkoffs(1) = 0_8
       globdims(2) = int(var_len_global,8)
       chnkdims(2) = int(varlen,8)
@@ -1373,6 +1376,19 @@ subroutine geth5dims(idim_type,varlen,globid,var_len_global,dsetrank,varn,nrec,i
       chnkoffs(2) = int(globid,8)
       cnt(1:2)    = 1_8
       stride(1:2) = 1_8
+  
+   case (39) !(n_mort,npatches)
+      
+      ! Month type
+      dsetrank = 2
+      globdims(1) = 12_8
+      chnkdims(1) = 12_8
+      chnkoffs(1) = 0_8
+      globdims(2) = int(var_len_global,8)
+      chnkdims(2) = int(varlen,8)
+      chnkoffs(2) = int(globid,8)
+      cnt(1:2)    = 1_8
+      stride(1:2) = 1_8
               
    case (40,41) !(ncohorts)
       
@@ -1394,6 +1410,18 @@ subroutine geth5dims(idim_type,varlen,globid,var_len_global,dsetrank,varn,nrec,i
       chnkoffs(2) = int(globid,8)
       cnt(1:2)    = 1_8
       stride(1:2) = 1_8
+ 
+   case (416) !(16 - ncohorts (stoma data))
+      
+      dsetrank = 2
+      globdims(1) = 16_8
+      chnkdims(1) = 16_8
+      chnkoffs(1) = 0_8
+      globdims(2) = int(var_len_global,8)
+      chnkdims(2) = int(varlen,8)
+      chnkoffs(2) = int(globid,8)
+      cnt(1:2)    = 1_8
+      stride(1:2) = 1_8
 
    case (42)    !(nzg,ncohorts)
       
@@ -1401,18 +1429,6 @@ subroutine geth5dims(idim_type,varlen,globid,var_len_global,dsetrank,varn,nrec,i
       dsetrank    = 2
       globdims(1) = int(nzg,8)
       chnkdims(1) = int(nzg,8)
-      chnkoffs(1) = 0_8
-      globdims(2) = int(var_len_global,8)
-      chnkdims(2) = int(varlen,8)
-      chnkoffs(2) = int(globid,8)
-      cnt(1:2)    = 1_8
-      stride(1:2) = 1_8
- 
-   case (416) !(16 - ncohorts (stoma data))
-      
-      dsetrank = 2
-      globdims(1) = 16_8
-      chnkdims(1) = 16_8
       chnkoffs(1) = 0_8
       globdims(2) = int(var_len_global,8)
       chnkdims(2) = int(varlen,8)
@@ -1459,7 +1475,20 @@ subroutine geth5dims(idim_type,varlen,globid,var_len_global,dsetrank,varn,nrec,i
       cnt(1:2)    = 1_8
       stride(1:2) = 1_8
      
-   case (49) !(13,ncohorts)
+   case (49) !(12,ncohorts)
+      
+      ! 12 Months type
+      dsetrank = 2
+      globdims(1) = 12_8
+      chnkdims(1) = 12_8
+      chnkoffs(1) = 0_8
+      globdims(2) = int(var_len_global,8)
+      chnkdims(2) = int(varlen,8)
+      chnkoffs(2) = int(globid,8)
+      cnt(1:2)    = 1_8
+      stride(1:2) = 1_8
+     
+   case (491) !(13,ncohorts)
       
       ! 13 Months type
       dsetrank = 2

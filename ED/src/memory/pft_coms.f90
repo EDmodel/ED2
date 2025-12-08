@@ -1,37 +1,37 @@
 !==========================================================================================!
 !==========================================================================================!
-! MODULE: PFT_COMS
-!> \brief This module contains a list of plant-functional type dependent properties.
-!> \waring IMPORTANT: DO NOT INITIALIZE PARAMETERS IN THEIR MODULES - NOT ALL COMPILERS WILL
-!> ACTUALLY INITIALIZE THEM.  See "init_pft_*_coms" (ed_params.f90) to check the default
-!> values.                                                           !
+!   This module contains a list of plant-functional type dependent properties.             !
+!                                                                                          !
+! IMPORTANT: DO NOT INITIALIZE PARAMETERS IN THEIR MODULES - NOT ALL COMPILERS WILL        !
+!            ACTUALLY INITIALIZE THEM.  See "init_pft_*_coms" (ed_params.f90) to check     !
+!            the default values.                                                           !
 !==========================================================================================!
 !==========================================================================================!
 module pft_coms
 
    use ed_max_dims, only: n_pft
-   !---------------------------------------------------------------------------------------!
-   !  PFT | Name                                | Grass   | Tropical | agriculture?        !
-   !------+-------------------------------------+---------+----------+---------------------!
-   !    1 | C4 grass                            |     yes |      yes |                 yes !
-   !    2 | Early tropical                      |      no |      yes |                  no !
-   !    3 | Mid tropical                        |      no |      yes |                  no !
-   !    4 | Late tropical                       |      no |      yes |                  no !
-   !    5 | C3 grass                            |     yes |       no |                 yes !
-   !    6 | Northern pines                      |      no |       no |                  no !
-   !    7 | Southern pines                      |      no |       no |                  no !
-   !    8 | Late conifers                       |      no |       no |                  no !
-   !    9 | Early temperate deciduous           |      no |       no |                  no !
-   !   10 | Mid temperate deciduous             |      no |       no |                  no !
-   !   11 | Late temperate deciduous            |      no |       no |                  no !
-   !   12 | C3 pasture                          |     yes |       no |                 yes !
-   !   13 | C3 crop (e.g.,wheat, rice, soybean) |     yes |       no |                 yes !
-   !   14 | C4 pasture                          |     yes |      yes |                 yes !
-   !   15 | C4 crop (e.g.,corn/maize)           |     yes |      yes |                 yes !
-   !   16 | Tropical C3 grass                   |     yes |      yes |                 yes !
-   !   17 | Liana                               |      no |      yes |                  no !
-   !------+--------------------------------------------+---------+----------+--------------!
 
+   !---------------------------------------------------------------------------------------!
+   ! PFT | Name                            | Grass | Liana | Tropical | Savannah | Conifer !
+   !-----+---------------------------------+-------+-------+----------+----------+---------!
+   !   1 | C4 grass                        |   yes |    no |      yes |       no |      no !
+   !   2 | Early tropical                  |    no |    no |      yes |       no |      no !
+   !   3 | Mid tropical                    |    no |    no |      yes |       no |      no !
+   !   4 | Late tropical                   |    no |    no |      yes |       no |      no !
+   !   5 | Temperate C3 grass              |   yes |    no |       no |       no |      no !
+   !   6 | Northern pines                  |    no |    no |       no |       no |     yes !
+   !   7 | Southern pines                  |    no |    no |       no |       no |     yes !
+   !   8 | Late conifers                   |    no |    no |       no |       no |     yes !
+   !   9 | Early temperate deciduous       |    no |    no |       no |       no |      no !
+   !  10 | Mid temperate deciduous         |    no |    no |       no |       no |      no !
+   !  11 | Late temperate deciduous        |    no |    no |       no |       no |      no !
+   !  12 | Early tropical savannah         |    no |    no |      yes |       no |      no !
+   !  13 | Mid tropical savannah           |    no |    no |      yes |       no |      no !
+   !  14 | Late tropical savannah          |    no |    no |      yes |       no |      no !
+   !  15 | Araucaria                       |    no |    no |      yes |       no |     yes !
+   !  16 | Tropical C3 grass               |   yes |    no |      yes |       no |      no !
+   !  17 | Liana                           |    no |   yes |      yes |       no |     yes !
+   !---------------------------------------------------------------------------------------!
 
 
    !=======================================================================================!
@@ -40,10 +40,11 @@ module pft_coms
    ! as which PFT should be used for agriculture, which one goes for forest plantation.    !
    !---------------------------------------------------------------------------------------!
 
-   integer, dimension(n_pft) :: include_these_pft
-   !<This variable is provided by the user through namelist, and contains the list of
-   !< PFTs he or she wants to use.                                                          !
    !---------------------------------------------------------------------------------------!
+   !     This variable is provided by the user through namelist, and contains the list of  !
+   ! PFTs he or she wants to use.                                                          !
+   !---------------------------------------------------------------------------------------!
+   integer, dimension(n_pft) :: include_these_pft
 
    !---------------------------------------------------------------------------------------!
    !     This flag determines what to do at the PFT initialization.  This option is        !
@@ -56,10 +57,11 @@ module pft_coms
    integer :: pft_1st_check
 
    !---------------------------------------------------------------------------------------!
-   !     These are the flags that indicate which PFTs should be used for agriculture and   !
-   ! plantation stock should go. They are currently a single PFT, but they should become:  !
-   ! vectors eventually (so multiple PFTs can be used...).                                 !
+   !     These are the flags that indicate which PFTs should be used for pastures, agri-   !
+   ! culture and plantation stockS. They are currently a single PFT, but they should       !
+   ! become vectors eventually (and thus multiple PFTs can be used...).                    !
    !---------------------------------------------------------------------------------------!
+   integer :: pasture_stock 
    integer :: agri_stock 
    integer :: plantation_stock
    !=======================================================================================!
@@ -77,10 +79,6 @@ module pft_coms
    !---------------------------------------------------------------------------------------!
    !----- Carbon-to-biomass ratio of plant tissues. ---------------------------------------!
    real :: C2B
-   !----- Parameters used by the model that predicts SLA based on leaf life span. ---------!
-   real :: sla_scale
-   real :: sla_inter
-   real :: sla_slope 
    !=======================================================================================!
    !=======================================================================================!
 
@@ -105,6 +103,15 @@ module pft_coms
 
 
    !---------------------------------------------------------------------------------------!
+   !    This flag specifies which PFTs are allowed to grow on pasture patches.             !
+   ! Zero means the PFT is forbidden, 1 means that the PFT is allowed.                     !
+   !---------------------------------------------------------------------------------------!
+   logical, dimension(n_pft) :: include_pft_pt
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
    !    This flag specifies which PFTs are allowed to grow on agriculture patches.         !
    ! Zero means the PFT is forbidden, 1 means that the PFT is allowed.                     !
    !---------------------------------------------------------------------------------------!
@@ -123,11 +130,15 @@ module pft_coms
 
 
    !---------------------------------------------------------------------------------------!
-   !    The following logical flags will tell whether the PFTs are tropical (liana) and    !
-   ! also check whether it is a grass or tree PFT (this may need to be switched to         !
-   ! integer if we start adding bush-like PFTs).                                           !
+   !    The following logical flags will describe the main life forms (grasses, lianas,    !
+   ! conifers) as well as the likely landscape where they are to be found                  !
+   ! (tropical/temperate, savannah/forest).  Note that ED2 does not restrict location of   !
+   ! any PFT: if you really want, you could include Eastern hemlocks in an Amazonian run,  !
+   ! or a Cecropia in the tundra.                                                          !
    !---------------------------------------------------------------------------------------!
    logical, dimension(n_pft)    :: is_tropical
+   logical, dimension(n_pft)    :: is_savannah
+   logical, dimension(n_pft)    :: is_conifer
    logical, dimension(n_pft)    :: is_grass
    logical, dimension(n_pft)    :: is_liana
    !---------------------------------------------------------------------------------------!
@@ -153,40 +164,67 @@ module pft_coms
    real, dimension(n_pft) :: D0
    !---------------------------------------------------------------------------------------!
 
-   !----- Temperature [�C] below which leaf metabolic activity begins to rapidly decline. -!
+   !----- Temperature [C] below which leaf metabolic activity begins to rapidly decline. --!
    real, dimension(n_pft) :: Vm_low_temp 
 
-   !----- Temperature [�C] above which leaf metabolic activity begins to rapidly decline. -!
+   !----- Temperature [C] above which leaf metabolic activity begins to rapidly decline. --!
    real, dimension(n_pft) :: Vm_high_temp 
 
-   !----- Decay factor for the exponential correction. ------------------------------------!
-   real, dimension(n_pft) :: Vm_decay_e 
+   !----- Decay factors for the exponential correction. -----------------------------------!
+   real, dimension(n_pft) :: Vm_decay_elow
+   real, dimension(n_pft) :: Vm_decay_ehigh
 
-   !----- Maximum photosynthetic capacity at a reference temperature [�mol/m2/s]. ---------!
+   !----- Maximum carboxylation rate at the reference temperature [umol/m2/s]. ------------!
    real, dimension(n_pft) :: Vm0 
-
+   !----- Parameters used by the model that predicts Vm0 based on SLA. --------------------!
+   real, dimension(n_pft) :: Vm0_v0
+   real, dimension(n_pft) :: Vm0_v1
+   !----- Parameters used by the new stomatal conductance model (Farquhar-Katul). ---------!
+   real, dimension(n_pft) :: Vcmax25      ! Vm0 at 25degC
+   !----- Parameters currently used only by trait plasticity. -----------------------------!
+   real, dimension(n_pft) :: kplastic_vm0 ! Expansion factor for Vm0 (extinction if < 0).
    !----- Exponent for Vm in the Arrhenius equation [K]. ----------------------------------!
    real, dimension(n_pft) :: Vm_hor 
 
    !----- Base (Q10 term) for Vm in Collatz equation. -------------------------------------!
    real, dimension(n_pft) :: Vm_q10
 
-   !----- The a term for the Vm decline correction for high temperature, as in Collatz. ---!
-   real, dimension(n_pft) :: Vm_decay_a
+   !----- Temperature [C] below which leaf metabolic activity begins to rapidly decline. --!
+   real, dimension(n_pft) :: Jm_low_temp 
 
-   !----- The b term for the Vm decline correction for high temperature, as in Collatz. ---!
-   real, dimension(n_pft) :: Vm_decay_b
+   !----- Temperature [C] above which leaf metabolic activity begins to rapidly decline. --!
+   real, dimension(n_pft) :: Jm_high_temp 
 
-   !----- Temperature [�C] below which leaf metabolic activity begins to rapidly decline. -!
+   !----- Decay factors for the exponential correction. -----------------------------------!
+   real, dimension(n_pft) :: Jm_decay_elow
+   real, dimension(n_pft) :: Jm_decay_ehigh
+
+   !----- Maximum electron transport rate at the reference temperature [umol/m2/s]. -------!
+   real, dimension(n_pft) :: Jm0 
+
+   !----- Parameters used by the new stomatal conductance model (Farquhar-Katul). ---------!
+   real, dimension(n_pft) :: Jmax25      ! Jm0 at 25degC
+
+   !----- Exponent for Jm in the Arrhenius equation [K]. ----------------------------------!
+   real, dimension(n_pft) :: Jm_hor 
+
+   !----- Base (Q10 term) for Jm in Collatz equation. -------------------------------------!
+   real, dimension(n_pft) :: Jm_q10
+
+   !----- Maximum triose phosphate utilisation rate at the ref. temperature [umol/m2/s]. --!
+   real, dimension(n_pft) :: TPm0
+
+   !----- Temperature [C] below which leaf metabolic activity begins to rapidly decline. --!
    real, dimension(n_pft) :: Rd_low_temp 
 
-   !----- Temperature [�C] above which leaf metabolic activity begins to rapidly decline. -!
+   !----- Temperature [C] above which leaf metabolic activity begins to rapidly decline. --!
    real, dimension(n_pft) :: Rd_high_temp 
 
-   !----- Decay factor for the exponential correction. ------------------------------------!
-   real, dimension(n_pft) :: Rd_decay_e 
+   !----- Decay factors for the exponential correction. -----------------------------------!
+   real, dimension(n_pft) :: Rd_decay_elow
+   real, dimension(n_pft) :: Rd_decay_ehigh
 
-   !----- Maximum respiration factor at the reference temperature [�mol/m2/s]. ------------!
+   !----- Maximum respiration factor at the reference temperature [umol/m2/s]. ------------!
    real, dimension(n_pft) :: Rd0
 
    !----- Exponent for Rd in the Arrhenius equation [K]. ----------------------------------!
@@ -198,14 +236,23 @@ module pft_coms
    !----- Slope of the Ball/Berry stomatal conductance-photosynthesis relationship. -------!
    real, dimension(n_pft) :: stomatal_slope
 
-   !----- Intercept of the Ball/Berry stomatal conductance relationship [�mol/m2/s]. ------!
+   !----- Intercept of the Ball/Berry stomatal conductance relationship [umol/m2/s]. ------!
    real, dimension(n_pft) :: cuticular_cond
 
    !----- Efficiency of using PAR to fix CO2 [ ----]. -------------------------------------!
    real, dimension(n_pft) :: quantum_efficiency
 
+   !----- Curvature parameter for determining the electron transport rate (aka J) [ ---]. -!
+   real, dimension(n_pft) :: curvpar_electron
+
+   !----- Quantum yield of photosystem II [ ----]. ----------------------------------------!
+   real, dimension(n_pft) :: qyield_psII
+
    !----- Specifies photosynthetic pathway.  3 corresponds to C3, 4 corresponds to C4. ----!
    integer, dimension(n_pft) :: photosyn_pathway
+
+   !----- Flag to identify whether or not to use allometric equations based on D*D*H. -----!
+   logical, dimension(n_pft) :: ddh_allom
    !=======================================================================================!
    !=======================================================================================!
 
@@ -228,33 +275,91 @@ module pft_coms
 
    !----- This is the inverse of leaf life span [1/year]. ---------------------------------!
    real, dimension(n_pft) :: leaf_turnover_rate
-
+   !----- Parameters that control the leaf turnover rate (TRAIT_PLASTICITY < 0). ----------!
+   real, dimension(n_pft) :: eplastic_vm0  ! Expansion/extinction exponents for turnover
+   real, dimension(n_pft) :: eplastic_sla  ! (extinction if < 1)
+   !----- Parameters that control the leaf turnover rate (TRAIT_PLASTICITY > 0). ----------!
+   real, dimension(n_pft) :: kplastic_LL   ! Expansion factor for leaf longevity
    !----- This is the inverse of fine root life span [1/year]. ----------------------------!
    real, dimension(n_pft) :: root_turnover_rate
 
+   !----- This is the inverse of bark life span [1/year]. ---------------------------------!
+   real, dimension(n_pft) :: bark_turnover_rate
+
    !---------------------------------------------------------------------------------------!
    !    This variable sets the rate of dark (i.e., leaf) respiration.  It is dimensionless !
-   ! because it is relative to Vm0.                                                        !
+   ! because it is relative to Vm0.  This is only needed in case Rd0 is not provided       !
+   ! through xml.                                                                          !
    !---------------------------------------------------------------------------------------!
    real, dimension(n_pft) :: dark_respiration_factor
+   !---------------------------------------------------------------------------------------!
+   !----- Parameters that control the dark respiraiton rate (TRAIT_PLASTICITY = 3). -------!
+   real, dimension(n_pft) :: kplastic_rd0  ! Expansion factor for dark respiration
+
+   !---------------------------------------------------------------------------------------!
+   !    This variable sets the rate of electron transport.  It is dimensionless            !
+   ! because it is relative to Vm0.  This is only needed in case Jm0 is not provided       !
+   ! through xml.                                                                          !
+   !---------------------------------------------------------------------------------------!
+   real, dimension(n_pft) :: electron_transport_factor
+   !---------------------------------------------------------------------------------------!
+
+   !---------------------------------------------------------------------------------------!
+   !    This variable sets the rate of triose phosphate utilisation.  It is dimensionless  !
+   ! because it is relative to Vm0.  This is only needed in case Jm0 is not provided       !
+   ! through xml.                                                                          !
+   !---------------------------------------------------------------------------------------!
+   real, dimension(n_pft) :: triose_phosphate_factor
+   !---------------------------------------------------------------------------------------!
+
 
    !----- Turnover rate of plant storage pools [1/year]. ----------------------------------!
    real, dimension(n_pft) :: storage_turnover_rate 
 
    !---------------------------------------------------------------------------------------!
+   !    This variable sets the stem maintainence respiration rate per unit surface area    !
+   ! at the referenence temperature of 15C. Its units is umol_CO2/m2_stem_surface/s.       !
+   !---------------------------------------------------------------------------------------!
+   real, dimension(n_pft) :: stem_respiration_factor
+
+   !---------------------------------------------------------------------------------------!
+   !    This variable sets the scaling relationship of stem maintenance respiration rate   !
+   ! with plant size (DBH). Its units is /cm_DBH                                           !
+   !---------------------------------------------------------------------------------------!
+   real, dimension(n_pft) :: stem_resp_size_scaler
+
+   !----- Temperature [C] below which stem metabolic activity begins to rapidly decline. --!
+   real, dimension(n_pft) :: srf_low_temp 
+
+   !----- Temperature [C] above which stem metabolic activity begins to rapidly decline. --!
+   real, dimension(n_pft) :: srf_high_temp 
+
+   !----- Decay factors for the exponential correction. -----------------------------------!
+   real, dimension(n_pft) :: srf_decay_elow
+   real, dimension(n_pft) :: srf_decay_ehigh
+
+   !----- Exponent for Rr in the Arrhenius equation [K]. ----------------------------------!
+   real, dimension(n_pft) :: srf_hor 
+
+   !----- Base (Q10 term) for respiration in Collatz equation. ----------------------------!
+   real, dimension(n_pft) :: srf_q10
+
+
+   !---------------------------------------------------------------------------------------!
    !    This variable sets the contribution of roots to respiration at the reference       !
-   ! temperature of 15C.  Its units is �mol_CO2/kg_fine_roots/s.                           !
+   ! temperature of 15C.  Its units is umol_CO2/kg_fine_roots/s.                           !
    !---------------------------------------------------------------------------------------!
    real, dimension(n_pft) :: root_respiration_factor 
 
-   !----- Temperature [�C] below which root metabolic activity begins to rapidly decline. -!
+   !----- Temperature [C] below which root metabolic activity begins to rapidly decline. --!
    real, dimension(n_pft) :: rrf_low_temp 
 
-   !----- Temperature [�C] above which root metabolic activity begins to rapidly decline. -!
+   !----- Temperature [C] above which root metabolic activity begins to rapidly decline. --!
    real, dimension(n_pft) :: rrf_high_temp 
 
-   !----- Decay factor for the exponential correction. ------------------------------------!
-   real, dimension(n_pft) :: rrf_decay_e 
+   !----- Decay factors for the exponential correction. -----------------------------------!
+   real, dimension(n_pft) :: rrf_decay_elow
+   real, dimension(n_pft) :: rrf_decay_ehigh
 
    !----- Exponent for Rr in the Arrhenius equation [K]. ----------------------------------!
    real, dimension(n_pft) :: rrf_hor 
@@ -262,14 +367,15 @@ module pft_coms
    !----- Base (Q10 term) for respiration in Collatz equation. ----------------------------!
    real, dimension(n_pft) :: rrf_q10
 
-   !----- Temperature [�C] below which storage respiration begins to rapidly decline. -----!
+   !----- Temperature [C] below which storage respiration begins to rapidly decline. ------!
    real, dimension(n_pft) :: strf_low_temp 
 
-   !----- Temperature [�C] above which storage respiration begins to rapidly decline. -----!
+   !----- Temperature [C] above which storage respiration begins to rapidly decline. ------!
    real, dimension(n_pft) :: strf_high_temp 
 
    !----- Decay factor for the exponential correction. ------------------------------------!
-   real, dimension(n_pft) :: strf_decay_e 
+   real, dimension(n_pft) :: strf_decay_elow
+   real, dimension(n_pft) :: strf_decay_ehigh
 
    !----- Exponent for Rr in the Arrhenius equation [K]. ----------------------------------!
    real, dimension(n_pft) :: strf_hor 
@@ -323,6 +429,16 @@ module pft_coms
    real :: m3_slope
 
    !---------------------------------------------------------------------------------------!
+   !     This variable controls the hydraulic failure moratlity at reference PLC           !
+   !---------------------------------------------------------------------------------------!
+   real, dimension(n_pft) :: hydro_mort0
+   
+   !---------------------------------------------------------------------------------------!
+   !     This variable controls the sensitivity of hydrauilic failure mortality to PLC     !
+   !---------------------------------------------------------------------------------------!
+   real, dimension(n_pft) :: hydro_mort1
+
+   !---------------------------------------------------------------------------------------!
    !     This variable sets up the relative carbon balance when plants are experiencing    !
    ! severe stress (i.e., when the maximum carbon balance is negative due to severe light  !
    ! or water stress).                                                                     !
@@ -350,17 +466,31 @@ module pft_coms
    !---------------------------------------------------------------------------------------!
    real, dimension(n_pft) :: treefall_s_ltht
 
-   !---------------------------------------------------------------------------------------!
-   !     Survivorship fraction for trees with heights greater than fire_hite_threshold     !
-   ! (see disturbance_coms.f90).                                                           !
-   !---------------------------------------------------------------------------------------!
-   real, dimension(n_pft) :: fire_s_gtht
+
 
    !---------------------------------------------------------------------------------------!
-   !     Survivorship fraction for trees with heights less than fire_hite_threshold        !
-   ! (see disturbance_coms.f90).                                                           !
+   !    Temporary parameters to predict fire survivorship from bark thickness.  In the     !
+   ! future survivorship should also depend on fire intensity.                             !
    !---------------------------------------------------------------------------------------!
-   real, dimension(n_pft) :: fire_s_ltht
+   real, dimension(n_pft) :: fire_s_min
+   real, dimension(n_pft) :: fire_s_max
+   real, dimension(n_pft) :: fire_s_inter
+   real, dimension(n_pft) :: fire_s_slope
+   !---------------------------------------------------------------------------------------!
+
+   !---------------------------------------------------------------------------------------!
+   !     Survivorship fraction for plants near felled trees.                               !
+   !---------------------------------------------------------------------------------------!
+   real, dimension(n_pft) :: felling_s_ltharv
+   real, dimension(n_pft) :: felling_s_gtharv
+
+   !---------------------------------------------------------------------------------------!
+   !     Survivorship fractions for plants at skid trails and roads.  Both smaller and     !
+   ! larger than the minimum harvesting size.                                              !
+   !---------------------------------------------------------------------------------------!
+   real, dimension(n_pft) :: skid_s_ltharv
+   real, dimension(n_pft) :: skid_s_gtharv
+   !---------------------------------------------------------------------------------------!
 
    !----- Below this temperature, mortality rapidly increases. ----------------------------!
    real, dimension(n_pft) :: plant_min_temp
@@ -376,10 +506,6 @@ module pft_coms
    !=======================================================================================!
    ! Nitrogen and water requirements  -- see "initialize_pft_nitro_params".                !
    !---------------------------------------------------------------------------------------!
-   !----- Carbon to Nitrogen ratio, slow pool. --------------------------------------------!
-   real :: c2n_slow
-   !----- Carbon to Nitrogen ratio, structural pool. --------------------------------------!
-   real :: c2n_structural
    !----- Carbon to Nitrogen ratio, storage pool. -----------------------------------------!
    real :: c2n_storage
    !----- Carbon to Nitrogen ratio, structural stem. --------------------------------------!
@@ -409,18 +535,21 @@ module pft_coms
    ! Plant hydrodynamics -- see "initialize_pft_hydro_params".                             !
    !---------------------------------------------------------------------------------------!
    real, dimension(n_pft) :: leaf_water_cap
-   !< Leaf hydaulic capacitance [kg H2O/kg biomass/m ]. This variable is assumed as
+   !< Leaf hydraulic capacitance [kg H2O/kg biomass/m ]. This variable is assumed as
    !< constants for now
 
    real, dimension(n_pft) :: wood_water_cap
-   !< Wood hydaulic capacitance [kg H2O/kg biomass/m ]. This variable is assumed as
+   !< Wood hydraulic capacitance [kg H2O/kg biomass/m ]. This variable is assumed as
    !< constants for now
 
    real, dimension(n_pft) :: leaf_water_sat
-   !< Leaf water content at saturation (&Psi;=0, rwc=1.) [kg H2O/kg biomass]       
+   !< Leaf water content at saturation (&Psi;=0, rwc=1.) [kg H2O/kg biomass]
    
    real, dimension(n_pft) :: wood_water_sat
-   !< Leaf water content at saturation (&Psi;=0, rwc=1.) [kg H2O/kg biomass]       
+   !< Wood water content at saturation (&Psi;=0, rwc=1.) [kg H2O/kg biomass]
+   
+   real, dimension(n_pft) :: bark_water_sat
+   !< Wood water content at saturation (&Psi;=0, rwc=1.) [kg H2O/kg biomass]
    
    real, dimension(n_pft) :: leaf_rwc_min  
    !< Leaf minimum relative water content or leaf residual fraction [-]
@@ -433,6 +562,12 @@ module pft_coms
 
    real, dimension(n_pft) :: wood_psi_min
    !< Sapwood minimum water potential based on leaf_rwc_min [m]
+
+   real, dimension(n_pft) :: small_rwc_min  
+   !< Small-tree minimum relative water content or small-tree residual fraction [-]
+
+   real, dimension(n_pft) :: small_psi_min
+   !< Small-tree minimum water potential based on small_rwc_min [m]
 
    real, dimension(n_pft) :: leaf_psi_tlp
    !< Leaf water potential at turgor loss point [m]
@@ -497,21 +632,37 @@ module pft_coms
    !=======================================================================================!
 
 
+
+
+
+
    !=======================================================================================!
    !=======================================================================================!
    ! Allocation and allometry.                                                             !
    !---------------------------------------------------------------------------------------!
-   !----- Wood density.  Used only for tropical PFTs and grasses [ g/cm�]. ----------------!
+   !----- Wood density.  Used only for tropical PFTs and grasses [ g/cm3]. ----------------!
    real   , dimension(n_pft)    :: rho
-   !----- Specific Leaf Area (m�leaf/kg_C]. -----------------------------------------------!
+   !----- Specific Leaf Area (m2leaf/kg_C]. -----------------------------------------------!
    real   , dimension(n_pft)    :: SLA
+   !----- Parameters used by the model that predicts SLA based on leaf life span. ---------!
+   real   , dimension(n_pft)    :: sla_s0
+   real   , dimension(n_pft)    :: sla_s1
+   !----- Parameters that control the SLA plasticity. -------------------------------------!
+   real   , dimension(n_pft)    :: kplastic_SLA ! Expansion factor for SLA
+   real   , dimension(n_pft)    :: LMA_slope    ! Slope for LMA:Height relationship
+   !----- Parameter that limits plasticity (Vm, SLA, LTOR). -------------------------------!
+   real   , dimension(n_pft)    :: laimax_plastic
    !----- The initialization parameters for SLA:  SLA = sla_pft_init for non-trop PFTs
    real   , dimension(n_pft)    :: sla_pft_init
    !----- Mass ratio between fine root and leaves [kg_fine_roots]/[kg_leaves]. ------------!
    real   , dimension(n_pft)    :: q
-   !----- Mass ratio between sapwood and leaves [kg_sapwood]/[kg_leaves]. -----------------!
+   !----- Mass ratio between sapwood and leaves [kg_sapwood]/[kg_leaves]/[m]. -------------!
    real   , dimension(n_pft)    :: qsw
    real   , dimension(n_pft)    :: sapwood_ratio ! AREA ratio
+   !----- Mass ratio between bark and leaves [kg_bark]/[kg_leaves]/[m]. -------------------!
+   real   , dimension(n_pft)    :: qbark
+   !----- Density ratio between bark and wood [(g cm-3)_bark/(g cm-3)_wood]. --------------!
+   real   , dimension(n_pft)    :: qrhob
    !----- Specific Root Area (m2root area/kg_C]. ------------------------------------------!
    real   , dimension(n_pft)    :: SRA
    !----- Root vertical profile parameter. Fraction of root biomass below max root depth --!
@@ -523,7 +674,7 @@ module pft_coms
    real   , dimension(n_pft)    :: b1Ht
    !---------------------------------------------------------------------------------------!
    !     DBH-height allometry slope (1/cm).  Notice that this variable has different       !
-   ! meaning between temperate and tropical PFTs.                                          !!
+   ! meaning between temperate and tropical PFTs.                                          !
    !---------------------------------------------------------------------------------------!
    real   , dimension(n_pft)    :: b2Ht
    !---------------------------------------------------------------------------------------!
@@ -539,28 +690,39 @@ module pft_coms
    real   , dimension(n_pft)    :: b1Bs_large
    !----- DBH-stem allometry slope for large DBH cohorts. ---------------------------------!
    real   , dimension(n_pft)    :: b2Bs_large
-   !----- DBH-leaf allometry intercept for small cohorts. All PFTs ------------------------!
-   real   , dimension(n_pft)    :: b1Bl_small
-   !----- DBH-leaf allometry slope for all small cohorts. All PFTs ------------------------!
-   real   , dimension(n_pft)    :: b2Bl_small
-   !----- DBH-leaf allometry intercept for small cohorts. All PFTs ------------------------!
-   real   , dimension(n_pft)    :: b1Bl_large
-   !----- DBH-leaf allometry slope for all small cohorts. All PFTs ------------------------!
-   real   , dimension(n_pft)    :: b2Bl_large
+   !----- stem-DBH allometry intercept.  All PFTs. ----------------------------------------!
+   real   , dimension(n_pft)    :: d1DBH_small
+   !----- stem-DBH allometry slope (dimensionless).  All PFTs. ----------------------------!
+   real   , dimension(n_pft)    :: d2DBH_small
+   !----- stem-DBH allometry intercept for large DBH cohorts. -----------------------------!
+   real   , dimension(n_pft)    :: d1DBH_large
+   !----- stem-DBH allometry slope for large DBH cohorts. ---------------------------------!
+   real   , dimension(n_pft)    :: d2DBH_large
+   !----- DBH-leaf allometry intercept. All PFTs. -----------------------------------------!
+   real   , dimension(n_pft)    :: b1Bl
+   !----- DBH-leaf allometry slope. All PFTs. ---------------------------------------------!
+   real   , dimension(n_pft)    :: b2Bl
+   !----- Leaf-DBH allometry intercept. All PFTs. -----------------------------------------!
+   real   , dimension(n_pft)    :: l1DBH
+   !----- Leaf-DBH allometry slope. All PFTs. ---------------------------------------------!
+   real   , dimension(n_pft)    :: l2DBH
    !----- DBH-crown allometry intercept.  All PFTs. ---------------------------------------!
    real   , dimension(n_pft)    :: b1Ca
    !----- DBH-crown allometry slope.  All PFTs. -------------------------------------------!
    real   , dimension(n_pft)    :: b2Ca
-   !----- DBH-WAI allometry intercept.  All PFTs. -----------------------------------------!
+   !----- DBH-WAI allometry intercept. All PFTs. ------------------------------------------!
    real   , dimension(n_pft)    :: b1WAI
-   !----- DBH-WAI allometry slope.  All PFTs. ---------------------------------------------!
+   !----- DBH-WAI allometry slope. All PFTs. ----------------------------------------------!
    real   , dimension(n_pft)    :: b2WAI
+   !----- DBH-bark thickness slope.  All PFTs. --------------------------------------------!
+   real   , dimension(n_pft)    :: b1Xb
+   !----- DBH-sapwood thickness slope.  All PFTs. -----------------------------------------!
+   real   , dimension(n_pft)    :: b1Xs
 
    real   , dimension(n_pft)    :: b1SA
    !< DBH-sapwood area allometry intercept
    real   , dimension(n_pft)    :: b2SA
    !< DBH-sapwood area allometry slope
-
    !----- Minimum DBH attainable by this PFT. ---------------------------------------------!
    real   , dimension(n_pft)    :: min_dbh
    !----- Critical DBH for height/bdead, point in which plants stop growing vertically. ---!
@@ -571,10 +733,12 @@ module pft_coms
    real   , dimension(n_pft)    :: min_bdead
    !----- Critical Bdead, point in which plants stop growing vertically. ------------------!
    real   , dimension(n_pft)    :: bdead_crit
-   !----- Minimum DBH for a tree to be considered adult. Used by leaf biomass allometry. --!
-   real   , dimension(n_pft)    :: dbh_adult
-   !----- Minimum Bleaf for a tree to be considered adult. Used by DBH allometry. ---------!
-   real   , dimension(n_pft)    :: bleaf_adult
+   !----- Critical Bleaf, maximum allocation to leaves. -----------------------------------!
+   real   , dimension(n_pft)    :: bleaf_crit
+   !----- Critical balive, maximum allocation to living tissues. --------------------------!
+   real   , dimension(n_pft)    :: balive_crit
+   !----- Critical balive+bdead ("Everything but storage"). -------------------------------!
+   real   , dimension(n_pft)    :: bevery_crit
    !=======================================================================================!
    !=======================================================================================!
 
@@ -589,17 +753,49 @@ module pft_coms
    !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
-   ! Phenology indicates the leaf habit regarding phenology:                               !
-   ! 0. Evergreen coniferous;                                                              !
-   ! 1. Drought deciduous;                                                                 !
-   ! 2. Cold deciduous;                                                                    !
-   ! 3. Light controlled;                                                                  !
-   ! 4. Drought deciduous - based on 10day average.                                        !
+   !     Default tree phenology. The following codes are used.                             !
+   !                                                                                       !
+   ! 0 - Evergreen                                                                         !
+   ! 1 - Drought deciduous (M01 scheme, hard abscission and flushing).                     !
+   ! 2 - Cold deciduous (B00 scheme).                                                      !
+   ! 3 - Light-controlled (K12).                                                           !
+   ! 4 - Semi-deciduous (L19 scheme, abscission and flushing can be partial).              !
+   ! 5 - Semi-deciduous (partial abscission and flushing controlled by plant hydraulics).  !
+   ! 6 - Hydraulic semi-deciduous combined with light-controlled.                          !
+   !                                                                                       !
+   ! References:                                                                           !
+   !                                                                                       !
+   ! Botta A, Viovy N, Ciais P, Friedlingstein P , Monfray P. 2000. A global prognostic    !
+   !    scheme of leaf onset using satellite data. Glob. Change Biol., 6: 709-725.         !
+   !    doi:10.1046/j.1365-2486.2000.00362.x (B00).                                        !
+   !                                                                                       !
+   ! Kim Y, Knox RG, Longo M, Medvigy D, Hutyra LR, Pyle EH, Wofsy SC, Bras RL , Moorcroft !
+   !    PR. 2012. Seasonal carbon dynamics and water fluxes in an Amazon rainforest. Glob. !
+   !    Change Biol., 18: 1322–1334. doi:10.1111/j.1365-2486.2011.02629.x (K12).           !
+   !                                                                                       !
+   ! Longo M, Knox RG, Medvigy DM, Levine NM, Dietze MC, Kim Y, Swann ALS, Zhang K,        !
+   !    Rollinson CR, Bras RL et al . 2019. The biophysics, ecology, and biogeochemistry   !
+   !    of functionally diverse, vertically and horizontally heterogeneous ecosystems: the !
+   !    Ecosystem Demography model, version 2.2 – part 1: Model description. Geosci. Model !
+   !    Dev., 12: 4309–4346. doi:10.5194/gmd-12-4309-2019 (L19).                           !
+   !                                                                                       !
+   ! Moorcroft PR, Hurtt GC , Pacala SW. 2001. A method for scaling vegetation dynamics:   !
+   !    The Ecosystem Demography model (ED). Ecol. Monogr., 71: 557-586.                   !
+   !    doi:10.2307/3100036 (M01).                                                         !
+   !                                                                                       !
    !---------------------------------------------------------------------------------------!
    integer, dimension(n_pft) :: phenology 
+   !---------------------------------------------------------------------------------------!
+
 
    !----- Leaf width [m], which is used to compute the leaf boundary layer conductance. ---!
    real, dimension(n_pft) :: leaf_width
+   !---------------------------------------------------------------------------------------!
+
+
+   !----- This is the characteristic branch diameter [m]. ---------------------------------!
+   real, dimension(n_pft) :: branch_diam
+   !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
    !     Parameters to find the crown length, which will be used to find the height of the !
@@ -617,13 +813,22 @@ module pft_coms
    real, dimension(n_pft) :: b2Rd
 
    !---------------------------------------------------------------------------------------!
-   !    Fraction of vertical branches.  Values are from Poorter et al. (2006):             !
+   !     Parameters to find the effective functional root depth, following B18.  This is   !
+   ! used only by tropical trees and only when variable use_efrd_trtree is set to .true.   !
    !                                                                                       !
-   !    Poorter, L.; Bongers, L.; Bongers, F., 2006: Architecture of 54 moist-forest tree  !
-   ! species: traits, trade-offs, and functional groups. Ecology, 87, 1289-1301.           !
-   ! For simplicity, we assume similar numbers for temperate PFTs.                         !
+   ! Reference:                                                                            !
+   !                                                                                       !
+   ! Brum M, Vadeboncoeur MA, Ivanov V, Asbjornsen H, Saleska S, Alves LF, Penha D,        !
+   !    Dias JD, Aragao LEOC, Barros F, Bittencourt P, Pereira L, Oliveira RS, 2018.       !
+   !    Hydrological niche segregation defines forest structure and drought                !
+   !    tolerance strategies in a seasonal Amazonian forest. J. Ecol., in press.           !
+   !    doi:10.1111/1365-2745.13022 (B18).                                                 !
    !---------------------------------------------------------------------------------------!
-   real, dimension(n_pft) :: horiz_branch
+   real, dimension(n_pft) :: d18O_ref
+   real, dimension(n_pft) :: b1d18O
+   real, dimension(n_pft) :: b2d18O
+   real, dimension(n_pft) :: b1Efrd
+   real, dimension(n_pft) :: b2Efrd
    !=======================================================================================!
    !=======================================================================================!
 
@@ -638,14 +843,18 @@ module pft_coms
    !---------------------------------------------------------------------------------------!
    !----- Specific heat capacity of dry leaf biomass [J/kg/K]. ----------------------------!
    real, dimension(n_pft) :: c_grn_leaf_dry
-   !----- Specific heat capacity of dry non-green biomass [J/kg/K]. -----------------------!
-   real, dimension(n_pft) :: c_ngrn_biom_dry
-   !----- Ratio of tissue water to dry mass in green leaves [kg_h2o/kg_leaves]. -----------!
-   real, dimension(n_pft) :: wat_dry_ratio_grn
-   !----- Ratio of water to dry mass in wood biomass [kg_h2o/kg_wood]. --------------------!
-   real, dimension(n_pft) :: wat_dry_ratio_ngrn
-   !-----  Second term in the RHS of equation 5 of Gu et al. (2007), assuming T=t3ple. ----!
-   real, dimension(n_pfT) :: delta_c
+   !----- Specific heat capacity of dry non-green wood biomass [J/kg/K]. ------------------!
+   real, dimension(n_pft) :: c_ngrn_wood_dry
+   !----- Specific heat capacity of dry non-green bark biomass [J/kg/K]. ------------------!
+   real, dimension(n_pft) :: c_ngrn_bark_dry
+   !-----  Correction-term for energy storage in wood-water bond. -------------------------!
+   real, dimension(n_pft) :: delta_c_wood
+   real, dimension(n_pft) :: delta_c_bark
+   !----- Net specific heat capacity of leaves, sapwood, heartwood, and bark. -------------!
+   real, dimension(n_pft) :: cleaf
+   real, dimension(n_pft) :: csapw
+   real, dimension(n_pft) :: cdead
+   real, dimension(n_pft) :: cbark
    !=======================================================================================!
    !=======================================================================================!
 
@@ -658,15 +867,15 @@ module pft_coms
    !=======================================================================================!
    !     Reproduction and recruitment.                                                     !
    !---------------------------------------------------------------------------------------!
-   !----- Initial plant density in a near-bare-ground run [plant/m�]. ---------------------!
+   !----- Initial plant density in a near-bare-ground run [plant/m2]. ---------------------!
    real   , dimension(n_pft)    :: init_density
-   !----- Initial maximum LAI in a near-bare-ground run [m�/m�] - Big leaf only. ----------!
+   !----- Initial maximum LAI in a near-bare-ground run [m2/m2] - Big leaf only. ----------!
    real   , dimension(n_pft)    :: init_laimax
    !----- Minimum height of an individual [m]. --------------------------------------------!
    real   , dimension(n_pft)    :: hgt_min
    !----- Maximum height of an individual [m]. --------------------------------------------!
    real   , dimension(n_pft)    :: hgt_max
-   !----- Minimum biomass density [kgC/m�] required to form a new recruit. ----------------!
+   !----- Minimum biomass density [kgC/m2] required to form a new recruit. ----------------!
    real   , dimension(n_pft) :: min_recruit_size
    !----- Amount of biomass [kgC] in one tree, used for 'big-leaf' ED. --------------------!
    real   , dimension(n_pft) :: one_plant_c
@@ -675,18 +884,38 @@ module pft_coms
    ! anything other than zero unless storage turnover rate is adjusted accordingly).       !
    !---------------------------------------------------------------------------------------!
    real   , dimension(n_pft) :: st_fract
-   !----- Fraction of (positive) carbon balance devoted to reproduction. ------------------!
+   !----- Reproduction allocation function (true = bang; false = asymptote). --------------!
+   logical, dimension(n_pft) :: r_bang
+   !----- Fraction of (positive) carbon balance devoted to reproduction (bang). -----------!
    real   , dimension(n_pft) :: r_fract
-   !----- External input of seeds [kgC/m�/year]. ------------------------------------------!
+   !----- Curvature term for asymptote. ---------------------------------------------------!
+   real   , dimension(n_pft) :: r_cv50
+   !----- How much carbon plants decide to save in bstorage from growth and reproduction --!
+   !----- In terms of times to reflush the whole canopy and fine roots                   --!
+   real   , dimension(n_pft) :: storage_reflush_times
+   !----- External input of seeds [kgC/m2/year]. ------------------------------------------!
    real   , dimension(n_pft) :: seed_rain
    !----- Fraction of seed dispersal that is gridcell-wide. -------------------------------!
    real   , dimension(n_pft) :: nonlocal_dispersal !  
    !----- Minimum height plants need to attain before allocating to reproduction. ---------!
    real   , dimension(n_pft) :: repro_min_h
+   !----- Minimum DBH plants need to attain before allocating to reproduction. ------------!
+   real   , dimension(n_pft) :: repro_min_dbh
    !=======================================================================================!
    !=======================================================================================!
 
 
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     Variables to control carbon stocks during initialisation.                         !
+   !---------------------------------------------------------------------------------------!
+   !------ Storage biomass, relative to on-allometry living biomass. ----------------------!
+   real, dimension(n_pft) :: f_bstorage_init
+   !=======================================================================================!
+   !=======================================================================================!
 
 
 
@@ -694,18 +923,18 @@ module pft_coms
    !=======================================================================================!
    !=======================================================================================!
    !     The following variables control the cohort existence/termination.                 !
-   !---------------------------------------------------------------------------------------! 
-   !---------------------------------------------------------------------------------------! 
+   !---------------------------------------------------------------------------------------!
+   !---------------------------------------------------------------------------------------!
    !    Minimum size (measured as biomass of living and structural tissues) allowed in a   !
    ! cohort.  Cohorts with less biomass than this are going to be terminated.              !
-   !---------------------------------------------------------------------------------------! 
+   !---------------------------------------------------------------------------------------!
    real, dimension(n_pft) :: min_cohort_size
-   !---------------------------------------------------------------------------------------! 
+   !---------------------------------------------------------------------------------------!
    !    The following variable is the absolute minimum cohort population that a cohort can !
    ! have.  This should be used only to avoid nplant=0, but IMPORTANT: this will lead to a !
    ! ridiculously small cohort almost guaranteed to be extinct and SHOULD BE USED ONLY IF  !
    ! THE AIM IS TO ELIMINATE THE COHORT.                                                   !
-   !---------------------------------------------------------------------------------------! 
+   !---------------------------------------------------------------------------------------!
    real, dimension(n_pft) :: negligible_nplant
    !=======================================================================================!
    !=======================================================================================!
@@ -730,6 +959,47 @@ module pft_coms
    !=======================================================================================!
 
 
+   !---------------------------------------------------------------------------------------!
+   !     Labile fraction of different tissues.  This is the fraction of biomass that goes  !
+   ! to the fast soil pools as opposed to the structural soil carbon.                      !
+   ! MLO.  Migrated the parameters from decomp_coms to here because these are              !
+   ! PFT-dependent parameters.  Also split the fractions for "leaf" and "stem".            !
+   !---------------------------------------------------------------------------------------!
+   real, dimension(n_pft) :: f_labile_leaf !  Leaf and fire root
+   real, dimension(n_pft) :: f_labile_stem !  Sapwood, bark, heartwood
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     Liana-specific parameters.                                                        !
+   !=======================================================================================!
+   !=======================================================================================!
+   real :: h_edge          !< maximum height advantage for lianas
+   real :: liana_dbh_crit  !< liana specific critical dbh
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     Look-up table used to convert total woody biomass to DBH.                         !
+   !---------------------------------------------------------------------------------------!
+   integer                                   :: nbt_lut
+   real(kind=4), dimension(:,:), allocatable :: dbh_lut
+   real(kind=4), dimension(:,:), allocatable :: bleaf_lut
+   real(kind=4), dimension(:,:), allocatable :: bdead_lut
+   real(kind=4), dimension(:,:), allocatable :: balive_lut
+   real(kind=4), dimension(:,:), allocatable :: bevery_lut
+   logical     , dimension(:)  , allocatable :: le_mask_lut
+   logical     , dimension(:)  , allocatable :: ge_mask_lut
+   !=======================================================================================!
+   !=======================================================================================!
+
 
 
 
@@ -753,26 +1023,34 @@ module pft_coms
    !    Structure containing information needed for recruits.                              !
    !---------------------------------------------------------------------------------------!
    type recruittype
-      integer :: pft
-      integer :: krdepth
-      integer :: phenology_status
-      real    :: leaf_temp
-      real    :: wood_temp
-      real    :: leaf_temp_pv
-      real    :: wood_temp_pv
-      real    :: leaf_vpdef
-      real    :: hite
-      real    :: dbh
-      real    :: bdead
-      real    :: bleaf
-      real    :: broot
-      real    :: bsapwooda
-      real    :: bsapwoodb
-      real    :: balive
-      real    :: paw_avg
-      real    :: elongf
-      real    :: bstorage
-      real    :: nplant
+      integer             :: pft
+      integer             :: krdepth
+      integer             :: phenology_status
+      real                :: leaf_temp
+      real                :: wood_temp
+      real                :: leaf_temp_pv
+      real                :: wood_temp_pv
+      real                :: leaf_vpdef
+      real                :: hite
+      real                :: dbh
+      real                :: bdeada
+      real                :: bdeadb
+      real                :: bleaf
+      real                :: broot
+      real                :: bsapwooda
+      real                :: bsapwoodb
+      real                :: bbarka
+      real                :: bbarkb
+      real                :: balive
+      real                :: paw_avg
+      real                :: elongf
+      real                :: bstorage
+      real                :: nplant
+      real, dimension(13) :: cb
+      real, dimension(13) :: cb_lightmax
+      real, dimension(13) :: cb_moistmax
+      real, dimension(13) :: cb_mlmax
+      real                :: cbr_bar
    end type recruittype
    !=======================================================================================!
    !=======================================================================================!
@@ -793,29 +1071,40 @@ module pft_coms
       type(recruittype), dimension(maxp), intent(out) :: recruit
       !----- Local variable. --------------------------------------------------------------!
       integer                                         :: p
+      integer                                         :: imon
       !------------------------------------------------------------------------------------!
 
       do p=1,maxp
-         recruit(p)%pft              = 0
-         recruit(p)%krdepth          = 0
-         recruit(p)%phenology_status = 0
-         recruit(p)%leaf_temp        = 0.
-         recruit(p)%wood_temp        = 0.
-         recruit(p)%leaf_temp_pv     = 0.
-         recruit(p)%wood_temp_pv     = 0.
-         recruit(p)%leaf_vpdef       = 0.
-         recruit(p)%hite             = 0.
-         recruit(p)%dbh              = 0.
-         recruit(p)%bdead            = 0.
-         recruit(p)%bleaf            = 0.
-         recruit(p)%broot            = 0.
-         recruit(p)%bsapwooda        = 0.
-         recruit(p)%bsapwoodb        = 0.
-         recruit(p)%balive           = 0.
-         recruit(p)%paw_avg          = 0.
-         recruit(p)%elongf           = 0.
-         recruit(p)%bstorage         = 0.
-         recruit(p)%nplant           = 0.
+         recruit(p)%pft                  = 0
+         recruit(p)%krdepth              = 0
+         recruit(p)%phenology_status     = 0
+         recruit(p)%leaf_temp            = 0.
+         recruit(p)%wood_temp            = 0.
+         recruit(p)%leaf_temp_pv         = 0.
+         recruit(p)%wood_temp_pv         = 0.
+         recruit(p)%leaf_vpdef           = 0.
+         recruit(p)%hite                 = 0.
+         recruit(p)%dbh                  = 0.
+         recruit(p)%bdeada               = 0.
+         recruit(p)%bdeadb               = 0.
+         recruit(p)%bleaf                = 0.
+         recruit(p)%broot                = 0.
+         recruit(p)%bsapwooda            = 0.
+         recruit(p)%bsapwoodb            = 0.
+         recruit(p)%bbarka               = 0.
+         recruit(p)%bbarkb               = 0.
+         recruit(p)%balive               = 0.
+         recruit(p)%paw_avg              = 0.
+         recruit(p)%elongf               = 0.
+         recruit(p)%bstorage             = 0.
+         recruit(p)%nplant               = 0.
+         do imon=1,13
+            recruit(p)%cb         (imon) = 0.
+            recruit(p)%cb_lightmax(imon) = 0.
+            recruit(p)%cb_moistmax(imon) = 0.
+            recruit(p)%cb_mlmax   (imon) = 0.
+         end do
+         recruit(p)%cbr_bar              = 0.
       end do
 
       return
@@ -837,6 +1126,8 @@ module pft_coms
       !----- Arguments. -------------------------------------------------------------------!
       type(recruittype), intent(in)  :: recsource
       type(recruittype), intent(out) :: rectarget
+      !----- Local variables. -------------------------------------------------------------!
+      integer                        :: imon
       !------------------------------------------------------------------------------------!
 
       rectarget%pft              = recsource%pft
@@ -849,16 +1140,28 @@ module pft_coms
       rectarget%leaf_vpdef       = recsource%leaf_vpdef
       rectarget%hite             = recsource%hite
       rectarget%dbh              = recsource%dbh
-      rectarget%bdead            = recsource%bdead
+      rectarget%bdeada           = recsource%bdeada
+      rectarget%bdeadb           = recsource%bdeadb
       rectarget%bleaf            = recsource%bleaf
       rectarget%broot            = recsource%broot
       rectarget%bsapwooda        = recsource%bsapwooda
       rectarget%bsapwoodb        = recsource%bsapwoodb
+      rectarget%bbarka           = recsource%bbarka
+      rectarget%bbarkb           = recsource%bbarkb
       rectarget%balive           = recsource%balive
       rectarget%paw_avg          = recsource%paw_avg
       rectarget%elongf           = recsource%elongf
       rectarget%bstorage         = recsource%bstorage
       rectarget%nplant           = recsource%nplant
+
+      do imon=1,13
+         rectarget%cb         (imon) = recsource%cb         (imon)
+         rectarget%cb_lightmax(imon) = recsource%cb_lightmax(imon)
+         rectarget%cb_moistmax(imon) = recsource%cb_moistmax(imon)
+         rectarget%cb_mlmax   (imon) = recsource%cb_mlmax   (imon)
+      end do
+
+      rectarget%cbr_bar          = recsource%cbr_bar
 
       return
    end subroutine copy_recruit

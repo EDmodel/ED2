@@ -30,9 +30,11 @@
 #    debugger.                                                                             #
 #    Ideally, you should compile your code with this option whenever you make any changes. #
 #    Note, however, that if you change arguments you should first try A.                   #
+#                                                                                          #
 # D. Fast check - This will check pretty much the same as C, but it will not set up        #
 #    anything for the debugger. Use this only if you really don't want to deal with idb or #
 #    if you have a good idea of which problem you are dealing with.                        #
+#                                                                                          #
 # E. Fast - This is all about performance, use only when you are sure that the model has   #
 #           no code problem, and you want results asap. This will not check for any        #
 #           problems, which means that this is an option suitable for end users, not de-   #
@@ -41,7 +43,7 @@
 #                                                                                          #
 # usage example:                                                                           #
 #                                                                                          #
-# install.sh -k A -p intel                                                                 #
+# install.sh -k C -p intel                                                                 #
 #------------------------------------------------------------------------------------------#
 
 #----- Define the number of arguments. ----------------------------------------------------#
@@ -58,35 +60,36 @@ USE_GIT=true
 STEP=0
 
 # Argument parsing
-while [[ $# > 0 ]]
+while [[ ${#} > 0 ]]
 do
-key="$1"
-   case $key in
+   key="${1}"
+   case ${key} in
    -p|--platform)
-      PLATFORM="$2"
-      shift # past argument
+      PLATFORM="${2}"
+      shift 2 # past argument
       ;;
    -k|--kind)
-      KIND="$2"
-      shift # past argument
+      KIND="${2}"
+      shift 2 # past argument
       ;;
    -c|--clean)
       CLEAN="clean"
+      STEP=662941
+      shift 1
       ;;
    -g|--gitoff)
       USE_GIT=false
+      shift 1
       ;;
    -s|--step)
-      STEP="$2"
-      shift # past argument
+      STEP="${2}"
+      shift 2 # past argument
       ;;
    *)
       echo "Unknown key-value argument pair."
       exit 2
       ;;
    esac
-
-   shift # past argument or value
 done
 
 if [ "x${PLATFORM}" == "x" ]
@@ -95,7 +98,7 @@ then
    PLATFORM="gfortran"
 fi
 
-if [ "${KIND}" == "" ]
+if [ "x${KIND}" == "x" ]
 then  
    echo "No optimization level specified, defaulting to E."
    KIND="E"
@@ -103,14 +106,18 @@ fi
 
 
 # Check that the step is properly set 
-if [ "x${PLATFORM}" == "xintel" ]
-then
+case "${PLATFORM}" in
+intel|odyssey|sunhpc|sdumont)
    case ${KIND} in
    ['A','B']*)
       case ${STEP} in
       0)
          echo "You must provide step (option -s or --step) when use \"-k A\" or \"-k B\""
          exit 1
+         ;;
+      662941)
+         LKIND="A"
+         echo "Clean compilation."
          ;;
       1)
          LKIND="A"
@@ -137,9 +144,11 @@ then
       LKIND=${KIND}
       ;;
    esac
-else
+   ;;
+*)
    LKIND=${KIND}
-fi
+   ;;
+esac
 
 
 # Set opt and bin
@@ -172,7 +181,7 @@ fi
 BIN=bin-${OPT}-${KIND}${GIT_TAG}
 
 # Move to the binary directory
-if [ ! -d "$BIN" ]; then
+if [ ! -d "${BIN}" ]; then
    mkdir ${BIN}
 fi
 cd ${BIN}

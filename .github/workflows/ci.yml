@@ -1,0 +1,51 @@
+name: CI
+
+on: 
+  push:
+    branches:
+      - master
+      - main
+
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Install dependencies
+      run: sudo apt-get install -y --no-install-recommends gfortran libhdf5-openmpi-dev libopenmpi-dev libblas-dev liblapack-dev
+    - name: Install ED2
+      run: |
+        cd ED/build
+        ./install.sh -g -p travisci -k A
+    - name: Upload compiled ED2 binary
+      uses: actions/upload-artifact@v4
+      with:
+        name: ed2-binary
+        path: ED/build/ed_2.2-dbg
+
+  tests:
+    needs: build
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        name:
+          - umbs.bg
+          - tonzi
+          - tonzi.harvest
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Retrieve compiled binary
+      uses: actions/download-artifact@v4
+      with:
+        name: ed2-binary
+    - name: Install dependencies
+      run: sudo apt-get install -y --no-install-recommends gfortran libhdf5-openmpi-dev libopenmpi-dev libblas-dev liblapack-dev
+    - name: Run ED2
+      working-directory: ./EDTS/
+      run: |
+        chmod +x "$GITHUB_WORKSPACE"/ed_2.2-dbg
+        ./run-test.sh ${{ matrix.name }} "$GITHUB_WORKSPACE/ed_2.2-dbg"

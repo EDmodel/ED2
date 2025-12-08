@@ -44,8 +44,6 @@ subroutine simple_lake_model()
    use therm_lib              , only : rhovsil           & ! function
                                      , reducedpress      & ! function
                                      , idealdenssh       ! ! function
-   use canopy_struct_dynamics , only : ed_stars          & ! subroutine
-                                     , vertical_vel_flux ! ! function
    use lake_coms              , only : lake_buff         & ! intent(out)
                                      , initial_lake_buff & ! subroutine
                                      , zero_lakesite     ! ! subroutine

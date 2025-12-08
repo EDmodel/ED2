@@ -48,6 +48,17 @@ module ed_max_dims
    integer, parameter :: maxdimp = brams_maxdimp
    integer, parameter :: nxyzpm  = brams_nxyzpm 
    integer, parameter :: maxmach = brams_maxmach
+#elif defined(MACOS)
+   ! Restrict maximum size to avoid stack memory issues
+   integer, parameter :: maxgrds  = 3
+   integer, parameter :: nxpmax   = 50
+   integer, parameter :: nypmax   = 50
+   integer, parameter :: nzpmax   = 50
+   integer, parameter :: nzgmax   = 30
+   integer, parameter :: maxdim   = 50
+   integer, parameter :: maxdimp  = maxdim + 2
+   integer, parameter :: nxyzpm   = nzpmax * nxpmax * nypmax
+   integer, parameter :: maxmach  = 20
 #else
    integer, parameter :: maxgrds = 10
    integer, parameter :: nxpmax  = 666
@@ -59,6 +70,9 @@ module ed_max_dims
    integer, parameter :: nxyzpm  = nzpmax * nxpmax * nypmax
    integer, parameter :: maxmach = 3000
 #endif
+   integer, parameter :: ed_nstyp = 17             ! total # of soil textural classes
+   integer, parameter :: ed_nscol = 21             ! total # of soil colour classes
+   integer, parameter :: ed_nvtyp = 21
    !---------------------------------------------------------------------------------------!
 
 
@@ -173,17 +187,17 @@ module ed_max_dims
    !---------------------------------------------------------------------------------------!
    ! Number of disturbance types:                                                          !
    !                                                                                       !
-   ! 1 -- Clear cut (cropland and pasture).                                                !
+   ! 1 -- Pasture.                                                                         !
    ! 2 -- Forest plantation.                                                               !
    ! 3 -- Tree fall.                                                                       !
    ! 4 -- Fire.                                                                            !
    ! 5 -- Forest regrowth.                                                                 !
-   ! 6 -- Logged forest.                                                                   !
-   ! MARCOS Added                                                                          !
-   ! 7 -- Understory Thin -- Logged forest (skid trail + road).                            !
-   ! 8 -- Cropland.                                                                        !
+   ! 6 -- Logged forest (tree felling).                                                    !
+   ! 7 -- Logged forest (skid trail + road).                                               !
+   ! 8 -- Logged forest (mechanical canopy thinning).                                      !
+   ! 9 -- Cropland.                                                                        !
    !---------------------------------------------------------------------------------------!
-   integer, parameter :: n_dist_types = 6 ! Changed from 6 to include understory thin
+   integer, parameter :: n_dist_types = 9
    !---------------------------------------------------------------------------------------!
 
 
@@ -195,11 +209,12 @@ module ed_max_dims
    ! 2. Negative carbon balance;                                                           !
    ! 3. Treefall mortality;                                                                !
    ! 4. Mortality due to cold weather.                                                     !
-   ! 5. Disturbance mortality.  This is not directly applied to the cohort population,     !
+   ! 5. Mortality due to hydraulic failure.                                                !
+   ! 6. Disturbance mortality.  This is not directly applied to the cohort population,     !
    !    because this mortality is associated with the creation of a new patch, but it is   !
    !    saved here for posterior analysis.                                                 !
    !---------------------------------------------------------------------------------------!
-   integer, parameter :: n_mort = 5
+   integer, parameter :: n_mort = 6
    !---------------------------------------------------------------------------------------!
 
 
@@ -231,20 +246,32 @@ module ed_max_dims
    !      For restart runs, this is the maximum number of certain variables that can be    !
    ! read.                                                                                 !
    !  HUGE_POLYGON - maximum number of input polygons.                                     !
+   !  HUGE_SITE    - maximum number of input sites.                                        !
    !  HUGE_PATCH   - maximum number of input patches.                                      !
    !  HUGE_COHORT  - maximum number of input cohorts.                                      !
    !  MAX_WATER    - maximum number of soil water levels (not assigned to polygons).       !
    !---------------------------------------------------------------------------------------!
    integer, parameter :: huge_polygon = nxpmax * nypmax
-   integer, parameter :: huge_patch   = 3600
-   integer, parameter :: huge_cohort  = 150000
+   integer, parameter :: huge_site    = ed_nstyp
+#if defined(MACOS)
+   integer, parameter :: huge_patch   = 200
+   integer, parameter :: huge_cohort  = 20000
+   integer, parameter :: max_water    = 5
+#else
+   integer, parameter :: huge_patch   = 20000
+   integer, parameter :: huge_cohort  = 800000
    integer, parameter :: max_water    = 100
+#endif
    !---------------------------------------------------------------------------------------!
 
 
 
    !----- Maximum number of land use polygons that can be read by filelist. ---------------!
+#if defined(MACOS)
+   integer, parameter :: huge_lu = 999
+#else
    integer, parameter :: huge_lu = 99999
+#endif
    !---------------------------------------------------------------------------------------!
 
 
@@ -258,14 +285,22 @@ module ed_max_dims
    !----- Maximum number of files that can be read by filelist. ---------------------------!
 #if defined(COUPLED)
    integer, parameter :: maxfiles = brams_maxfiles
+#elif defined(MACOS)
+   integer, parameter :: maxfiles = 999
 #else
    integer, parameter :: maxfiles = 99999
 #endif
    !---------------------------------------------------------------------------------------!
 
+
    !----- Maximum observation times that can be stored by the obs_timelist ----------------!
+#if defined(MACOS)
+   integer, parameter :: max_obstime = 999
+#else
    integer, parameter :: max_obstime = 99999
+#endif
    !---------------------------------------------------------------------------------------!
+
 
    !----- Maximum number of files (site+patch+cohort). ------------------------------------!
    integer, parameter :: maxlist = 3 * maxfiles
@@ -281,6 +316,8 @@ module ed_max_dims
    character(len=str_len), parameter :: undef_character = 'nothing'
    character(len=str_len), parameter :: undef_path      = '/nowhere'
    logical               , parameter :: undef_logical   = .false.
+   integer               , parameter :: skip_integer    = huge(6)
+   real(kind=4)          , parameter :: skip_real       = huge(6.)
    !---------------------------------------------------------------------------------------!
 
 end module ed_max_dims

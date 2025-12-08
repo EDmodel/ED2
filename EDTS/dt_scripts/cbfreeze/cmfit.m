@@ -1,5 +1,4 @@
-function [CMAP,CLIM,WIDTH,REF,LEVELS] = ...
-                                 cmfit(CMAP,CLIM,WIDTH,REF,CENTER,varargin) 
+function [CMAP,CLIM,WIDTH,REF,LEVELS] = cmfit(CMAP,CLIM,WIDTH,REF,CENTER,varargin) 
 %CMFIT   Sets the COLORMAP and CAXIS to specific color bands. 
 %
 %   SYNTAX:
@@ -36,11 +35,12 @@ function [CMAP,CLIM,WIDTH,REF,LEVELS] = ...
 %     LEVF   - Levels for the color bands.
 %
 %   DESCRIPTION:
-%     This program sets the current figure colormap with specified
-%     band-widths of colors taking the CAXIS limits as reference. When the 
-%     optional input argument CENTER is true, the colormap is moved and
-%     expanded so its middle color will be right at REF. This will help for
-%     distinguish between positive and negative values (REF=0).
+%     This program sets the current figure colormap (when no outputs) with
+%     specified band-widths of colors taking the CAXIS limits as reference.
+%     When the optional input argument CENTER is true, the colormap is
+%     moved and expanded so its middle color will be right at REF. This
+%     will help for distinguish between positive and negative values
+%     (REF=0).
 %
 %   NOTE:
 %     * Optional inputs use its DEFAULT value when not given or [].
@@ -59,7 +59,7 @@ function [CMAP,CLIM,WIDTH,REF,LEVELS] = ...
 %   SEE ALSO:
 %     COLORMAP
 %     and 
-%     CMAPPING, CBFIT by Caros Vargas
+%     CMAPPING, CBFIT by Carlos Vargas
 %     at http://www.mathworks.com/matlabcentral/fileexchange
 %
 %
@@ -69,20 +69,14 @@ function [CMAP,CLIM,WIDTH,REF,LEVELS] = ...
 %   MATLAB:  7.7.0.471 (R2008b)
 %   AUTHOR:  Carlos Adrian Vargas Aguilera (MEXICO)
 %   CONTACT: nubeobscura@hotmail.com
-
 %   REVISIONS:
 %   1.0      Released. (Jun 08, 2009)
-
 %   DISCLAIMER:
 %   cmfit.m is provided "as is" without warranty of any kind, under the
 %   revised BSD license.
-
 %   Copyright (c) 2008,2009 Carlos Adrian Vargas Aguilera
-
-
 % INPUTS CHECK-IN
 % -------------------------------------------------------------------------
-
 % Sets defaults: 
 AX  = {};    % Axes input
 tol = 1;     % Adds this tolerance to the decimal precision
@@ -94,7 +88,6 @@ else
  hfig = {};
  hax  = {};
 end
-
 % Checks inputs:
 if nargin>6
  error('CVARGAS:cmfit:tooManyInputs', ...
@@ -104,10 +97,8 @@ if nargin>5
  error('CVARGAS:cmfit:tooManyOutputs', ...
   'At most 5 outputs are allowed.')
 end
-
 % Saves number of arguments:
 Nargin = nargin;
-
 % Checks AX input:
 if (Nargin>0) && ~isempty(CMAP) && (numel(CMAP)==1) && ...
   ishandle(CMAP)
@@ -142,7 +133,6 @@ if (Nargin>0) && ~isempty(CMAP) && (numel(CMAP)==1) && ...
  end
  Nargin = Nargin-1;
 end
-
 % Checks CMAP input:
 if Nargin<1 || isempty(CMAP)
  if ~isempty(hax)
@@ -151,27 +141,22 @@ if Nargin<1 || isempty(CMAP)
   CMAP = get(0,'DefaultFigureColormap');
  end
 end
-
 % Checks CLIM input:
 if Nargin<2
  CLIM = [];
 end
-
 % Checks WIDTH input:
 if Nargin<3
  WIDTH = [];
 end
-
 % Checks REf input:
 if Nargin<4
  REF = [];
 end
-
 % Checks CENTER input:
 if Nargin<5 || isempty(CENTER)
  CENTER = false;
 end
-
 % Look for WIDTH and REF from a (temporarly) colorbar:
 if isempty(WIDTH) || (length(WIDTH)==1 && (isempty(REF) || ...
   (isempty(CLIM) && (isempty(hax) || ...
@@ -207,17 +192,13 @@ if isempty(WIDTH) || (length(WIDTH)==1 && (isempty(REF) || ...
   delete(h)
  end
 end
-
 % Centers at the middle:
 if CENTER && isempty(REF)
  REF = 0;
 end 
-
 % -------------------------------------------------------------------------
 % MAIN
 % -------------------------------------------------------------------------
-
-
 % Gets minimum width from specified levels:
 NL = length(WIDTH); 
 if (NL>1)
@@ -311,12 +292,10 @@ else
  if isempty(CLIM)
   CLIM = caxis(hax{:});
  end
-
  % Sets color limits to be a multipler of WIDTH passing through REF:
  N1   = ceil((+REF-CLIM(1))/WIDTH);
  N2   = ceil((-REF+CLIM(2))/WIDTH);
  CLIM = REF + [-N1 N2]*WIDTH;
-
  % Sets colormap with NC bands:
  Nc = round(diff(CLIM)/WIDTH);
  if CENTER
@@ -341,7 +320,6 @@ else
  % Sets levels:
  LEVELS = linspace(CLIM(1),CLIM(2),size(CMAP,1))';
 end
-
 % OUTPUTS CHECK-OUT
 % -------------------------------------------------------------------------
 if ~isempty(AX)
@@ -355,6 +333,4 @@ if ~nargout
  end
  clear CMAP
 end
-
-
 % [EOF]   cmfit.m

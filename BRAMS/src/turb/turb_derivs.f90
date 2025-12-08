@@ -145,27 +145,27 @@ end subroutine strain
 
 !==========================================================================================!
 !==========================================================================================!
-!    This subroutine computes the Brunt-Väisälä frequency squared (en2) based on the       !
+!    This subroutine computes the Brunt-Vaisala frequency squared (en2) based on the       !
 ! virtual temperature profile. It will consider the effect of condensed phase.             !
 !------------------------------------------------------------------------------------------!
 subroutine bruvais(ibruvais,m1,m2,m3,ia,iz,ja,jz,pi0,pp,theta,rtp,rv,rtgt,flpw,en2)
-   use mem_scratch, only : vctr11       & ! intent(out) - Potential temperature
-                         , vctr12       & ! intent(out) - Virtual potential temperature
-                         , vctr1        & ! intent(out) - Height above ground
-                         , vctr2        & ! intent(out) - coeff. #1 (either cl1 or ci1)
-                         , vctr3        & ! intent(out) - coeff. #2 (either cl2 or ci2)
-                         , vctr4        & ! intent(out) - coeff. #3 (either cl3 or ci3)
-                         , vctr5        & ! intent(out) - Delta-z between k and k+1
-                         , vctr6        & ! intent(out) - Delta-z between k-1 and k
-                         , vctr10       & ! intent(out) - [z(k)-z(k-½)]/[z(k+½)-z(k-½)]
-                         , vctr19       & ! intent(out) - g / Height above ground
-                         , vctr25       & ! intent(out) - d(theta_v)/dz at k+½
-                         , vctr26       & ! intent(out) - d(theta_v)/dz at k-½
-                         , vctr27       & ! intent(out) - Full Exner function      [J/kg/K]
-                         , vctr28       & ! intent(out) - Pressure                 [    Pa]
-                         , vctr29       & ! intent(out) - Temperature              [     K]
-                         , vctr30       & ! intent(out) - Saturation mixing ratio  [ kg/kg]
-                         , vctr31       ! ! intent(out) - Condensed  mixing ratio  [ kg/kg]
+   use mem_scratch, only : vctr11       & ! intent(out) Potential temperature
+                         , vctr12       & ! intent(out) Virtual potential temperature
+                         , vctr1        & ! intent(out) Height above ground
+                         , vctr2        & ! intent(out) coeff. #1 (either cl1 or ci1)
+                         , vctr3        & ! intent(out) coeff. #2 (either cl2 or ci2)
+                         , vctr4        & ! intent(out) coeff. #3 (either cl3 or ci3)
+                         , vctr5        & ! intent(out) Delta-z between k and k+1
+                         , vctr6        & ! intent(out) Delta-z between k-1 and k
+                         , vctr10       & ! intent(out) [z(k)-z(k-1/2)]/[z(k+1/2)-z(k-1/2)]
+                         , vctr19       & ! intent(out) g / Height above ground
+                         , vctr25       & ! intent(out) d(theta_v)/dz at k+1/2
+                         , vctr26       & ! intent(out) d(theta_v)/dz at k-1/2
+                         , vctr27       & ! intent(out) Full Exner function        [J/kg/K]
+                         , vctr28       & ! intent(out) Pressure                   [    Pa]
+                         , vctr29       & ! intent(out) Temperature                [     K]
+                         , vctr30       & ! intent(out) Saturation mixing ratio    [ kg/kg]
+                         , vctr31       ! ! intent(out) Condensed  mixing ratio    [ kg/kg]
 
    use mem_grid   , only : zt           & ! intent(in)
                          , zm           & ! intent(in)
@@ -194,7 +194,7 @@ subroutine bruvais(ibruvais,m1,m2,m3,ia,iz,ja,jz,pi0,pp,theta,rtp,rv,rtgt,flpw,e
    implicit none
 
    !----- Arguments -----------------------------------------------------------------------!
-   integer                  , intent(in   ) :: ibruvais ! Method to compute N²    [    ---]
+   integer                  , intent(in   ) :: ibruvais ! Method to compute N^2   [    ---]
    integer                  , intent(in   ) :: m1       ! Z dimensions            [    ---]
    integer                  , intent(in   ) :: m2       ! X dimensions            [    ---]
    integer                  , intent(in   ) :: m3       ! Y dimensions            [    ---]
@@ -206,10 +206,10 @@ subroutine bruvais(ibruvais,m1,m2,m3,ia,iz,ja,jz,pi0,pp,theta,rtp,rv,rtgt,flpw,e
    real, dimension(m1,m2,m3), intent(in   ) :: pp       ! Perturbation on Exner   [ J/kg/K]
    real, dimension(m1,m2,m3), intent(in   ) :: theta    ! Potential temperature   [      K]
    real, dimension(m1,m2,m3), intent(in   ) :: rtp      ! Total mixing ratio      [  kg/kg]
-   real, dimension(m1,m2,m3), intent(in   ) :: rv       ! Vapour mixing ratio     [  kg/kg]       
+   real, dimension(m1,m2,m3), intent(in   ) :: rv       ! Vapour mixing ratio     [  kg/kg]
    real, dimension(   m2,m3), intent(in   ) :: rtgt     ! Sigma-z correction      [    m/m]
    real, dimension(   m2,m3), intent(in   ) :: flpw     ! Lowest point in W grid  [    ---]
-   real, dimension(m1,m2,m3), intent(inout) :: en2      ! (Brunt-Väisälä freq.)²  [    Hz²]
+   real, dimension(m1,m2,m3), intent(inout) :: en2      ! (Brunt-Vaisala freq.)^2 [    Hz2]
    !----- Local variables -----------------------------------------------------------------!
    integer                                  :: i
    integer                                  :: j
@@ -220,7 +220,7 @@ subroutine bruvais(ibruvais,m1,m2,m3,ia,iz,ja,jz,pi0,pp,theta,rtp,rv,rtgt,flpw,e
    real                                     :: temp
    real                                     :: rvlsi
    real                                     :: rvii
-   !----- Local constants, for alternative method to compute N², test only ----------------!
+   !----- Local constants, for alternative method to compute N2, test only ----------------!
    real                     , parameter     :: cl1 = alvl3 / rdry
    real                     , parameter     :: cl2 = ep * alvl3 ** 2 / (cpdry * rdry)
    real                     , parameter     :: cl3 = alvl3 / cpdry
@@ -262,9 +262,9 @@ subroutine bruvais(ibruvais,m1,m2,m3,ia,iz,ja,jz,pi0,pp,theta,rtp,rv,rtgt,flpw,e
          ! cases. If it were constant, then vctr10 is 0.5 which is the original case.      !
          !---------------------------------------------------------------------------------!
          do k = k2,m1-1
-            vctr5(k)  = 1. / (vctr1(k+1) - vctr1(k))        ! 1/Delta_z(k+½)
-            vctr6(k)  = 1. / (vctr1(k)   - vctr1(k-1))      ! 1/Delta_z(k-½)
-            !----- vctr10 is the ratio between [z(k)-z(k-½)] and [z(k+½)+z(k-½)] ----------!
+            vctr5(k)  = 1. / (vctr1(k+1) - vctr1(k))        ! 1/Delta_z(k+1/2)
+            vctr6(k)  = 1. / (vctr1(k)   - vctr1(k-1))      ! 1/Delta_z(k-1/2)
+            !----- vctr10 is the ratio between [z(k)-z(k-1/2)] and [z(k+1/2)+z(k-1/2)] ----!
             vctr10(k) = (vctr1(k)-vctr1(k-1)) / (vctr1(k+1)-vctr1(k-1))
          end do
          

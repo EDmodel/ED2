@@ -37,6 +37,8 @@ gridded.plot <<- function( x                = seq(from=0,to=1,len=nrow(z))
                          , legend.options   = NULL
                          , edge.axes        = FALSE
                          , mar              = NULL
+                         , mar.main         = mar
+                         , mar.key          = NULL
                          , oma              = NULL
                          , omd              = NULL
                          , f.key            = 1/6
@@ -86,7 +88,7 @@ gridded.plot <<- function( x                = seq(from=0,to=1,len=nrow(z))
 
 
    #----- No messed-up axes are allowed, they must increase. ------------------------------#
-   if (any(diff(x) %<=% 0) || any(diff(y) %<=% 0)){
+   if (any(diff(x) %le% 0) || any(diff(y) %le% 0)){
        stop("increasing x and y values expected")
    }#end if
    #---------------------------------------------------------------------------------------#
@@ -176,7 +178,9 @@ gridded.plot <<- function( x                = seq(from=0,to=1,len=nrow(z))
    #=======================================================================================#
    #      Second plot: the key scale.                                                      #
    #---------------------------------------------------------------------------------------#
-      if (key.vertical){
+      if (! is.null(mar.key)){
+         par(mar = mar.key)
+      }else if (key.vertical){
          par(mar = pretty.box(n=1)$mar.key)
       }else{
          par(mar = c(2.1,4.6,1.6,2.1))
@@ -242,15 +246,27 @@ gridded.plot <<- function( x                = seq(from=0,to=1,len=nrow(z))
 
 
       #----- Plot the title. --------------------------------------------------------------#
-      if (! is.null(key.title)) do.call(what="title",args=key.title)
+      if (! is.null(key.title)){
+         #---- Make sure that the key title will work with multiple configurations. -------#
+         if (! is.list(key.title)){
+            key.title=list(main=key.title)
+         }else if (! "main" %in% names(key.title)){
+            names(key.title)[[1]] = "main"
+         }#end if
+         #---------------------------------------------------------------------------------#
+
+         #----- Call the command. ---------------------------------------------------------#
+         do.call(what="title",args=key.title)
+         #---------------------------------------------------------------------------------#
+      }#end if (! is.null(key.title))
       #------------------------------------------------------------------------------------#
    #=======================================================================================#
    #=======================================================================================#
 
 
    #----- Set the window. -----------------------------------------------------------------#
-   if (! is.null(mar)){
-      mar.now = mar
+   if (! is.null(mar.main)){
+      mar.now = mar.main
    }else if (key.vertical){
       mar.now = c(5.1,4.1,4.1,2.1)
    }else{
@@ -267,7 +283,7 @@ gridded.plot <<- function( x                = seq(from=0,to=1,len=nrow(z))
 
    #----- Plot the field. -----------------------------------------------------------------#
    xyz = list(x=x,y=y,z=z)
-   image(xyz,breaks=levels,col=col,add=TRUE,useRaster=TRUE)
+   image(xyz,breaks=levels,col=col,add=TRUE,useRaster=useRaster)
    #---------------------------------------------------------------------------------------#
 
 

@@ -11,15 +11,9 @@ module ed_mem_alloc
    !---------------------------------------------------------------------------------------!
    subroutine ed_memory_allocation(proc_type)
 
-      use ed_max_dims         , only : n_pft                   & ! intent(in)
-                                     , n_dist_types            & ! intent(in)
-                                     , n_dbh                   & ! intent(in)
-                                     , maxgrds                 ! ! intent(in)
-      use ed_mem_grid_dim_defs, only : define_grid_dim_pointer ! ! subroutine
       use ed_state_vars       , only : gdpy                    & ! intent(in)
                                      , edgrid_g                & ! intent(out)
                                      , allocate_edglobals      & ! subroutine
-                                     , nullify_edtype          & ! subroutine
                                      , allocate_edtype         ! ! subroutine
       use grid_coms           , only : nnxp                    & ! intent(in)
                                      , nnyp                    & ! intent(in)
@@ -73,15 +67,15 @@ module ed_mem_alloc
          call ed_nullify_work(work_e(ng))
          call ed_alloc_work(work_e(ng),nmxp(ng),nmyp(ng),maxsite)
       end do
-      
+
    !---------------------------------------------------------------------------------------!
    !   Allocate the top most hierachical memory structures for the ED2 LSM. We changed the !
    ! the way the standalone deals with different regions ans sites of interest. Now it     !
-   ! allocates each region and each poi in a different grid. This is done to ease the way  !
-   ! the parallel code is implemented, to take full advantage of MPI. By doing this, we    !
-   ! can split the polygons among the different nodes for the regional run, and split the  !
-   ! patches and cohorts in different nodes in the POI grids --- the latter is yet to be   !
-   ! implemented.                                                                          !
+   ! allocates each region and each point in a different grid. This is done to ease the    !
+   ! way the parallel code is implemented, to take full advantage of MPI. By doing this,   !
+   ! we can split the polygons among the different nodes for the regional run, and split   !
+   ! the patches and cohorts in different nodes in the POI grids --- the latter is yet to  !
+   ! be implemented.                                                                       !
    !---------------------------------------------------------------------------------------!
       write (unit=*,fmt='(a,i5,a)') ' + Polygon array allocation, node ',mynum,';'
 
@@ -91,7 +85,7 @@ module ed_mem_alloc
          call allocate_edtype(edgrid_g(ng),gdpy(mynum,ng))
       end do
 
-      write (unit=*,fmt='(a,i5,a)') ' + Memory successfully allocated on none ',mynum,';'
+      write (unit=*,fmt='(a,i5,a)') ' + Memory successfully allocated on node ',mynum,';'
       return
    end subroutine ed_memory_allocation
    !---------------------------------------------------------------------------------------!

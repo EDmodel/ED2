@@ -88,7 +88,7 @@ endif
 
 
 #################################### COMPILER SETTINGS #####################################
-CMACH=PC_LINUX1
+CMACH=ODYSSEY
 F_COMP=mpif90
 C_COMP=mpicc
 LOADER=mpif90
