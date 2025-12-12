@@ -2247,13 +2247,14 @@ module therm_lib
 
 
       !------------------------------------------------------------------------------------!
-      !     Find the vapour pressure and the saturation vapour pressure.                   !
+      !     Find the vapour pressure and the saturation vapour pressure. Use different     !
+      ! functions for ice VS liquid saturation vapour pressure.                            !
       !------------------------------------------------------------------------------------!
       pvap = ( pres * shv ) / ( ep + (1.0 - ep) * shv )
       if (frozen) then
          psat = esif(temp)
       else
-         psat = esif(temp)
+         psat = eslf(temp)
       end if
       !------------------------------------------------------------------------------------!
 
