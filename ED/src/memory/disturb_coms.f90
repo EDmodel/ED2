@@ -183,9 +183,9 @@ module disturb_coms
    !    Patch dynamics variables, to be set in ed_params.f90.                              !
    !---------------------------------------------------------------------------------------!
    !----- Only trees above this height create a gap when they fall. -----------------------!
-   real                          :: treefall_hite_threshold
+   real                          :: treefall_height_threshold
    !----- Flag to decide whether or not to limit disturbance to patches with tall trees. --!
-   logical                       :: does_hite_limit_tfpatch
+   logical                       :: does_height_limit_tfpatch
    !---------------------------------------------------------------------------------------!
    !      Minimum age above which we disregard the disturbance type (land use) and assume  !
    ! old growth, thus allowing patch fusion to occur.                                      !
@@ -296,13 +296,13 @@ module disturb_coms
       ! 11 - Primary forest to secondary forest                            [         1/yr] !
       !  ====== Biomass to be harvested. ======                                            !
       ! 12 - Wood harvest on mature secondary forest land.                 [          kgC] !
-      ! 13 - Wood harvest on mature secondary forest land.                 [       kgC/m²] !
+      ! 13 - Wood harvest on mature secondary forest land.                 [       kgC/m2] !
       ! 14 - Wood harvest on primary forested land.                        [          kgC] !
-      ! 15 - Wood harvest on primary forested land.                        [       kgC/m²] !
+      ! 15 - Wood harvest on primary forested land.                        [       kgC/m2] !
       ! 16 - Wood harvest on young secondary forest land.                  [          kgC] !
-      ! 17 - Wood harvest on young secondary forest land.                  [       kgC/m²] !
+      ! 17 - Wood harvest on young secondary forest land.                  [       kgC/m2] !
       ! 18 - Wood harvest on primary non-forested land.                    [          kgC] !
-      ! 19 - Wood harvest on primary non-forested land.                    [       kgC/m²] !
+      ! 19 - Wood harvest on primary non-forested land.                    [       kgC/m2] !
       !  ====== Special flags. ======                                                      !
       ! 12 - Secondary forest is harvested using the probability of harvesting when the    !
       !      DBH is above the minimum DBH.                                                 !

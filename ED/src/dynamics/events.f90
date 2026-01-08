@@ -360,22 +360,23 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
                  pft = cpatch%pft(ico)
                  !! calc new pool sizes
 
-                 ialloc     =  1.0 / (1.0 + q(pft) + (qsw(pft)+qbark(pft))*cpatch%hite(ico))
+                 ialloc     =  1.0                                                         &
+                            / (1.0 + q(pft) + (qsw(pft)+qbark(pft))*cpatch%height(ico))
                  bdeada_new = cpatch%bdeada(ico) * ( 1.0 - agb_frac)
                  bdeada_new = max(0.0, bdeada_new)
                  bdeadb_new = cpatch%bdeadb(ico) * ( 1.0 - bgb_frac)
                  bdeadb_new = max(0.0, bdeadb_new)
-                 bsapa_new  = cpatch%balive(ico) * qsw(pft) * cpatch%hite(ico) * ialloc    &
+                 bsapa_new  = cpatch%balive(ico) * qsw(pft) * cpatch%height(ico) * ialloc  &
                             * agf_bs(pft) * (1.0-agb_frac)
                  bsapa_new = max(0.0, bsapa_new)
-                 bsapb_new  = cpatch%balive(ico) * qsw(pft) * cpatch%hite(ico) * ialloc    &
+                 bsapb_new  = cpatch%balive(ico) * qsw(pft) * cpatch%height(ico) * ialloc  &
                             * (1.0 - agf_bs(pft)) * (1.0-bgb_frac)
                  bsapb_new = max(0.0, bsapb_new)
-                 bbarka_new = cpatch%balive(ico) * qbark(pft) * cpatch%hite(ico) * ialloc  &
-                            * agf_bs(pft) * (1.0-agb_frac)
+                 bbarka_new = cpatch%balive(ico) * qbark(pft) * cpatch%height(ico)         &
+                            * ialloc * agf_bs(pft) * (1.0-agb_frac)
                  bbarka_new = max(0.0, bbarka_new)
-                 bbarkb_new = cpatch%balive(ico) * qbark(pft) * cpatch%hite(ico) * ialloc  &
-                            * (1.0 - agf_bs(pft)) * (1.0-bgb_frac)
+                 bbarkb_new = cpatch%balive(ico) * qbark(pft) * cpatch%height(ico)         &
+                            * ialloc * (1.0 - agf_bs(pft)) * (1.0-bgb_frac)
                  bbarkb_new = max(0.0, bbarkb_new)
 
                  bstore_new = cpatch%bstorage(ico) * (1.0-stor_frac)
@@ -429,17 +430,18 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
 
                  if((cpatch%bdeada(ico) + cpatch%bdeadb(ico)) > tiny(1.0)) then
                     if(is_grass(cpatch%pft(ico)) .and. igrass==1) then
-                       cpatch%hite(ico) = max( hgt_min(pft),                               &
-                                               bl2h(cpatch%bleaf(ico),cpatch%sla(ico),pft))
-                       cpatch%dbh (ico) = h2dbh(cpatch%hite(ico),pft)
+                       cpatch%height(ico) = max( hgt_min(pft),                             &
+                                                 bl2h(cpatch%bleaf(ico),cpatch%sla(ico)    &
+                                                     ,pft)                                )
+                       cpatch%dbh   (ico) = h2dbh(cpatch%height(ico),pft)
                     else
-                       cpatch%dbh (ico) = bd2dbh(cpatch%pft(ico), cpatch%bdeada(ico)       &
+                       cpatch%dbh   (ico) = bd2dbh(cpatch%pft(ico), cpatch%bdeada(ico)       &
                                                 ,cpatch%bdeadb(ico))
-                       cpatch%hite(ico) = dbh2h (cpatch%pft(ico), cpatch%dbh(ico))
+                       cpatch%height(ico) = dbh2h (cpatch%pft(ico), cpatch%dbh(ico))
                     end if
                  else
-                    cpatch%dbh(ico)  = 0.0
-                    cpatch%hite(ico) = 0.0
+                    cpatch%dbh   (ico) = 0.0
+                    cpatch%height(ico) = 0.0
                  end if
 
                  !----- Update LAI, WAI, and CAI ------------------------------------------!
@@ -447,10 +449,10 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
 
                  !----- Update basal area and above-ground biomass. -----------------------!
                  cpatch%basarea(ico) = pio4 * cpatch%dbh(ico) * cpatch%dbh(ico)
-                 cpatch%btimber(ico) = size2bt(cpatch%dbh(ico),cpatch%hite(ico)            &
+                 cpatch%btimber(ico) = size2bt(cpatch%dbh(ico),cpatch%height(ico)          &
                                               ,cpatch%bdeada(ico),cpatch%bsapwooda(ico)    &
                                               ,cpatch%bbarka(ico),cpatch%pft(ico))
-                 cpatch%thbark (ico) = size2xb(cpatch%dbh(ico),cpatch%hite(ico)            &
+                 cpatch%thbark (ico) = size2xb(cpatch%dbh(ico),cpatch%height(ico)          &
                                               ,cpatch%bbarka(ico),cpatch%bbarkb(ico)       &
                                               ,cpatch%sla(ico),cpatch%pft(ico))
                  cpatch%agb(ico)     = ed_biomass(cpatch, ico)
@@ -954,14 +956,14 @@ end subroutine event_till
 !!$              !!enter values for new cohort
 !!$              cpatch%pft(ico)     = pft
 !!$              cpatch%nplant(ico)  = density
-!!$              cpatch%hite(ico)    = hgt_min(pft)
+!!$              cpatch%height(ico)  = hgt_min(pft)
 !!$              cpatch%dbh(ico)     = h2dbh(hgt_min(pft),pft)
-!!$              cpatch%bdead(ico)   = size2bd(cpatch%dbh(ico),cpatch%hite(ico),pft)
-!!$              cpatch%bleaf(ico)   = size2bl(cpatch%dbh(ico),cpatch%hite(ico),cpatch%sla(ico),pft)
-!!$print*,cpatch%hite(ico),cpatch%dbh(ico),cpatch%bdead(ico),cpatch%bleaf(ico)
+!!$              cpatch%bdead(ico)   = size2bd(cpatch%dbh(ico),cpatch%height(ico),pft)
+!!$              cpatch%bleaf(ico)   = size2bl(cpatch%dbh(ico),cpatch%height(ico),cpatch%sla(ico),pft)
+!!$print*,cpatch%height(ico),cpatch%dbh(ico),cpatch%bdead(ico),cpatch%bleaf(ico)
 !!$              cpatch%phenology_status(ico) = 0
 !!$              cpatch%balive(ico)  = cpatch%bleaf(ico)* &
-!!$                   & (1.0 + q(pft) + qsw(pft) * cpatch%hite(ico))
+!!$                   & (1.0 + q(pft) + qsw(pft) * cpatch%height(ico))
 !!$              cpatch%lai(ico)     = cpatch%bleaf(ico) * density * sla(pft)
 !!$              cpatch%bstorage(ico)  = 0.0
 !!$              cpatch%veg_temp(ico)  = csite%can_temp(ipa)
@@ -970,7 +972,7 @@ end subroutine event_till
 !!$              !!update site lai
 !!$              csite%lai(ipa) = sum(cpatch%lai(1:ico))
 !!$print*,csite%lai(ipa),cpatch%lai
-!!$              hcapveg = hcapveg_ref * max(cpatch%hite(1),cpatch%hite(ico),heathite_min) * cpatch%lai(ico)/csite%lai(ipa)
+!!$              hcapveg = hcapveg_ref * max(cpatch%height(1),cpatch%height(ico),heatheight_min) * cpatch%lai(ico)/csite%lai(ipa)
 !!$
 !!$print*,hcapveg
 !!$              cpatch%leaf_energy(ico) =  hcapveg * (cpatch%leaf_temp(ico)-t3ple)

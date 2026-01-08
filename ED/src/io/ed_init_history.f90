@@ -5187,8 +5187,8 @@ module ed_init_history
       memoffs (1) = 0_8
       call hdf_getslab_r(cpatch%nplant                                                     &
                         ,'NPLANT                    ',dsetrank,iparallel,.true. ,foundvar)
-      call hdf_getslab_r(cpatch%hite                                                       &
-                        ,'HITE                      ',dsetrank,iparallel,.true. ,foundvar)
+      call hdf_getslab_r(cpatch%height                                                     &
+                        ,'HEIGHT                    ',dsetrank,iparallel,.true. ,foundvar)
       call hdf_getslab_r(cpatch%agb                                                        &
                         ,'AGB_CO                    ',dsetrank,iparallel,.true. ,foundvar)
       call hdf_getslab_r(cpatch%basarea                                                    &

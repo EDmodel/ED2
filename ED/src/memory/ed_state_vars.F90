@@ -152,7 +152,7 @@ module ed_state_vars
       !!2 - Established (DBH > 10 cm for at least two censuses \n
       !------------------------------------------------------------------------------------!
 
-      real ,pointer,dimension(:) :: hite
+      real ,pointer,dimension(:) :: height
       !<Plant height (m)
 
       real, pointer, dimension(:) :: agb
@@ -5601,7 +5601,7 @@ module ed_state_vars
       allocate(cpatch%phenology_status             (                    ncohorts))
       allocate(cpatch%recruit_dbh                  (                    ncohorts))
       allocate(cpatch%census_status                (                    ncohorts))
-      allocate(cpatch%hite                         (                    ncohorts))
+      allocate(cpatch%height                       (                    ncohorts))
       allocate(cpatch%agb                          (                    ncohorts))
       allocate(cpatch%basarea                      (                    ncohorts))
       allocate(cpatch%dagb_dt                      (                    ncohorts))
@@ -7815,7 +7815,7 @@ module ed_state_vars
       nullify(cpatch%phenology_status        )
       nullify(cpatch%recruit_dbh             )
       nullify(cpatch%census_status           )
-      nullify(cpatch%hite                    )
+      nullify(cpatch%height                  )
       nullify(cpatch%agb                     )
       nullify(cpatch%basarea                 )
       nullify(cpatch%dagb_dt                 )
@@ -8989,7 +8989,7 @@ module ed_state_vars
       if(associated(cpatch%phenology_status        )) deallocate(cpatch%phenology_status        )
       if(associated(cpatch%recruit_dbh             )) deallocate(cpatch%recruit_dbh             )
       if(associated(cpatch%census_status           )) deallocate(cpatch%census_status           )
-      if(associated(cpatch%hite                    )) deallocate(cpatch%hite                    )
+      if(associated(cpatch%height                  )) deallocate(cpatch%height                  )
       if(associated(cpatch%agb                     )) deallocate(cpatch%agb                     )
       if(associated(cpatch%basarea                 )) deallocate(cpatch%basarea                 )
       if(associated(cpatch%dagb_dt                 )) deallocate(cpatch%dagb_dt                 )
@@ -11198,7 +11198,7 @@ module ed_state_vars
          opatch%phenology_status        (oco) = ipatch%phenology_status        (ico)
          opatch%recruit_dbh             (oco) = ipatch%recruit_dbh             (ico)
          opatch%census_status           (oco) = ipatch%census_status           (ico)
-         opatch%hite                    (oco) = ipatch%hite                    (ico)
+         opatch%height                  (oco) = ipatch%height                  (ico)
          opatch%agb                     (oco) = ipatch%agb                     (ico)
          opatch%basarea                 (oco) = ipatch%basarea                 (ico)
          opatch%dagb_dt                 (oco) = ipatch%dagb_dt                 (ico)
@@ -11944,7 +11944,7 @@ module ed_state_vars
       opatch%phenology_status      (1:z) = pack(ipatch%phenology_status          ,lmask)
       opatch%recruit_dbh           (1:z) = pack(ipatch%recruit_dbh               ,lmask)
       opatch%census_status         (1:z) = pack(ipatch%census_status             ,lmask)
-      opatch%hite                  (1:z) = pack(ipatch%hite                      ,lmask)
+      opatch%height                (1:z) = pack(ipatch%height                    ,lmask)
       opatch%agb                   (1:z) = pack(ipatch%agb                       ,lmask)
       opatch%basarea               (1:z) = pack(ipatch%basarea                   ,lmask)
       opatch%dagb_dt               (1:z) = pack(ipatch%dagb_dt                   ,lmask)
@@ -29261,10 +29261,10 @@ module ed_state_vars
          call metadata_edio(nvar,igr,'Plant density','[plant/m2]','NA') 
       end if
 
-      if (associated(cpatch%hite)) then
+      if (associated(cpatch%height)) then
          nvar=nvar+1
-           call vtable_edio_r(npts,cpatch%hite,nvar,igr,init,cpatch%coglob_id, &
-           var_len,var_len_global,max_ptrs,'HITE :41:hist:anal:dail:mont:dcyc:year') 
+           call vtable_edio_r(npts,cpatch%height,nvar,igr,init,cpatch%coglob_id, &
+           var_len,var_len_global,max_ptrs,'HEIGHT :41:hist:anal:dail:mont:dcyc:year') 
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 

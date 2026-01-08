@@ -148,7 +148,7 @@ subroutine read_ed10_ed20_history_file
    real                 , dimension(huge_cohort)          :: avgRg
    real                 , dimension(huge_cohort)          :: bdead
    real                 , dimension(huge_cohort)          :: nplant
-   real                 , dimension(huge_cohort)          :: hite
+   real                 , dimension(huge_cohort)          :: height
    real                 , dimension(huge_cohort)          :: dbh
    real                 , dimension(huge_cohort)          :: ctime
    real                 , dimension(maxfiles)             :: slon_list,slat_list
@@ -704,7 +704,7 @@ subroutine read_ed10_ed20_history_file
             case (1)
                !----- ED-1.0 file. --------------------------------------------------------!
                read(unit=12,fmt=*,iostat=ierr)  ctime(ic),cpname(ic),cname(ic),dbh(ic)     &
-                                               ,hite(ic),ipft(ic),nplant(ic),bdead(ic)     &
+                                               ,height(ic),ipft(ic),nplant(ic),bdead(ic)   &
                                                ,balive(ic),avgRg(ic),leaves_on(ic)         &
                                                ,cb(1:12,ic),cb_max(1:12,ic)
 
@@ -716,7 +716,7 @@ subroutine read_ed10_ed20_history_file
             case (2,3,6)
                !----- ED-2.0 file. --------------------------------------------------------!
                read(unit=12,fmt=*,iostat=ierr) ctime(ic),cpname(ic),cname(ic),dbh(ic)      &
-                                              ,hite(ic),ipft(ic),nplant(ic),bdead(ic)      &
+                                              ,height(ic),ipft(ic),nplant(ic),bdead(ic)    &
                                               ,balive(ic),avgRg(ic)
                !---------------------------------------------------------------------------!
                !     Check whether the file has hit the end, and if so, leave the loop.    !
@@ -851,8 +851,8 @@ subroutine read_ed10_ed20_history_file
                         case (6)
                            !----- Inventory.  Read DBH and find the other stuff. ----------!
                            cpatch%dbh(ic2)    = max(dbh(ic),min_dbh(ipft(ic)))
-                           cpatch%hite(ic2)   = dbh2h(cpatch%pft(ic2),cpatch%dbh(ic2))
-                           bdead(ic)          = size2bd(cpatch%dbh(ic2),cpatch%hite(ic2)   &
+                           cpatch%height(ic2) = dbh2h(cpatch%pft(ic2),cpatch%dbh(ic2))
+                           bdead(ic)          = size2bd(cpatch%dbh(ic2),cpatch%height(ic2) &
                                                        ,ipft(ic))
                            cpatch%bdeada(ic2) =        agf_bs(ipft(ic))  * bdead(ic)
                            cpatch%bdeadb(ic2) = (1.0 - agf_bs(ipft(ic))) * bdead(ic)
@@ -871,12 +871,12 @@ subroutine read_ed10_ed20_history_file
                               cpatch%bdeadb(ic2) = (1.0 - agf_bs(ipft(ic))) * bdead(ic)
                               cpatch%dbh(ic2)    = bd2dbh(ipft(ic),cpatch%bdeada(ic2)      &
                                                          ,cpatch%bdeadb(ic2))
-                              cpatch%hite(ic2)   = dbh2h(ipft(ic),cpatch%dbh(ic2))
+                              cpatch%height(ic2) = dbh2h(ipft(ic),cpatch%dbh(ic2))
                            else
                               cpatch%dbh(ic2)    = max(dbh(ic),min_dbh(ipft(ic)))
-                              cpatch%hite(ic2)   = dbh2h(ipft(ic),cpatch%dbh(ic2))
+                              cpatch%height(ic2) = dbh2h(ipft(ic),cpatch%dbh(ic2))
                               bdead(ic)          = size2bd(cpatch%dbh (ic2)                &
-                                                          ,cpatch%hite(ic2),ipft(ic) )
+                                                          ,cpatch%height(ic2),ipft(ic) )
                               cpatch%bdeada(ic2) =        agf_bs(ipft(ic))  * bdead(ic)
                               cpatch%bdeadb(ic2) = (1.0 - agf_bs(ipft(ic))) * bdead(ic)
                            end if
@@ -902,21 +902,21 @@ subroutine read_ed10_ed20_history_file
                         !     Use allometry to define leaf and the other live biomass      !
                         ! pools.                                                           !
                         !------------------------------------------------------------------!
-                        cpatch%bleaf(ic2)     = size2bl(cpatch%dbh(ic2),cpatch%hite(ic2)   &
+                        cpatch%bleaf(ic2)     = size2bl(cpatch%dbh(ic2),cpatch%height(ic2) &
                                                        ,cpatch%sla(ic2),ipft(ic))
                         cpatch%broot(ic2)     = cpatch%bleaf(ic2) * q(ipft(ic))
                         cpatch%bsapwooda(ic2) = agf_bs(ipft(ic))                           &
                                               * cpatch%bleaf(ic2)                          &
-                                              * qsw(ipft(ic))   * cpatch%hite(ic2)
+                                              * qsw(ipft(ic))   * cpatch%height(ic2)
                         cpatch%bsapwoodb(ic2) = (1.-agf_bs(ipft(ic)))                      &
                                               * cpatch%bleaf(ic2)                          &
-                                              * qsw(ipft(ic))   * cpatch%hite(ic2)
+                                              * qsw(ipft(ic))   * cpatch%height(ic2)
                         cpatch%bbarka(ic2)    = agf_bs(ipft(ic))                           &
                                               * cpatch%bleaf(ic2)                          &
-                                              * qbark(ipft(ic)) * cpatch%hite(ic2)
+                                              * qbark(ipft(ic)) * cpatch%height(ic2)
                         cpatch%bbarkb(ic2)    = (1.-agf_bs(ipft(ic)))                      &
                                               * cpatch%bleaf(ic2)                          &
-                                              * qbark(ipft(ic)) * cpatch%hite(ic2)
+                                              * qbark(ipft(ic)) * cpatch%height(ic2)
                         !------------------------------------------------------------------!
 
 
@@ -1006,13 +1006,13 @@ subroutine read_ed10_ed20_history_file
                         cpatch%agb    (ic2) = ed_biomass(cpatch, ic2)
                         cpatch%basarea(ic2) = pio4 * cpatch%dbh(ic2) * cpatch%dbh(ic2)
                         cpatch%btimber(ic2) = size2bt( cpatch%dbh       (ic2)              &
-                                                     , cpatch%hite      (ic2)              &
+                                                     , cpatch%height    (ic2)              &
                                                      , cpatch%bdeada    (ic2)              &
                                                      , cpatch%bsapwooda (ic2)              &
                                                      , cpatch%bbarka    (ic2)              &
                                                      , cpatch%pft       (ic2) )
                         cpatch%thbark (ic2) = size2xb( cpatch%dbh       (ic2)              &
-                                                     , cpatch%hite      (ic2)              &
+                                                     , cpatch%height    (ic2)              &
                                                      , cpatch%bbarka    (ic2)              &
                                                      , cpatch%bbarkb    (ic2)              &
                                                      , cpatch%sla       (ic2)              &

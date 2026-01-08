@@ -321,8 +321,8 @@ module plant_hydro
                                        , cpatch%is_small(ico)                        )
                   !------------------------------------------------------------------------!
                else
-                  !----- No leaves, set leaf_psi the same as wood_psi - hite. -------------!
-                  cpatch%leaf_psi(ico) = cpatch%wood_psi(ico) - cpatch%hite(ico)
+                  !----- No leaves, set leaf_psi the same as wood_psi - height. -----------!
+                  cpatch%leaf_psi(ico) = cpatch%wood_psi(ico) - cpatch%height(ico)
                   !------------------------------------------------------------------------!
 
 
@@ -375,7 +375,7 @@ module plant_hydro
                   write (unit=*,fmt=ifmt   ) ' + ICO              =',ico
                   write (unit=*,fmt=ifmt   ) ' + PFT              =',ipft
                   write (unit=*,fmt=ifmt   ) ' + KRDEPTH          =',cpatch%krdepth(ico)
-                  write (unit=*,fmt=efmt   ) ' + HEIGHT           =',cpatch%hite(ico)
+                  write (unit=*,fmt=efmt   ) ' + HEIGHT           =',cpatch%height(ico)
                   write (unit=*,fmt=lfmt   ) ' + SMALL            =',cpatch%is_small(ico)
 
                   write (unit=*,fmt='(a)'  ) ' '
@@ -457,12 +457,12 @@ module plant_hydro
                !    Find water fluxes.  Note that transp is from last timestep's psi_open  !
                ! and psi_closed.                                                           !
                !---------------------------------------------------------------------------!
-               call calc_plant_water_flux(                            &
+               call calc_plant_water_flux(                               &
                         dtlsm                                            & ! input
                        ,sap_area,cpatch%nplant(ico),ipft                 & ! input
                        ,cpatch%is_small(ico),cpatch%krdepth(ico)         & ! input
                        ,cpatch%bleaf(ico),bsap,cpatch%broot(ico)         & ! input
-                       ,cpatch%hite(ico),cpatch%root_frac(:,ico)         & ! input
+                       ,cpatch%height(ico),cpatch%root_frac(:,ico)       & ! input
                        ,transp,cpatch%leaf_psi(ico),cpatch%wood_psi(ico) & ! input
                        ,soil_psi,soil_cond,lsl,ipa,ico                   & ! input
                        ,cpatch%wflux_wl(ico),cpatch%wflux_gw(ico)        & ! output
@@ -568,7 +568,7 @@ module plant_hydro
    !---------------------------------------------------------------------------------------!
    subroutine calc_plant_water_flux(dt                                  & !timestep
                ,sap_area,nplant,ipft,is_small,krdepth                   & !plant input
-               ,bleaf,bsap,broot,hite ,root_frac                        & !plant input
+               ,bleaf,bsap,broot,height ,root_frac                      & !plant input
                ,transp,leaf_psi,wood_psi                                & !plant input
                ,soil_psi,soil_cond,lsl                                  & !soil  input
                ,ipa,ico                                                 & !debug input
@@ -601,7 +601,7 @@ module plant_hydro
       real   ,                 intent(in)  :: bleaf          !leaf biomass        [    kgC]
       real   ,                 intent(in)  :: bsap           !sapwood biomass     [ kgC/pl]
       real   ,                 intent(in)  :: broot          !fine root biomass   [ kgC/pl]
-      real   ,                 intent(in)  :: hite           !plant height        [      m]
+      real   ,                 intent(in)  :: height         !plant height        [      m]
       real   , dimension(nzg), intent(in)  :: root_frac      !Root fraction       [      m]
       real   ,                 intent(in)  :: transp         !transpiration       [   kg/s]
       real   ,                 intent(in)  :: leaf_psi       !leaf water pot.     [      m]
@@ -621,7 +621,7 @@ module plant_hydro
       real(kind=8)                 :: bsap_d
       real(kind=8)                 :: broot_d
       real(kind=8)                 :: nplant_d
-      real(kind=8)                 :: hite_d
+      real(kind=8)                 :: height_d
       real(kind=8)                 :: transp_d
       real(kind=8)                 :: leaf_psi_d
       real(kind=8)                 :: wood_psi_d
@@ -687,7 +687,7 @@ module plant_hydro
       bsap_d               = dble(bsap                    )
       broot_d              = dble(broot                   )
       nplant_d             = dble(nplant                  )
-      hite_d               = dble(hite                    )
+      height_d             = dble(height                  )
       transp_d             = dble(transp                  )
       leaf_psi_d           = dble(leaf_psi                )
       wood_psi_d           = dble(wood_psi                )
@@ -810,14 +810,14 @@ module plant_hydro
          !          considered for leaf water potential of small trees.  As a result, this 
          !          can lead to a down-ward sapflow, and potentially over-charging the 
          !          sapwood. We need to zero the flow in this case as well, until 
-         !          leaf_psi_d drops below wood_psi_d - hite_d.
+         !          leaf_psi_d drops below wood_psi_d - height_d.
          !---------------------------------------------------------------------------------!
          zero_flow_wl = ( c_leaf == 0.d0                            ) .or.  & ! Case 1
-                        ( leaf_psi_d >= (wood_psi_d - hite_d) .and.         &
+                        ( leaf_psi_d >= (wood_psi_d - height_d) .and.       &
                           leaf_psi_d <= leaf_psi_lwr_d              ) .or.  & ! Case 2a
-                        ( leaf_psi_d <= (wood_psi_d - hite_d) .and.         &
+                        ( leaf_psi_d <= (wood_psi_d - height_d) .and.       &
                           wood_psi_d <= wood_psi_lwr_d              ) .or.  & ! Case 2b
-                        ( leaf_psi_d >  (wood_psi_d - hite_d)       )       ! ! Case 3
+                        ( leaf_psi_d >  (wood_psi_d - height_d)     )       ! ! Case 3
          !---------------------------------------------------------------------------------!
 
 
@@ -860,7 +860,7 @@ module plant_hydro
             !----- Calculate stem conductance [kg / s]. -----------------------------------!
             stem_cond = wood_Kmax_d * plc                 & ! kg/m/s
                       * sap_area_d                        & ! conducting area m2
-                      / (hite_d * vessel_curl_factor_d)   ! ! conducting length m
+                      / (height_d * vessel_curl_factor_d) ! ! conducting length m
             !------------------------------------------------------------------------------!
 
 
@@ -878,7 +878,7 @@ module plant_hydro
                !        reference X16 for derivation of the equations.
                !---------------------------------------------------------------------------!
                ap = - stem_cond / c_leaf                                            ! [1/s]
-               bp = ((wood_psi_d - hite_d) * stem_cond - transp_d) / c_leaf         ! [m/s]
+               bp = ((wood_psi_d - height_d) * stem_cond - transp_d) / c_leaf       ! [m/s]
 
                !----- Project the final leaf psi. -----------------------------------------!
                exp_term      = exp(max(ap * dt_d,lnexp_min8))
@@ -1077,7 +1077,7 @@ module plant_hydro
          write (unit=*,fmt=ifmt   ) ' + ICO              =',ico
          write (unit=*,fmt=ifmt   ) ' + PFT              =',ipft
          write (unit=*,fmt=ifmt   ) ' + KRDEPTH          =',krdepth
-         write (unit=*,fmt=efmt   ) ' + HEIGHT           =',hite
+         write (unit=*,fmt=efmt   ) ' + HEIGHT           =',height
 
          write (unit=*,fmt='(a)'  ) ' '
          write (unit=*,fmt=lfmt   ) ' + IS_SMALL         =',is_small

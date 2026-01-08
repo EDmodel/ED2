@@ -455,13 +455,13 @@ module pft_coms
    real, dimension(n_pft) :: seedling_mortality
 
    !---------------------------------------------------------------------------------------!
-   !     Survivorship fraction for trees with heights greater than treefall_hite_threshold !
-   ! (see disturbance_coms.f90).                                                           !
+   !     Survivorship fraction for trees with heights greater than                         !
+   ! treefall_height_threshold (see disturbance_coms.f90).                                 !
    !---------------------------------------------------------------------------------------!
    real, dimension(n_pft) :: treefall_s_gtht
 
    !---------------------------------------------------------------------------------------!
-   !     Survivorship fraction for trees with heights less than treefall_hite_threshold    !
+   !     Survivorship fraction for trees with heights less than treefall_height_threshold  !
    ! (see disturbance_coms.f90).                                                           !
    !---------------------------------------------------------------------------------------!
    real, dimension(n_pft) :: treefall_s_ltht
@@ -1031,7 +1031,7 @@ module pft_coms
       real                :: leaf_temp_pv
       real                :: wood_temp_pv
       real                :: leaf_vpdef
-      real                :: hite
+      real                :: height
       real                :: dbh
       real                :: bdeada
       real                :: bdeadb
@@ -1083,7 +1083,7 @@ module pft_coms
          recruit(p)%leaf_temp_pv         = 0.
          recruit(p)%wood_temp_pv         = 0.
          recruit(p)%leaf_vpdef           = 0.
-         recruit(p)%hite                 = 0.
+         recruit(p)%height               = 0.
          recruit(p)%dbh                  = 0.
          recruit(p)%bdeada               = 0.
          recruit(p)%bdeadb               = 0.
@@ -1138,7 +1138,7 @@ module pft_coms
       rectarget%leaf_temp_pv     = recsource%leaf_temp_pv
       rectarget%wood_temp_pv     = recsource%wood_temp_pv
       rectarget%leaf_vpdef       = recsource%leaf_vpdef
-      rectarget%hite             = recsource%hite
+      rectarget%height           = recsource%height
       rectarget%dbh              = recsource%dbh
       rectarget%bdeada           = recsource%bdeada
       rectarget%bdeadb           = recsource%bdeadb

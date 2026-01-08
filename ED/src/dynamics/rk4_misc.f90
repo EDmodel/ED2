@@ -3997,7 +3997,7 @@ module rk4_misc
          if (cpatch%leaf_resolvable(ico)) then
             write(unit=*,fmt='(2(i7,1x),9(es12.4,1x))')                                    &
                   cpatch%pft(ico),cpatch%krdepth(ico)                                      &
-                 ,cpatch%nplant(ico),cpatch%hite(ico),cpatch%dbh(ico),cpatch%bdeada(ico)   &
+                 ,cpatch%nplant(ico),cpatch%height(ico),cpatch%dbh(ico),cpatch%bdeada(ico) &
                  ,cpatch%bdeadb(ico),cpatch%bleaf (ico),cpatch%fs_open(ico)                &
                  ,cpatch%fsw(ico),cpatch%fsn(ico)
          end if
@@ -4036,7 +4036,7 @@ module rk4_misc
          if (y%leaf_resolvable(ico)) then
             write(unit=*,fmt='(2(i7,1x),8(es12.4,1x))')                                    &
                    cpatch%pft(ico),cpatch%krdepth(ico)                                     &
-                  ,y%lai(ico),cpatch%hite(ico),y%leaf_temp(ico),y%veg_wind(ico)            &
+                  ,y%lai(ico),cpatch%height(ico),y%leaf_temp(ico),y%veg_wind(ico)          &
                   ,y%leaf_reynolds(ico),y%leaf_grashof(ico),y%leaf_nussforc(ico)           &
                   ,y%leaf_nussfree(ico)
          end if
@@ -4049,7 +4049,7 @@ module rk4_misc
          if (y%leaf_resolvable(ico)) then
             write(unit=*,fmt='(2(i7,1x),7(es12.4,1x))')                                    &
                    cpatch%pft(ico),cpatch%krdepth(ico)                                     &
-                  ,y%lai(ico),cpatch%hite(ico),y%leaf_gbh(ico),y%leaf_gbw(ico)             &
+                  ,y%lai(ico),cpatch%height(ico),y%leaf_gbh(ico),y%leaf_gbw(ico)           &
                   ,y%gsw_closed(ico),y%gsw_open(ico),cpatch%fs_open(ico)
          end if
       end do
@@ -4061,7 +4061,7 @@ module rk4_misc
          if (y%leaf_resolvable(ico)) then
             write(unit=*,fmt='(2(i7,1x),6(es12.4,1x))')                                    &
                    cpatch%pft(ico),cpatch%krdepth(ico)                                     &
-                  ,y%lai(ico),cpatch%hite(ico),y%rshort_l(ico),y%rlong_l(ico)              &
+                  ,y%lai(ico),cpatch%height(ico),y%rshort_l(ico),y%rlong_l(ico)            &
                   ,cpatch%par_l_beam(ico),cpatch%par_l_diffuse(ico)
          end if
       end do
@@ -4080,7 +4080,7 @@ module rk4_misc
          if (cpatch%wood_resolvable(ico)) then
             write(unit=*,fmt='(2(i7,1x),9(es12.4,1x))')                                    &
                   cpatch%pft(ico),cpatch%krdepth(ico)                                      &
-                 ,cpatch%nplant(ico),cpatch%hite(ico),cpatch%dbh(ico),cpatch%bdeada(ico)   &
+                 ,cpatch%nplant(ico),cpatch%height(ico),cpatch%dbh(ico),cpatch%bdeada(ico) &
                  ,cpatch%bdeadb(ico),cpatch%bsapwooda(ico),cpatch%bsapwoodb(ico)           &
                  ,cpatch%bbarka(ico),cpatch%bbarkb(ico)
          end if
@@ -4106,7 +4106,7 @@ module rk4_misc
          if (y%wood_resolvable(ico)) then
             write(unit=*,fmt='(2(i7,1x),8(es12.4,1x))')                                    &
                    cpatch%pft(ico),cpatch%krdepth(ico)                                     &
-                  ,y%wai(ico),cpatch%hite(ico),y%wood_temp(ico),y%veg_wind(ico)            &
+                  ,y%wai(ico),cpatch%height(ico),y%wood_temp(ico),y%veg_wind(ico)          &
                   ,y%wood_reynolds(ico),y%wood_grashof(ico),y%wood_nussforc(ico)           &
                   ,y%wood_nussfree(ico)
          end if
@@ -4119,7 +4119,7 @@ module rk4_misc
          if (y%wood_resolvable(ico)) then
             write(unit=*,fmt='(2(i7,1x),6(es12.4,1x))')                                    &
                    cpatch%pft(ico),cpatch%krdepth(ico)                                     &
-                  ,y%wai(ico),cpatch%hite(ico),y%wood_gbh(ico),y%wood_gbw(ico)             &
+                  ,y%wai(ico),cpatch%height(ico),y%wood_gbh(ico),y%wood_gbw(ico)           &
                   ,y%rshort_w(ico),y%rlong_w(ico) 
          end if
       end do
@@ -4580,7 +4580,7 @@ module rk4_misc
                       , hdid                          , cpatch%pft(ico)                    &
                       , leaf_resolve                  , wood_resolve                       &
                       , is_small                      , initp%nplant(ico)                  &
-                      , cpatch%hite(ico)              , initp%lai(ico)                     &
+                      , cpatch%height(ico)            , initp%lai(ico)                     &
                       , initp%wai(ico)                , initp%crown_area(ico)              &
                       , initp%leaf_energy(ico)        , initp%leaf_water(ico)              &
                       , initp%leaf_water_im2(ico)     , initp%leaf_hcap(ico)               &
@@ -4720,7 +4720,7 @@ module rk4_misc
             write (unit=*,fmt=ifmt   ) ' + ICO              =',ico
             write (unit=*,fmt=ifmt   ) ' + PFT              =',cpatch%pft        (ico)
             write (unit=*,fmt=efmt   ) ' + DBH              =',cpatch%dbh        (ico)
-            write (unit=*,fmt=efmt   ) ' + HEIGHT           =',cpatch%hite       (ico)
+            write (unit=*,fmt=efmt   ) ' + HEIGHT           =',cpatch%height     (ico)
 
             write (unit=*,fmt='(a)'  ) ' '
             write (unit=*,fmt=lfmt   ) ' + LEAF_RESOLVABLE  =',cpatch%leaf_resolvable(ico)

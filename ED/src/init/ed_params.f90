@@ -814,8 +814,8 @@ subroutine init_disturb_params
 
    use disturb_coms , only : treefall_disturbance_rate & ! intent(in)
                            , include_fire              & ! intent(in)
-                           , treefall_hite_threshold   & ! intent(out)
-                           , does_hite_limit_tfpatch   & ! intent(out)
+                           , treefall_height_threshold & ! intent(out)
+                           , does_height_limit_tfpatch & ! intent(out)
                            , forestry_on               & ! intent(out)
                            , agriculture_on            & ! intent(out)
                            , plantation_year           & ! intent(out)
@@ -842,10 +842,10 @@ subroutine init_disturb_params
    implicit none
 
    !----- Only trees above this height create a gap when they fall. -----------------------!
-   treefall_hite_threshold = 10.0
+   treefall_height_threshold = 10.0
 
    !----- Flag to decide whether or not to limit disturbance to patches with tall trees. --!
-   does_hite_limit_tfpatch = .true.
+   does_height_limit_tfpatch = .true.
 
    !----- Set to 1 if to do forest harvesting. --------------------------------------------!
    forestry_on = 0
@@ -5031,9 +5031,9 @@ subroutine init_pft_mort_params()
    !---------------------------------------------------------------------------------------!
    !      Treefall survivorship fraction.                                                  !
    !---------------------------------------------------------------------------------------!
-   !----- Trees taller than treefall_hite_threshold (liana survivorship: Putz 1983). ------!
+   !----- Trees taller than treefall_height threshold (liana survivorship: Putz 1983). ----!
    treefall_s_gtht(:) = merge(0.80,0.00,is_liana(:))
-   !----- Trees shorter than treefall_hite_threshold. -------------------------------------!
+   !----- Trees shorter than treefall_height_threshold. -----------------------------------!
    select case (economics_scheme)
    case (1)
       !------------------------------------------------------------------------------------!

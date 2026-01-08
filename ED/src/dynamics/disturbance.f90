@@ -49,8 +49,8 @@ module disturbance
                                      , lianas_included            ! ! intent(in)
       use disturb_coms        , only : min_patch_area             & ! intent(in)
                                      , plantation_year            & ! intent(in)
-                                     , treefall_hite_threshold    & ! intent(in)
-                                     , does_hite_limit_tfpatch    & ! intent(in)
+                                     , treefall_height_threshold  & ! intent(in)
+                                     , does_height_limit_tfpatch  & ! intent(in)
                                      , min_oldgrowth              ! ! intent(in)
       use ed_max_dims         , only : n_dist_types               & ! intent(in)
                                      , n_pft                      & ! intent(in)
@@ -423,8 +423,8 @@ module disturbance
                   lambda_now(3) = 0.
                   !------------------------------------------------------------------------!
                else
-                  if ( does_hite_limit_tfpatch                   .and.                     &
-                       cpatch%hite(1) < treefall_hite_threshold ) then
+                  if ( does_height_limit_tfpatch                  .and.                    &
+                       cpatch%height(1) < treefall_height_threshold ) then
                      !----- Tallest cohort is too short to create gaps. -------------------!
                      lambda_now(3) = 0.
                      !---------------------------------------------------------------------!
@@ -4037,9 +4037,9 @@ module disturbance
          !    SAS approximation, assign height and use it to find DBH and the structural   !
          ! (dead) biomass.                                                                 !
          !---------------------------------------------------------------------------------!
-         cpatch%hite  (nc) = hgt_min(cpatch%pft(nc)) * min(1.0,height_factor)
-         cpatch%dbh   (nc) = h2dbh(cpatch%hite(nc),cpatch%pft(nc))
-         bdead             = size2bd(cpatch%dbh(nc),cpatch%hite(nc),cpatch%pft(nc))
+         cpatch%height(nc) = hgt_min(cpatch%pft(nc)) * min(1.0,height_factor)
+         cpatch%dbh   (nc) = h2dbh(cpatch%height(nc),cpatch%pft(nc))
+         bdead             = size2bd(cpatch%dbh(nc),cpatch%height(nc),cpatch%pft(nc))
          cpatch%bdeada(nc) =        agf_bs(cpatch%pft(nc))   * bdead
          cpatch%bdeadb(nc) = (1.0 - agf_bs(cpatch%pft(nc)) ) * bdead
          !---------------------------------------------------------------------------------!
@@ -4049,9 +4049,9 @@ module disturbance
          !    Big leaf approximation, assign the typical DBH and height and use them to    !
          ! find height and the structural (dead) biomass.                                  !
          !---------------------------------------------------------------------------------!
-         cpatch%hite  (nc) = hgt_max(cpatch%pft(nc))
+         cpatch%height(nc) = hgt_max(cpatch%pft(nc))
          cpatch%dbh   (nc) = dbh_bigleaf(cpatch%pft(nc))
-         bdead             = size2bd(cpatch%dbh(nc),cpatch%hite(nc),cpatch%pft(nc))
+         bdead             = size2bd(cpatch%dbh(nc),cpatch%height(nc),cpatch%pft(nc))
          cpatch%bdeada(nc) =        agf_bs(cpatch%pft(nc))   * bdead
          cpatch%bdeadb(nc) = (1.0 - agf_bs(cpatch%pft(nc)) ) * bdead
          !---------------------------------------------------------------------------------!
@@ -4073,11 +4073,11 @@ module disturbance
       ! phenology (or start with 1.0 if the plant doesn't shed their leaves due to water   !
       ! stress.                                                                            !
       !------------------------------------------------------------------------------------!
-      call pheninit_balive_bstorage(mzg,cpatch%pft(nc),cpatch%krdepth(nc),cpatch%hite(nc)  &
-                                   ,cpatch%dbh(nc),cpatch%sla(nc),csite%soil_water(:,np)   &
-                                   ,ntext_soil,cpatch%paw_avg(nc),cpatch%elongf(nc)        &
-                                   ,cpatch%phenology_status(nc),cpatch%bleaf(nc)           &
-                                   ,cpatch%broot(nc),cpatch%bsapwooda(nc)                  &
+      call pheninit_balive_bstorage(mzg,cpatch%pft(nc),cpatch%krdepth(nc)                  &
+                                   ,cpatch%height(nc),cpatch%dbh(nc),cpatch%sla(nc)        &
+                                   ,csite%soil_water(:,np),ntext_soil,cpatch%paw_avg(nc)   &
+                                   ,cpatch%elongf(nc),cpatch%phenology_status(nc)          &
+                                   ,cpatch%bleaf(nc),cpatch%broot(nc),cpatch%bsapwooda(nc) &
                                    ,cpatch%bsapwoodb(nc),cpatch%bbarka(nc)                 &
                                    ,cpatch%bbarkb(nc),cpatch%bstorage(nc),cpatch%cb(:,nc)  &
                                    ,cpatch%cb_lightmax(:,nc),cpatch%cb_moistmax(:,nc)      &
@@ -4100,11 +4100,12 @@ module disturbance
       !----- Find the new basal area and above-ground biomass. ----------------------------!
       cpatch%basarea      (nc) = pio4 * cpatch%dbh(nc) * cpatch%dbh(nc)
       cpatch%agb          (nc) = ed_biomass(cpatch, nc)
-      cpatch%btimber      (nc) = size2bt(cpatch%dbh(nc),cpatch%hite(nc),cpatch%bdeada(nc)  &
-                                        ,cpatch%bsapwooda(nc),cpatch%bbarka(nc)            &
-                                        ,cpatch%pft(nc))
-      cpatch%thbark       (nc) = size2xb(cpatch%dbh(nc),cpatch%hite(nc),cpatch%bbarka(nc)  &
-                                        ,cpatch%bbarkb(nc),cpatch%sla(nc),cpatch%pft(nc))
+      cpatch%btimber      (nc) = size2bt(cpatch%dbh(nc),cpatch%height(nc)                  &
+                                        ,cpatch%bdeada(nc),cpatch%bsapwooda(nc)            &
+                                        ,cpatch%bbarka(nc),cpatch%pft(nc))
+      cpatch%thbark       (nc) = size2xb(cpatch%dbh(nc),cpatch%height(nc)                  &
+                                        ,cpatch%bbarka(nc),cpatch%bbarkb(nc)               &
+                                        ,cpatch%sla(nc),cpatch%pft(nc))
       cpatch%leaf_temp    (nc) = csite%can_temp  (np)
       cpatch%leaf_temp_pv (nc) = csite%can_temp  (np)
       cpatch%leaf_water   (nc) = 0.0
@@ -4249,8 +4250,8 @@ module disturbance
          !---------------------------------------------------------------------------------!
 
          !---------- Loop over cohorts to find the maximum height for trees ---------------!
-         if (cpatch%hite(ico) > maxh .and. .not. is_liana(ipft)) then
-            maxh = cpatch%hite(ico)
+         if (cpatch%height(ico) > maxh .and. .not. is_liana(ipft)) then
+            maxh = cpatch%height(ico)
          end if
 
       end do cohortloop
@@ -4271,8 +4272,8 @@ module disturbance
          !---------------------------------------------------------------------------------!
 
          ! Attention: if maxh turns out to be less than 1 m there's gonna be a problem
-         ! because cpatch%hite will be increased instead of reduced
-         if (is_liana(ipft) .and. cpatch%hite(ico) > maxh .and. maxh >= 1.0) then
+         ! because cpatch%height will be increased instead of reduced
+         if (is_liana(ipft) .and. cpatch%height(ico) > maxh .and. maxh >= 1.0) then
 
             bleaf_in           = cpatch%bleaf         (ico)
             bsapa_in           = cpatch%bsapwooda     (ico)
@@ -4288,18 +4289,19 @@ module disturbance
             !if new root depth is smaller keep the old one keep track of the value
 
             ! Lianas of 35m will be reduced to maxh, all
-            cpatch%hite(ico)      = max(cpatch%hite(ico) * h_pruning_factor, 1.0)
-            cpatch%dbh(ico)       = h2dbh (cpatch%hite(ico), ipft)
-            bleaf_max             = size2bl(cpatch%dbh(ico), cpatch%hite(ico)              &
+            cpatch%height(ico)   = max(cpatch%height(ico) * h_pruning_factor, 1.0)
+            cpatch%dbh(ico)       = h2dbh (cpatch%height(ico), ipft)
+            bleaf_max             = size2bl(cpatch%dbh(ico), cpatch%height(ico)            &
                                            ,cpatch%sla(ico), ipft)
             cpatch%bleaf(ico)     = bleaf_max * cpatch%elongf(ico)
             cpatch%bdeada(ico)    = agf_bs(ipft)                                           &
-                                  * size2bd(cpatch%dbh(ico), cpatch%hite(ico), ipft)
-            cpatch%bsapwooda(ico) = agf_bs(ipft) * bleaf_max * qsw(ipft) * cpatch%hite(ico)
+                                  * size2bd(cpatch%dbh(ico), cpatch%height(ico), ipft)
+            cpatch%bsapwooda(ico) = agf_bs(ipft) * bleaf_max * qsw(ipft)                   &
+                                  * cpatch%height(ico)
             !  (MLO) Manfredo: although qbark is set to zero, check whether these changes
             !  are consistent with your rationale.
             cpatch%bbarka   (ico) = agf_bs(ipft) * bleaf_max * qbark(ipft)                 &
-                                  * cpatch%hite(ico)
+                                  * cpatch%height(ico)
 
 
             !----- Updating LAI, WAI, and CAI. --------------------------------------------!
@@ -4311,7 +4313,7 @@ module disturbance
             cpatch%agb(ico)     = ed_biomass(cpatch, ico)
 
             !----- Update rooting depth ---------------------------------------------------!
-            cpatch%krdepth(ico) = size2krdepth(cpatch%hite(ico),cpatch%dbh(ico),ipft,lsl)
+            cpatch%krdepth(ico) = size2krdepth(cpatch%height(ico),cpatch%dbh(ico),ipft,lsl)
             !if new root depth is smaller keep the old one
             !------------------------------------------------------------------------------!
 

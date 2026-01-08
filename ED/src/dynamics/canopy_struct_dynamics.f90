@@ -664,7 +664,7 @@ module canopy_struct_dynamics
          !---------------------------------------------------------------------------------!
          !----- Find the wind at the top of the canopy. -----------------------------------!
          uh = reduced_wind8(initp%ustar,initp%zeta,initp%ribulk,rk4site%geoht              &
-                           ,initp%veg_displace,dble(cpatch%hite(1)),initp%rough)
+                           ,initp%veg_displace,dble(cpatch%height(1)),initp%rough)
 
          !---------------------------------------------------------------------------------!
          !     In this version we still base ourselves on the Leuning et al. (1995) model, !
@@ -842,8 +842,8 @@ module canopy_struct_dynamics
          !---------------------------------------------------------------------------------!
          !----- Top of canopy wind speed. -------------------------------------------------!
          uh   = reduced_wind8(initp%ustar,initp%zeta,initp%ribulk,rk4site%geoht            &
-                             ,initp%veg_displace,dble(cpatch%hite(1)),initp%rough)
-         htop = dble(cpatch%hite(1))
+                             ,initp%veg_displace,dble(cpatch%height(1)),initp%rough)
+         htop = dble(cpatch%height(1))
          do ico=1,cpatch%ncohorts
 
             !----- Alias for PFT type. ----------------------------------------------------!
@@ -853,8 +853,8 @@ module canopy_struct_dynamics
 
 
             !----- Estimate the height center of the crown. -------------------------------!
-            htopcrown = dble(cpatch%hite(ico))
-            hbotcrown = dble(h2crownbh(cpatch%hite(ico),ipft))
+            htopcrown = dble(cpatch%height(ico))
+            hbotcrown = dble(h2crownbh(cpatch%height(ico),ipft))
             hmidcrown = 5.d-1 * (htopcrown + hbotcrown)
             !------------------------------------------------------------------------------!
 
@@ -965,7 +965,7 @@ module canopy_struct_dynamics
          !---------------------------------------------------------------------------------!
          !    Find the top layer and the top height.                                       !
          !---------------------------------------------------------------------------------!
-         zcan = min(ncanlyr,ceiling((dble(cpatch%hite(1)) * zztop0i8)**ehgti8))
+         zcan = min(ncanlyr,ceiling((dble(cpatch%height(1)) * zztop0i8)**ehgti8))
          htop = zztop8(zcan)
          !---------------------------------------------------------------------------------!
 
@@ -998,7 +998,7 @@ module canopy_struct_dynamics
                else
                    !--use dbh for trees
                    waiuse = 1.d-1 * initp%nplant(ico) * dble(cpatch%sla(ico))              &
-                          * dble(size2bl(cpatch%dbh(ico),cpatch%hite(ico)                  &
+                          * dble(size2bl(cpatch%dbh(ico),cpatch%height(ico)                &
                                         ,cpatch%sla(ico),ipft))
                end if
                !---------------------------------------------------------------------------!
@@ -1007,8 +1007,8 @@ module canopy_struct_dynamics
                !---------------------------------------------------------------------------!
                !     Find the heights, and compute the LAD of this cohort.                 !
                !---------------------------------------------------------------------------!
-               htopcrown = dble(cpatch%hite(ico))
-               hbotcrown = dble(h2crownbh(cpatch%hite(ico),cpatch%pft(ico)))
+               htopcrown = dble(cpatch%height(ico))
+               hbotcrown = dble(h2crownbh(cpatch%height(ico),cpatch%pft(ico)))
                ladcohort = (initp%lai(ico) + waiuse) / (htopcrown - hbotcrown)
                kapartial = min(ncanlyr,floor  ((hbotcrown * zztop0i8)**ehgti8) + 1)
                kafull    = min(ncanlyr,ceiling((hbotcrown * zztop0i8)**ehgti8) + 1)
@@ -1064,15 +1064,15 @@ module canopy_struct_dynamics
                !---------------------------------------------------------------------------!
                !     Find the heights, and compute the LAD of this cohort.                 !
                !---------------------------------------------------------------------------!
-               htopcrown = dble(cpatch%hite(ico))
-               hbotcrown = dble(h2crownbh(cpatch%hite(ico),ipft))
+               htopcrown = dble(cpatch%height(ico))
+               hbotcrown = dble(h2crownbh(cpatch%height(ico),ipft))
                if (dry_grasses) then
                   !------------------------------------------------------------------------!
                   !     Dry grasses only.  Create a pseudo TAI so it won't be a            !
                   ! singularity.                                                           !
                   !------------------------------------------------------------------------!
                   tai_drygrass = dble( elongf_min                                          &
-                                     * size2bl(cpatch%dbh(ico),cpatch%hite(ico)            &
+                                     * size2bl(cpatch%dbh(ico),cpatch%height(ico)          &
                                               ,cpatch%sla(ico),ipft))
                   ladcohort    = tai_drygrass / (htopcrown - hbotcrown)
                   !------------------------------------------------------------------------!
@@ -1263,8 +1263,8 @@ module canopy_struct_dynamics
             ipft = cpatch%pft(ico)
 
             !----- Find the crown relevant heights. ---------------------------------------!
-            htopcrown = dble(cpatch%hite(ico))
-            hbotcrown = dble(h2crownbh(cpatch%hite(ico),cpatch%pft(ico)))
+            htopcrown = dble(cpatch%height(ico))
+            hbotcrown = dble(h2crownbh(cpatch%height(ico),cpatch%pft(ico)))
             !------------------------------------------------------------------------------!
 
 

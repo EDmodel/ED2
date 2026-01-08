@@ -225,14 +225,14 @@ module ed_therm_lib
          cpatch%leaf_water_int(ico) = 0.
          cpatch%leaf_water_im2(ico) = 0.
          new_leaf_energy_wat        = 0.
-         if (cpatch%hite(ico) > csite%total_sfcw_depth(ipa)) then
+         if (cpatch%height(ico) > csite%total_sfcw_depth(ipa)) then
             !----- Plant is exposed, set temperature to the canopy temperature. -----------!
             cpatch%leaf_temp(ico) = csite%can_temp(ipa)
          else
             !----- Find the snow layer that is the closest to where the leaves would be. --!
             kclosest = 1
             do k = csite%nlev_sfcwater(ipa), 1, -1
-               if (sum(csite%sfcwater_depth(1:k,ipa)) >= cpatch%hite(ico)) then
+               if (sum(csite%sfcwater_depth(1:k,ipa)) >= cpatch%height(ico)) then
                   kclosest = k
                end if
             end do
@@ -305,7 +305,7 @@ module ed_therm_lib
             write(unit=*,fmt='(a)') ' '
             write(unit=*,fmt=ifmt ) ' Cohort:                  ',ico
             write(unit=*,fmt=ifmt ) ' PFT:                     ',cpatch%pft           (ico)
-            write(unit=*,fmt=efmt ) ' Height:                  ',cpatch%hite          (ico)
+            write(unit=*,fmt=efmt ) ' Height:                  ',cpatch%height        (ico)
             write(unit=*,fmt=efmt ) ' DBH:                     ',cpatch%dbh           (ico)
             write(unit=*,fmt=efmt ) ' NPlant:                  ',cpatch%nplant        (ico)
             write(unit=*,fmt=efmt ) ' LAI:                     ',cpatch%lai           (ico)
@@ -350,14 +350,14 @@ module ed_therm_lib
          cpatch%wood_water    (ico) = 0.
          cpatch%wood_water_int(ico) = 0.
          new_wood_energy_wat        = 0.
-         if (cpatch%hite(ico) > csite%total_sfcw_depth(ipa)) then
+         if (cpatch%height(ico) > csite%total_sfcw_depth(ipa)) then
             !----- Plant is exposed, set temperature to the canopy temperature. -----------!
             cpatch%wood_temp(ico) = csite%can_temp(ipa)
          else
             !----- Find the snow layer that is the closest to where the leaves would be. --!
             kclosest = 1
             do k = csite%nlev_sfcwater(ipa), 1, -1
-               if (sum(csite%sfcwater_depth(1:k,ipa)) >= cpatch%hite(ico)) then
+               if (sum(csite%sfcwater_depth(1:k,ipa)) >= cpatch%height(ico)) then
                   kclosest = k
                end if
             end do
@@ -433,7 +433,7 @@ module ed_therm_lib
             write(unit=*,fmt='(a)') ' '
             write(unit=*,fmt=ifmt ) ' Cohort:                  ',ico
             write(unit=*,fmt=ifmt ) ' PFT:                     ',cpatch%pft           (ico)
-            write(unit=*,fmt=efmt ) ' Height:                  ',cpatch%hite          (ico)
+            write(unit=*,fmt=efmt ) ' Height:                  ',cpatch%height        (ico)
             write(unit=*,fmt=efmt ) ' DBH:                     ',cpatch%dbh           (ico)
             write(unit=*,fmt=efmt ) ' NPlant:                  ',cpatch%nplant        (ico)
             write(unit=*,fmt=efmt ) ' LAI:                     ',cpatch%lai           (ico)
