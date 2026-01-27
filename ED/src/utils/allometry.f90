@@ -133,7 +133,7 @@ module allometry
    !=======================================================================================!
    !     Function that finds Bdead from DBH.                                               !
    !---------------------------------------------------------------------------------------!
-   real function size2bd(dbh,hite,ipft)
+   real function size2bd(dbh,height,ipft)
 
       use pft_coms    , only : C2B         & ! intent(in)
                              , dbh_crit    & ! intent(in)
@@ -148,7 +148,7 @@ module allometry
 
       !----- Arguments --------------------------------------------------------------------!
       real   , intent(in) :: dbh
-      real   , intent(in) :: hite
+      real   , intent(in) :: height
       integer, intent(in) :: ipft
       !----- Local variables. -------------------------------------------------------------!
       real                :: size
@@ -163,7 +163,7 @@ module allometry
       else
          !----- Depending on the allometry, size means DBH or DBH^2 * Height. -------------!
          if (ddh_allom(ipft)) then
-            size = dbh * dbh * hite
+            size = dbh * dbh * height
          else
             size = dbh
          end if
@@ -295,7 +295,7 @@ module allometry
    ! (new style).  This replaces dbh2bl and h2bl with a single generic function that       !
    ! should be used by all plants.                                                         !
    !---------------------------------------------------------------------------------------!
-   real function size2bl(dbh,hite,sla_in,ipft)
+   real function size2bl(dbh,height,sla_in,ipft)
       use pft_coms     , only : dbh_crit       & ! intent(in)
                               , C2B            & ! intent(in)
                               , b1Bl           & ! intent(in)
@@ -310,7 +310,7 @@ module allometry
 
       !----- Arguments --------------------------------------------------------------------!
       real          , intent(in) :: dbh
-      real          , intent(in) :: hite
+      real          , intent(in) :: height
       real          , intent(in) :: sla_in
       integer       , intent(in) :: ipft
       !----- Local variables --------------------------------------------------------------!
@@ -324,7 +324,7 @@ module allometry
       !------------------------------------------------------------------------------------!
       if (igrass == 1 .and. is_grass(ipft)) then 
          !---- Use height for new grasses. ------------------------------------------------!
-         mdbh   = min(dbh,h2dbh(hite,ipft))
+         mdbh   = min(dbh,h2dbh(height,ipft))
       elseif (is_liana(ipft)) then
          mdbh   = min(dbh,liana_dbh_crit)
       else
@@ -338,7 +338,7 @@ module allometry
       ! height, whereas the old allometry uses dbh only.                                   !
       !------------------------------------------------------------------------------------!
       if (ddh_allom(ipft)) then
-         size = mdbh * mdbh * hite
+         size = mdbh * mdbh * height
       else 
          size = mdbh
       end if
@@ -527,7 +527,7 @@ module allometry
    !=======================================================================================!
    !    Canopy Area allometry from Dietze and Clark (2008).                                !
    !---------------------------------------------------------------------------------------!
-   real function size2ca(dbh,hite,sla,ipft,cap_crit)
+   real function size2ca(dbh,height,sla,ipft,cap_crit)
       use pft_coms     , only : dbh_crit       & ! intent(in)
                               , hgt_max        & ! intent(in)
                               , is_grass       & ! intent(in)
@@ -544,7 +544,7 @@ module allometry
 
       !----- Arguments --------------------------------------------------------------------!
       real   , intent(in)           :: dbh       !> Diameter at breast height     [     cm]
-      real   , intent(in)           :: hite      !> Height                        [      m]
+      real   , intent(in)           :: height    !> Plant height                  [      m]
       real   , intent(in)           :: sla       !> Specific leaf area            [ m2/kgC]
       integer, intent(in)           :: ipft      !> Current PFT                   [     --]
       logical, intent(in), optional :: cap_crit  !> Force cap at dbh_crit         [    T|F]
@@ -570,7 +570,7 @@ module allometry
       else
 
          !----- make this function generic to size, not just dbh. -------------------------!
-         loclai = sla * size2bl(dbh,hite,sla,ipft) 
+         loclai = sla * size2bl(dbh,height,sla,ipft) 
          !---------------------------------------------------------------------------------!
 
 
@@ -602,7 +602,7 @@ module allometry
 
          !----- Find the nominal crown area. ----------------------------------------------!
          if (ddh_allom(ipft)) then
-            size = mdbh * mdbh * hite
+            size = mdbh * mdbh * height
          else
             size = mdbh
          end if
@@ -804,7 +804,7 @@ module allometry
    !    This function find the potential rooting depth (i.e. based only on allometry, and  !
    ! ignoring soil depth.).                                                                !
    !---------------------------------------------------------------------------------------!
-   real function size2prd(hite,dbh,ipft)
+   real function size2prd(height,dbh,ipft)
       use ed_misc_coms, only : iallom          & ! intent(in)
                              , use_efrd_trtree ! ! intent(in)
       use pft_coms    , only : is_tropical     & ! intent(in)
@@ -821,7 +821,7 @@ module allometry
       implicit none
 
       !----- Arguments --------------------------------------------------------------------!
-      real   , intent(in) :: hite
+      real   , intent(in) :: height
       real   , intent(in) :: dbh
       integer, intent(in) :: ipft
       !----- Local variables --------------------------------------------------------------!
@@ -879,7 +879,7 @@ module allometry
             !    Original ED-2.1 (I don't know the source for this equation, though).      !
             ! Grasses get a fixed rooting depth of 70cm.                                   !
             !------------------------------------------------------------------------------!
-            size     = dbh * dbh * hite
+            size     = dbh * dbh * height
             !------------------------------------------------------------------------------!
          case (3)
             !------------------------------------------------------------------------------!
@@ -900,16 +900,16 @@ module allometry
             !------------------------------------------------------------------------------!
             if ( is_tropical(ipft) .and. (.not. is_liana(ipft)) ) then
                dbhuse = min(dbh_crit(ipft),dbh)
-               size   = dbhuse * dbhuse * hite
+               size   = dbhuse * dbhuse * height
             else
-               size   = hite
+               size   = height
             end if
             !------------------------------------------------------------------------------!
          case default
             !------------------------------------------------------------------------------!
             !    Size is always height, regardless of the PFT.                             !
             !------------------------------------------------------------------------------!
-            size     = hite
+            size     = height
             !------------------------------------------------------------------------------!
          end select
          !---------------------------------------------------------------------------------!
@@ -936,13 +936,13 @@ module allometry
    !=======================================================================================!
    !     This function finds the actual rooting depth, which mlimited by soil depth.       !
    !---------------------------------------------------------------------------------------!
-   integer function size2krdepth(hite,dbh,ipft,lsl)
+   integer function size2krdepth(height,dbh,ipft,lsl)
       use grid_coms   , only : nzg         ! ! intent(in)
       use soil_coms   , only : slz         ! ! intent(in)
       implicit none
 
       !----- Arguments --------------------------------------------------------------------!
-      real   , intent(in) :: hite
+      real   , intent(in) :: height
       real   , intent(in) :: dbh
       integer, intent(in) :: ipft
       integer, intent(in) :: lsl
@@ -956,7 +956,7 @@ module allometry
       !------------------------------------------------------------------------------------!
       !    Find the potential rooting depth, which is only based on allometric equations.  !
       !------------------------------------------------------------------------------------!
-      pot_root_depth = size2prd(hite,dbh,ipft)
+      pot_root_depth = size2prd(height,dbh,ipft)
       !------------------------------------------------------------------------------------!
 
 
@@ -1074,7 +1074,7 @@ module allometry
    ! size (dbh and height) and the PFT.  This assumes that cohort is in perfect allometry. !
    !                                                                                       !
    !---------------------------------------------------------------------------------------!
-   real function size2be(dbh,hite,ipft)
+   real function size2be(dbh,height,ipft)
       use pft_coms, only : q     & ! intent(in)
                          , qsw   & ! intent(in)
                          , SLA   & ! intent(in)
@@ -1083,7 +1083,7 @@ module allometry
 
       !----- Arguments --------------------------------------------------------------------!
       real          , intent(in) :: dbh
-      real          , intent(in) :: hite
+      real          , intent(in) :: height
       integer       , intent(in) :: ipft
       !----- Local variables --------------------------------------------------------------!
       real                       :: bleaf
@@ -1094,14 +1094,14 @@ module allometry
       !------------------------------------------------------------------------------------!
       !     Find potential leaf and heartwood biomass.                                     !
       !------------------------------------------------------------------------------------!
-      bleaf   = size2bl(dbh,hite,SLA(ipft),ipft) 
+      bleaf   = size2bl(dbh,height,SLA(ipft),ipft) 
       !NOTE: here the canopy top SLA is used because size2be is only used in expand_bevery to create
       !a look up table for biomass allometry. When generating the lut, we do not know the light
       !environment and thus the trait plasticity in SLA. This can create biases in lut but the only
       !effect is to slightly reduce fraction allocated to bdead at monthly scale. The total effect
       !at annual scale should be very small.
-      bdead   = size2bd(dbh,hite,ipft)
-      size2be = bleaf * (1. + q(ipft) + (qsw(ipft)+qbark(ipft)) * hite) + bdead
+      bdead   = size2bd(dbh,height,ipft)
+      size2be = bleaf * (1. + q(ipft) + (qsw(ipft)+qbark(ipft)) * height) + bdead
       !------------------------------------------------------------------------------------!
 
       return
@@ -1117,7 +1117,7 @@ module allometry
    !     This function decomposes total biomass (except for storage) into biomass of each  !
    ! tissue, plus the dbh and height.                                                      !
    !---------------------------------------------------------------------------------------!
-   subroutine expand_bevery(ipft,bevery,dbh,hite,bleaf,broot,bsapa,bsapb,bbarka,bbarkb     &
+   subroutine expand_bevery(ipft,bevery,dbh,height,bleaf,broot,bsapa,bsapb,bbarka,bbarkb   &
                            ,balive,bdeada,bdeadb)
       use pft_coms    , only : bevery_crit & ! intent(in)
                              , balive_crit & ! intent(in)
@@ -1142,7 +1142,7 @@ module allometry
       integer, intent(in)  :: ipft      ! PFT type                            [        ---]
       real   , intent(in)  :: bevery    ! Biomass (Everything but storage)    [  kgC/plant]
       real   , intent(out) :: dbh       ! Diameter at breast height           [         cm]
-      real   , intent(out) :: hite      ! Cohort height                       [          m]
+      real   , intent(out) :: height    ! Plant height                        [          m]
       real   , intent(out) :: bleaf     ! Leaf biomass                        [  kgC/plant]
       real   , intent(out) :: broot     ! Root biomass                        [  kgC/plant]
       real   , intent(out) :: bsapa     ! Above-ground sapwood biomass        [  kgC/plant]
@@ -1179,18 +1179,18 @@ module allometry
          !----- Use the look-up table to find the best dbh. -------------------------------!
          finterp = bevery / bevery_lut(1,ipft)
          dbh     = dbh_lut(1,ipft)    * bevery / bevery_lut(1,ipft)
-         hite    = dbh2h(ipft,dbh)
+         height  = dbh2h(ipft,dbh)
          bdeadx  = bdead_lut(1,ipft)  * bevery / bevery_lut(1,ipft)
          bdeada  =       agf_bs(ipft)  * bdeadx
          bdeadb  = (1. - agf_bs(ipft)) * bdeadx
          balive  = balive_lut(1,ipft) * bevery / bevery_lut(1,ipft)
-         salloci = 1. / (1. + q(ipft) + (qsw(ipft)+qbark(ipft)) * hite )
-         bleaf   =                                            salloci * balive
-         broot   =                       q    (ipft)        * salloci * balive
-         bsapa   =       agf_bs(ipft)  * qsw  (ipft) * hite * salloci * balive
-         bsapb   = (1. - agf_bs(ipft)) * qsw  (ipft) * hite * salloci * balive
-         bbarka  =       agf_bs(ipft)  * qbark(ipft) * hite * salloci * balive
-         bbarkb  = (1. - agf_bs(ipft)) * qbark(ipft) * hite * salloci * balive
+         salloci = 1. / (1. + q(ipft) + (qsw(ipft)+qbark(ipft)) * height )
+         bleaf   =                                              salloci * balive
+         broot   =                       q    (ipft)          * salloci * balive
+         bsapa   =       agf_bs(ipft)  * qsw  (ipft) * height * salloci * balive
+         bsapb   = (1. - agf_bs(ipft)) * qsw  (ipft) * height * salloci * balive
+         bbarka  =       agf_bs(ipft)  * qbark(ipft) * height * salloci * balive
+         bbarkb  = (1. - agf_bs(ipft)) * qbark(ipft) * height * salloci * balive
          !---------------------------------------------------------------------------------!
       else if (bevery >= bevery_crit(ipft)) then
          !---------------------------------------------------------------------------------!
@@ -1201,14 +1201,14 @@ module allometry
          bdeada  =       agf_bs(ipft)  * bdeadx
          bdeadb  = (1. - agf_bs(ipft)) * bdeadx
          dbh     = bd2dbh(ipft,bdeada,bdeadb)
-         hite    = hgt_max(ipft)
-         salloci = 1. / (1. + q(ipft) + (qsw(ipft)+qbark(ipft)) * hite )
-         bleaf   =                                            salloci * balive
-         broot   =                       q    (ipft)        * salloci * balive
-         bsapa   =       agf_bs(ipft)  * qsw  (ipft) * hite * salloci * balive
-         bsapb   = (1. - agf_bs(ipft)) * qsw  (ipft) * hite * salloci * balive
-         bbarka  =       agf_bs(ipft)  * qbark(ipft) * hite * salloci * balive
-         bbarkb  = (1. - agf_bs(ipft)) * qbark(ipft) * hite * salloci * balive
+         height  = hgt_max(ipft)
+         salloci = 1. / (1. + q(ipft) + (qsw(ipft)+qbark(ipft)) * height )
+         bleaf   =                                              salloci * balive
+         broot   =                       q    (ipft)          * salloci * balive
+         bsapa   =       agf_bs(ipft)  * qsw  (ipft) * height * salloci * balive
+         bsapb   = (1. - agf_bs(ipft)) * qsw  (ipft) * height * salloci * balive
+         bbarka  =       agf_bs(ipft)  * qbark(ipft) * height * salloci * balive
+         bbarkb  = (1. - agf_bs(ipft)) * qbark(ipft) * height * salloci * balive
          !---------------------------------------------------------------------------------!
       else
          !----- Use the look-up table to find the best dbh. -------------------------------!
@@ -1224,7 +1224,7 @@ module allometry
          !---------------------------------------------------------------------------------!
          if (ilwr == iupr) then
             dbh     = dbh_lut(ilwr,ipft)
-            hite    = dbh2h(ipft,dbh)
+            height  = dbh2h(ipft,dbh)
          else
             !------ Define the first guess for Regula Falsi (Illinois) method. ------------!
             dbha    = dbh_lut(ilwr,ipft)
@@ -1269,8 +1269,8 @@ module allometry
             !     Loop until convergence.                                                  !
             !------------------------------------------------------------------------------!
             rfaloop: do it=1,maxfpo
-               dbh  = (funz * dbha - funa * dbhz) / ( funz - funa)
-               hite = dbh2h(ipft,dbh)
+               dbh    = (funz * dbha - funa * dbhz) / ( funz - funa)
+               height = dbh2h(ipft,dbh)
 
                !---------------------------------------------------------------------------!
                !     Now that we updated the guess, check whether they are really close.   !
@@ -1282,7 +1282,7 @@ module allometry
 
 
                !------ Find the new function evaluation. ----------------------------------!
-               fun  =  size2be(dbh,hite,ipft) - bevery
+               fun  =  size2be(dbh,height,ipft) - bevery
                !---------------------------------------------------------------------------!
 
 
@@ -1329,7 +1329,7 @@ module allometry
                write (unit=*,fmt='(a,1x,es14.7)') ' + dbh       =',dbh
                write (unit=*,fmt='(a,1x,es14.7)') ' + dbhz      =',dbhz
                write (unit=*,fmt='(a,1x,es14.7)') ' + hgta      =',hgta
-               write (unit=*,fmt='(a,1x,es14.7)') ' + hite      =',hite
+               write (unit=*,fmt='(a,1x,es14.7)') ' + height    =',height
                write (unit=*,fmt='(a,1x,es14.7)') ' + hgtz      =',hgtz
                write (unit=*,fmt='(a,1x,es14.7)') ' + beverya   =',size2be(dbha,hgta,ipft)
                write (unit=*,fmt='(a,1x,es14.7)') ' + beveryz   =',size2be(dbhz,hgtz,ipft)
@@ -1348,17 +1348,17 @@ module allometry
 
 
          !------ Solution for dbh was determined, derive tissue biomass. ------------------!
-         bdeadx  = size2bd(dbh,hite,ipft)
+         bdeadx  = size2bd(dbh,height,ipft)
          bdeada  =       agf_bs(ipft)  * bdeadx
          bdeadb  = (1. - agf_bs(ipft)) * bdeadx
          balive  = bevery - bdeadx
-         salloci = 1. / (1. + q(ipft) + (qsw(ipft)+qbark(ipft)) * hite )
-         bleaf   =                                            salloci * balive
-         broot   =                       q    (ipft)        * salloci * balive
-         bsapa   =       agf_bs(ipft)  * qsw  (ipft) * hite * salloci * balive
-         bsapb   = (1. - agf_bs(ipft)) * qsw  (ipft) * hite * salloci * balive
-         bbarka  =       agf_bs(ipft)  * qbark(ipft) * hite * salloci * balive
-         bbarkb  = (1. - agf_bs(ipft)) * qbark(ipft) * hite * salloci * balive
+         salloci = 1. / (1. + q(ipft) + (qsw(ipft)+qbark(ipft)) * height )
+         bleaf   =                                              salloci * balive
+         broot   =                       q    (ipft)          * salloci * balive
+         bsapa   =       agf_bs(ipft)  * qsw  (ipft) * height * salloci * balive
+         bsapb   = (1. - agf_bs(ipft)) * qsw  (ipft) * height * salloci * balive
+         bbarka  =       agf_bs(ipft)  * qbark(ipft) * height * salloci * balive
+         bbarkb  = (1. - agf_bs(ipft)) * qbark(ipft) * height * salloci * balive
          !---------------------------------------------------------------------------------!
       end if
       !------------------------------------------------------------------------------------!
@@ -1426,7 +1426,7 @@ module allometry
       !------------------------------------------------------------------------------------!
 
       !----- Find the crown area. ---------------------------------------------------------!
-      loccai = size2ca(cpatch%dbh(ico),cpatch%hite(ico),cpatch%sla(ico),ipft)
+      loccai = size2ca(cpatch%dbh(ico),cpatch%height(ico),cpatch%sla(ico),ipft)
       cpatch%crown_area(ico) = min(1.0, cpatch%nplant(ico) * loccai)
       !------------------------------------------------------------------------------------!
 
@@ -1447,7 +1447,7 @@ module allometry
          !---------------------------------------------------------------------------------!
          if (is_grass(ipft) .and. igrass == 1) then 
             !---- Use height for new grasses. ---------------------------------------------!
-            mdbh   = min(cpatch%dbh(ico),h2dbh(cpatch%hite(ico),ipft))
+            mdbh   = min(cpatch%dbh(ico),h2dbh(cpatch%height(ico),ipft))
          elseif (is_liana(ipft)) then
             mdbh   = min(cpatch%dbh(ico),liana_dbh_crit)
          else
@@ -1459,7 +1459,7 @@ module allometry
 
          !-----Find WAI. ------------------------------------------------------------------!
          if (ddh_allom(ipft)) then
-            size = mdbh * mdbh * cpatch%hite(ico)
+            size = mdbh * mdbh * cpatch%height(ico)
          else
             size = mdbh
          end if

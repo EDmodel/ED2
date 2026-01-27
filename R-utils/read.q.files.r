@@ -1050,11 +1050,11 @@ read.q.files <<- function( datum
 
 
          #----- Read the cohort level variables. ------------------------------------------#
-         showconow         = mymont$HITE > pft$hgt.show[pftconow]
+         showconow         = mymont$HEIGHT > pft$hgt.show[pftconow]
          nplantconow       = mymont$NPLANT       * as.numeric(showconow)
          laiconow          = mymont$MMEAN.LAI.CO * as.numeric(showconow)
          waiconow          = mymont$WAI.CO       * as.numeric(showconow)
-         heightconow       = mymont$HITE
+         heightconow       = mymont$HEIGHT
          thbarkconow       = mymont$MMEAN.THBARK.CO
          wood.densconow    = pft$rho[pftconow]
          slaconow          = mymont$MMEAN.SLA.CO

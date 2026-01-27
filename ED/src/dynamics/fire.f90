@@ -151,7 +151,7 @@ module fire
                   fuel = csite%fast_grnd_C(ipa) + csite%structural_grnd_C(ipa)
                   fuelcohloop_3: do ico = 1,cpatch%ncohorts
                      ipft = cpatch%pft(ico)
-                     if (is_grass(ipft) .or. cpatch%hite(ico) <= fuel_height_max) then
+                     if (is_grass(ipft) .or. cpatch%height(ico) <= fuel_height_max) then
                         fuel = fuel + cpatch%nplant(ico) * cpatch%agb(ico)
                      end if
                   end do fuelcohloop_3

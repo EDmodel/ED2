@@ -281,8 +281,9 @@ module phenology_driv
                !----- Get cohort-specific thresholds for prescribed phenology. ------------!
                call assign_prescribed_phen(cpoly%green_leaf_factor(ipft,isi)               &
                                           ,cpoly%leaf_aging_factor(ipft,isi)               &
-                                          ,cpatch%dbh(ico),cpatch%hite(ico),cpatch%sla(ico)&
-                                          ,ipft,drop_cold,leaf_out_cold,bl_max)
+                                          ,cpatch%dbh(ico),cpatch%height(ico)              &
+                                          ,cpatch%sla(ico),ipft,drop_cold,leaf_out_cold    &
+                                          ,bl_max)
             case default
                !----- Drop_cold is computed in phenology_thresholds for Botta scheme. -----!
                if (drop_cold) bl_max = 0.0
@@ -539,7 +540,7 @@ module phenology_driv
 
 
                !----- Find the maximum allowed leaf biomass. ------------------------------!
-               bl_max = elongf_try * size2bl(cpatch%dbh(ico),cpatch%hite(ico)              &
+               bl_max = elongf_try * size2bl(cpatch%dbh(ico),cpatch%height(ico)            &
                                             ,cpatch%sla(ico),ipft)
                !---------------------------------------------------------------------------!
 
@@ -743,7 +744,7 @@ module phenology_driv
                ! allow for some fine roots to persist even if all leaves have been shed,   !
                ! otherwise plants will be unable to extract water once the rains return.   !
                !---------------------------------------------------------------------------!
-               bl_full = size2bl(cpatch%dbh(ico),cpatch%hite(ico),cpatch%sla(ico),ipft)
+               bl_full = size2bl(cpatch%dbh(ico),cpatch%height(ico),cpatch%sla(ico),ipft)
                bl_max = elongf_try * bl_full
                if (root_phen_factor > 0.) then
                   br_max = bl_full * q(ipft)                                               &
@@ -945,7 +946,7 @@ module phenology_driv
             if (.not. veget_dyn_on) then
                elongf_try           = cpoly%green_leaf_factor(ipft,isi) * cpatch%elongf(ico)
                cpatch%bleaf(ico)    = elongf_try                                           &
-                                    * size2bl(cpatch%dbh(ico),cpatch%hite(ico)             &
+                                    * size2bl(cpatch%dbh(ico),cpatch%height(ico)           &
                                              ,cpatch%sla(ico),ipft)
                cpatch%bstorage(ico) = bstorage_in
                !----- Fix phenology status according to elongation factor. ----------------!
@@ -965,7 +966,7 @@ module phenology_driv
                case (5,6)
                   if (root_phen_factor > 0.) then
                      cpatch%broot(ico) = q(ipft) * (elongf_try + root_phen_factor - 1.)    &
-                                       * size2bl(cpatch%dbh(ico),cpatch%hite(ico)          &
+                                       * size2bl(cpatch%dbh(ico),cpatch%height(ico)        &
                                                 ,cpatch%sla(ico),ipft)                     &
                                        / root_phen_factor
                   end if
@@ -1297,7 +1298,7 @@ module phenology_driv
          write(unit=*,fmt=fmti )  ' COHORT              : ',ico
          write(unit=*,fmt=fmti )  ' IPFT                : ',ipft
          write(unit=*,fmt=fmtf )  ' DBH                 : ',cpatch%dbh   (ico)
-         write(unit=*,fmt=fmtf )  ' HITE                : ',cpatch%hite  (ico)
+         write(unit=*,fmt=fmtf )  ' HEIGHT              : ',cpatch%height(ico)
          write(unit=*,fmt='(a)')  ' ---------------------------------------------------- '
          write(unit=*,fmt=fmti )  ' IPHEN_SCHEME        : ',iphen_scheme
          write(unit=*,fmt=fmti )  ' PHENOLOGY_STRATEGY  : ',phenology(ipft)

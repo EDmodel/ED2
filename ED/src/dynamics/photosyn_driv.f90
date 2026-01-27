@@ -187,7 +187,7 @@ module photosyn_driv
             !     Find the mean height of the crown (to represent the distance between     !
             ! the ground and the leaves.                                                   !
             !------------------------------------------------------------------------------!
-            mcheight = 0.5 * (cpatch%hite(ico) + h2crownbh(cpatch%hite(ico),ipft))
+            mcheight = 0.5 * (cpatch%height(ico) + h2crownbh(cpatch%height(ico),ipft))
             !------------------------------------------------------------------------------!
 
 
@@ -1013,7 +1013,7 @@ module photosyn_driv
       write(unit=57,fmt=bfmt)  current_time%year          , current_time%month             &
                              , current_time%date          , current_time%time              &
                              , cpatch%pft(ico)            , limit_flag                     &
-                             , cpatch%hite(ico)           , cpatch%nplant(ico)             &
+                             , cpatch%height(ico)         , cpatch%nplant(ico)             &
                              , cpatch%bleaf(ico)          , cpatch%lai(ico)                &
                              , cpatch%leaf_hcap(ico)      , cpatch%leaf_water(ico)         &
                              , cpatch%leaf_water_im2(ico) , cpatch%leaf_temp(ico)          &

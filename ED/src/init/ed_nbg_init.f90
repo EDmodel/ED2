@@ -296,24 +296,24 @@ module ed_nbg_init
             ! using the standard allometry for this PFT.                                   !
             !------------------------------------------------------------------------------!
             cpatch%nplant(ico)           = init_density(ipft)
-            cpatch%hite(ico)             = hgt_min(ipft)
+            cpatch%height(ico)           = hgt_min(ipft)
             cpatch%phenology_status(ico) = 0
-            cpatch%dbh(ico)              = h2dbh(cpatch%hite(ico),ipft)
-            bdeadx                       = size2bd(cpatch%dbh(ico),cpatch%hite(ico),ipft)
+            cpatch%dbh(ico)              = h2dbh(cpatch%height(ico),ipft)
+            bdeadx                       = size2bd(cpatch%dbh(ico),cpatch%height(ico),ipft)
             cpatch%bdeada(ico)           =       agf_bs(ipft)  * bdeadx
             cpatch%bdeadb(ico)           = (1. - agf_bs(ipft)) * bdeadx
             cpatch%sla(ico)              = sla(ipft)
-            cpatch%bleaf(ico)            = size2bl(cpatch%dbh(ico),cpatch%hite(ico)        &
+            cpatch%bleaf(ico)            = size2bl(cpatch%dbh(ico),cpatch%height(ico)      &
                                                   ,cpatch%sla(ico),ipft)
             cpatch%broot(ico)            = q(ipft) * cpatch%bleaf(ico)
             cpatch%bsapwooda(ico)        = agf_bs(ipft) * cpatch%bleaf(ico)                &
-                                         * qsw(ipft) * cpatch%hite(ico)
+                                         * qsw(ipft) * cpatch%height(ico)
             cpatch%bsapwoodb(ico)        = (1.-agf_bs(ipft)) * cpatch%bleaf(ico)           &
-                                         * qsw(ipft) * cpatch%hite(ico)
+                                         * qsw(ipft) * cpatch%height(ico)
             cpatch%bbarka(ico)           = agf_bs(ipft) * cpatch%bleaf(ico)                &
-                                         * qbark(ipft) * cpatch%hite(ico)
+                                         * qbark(ipft) * cpatch%height(ico)
             cpatch%bbarkb(ico)           = (1.-agf_bs(ipft)) * cpatch%bleaf(ico)           &
-                                         * qbark(ipft) * cpatch%hite(ico)
+                                         * qbark(ipft) * cpatch%height(ico)
             cpatch%balive(ico)           = ed_balive(cpatch,ico)
             cpatch%bstorage(ico)         = max(almost_zero,f_bstorage_init(ipft))          &
                                          * cpatch%balive(ico)
@@ -360,10 +360,10 @@ module ed_nbg_init
             call area_indices(cpatch, ico)
             cpatch%agb    (ico) = ed_biomass(cpatch, ico)
             cpatch%basarea(ico) = pio4 * cpatch%dbh(ico)*cpatch%dbh(ico)
-            cpatch%btimber(ico) = size2bt(cpatch%dbh(ico),cpatch%hite(ico)                 &
+            cpatch%btimber(ico) = size2bt(cpatch%dbh(ico),cpatch%height(ico)               &
                                          ,cpatch%bdeada(ico),cpatch%bsapwooda(ico)         &
                                          ,cpatch%bbarka(ico),cpatch%pft(ico))
-            cpatch%thbark (ico) = size2xb(cpatch%dbh(ico),cpatch%hite(ico)                 &
+            cpatch%thbark (ico) = size2xb(cpatch%dbh(ico),cpatch%height(ico)               &
                                          ,cpatch%bbarka(ico),cpatch%bbarkb(ico)            &
                                          ,cpatch%sla(ico),cpatch%pft(ico))
             !------------------------------------------------------------------------------!
@@ -488,24 +488,24 @@ module ed_nbg_init
             ! initial LAI.  We then compute the other biomass quantities using the stand-  !
             ! ard allometry for this PFT.                                                  !
             !------------------------------------------------------------------------------!
-            cpatch%hite(ico)             = height
+            cpatch%height(ico)           = height
             cpatch%phenology_status(ico) = 0
-            cpatch%dbh(ico)              = h2dbh(cpatch%hite(ico),ipft)
-            bdeadx                       = size2bd(cpatch%dbh(ico),cpatch%hite(ico),ipft)
+            cpatch%dbh(ico)              = h2dbh(cpatch%height(ico),ipft)
+            bdeadx                       = size2bd(cpatch%dbh(ico),cpatch%height(ico),ipft)
             cpatch%bdeada(ico)           =       agf_bs(ipft)  * bdeadx
             cpatch%bdeadb(ico)           = (1. - agf_bs(ipft)) * bdeadx
             cpatch%sla(ico)              = sla(ipft)
-            cpatch%bleaf(ico)            = size2bl(cpatch%dbh(ico),cpatch%hite(ico)        &
+            cpatch%bleaf(ico)            = size2bl(cpatch%dbh(ico),cpatch%height(ico)      &
                                                   ,cpatch%sla(ico),ipft)
             cpatch%broot(ico)            = q(ipft) * cpatch%bleaf(ico)
             cpatch%bsapwooda(ico)        = agf_bs(ipft) * cpatch%bleaf(ico)                &
-                                         * qsw(ipft) * cpatch%hite(ico)
+                                         * qsw(ipft) * cpatch%height(ico)
             cpatch%bsapwoodb(ico)        = (1.-agf_bs(ipft)) * cpatch%bleaf(ico)           &
-                                         * qsw(ipft) * cpatch%hite(ico)
+                                         * qsw(ipft) * cpatch%height(ico)
             cpatch%bbarka(ico)           = agf_bs(ipft) * cpatch%bleaf(ico)                &
-                                         * qbark(ipft) * cpatch%hite(ico)
+                                         * qbark(ipft) * cpatch%height(ico)
             cpatch%bbarkb(ico)           = (1.-agf_bs(ipft)) * cpatch%bleaf(ico)           &
-                                         * qbark(ipft) * cpatch%hite(ico)
+                                         * qbark(ipft) * cpatch%height(ico)
             cpatch%balive(ico)           = ed_balive(cpatch,ico)
             cpatch%bstorage(ico)         = max(almost_zero,f_bstorage_init(ipft))          &
                                          * cpatch%balive(ico)
@@ -550,10 +550,10 @@ module ed_nbg_init
             call area_indices(cpatch, ico)
             cpatch%agb    (ico) = ed_biomass(cpatch, ico)
             cpatch%basarea(ico) = pio4 * cpatch%dbh(ico)*cpatch%dbh(ico)
-            cpatch%btimber(ico) = size2bt(cpatch%dbh(ico),cpatch%hite(ico)                 &
+            cpatch%btimber(ico) = size2bt(cpatch%dbh(ico),cpatch%height(ico)               &
                                          ,cpatch%bdeada(ico),cpatch%bsapwooda(ico)         &
                                          ,cpatch%bbarka(ico),cpatch%pft(ico))
-            cpatch%thbark (ico) = size2xb(cpatch%dbh(ico),cpatch%hite(ico)                 &
+            cpatch%thbark (ico) = size2xb(cpatch%dbh(ico),cpatch%height(ico)               &
                                          ,cpatch%bbarka(ico),cpatch%bbarkb(ico)            &
                                          ,cpatch%sla(ico),cpatch%pft(ico))
             !------------------------------------------------------------------------------!
@@ -771,24 +771,25 @@ module ed_nbg_init
                   !------------------------------------------------------------------------!
                   cpatch%nplant(ico)           = init_density(ipft)
                   cpatch%dbh(ico)              = dbh_bigleaf(ipft)
-                  cpatch%hite(ico)             = hgt_max(ipft)
+                  cpatch%height(ico)           = hgt_max(ipft)
                   cpatch%phenology_status(ico) = 0
-                  bdeadx                       = size2bd(cpatch%dbh(ico),cpatch%hite(ico)  &
-                                                        ,ipft)
+                  bdeadx                       = size2bd(cpatch%dbh(ico)                   &
+                                                        ,cpatch%height(ico),ipft)
                   cpatch%bdeada(ico)           =       agf_bs(ipft)  * bdeadx
                   cpatch%bdeadb(ico)           = (1. - agf_bs(ipft)) * bdeadx
                   cpatch%sla(ico)              = sla(ipft)
-                  cpatch%bleaf(ico)            = size2bl(cpatch%dbh(ico),cpatch%hite(ico)  &
+                  cpatch%bleaf(ico)            = size2bl(cpatch%dbh(ico)                   &
+                                                        ,cpatch%height(ico)                &
                                                         ,cpatch%sla(ico),ipft)
                   cpatch%broot(ico)            = q(ipft) * cpatch%bleaf(ico)
                   cpatch%bsapwooda(ico)        = agf_bs(ipft) * cpatch%bleaf(ico)          &
-                                               * qsw(ipft) * cpatch%hite(ico)
+                                               * qsw(ipft) * cpatch%height(ico)
                   cpatch%bsapwoodb(ico)        = (1.-agf_bs(ipft)) * cpatch%bleaf(ico)     &
-                                               * qsw(ipft) * cpatch%hite(ico)
+                                               * qsw(ipft) * cpatch%height(ico)
                   cpatch%bbarka(ico)           = agf_bs(ipft) * cpatch%bleaf(ico)          &
-                                               * qbark(ipft) * cpatch%hite(ico)
+                                               * qbark(ipft) * cpatch%height(ico)
                   cpatch%bbarkb(ico)           = (1.-agf_bs(ipft)) * cpatch%bleaf(ico)     &
-                                               * qbark(ipft) * cpatch%hite(ico)
+                                               * qbark(ipft) * cpatch%height(ico)
                   cpatch%balive(ico)           = ed_balive(cpatch,ico)
                   cpatch%bstorage(ico)         = max(almost_zero,f_bstorage_init(ipft))    &
                                                * cpatch%balive(ico)
@@ -831,10 +832,10 @@ module ed_nbg_init
                   call area_indices(cpatch, ico)
                   cpatch%agb    (ico) = ed_biomass(cpatch, ico)
                   cpatch%basarea(ico) = pio4 * cpatch%dbh(ico)*cpatch%dbh(ico)
-                  cpatch%btimber(ico) = size2bt(cpatch%dbh(ico),cpatch%hite(ico)           &
+                  cpatch%btimber(ico) = size2bt(cpatch%dbh(ico),cpatch%height(ico)         &
                                                ,cpatch%bdeada(ico),cpatch%bsapwooda(ico)   &
                                                ,cpatch%bbarka(ico),cpatch%pft(ico))
-                  cpatch%thbark (ico) = size2xb(cpatch%dbh(ico),cpatch%hite(ico)           &
+                  cpatch%thbark (ico) = size2xb(cpatch%dbh(ico),cpatch%height(ico)         &
                                                ,cpatch%bbarka(ico),cpatch%bbarkb(ico)      &
                                                ,cpatch%sla(ico),cpatch%pft(ico))
                   !------------------------------------------------------------------------!

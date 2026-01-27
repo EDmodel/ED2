@@ -694,9 +694,9 @@ subroutine read_ed21_history_file
                            select case (iallom)
                            case (3,4,5)
                               !----- New allometry, initialise with DBH. ------------------!
-                              cpatch%hite(ico)   = dbh2h (ipft,cpatch%dbh  (ico))
+                              cpatch%height(ico) = dbh2h (ipft,cpatch%dbh  (ico))
                               bdeadx             = size2bd(cpatch%dbh(ico)                 &
-                                                          ,cpatch%hite(ico),ipft)
+                                                          ,cpatch%height(ico),ipft)
                               cpatch%bdeada(ico) =        agf_bs(ipft)  * bdeadx
                               cpatch%bdeadb(ico) = (1.0 - agf_bs(ipft)) * bdeadx
                            case default
@@ -709,7 +709,7 @@ subroutine read_ed21_history_file
                                  ! discarded.  This does not violate carbon conservation   !
                                  ! because this is the initial state of a new run.         !
                                  !---------------------------------------------------------!
-                                 cpatch%hite  (ico) = dbh2h (ipft,cpatch%dbh  (ico))
+                                 cpatch%height(ico) = dbh2h (ipft,cpatch%dbh  (ico))
                                  cpatch%bdeada(ico) = 0.0
                                  cpatch%bdeadb(ico) = 0.0
                                  !---------------------------------------------------------!
@@ -719,18 +719,18 @@ subroutine read_ed21_history_file
                                  !   Grasses have bdead in both input and current run      !
                                  ! (igrass=0).                                             !
                                  !---------------------------------------------------------!
-                                 cpatch%dbh(ico)   = bd2dbh(ipft,cpatch%bdeada(ico)        &
-                                                                ,cpatch%bdeadb(ico) )
-                                 cpatch%hite(ico)  = dbh2h (ipft,cpatch%dbh  (ico) )
+                                 cpatch%dbh   (ico) = bd2dbh(ipft,cpatch%bdeada(ico)       &
+                                                                 ,cpatch%bdeadb(ico) )
+                                 cpatch%height(ico) = dbh2h (ipft,cpatch%dbh  (ico) )
                                  !---------------------------------------------------------!
                               else
                                  !---------------------------------------------------------!
                                  !    It is either a new grass (igrass=1) in the initial   !
                                  ! file, or the value for bdead is missing from the files. !
                                  !---------------------------------------------------------!
-                                 cpatch%hite(ico)   = dbh2h (ipft,cpatch%dbh  (ico))
+                                 cpatch%height(ico) = dbh2h (ipft,cpatch%dbh  (ico))
                                  bdeadx             = size2bd(cpatch%dbh(ico)              &
-                                                             ,cpatch%hite(ico),ipft)
+                                                             ,cpatch%height(ico),ipft)
                                  cpatch%bdeada(ico) =        agf_bs(ipft)  * bdeadx
                                  cpatch%bdeadb(ico) = (1.0 - agf_bs(ipft)) * bdeadx
                                  !---------------------------------------------------------!
@@ -755,19 +755,19 @@ subroutine read_ed21_history_file
                            !     Use allometry to define leaf and the other live biomass   !
                            ! pools.                                                        !
                            !---------------------------------------------------------------!
-                           cpatch%bleaf(ico)     = size2bl( cpatch%dbh (ico)               &
-                                                          , cpatch%hite(ico)               &
-                                                          , cpatch%sla (ico)               &
+                           cpatch%bleaf(ico)     = size2bl( cpatch%dbh   (ico)             &
+                                                          , cpatch%height(ico)             &
+                                                          , cpatch%sla   (ico)             &
                                                           , ipft )
                            cpatch%broot   (ico)  = cpatch%bleaf(ico) * q(ipft)
                            cpatch%bsapwooda(ico) = agf_bs(ipft) * cpatch%bleaf(ico)        &
-                                                 * qsw(ipft) * cpatch%hite(ico)
+                                                 * qsw(ipft) * cpatch%height(ico)
                            cpatch%bsapwoodb(ico) = (1.-agf_bs(ipft)) * cpatch%bleaf(ico)   &
-                                                 * qsw(ipft) * cpatch%hite(ico)
+                                                 * qsw(ipft) * cpatch%height(ico)
                            cpatch%bbarka(ico)    = agf_bs(ipft) * cpatch%bleaf(ico)        &
-                                                 * qbark(ipft) * cpatch%hite(ico)
+                                                 * qbark(ipft) * cpatch%height(ico)
                            cpatch%bbarkb(ico)    = (1.-agf_bs(ipft)) * cpatch%bleaf(ico)   &
-                                                 * qbark(ipft) * cpatch%hite(ico)
+                                                 * qbark(ipft) * cpatch%height(ico)
                            cpatch%balive  (ico)  = ed_balive(cpatch,ico)
                            cpatch%bstorage(ico)  = max(almost_zero,f_bstorage_init(ipft))  &
                                                  * cpatch%balive(ico)
@@ -937,13 +937,13 @@ subroutine read_ed21_history_file
                            cpatch%agb    (ico) = ed_biomass(cpatch, ico)
                            cpatch%basarea(ico) = pio4 * cpatch%dbh(ico) * cpatch%dbh(ico)
                            cpatch%btimber(ico) = size2bt( cpatch%dbh      (ico)            &
-                                                        , cpatch%hite     (ico)            &
+                                                        , cpatch%height   (ico)            &
                                                         , cpatch%bdeada   (ico)            &
                                                         , cpatch%bsapwooda(ico)            &
                                                         , cpatch%bbarka   (ico)            &
                                                         , cpatch%pft      (ico) )
                            cpatch%thbark(ico)  = size2xb( cpatch%dbh      (ico)            &
-                                                        , cpatch%hite     (ico)            &
+                                                        , cpatch%height   (ico)            &
                                                         , cpatch%bbarka   (ico)            &
                                                         , cpatch%bbarkb   (ico)            &
                                                         , cpatch%sla      (ico)            &
@@ -2101,9 +2101,9 @@ subroutine read_ed21_history_unstruct
                            select case (iallom)
                            case (3,4,5)
                               !----- New allometry, initialise with DBH. ------------------!
-                              cpatch%hite(ico)   = dbh2h (ipft,cpatch%dbh  (ico))
+                              cpatch%height(ico) = dbh2h (ipft,cpatch%dbh  (ico))
                               bdeadx             = size2bd(cpatch%dbh(ico)                 &
-                                                          ,cpatch%hite(ico),ipft)
+                                                          ,cpatch%height(ico),ipft)
                               cpatch%bdeada(ico) =        agf_bs(ipft)  * bdeadx
                               cpatch%bdeadb(ico) = (1.0 - agf_bs(ipft)) * bdeadx
                            case default
@@ -2116,7 +2116,7 @@ subroutine read_ed21_history_unstruct
                                  ! discarded.  This does not violate carbon conservation   !
                                  ! because this is the initial state of a new run.         !
                                  !---------------------------------------------------------!
-                                 cpatch%hite  (ico) = dbh2h (ipft,cpatch%dbh  (ico))
+                                 cpatch%height(ico) = dbh2h (ipft,cpatch%dbh  (ico))
                                  cpatch%bdeada(ico) = 0.0
                                  cpatch%bdeadb(ico) = 0.0
                                  !---------------------------------------------------------!
@@ -2126,18 +2126,18 @@ subroutine read_ed21_history_unstruct
                                  !   Grasses have bdead in both input and current run      !
                                  ! (igrass=0).                                             !
                                  !---------------------------------------------------------!
-                                 cpatch%dbh(ico)   = bd2dbh(ipft,cpatch%bdeada(ico)        &
-                                                                ,cpatch%bdeadb(ico) )
-                                 cpatch%hite(ico)  = dbh2h (ipft,cpatch%dbh  (ico) )
+                                 cpatch%dbh   (ico) = bd2dbh(ipft,cpatch%bdeada(ico)       &
+                                                                 ,cpatch%bdeadb(ico) )
+                                 cpatch%height(ico) = dbh2h (ipft,cpatch%dbh  (ico) )
                                  !---------------------------------------------------------!
                               else
                                  !---------------------------------------------------------!
                                  !    It is either a new grass (igrass=1) in the initial   !
                                  ! file, or the value for bdead is missing from the files. !
                                  !---------------------------------------------------------!
-                                 cpatch%hite(ico)   = dbh2h (ipft,cpatch%dbh  (ico))
+                                 cpatch%height(ico) = dbh2h (ipft,cpatch%dbh  (ico))
                                  bdeadx             = size2bd(cpatch%dbh(ico)              &
-                                                             ,cpatch%hite(ico),ipft)
+                                                             ,cpatch%height(ico),ipft)
                                  cpatch%bdeada(ico) =        agf_bs(ipft)  * bdeadx
                                  cpatch%bdeadb(ico) = (1.0 - agf_bs(ipft)) * bdeadx
                                  !---------------------------------------------------------!
@@ -2161,19 +2161,19 @@ subroutine read_ed21_history_unstruct
                            !     Use allometry to define leaf and the other live biomass   !
                            ! pools.                                                        !
                            !---------------------------------------------------------------!
-                           cpatch%bleaf(ico)     = size2bl( cpatch%dbh (ico)               &
-                                                          , cpatch%hite(ico)               &
-                                                          , cpatch%sla (ico)               &
+                           cpatch%bleaf(ico)     = size2bl( cpatch%dbh   (ico)             &
+                                                          , cpatch%height(ico)             &
+                                                          , cpatch%sla   (ico)             &
                                                           , ipft )
                            cpatch%broot(ico)     = cpatch%bleaf(ico) * q(ipft)
                            cpatch%bsapwooda(ico) = agf_bs(ipft) * cpatch%bleaf(ico)        &
-                                                 * qsw(ipft) * cpatch%hite(ico)
+                                                 * qsw(ipft) * cpatch%height(ico)
                            cpatch%bsapwoodb(ico) = (1. - agf_bs(ipft)) * cpatch%bleaf(ico) &
-                                                 * qsw(ipft) * cpatch%hite(ico)
+                                                 * qsw(ipft) * cpatch%height(ico)
                            cpatch%bbarka(ico)    = agf_bs(ipft) * cpatch%bleaf(ico)        &
-                                                 * qbark(ipft) * cpatch%hite(ico)
+                                                 * qbark(ipft) * cpatch%height(ico)
                            cpatch%bbarkb(ico)    = (1.-agf_bs(ipft)) * cpatch%bleaf(ico)   &
-                                                 * qbark(ipft) * cpatch%hite(ico)
+                                                 * qbark(ipft) * cpatch%height(ico)
                            cpatch%balive  (ico)  = ed_balive(cpatch,ico)
                            cpatch%bstorage(ico)  = max(almost_zero,f_bstorage_init(ipft))  &
                                                  * cpatch%balive(ico)
@@ -2343,13 +2343,13 @@ subroutine read_ed21_history_unstruct
                            cpatch%agb    (ico) = ed_biomass(cpatch, ico)
                            cpatch%basarea(ico) = pio4 * cpatch%dbh(ico) * cpatch%dbh(ico)
                            cpatch%btimber(ico) = size2bt( cpatch%dbh      (ico)            &
-                                                        , cpatch%hite     (ico)            &
+                                                        , cpatch%height   (ico)            &
                                                         , cpatch%bdeada   (ico)            &
                                                         , cpatch%bsapwooda(ico)            &
                                                         , cpatch%bbarka   (ico)            &
                                                         , cpatch%pft      (ico) )
                            cpatch%thbark(ico)  = size2xb( cpatch%dbh      (ico)            &
-                                                        , cpatch%hite     (ico)            &
+                                                        , cpatch%height   (ico)            &
                                                         , cpatch%bbarka   (ico)            &
                                                         , cpatch%bbarkb   (ico)            &
                                                         , cpatch%sla      (ico)            &
@@ -3491,9 +3491,9 @@ subroutine read_ed21_polyclone
                            select case (iallom)
                            case (3,4,5)
                               !----- New allometry, initialise with DBH. ------------------!
-                              cpatch%hite(ico)   = dbh2h (ipft,cpatch%dbh  (ico))
+                              cpatch%height(ico) = dbh2h (ipft,cpatch%dbh  (ico))
                               bdeadx             = size2bd(cpatch%dbh(ico)                 &
-                                                          ,cpatch%hite(ico),ipft)
+                                                          ,cpatch%height(ico),ipft)
                               cpatch%bdeada(ico) =        agf_bs(ipft)  * bdeadx
                               cpatch%bdeadb(ico) = (1.0 - agf_bs(ipft)) * bdeadx
                            case default
@@ -3506,7 +3506,7 @@ subroutine read_ed21_polyclone
                                  ! discarded.  This does not violate carbon conservation   !
                                  ! because this is the initial state of a new run.         !
                                  !---------------------------------------------------------!
-                                 cpatch%hite  (ico) = dbh2h (ipft,cpatch%dbh  (ico))
+                                 cpatch%height(ico) = dbh2h (ipft,cpatch%dbh  (ico))
                                  cpatch%bdeada(ico) = 0.0
                                  cpatch%bdeadb(ico) = 0.0
                                  !---------------------------------------------------------!
@@ -3516,18 +3516,18 @@ subroutine read_ed21_polyclone
                                  !   Grasses have bdead in both input and current run      !
                                  ! (igrass=0).                                             !
                                  !---------------------------------------------------------!
-                                 cpatch%dbh(ico)   = bd2dbh(ipft,cpatch%bdeada(ico)        &
-                                                                ,cpatch%bdeadb(ico) )
-                                 cpatch%hite(ico)  = dbh2h (ipft,cpatch%dbh  (ico) )
+                                 cpatch%dbh   (ico) = bd2dbh(ipft,cpatch%bdeada(ico)       &
+                                                                 ,cpatch%bdeadb(ico) )
+                                 cpatch%height(ico) = dbh2h (ipft,cpatch%dbh  (ico) )
                                  !---------------------------------------------------------!
                               else
                                  !---------------------------------------------------------!
                                  !    It is either a new grass (igrass=1) in the initial   !
                                  ! file, or the value for bdead is missing from the files. !
                                  !---------------------------------------------------------!
-                                 cpatch%hite(ico)   = dbh2h (ipft,cpatch%dbh  (ico))
+                                 cpatch%height(ico) = dbh2h (ipft,cpatch%dbh  (ico))
                                  bdeadx             = size2bd(cpatch%dbh(ico)              &
-                                                             ,cpatch%hite(ico),ipft)
+                                                             ,cpatch%height(ico),ipft)
                                  cpatch%bdeada(ico) =        agf_bs(ipft)  * bdeadx
                                  cpatch%bdeadb(ico) = (1.0 - agf_bs(ipft)) * bdeadx
                                  !---------------------------------------------------------!
@@ -3552,19 +3552,19 @@ subroutine read_ed21_polyclone
                            !     Use allometry to define leaf and the other live biomass   !
                            ! pools.                                                        !
                            !---------------------------------------------------------------!
-                           cpatch%bleaf(ico)     = size2bl( cpatch%dbh (ico)               &
-                                                          , cpatch%hite(ico)               &
-                                                          , cpatch%sla (ico)               &
+                           cpatch%bleaf(ico)     = size2bl( cpatch%dbh   (ico)             &
+                                                          , cpatch%height(ico)             &
+                                                          , cpatch%sla   (ico)             &
                                                           , ipft )
                            cpatch%broot(ico)     = cpatch%bleaf(ico) * q(ipft)
                            cpatch%bsapwooda(ico) = agf_bs(ipft) * cpatch%bleaf(ico)        &
-                                                 * qsw(ipft) * cpatch%hite(ico)
+                                                 * qsw(ipft) * cpatch%height(ico)
                            cpatch%bsapwoodb(ico) = (1. - agf_bs(ipft)) * cpatch%bleaf(ico) &
-                                                 * qsw(ipft) * cpatch%hite(ico)
+                                                 * qsw(ipft) * cpatch%height(ico)
                            cpatch%bbarka(ico)    = agf_bs(ipft) * cpatch%bleaf(ico)        &
-                                                 * qbark(ipft) * cpatch%hite(ico)
+                                                 * qbark(ipft) * cpatch%height(ico)
                            cpatch%bbarkb(ico)    = (1.-agf_bs(ipft)) * cpatch%bleaf(ico)   &
-                                                 * qbark(ipft) * cpatch%hite(ico)
+                                                 * qbark(ipft) * cpatch%height(ico)
                            cpatch%balive  (ico)  = ed_balive(cpatch,ico)
                            cpatch%bstorage(ico)  = max(almost_zero,f_bstorage_init(ipft))  &
                                                  * cpatch%balive(ico)
@@ -3733,13 +3733,13 @@ subroutine read_ed21_polyclone
                            cpatch%agb(ico)     = ed_biomass(cpatch, ico)
                            cpatch%basarea(ico) = pio4 * cpatch%dbh(ico) * cpatch%dbh(ico)
                            cpatch%btimber(ico) = size2bt( cpatch%dbh      (ico)            &
-                                                        , cpatch%hite     (ico)            &
+                                                        , cpatch%height   (ico)            &
                                                         , cpatch%bdeada   (ico)            &
                                                         , cpatch%bsapwooda(ico)            &
                                                         , cpatch%bbarka   (ico)            &
                                                         , cpatch%pft      (ico) )
                            cpatch%thbark(ico)  = size2xb( cpatch%dbh      (ico)            &
-                                                        , cpatch%hite     (ico)            &
+                                                        , cpatch%height   (ico)            &
                                                         , cpatch%bbarka   (ico)            &
                                                         , cpatch%bbarkb   (ico)            &
                                                         , cpatch%sla      (ico)            &

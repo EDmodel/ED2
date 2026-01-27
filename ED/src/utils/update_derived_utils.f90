@@ -113,12 +113,12 @@ module update_derived_utils
       !----- Get DBH and height -----------------------------------------------------------!
       if (is_grass(ipft) .and. igrass == 1) then
           !---- New grasses get dbh_effective and height from bleaf. ----------------------!
-          cpatch%dbh(ico)  = bl2dbh(cpatch%bleaf(ico), cpatch%sla(ico), ipft)
-          cpatch%hite(ico) = bl2h  (cpatch%bleaf(ico), cpatch%sla(ico), ipft)
+          cpatch%dbh   (ico) = bl2dbh(cpatch%bleaf(ico), cpatch%sla(ico), ipft)
+          cpatch%height(ico) = bl2h  (cpatch%bleaf(ico), cpatch%sla(ico), ipft)
       else
           !---- Trees and old grasses get dbh from bdead. ---------------------------------!
-          cpatch%dbh(ico)  = bd2dbh(ipft, cpatch%bdeada(ico), cpatch%bdeadb(ico))
-          cpatch%hite(ico) = dbh2h (ipft, cpatch%dbh   (ico))
+          cpatch%dbh   (ico) = bd2dbh(ipft, cpatch%bdeada(ico), cpatch%bdeadb(ico))
+          cpatch%height(ico) = dbh2h (ipft, cpatch%dbh   (ico))
       end if
       !------------------------------------------------------------------------------------!
 
@@ -149,7 +149,7 @@ module update_derived_utils
       if ((.not. is_grass(ipft)) .or. igrass /= 1) then
          select case (cpatch%phenology_status(ico))
          case (0)
-            bleaf_max = size2bl(cpatch%dbh(ico),cpatch%hite(ico)                           &
+            bleaf_max = size2bl(cpatch%dbh(ico),cpatch%height(ico)                         &
                                ,cpatch%sla(ico),cpatch%pft(ico))
             if (cpatch%bleaf(ico) < bleaf_max) cpatch%phenology_status(ico) = 1
          end select
@@ -183,16 +183,16 @@ module update_derived_utils
       cpatch%balive (ico) = ed_balive (cpatch, ico)
       cpatch%basarea(ico) = pio4 * cpatch%dbh(ico) * cpatch%dbh(ico)
       cpatch%agb    (ico) = ed_biomass(cpatch, ico)
-      cpatch%btimber(ico) = size2bt(cpatch%dbh(ico),cpatch%hite(ico),cpatch%bdeada(ico)    &
+      cpatch%btimber(ico) = size2bt(cpatch%dbh(ico),cpatch%height(ico),cpatch%bdeada(ico)  &
                                    ,cpatch%bsapwooda(ico),cpatch%bbarka(ico)               &
                                    ,cpatch%pft(ico))
-      cpatch%thbark(ico)  = size2xb(cpatch%dbh(ico),cpatch%hite(ico),cpatch%bbarka(ico)    &
+      cpatch%thbark(ico)  = size2xb(cpatch%dbh(ico),cpatch%height(ico),cpatch%bbarka(ico)  &
                                    ,cpatch%bbarkb(ico),cpatch%sla(ico),cpatch%pft(ico))
       !------------------------------------------------------------------------------------!
 
 
       !----- Update rooting depth ---------------------------------------------------------!
-      cpatch%krdepth(ico) = size2krdepth(cpatch%hite(ico),cpatch%dbh(ico),ipft,lsl)
+      cpatch%krdepth(ico) = size2krdepth(cpatch%height(ico),cpatch%dbh(ico),ipft,lsl)
       !if new root depth is smaller keep the old one
       !------------------------------------------------------------------------------------!
 
@@ -284,7 +284,7 @@ module update_derived_utils
       if (ico > 1) then
          !----- Accumulate LAI from the top cohort to current cohort. ---------------------!
          do jco = 1,ico-1
-            bl_max      = size2bl(cpatch%dbh(jco),cpatch%hite(jco)                         &
+            bl_max      = size2bl(cpatch%dbh(jco),cpatch%height(jco)                       &
                                  ,cpatch%sla(jco),cpatch%pft(jco))
             max_cum_lai = max_cum_lai + bl_max * cpatch%sla(jco) * cpatch%nplant(jco)
          end do
@@ -369,7 +369,7 @@ module update_derived_utils
          !---------------------------------------------------------------------------------!
       case (-1,-2)
          !------ SLA is defined at the bottom of canopy, use height to change SLA. --------!
-         new_sla = sla_toc / (1. + lma_slope(ipft) * cpatch%hite(ico))
+         new_sla = sla_toc / (1. + lma_slope(ipft) * cpatch%height(ico))
          !---------------------------------------------------------------------------------!
       case (3)
         !------------------------------------------------------------------------------------!
@@ -409,7 +409,8 @@ module update_derived_utils
       select case (iallom)
       case (3,4,5)
          !---- Maximum leaf biomass. ------------------------------------------------------!
-         bl_max = size2bl(cpatch%dbh(ico),cpatch%hite(ico),cpatch%sla(ico),cpatch%pft(ico))
+         bl_max = size2bl(cpatch%dbh(ico),cpatch%height(ico),cpatch%sla(ico)               &
+                         ,cpatch%pft(ico))
          !---------------------------------------------------------------------------------!
 
 
@@ -701,7 +702,7 @@ module update_derived_utils
          if (csite%opencan_frac(ipa) > 0.0) then
             weight                  = cpatch%nplant(ico) * cpatch%basarea(ico)
             weight_sum              = weight_sum + weight
-            csite%veg_height(ipa)   = csite%veg_height(ipa) + cpatch%hite(ico) * weight
+            csite%veg_height(ipa)   = csite%veg_height(ipa) + cpatch%height(ico) * weight
             csite%opencan_frac(ipa) = csite%opencan_frac(ipa)                              &
                                     * (1.0 - cpatch%crown_area(ico))
          end if
@@ -2175,7 +2176,7 @@ module update_derived_utils
          !     Check whether this cohort is almost at the minimum height given its PFT.    !
          ! If it is, then we will skip it.                                                 !
          !---------------------------------------------------------------------------------!
-         if (cpatch%hite(ico) < hgt_min(ipft) + 0.2) cycle cohortloop
+         if (cpatch%height(ico) < hgt_min(ipft) + 0.2) cycle cohortloop
          !---------------------------------------------------------------------------------!
 
 
@@ -2186,10 +2187,10 @@ module update_derived_utils
          select case (ihrzrad)
          case (2,4)
             sz_fact = max(dbh_crit(ipft),cpatch%dbh(ico))/dbh_crit(ipft)
-            hgt_eff = min(cci_hmax, cpatch%hite(ico) * sz_fact * sz_fact)
+            hgt_eff = min(cci_hmax, cpatch%height(ico) * sz_fact * sz_fact)
             ihgt    = min(ff_nhgt,max(1,count(hgt_class < hgt_eff)))
          case default
-            ihgt    = min(ff_nhgt,max(1,count(hgt_class < cpatch%hite(ico))))
+            ihgt    = min(ff_nhgt,max(1,count(hgt_class < cpatch%height(ico))))
          end select
          !---------------------------------------------------------------------------------!
 
@@ -2201,7 +2202,7 @@ module update_derived_utils
          else
              !--use dbh for trees
              lai_pot = cpatch%nplant(ico) * cpatch%sla(ico)                                &
-                     * size2bl(cpatch%dbh(ico),cpatch%hite(ico),cpatch%sla(ico),ipft)
+                     * size2bl(cpatch%dbh(ico),cpatch%height(ico),cpatch%sla(ico),ipft)
          end if
          !---------------------------------------------------------------------------------!
 
