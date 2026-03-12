@@ -1396,7 +1396,7 @@ module plant_hydro
          wood_rwc = wood_water_int / tot_water_sat
       elseif (is_small) then
          wood_rwc = op_buff * small_rwc_min(ipft)
-      elseif (is_small) then
+      else
          wood_rwc = op_buff * wood_rwc_min(ipft)
       end if
       !------------------------------------------------------------------------------------!
