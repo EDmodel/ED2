@@ -14,7 +14,9 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Install dependencies
-      run: sudo apt-get install -y --no-install-recommends gfortran libhdf5-openmpi-dev libopenmpi-dev libblas-dev liblapack-dev
+      run: 
+        sudo apt-get update
+        sudo apt-get install -y --fix-missing --no-install-recommends gfortran libhdf5-openmpi-dev libopenmpi-dev libblas-dev liblapack-dev
     - name: Install ED2
       run: |
         cd ED/build
@@ -45,7 +47,7 @@ jobs:
     - name: Install dependencies
       run: 
         sudo apt-get update
-        sudo apt-get install -y --no-install-recommends gfortran libhdf5-openmpi-dev libopenmpi-dev libblas-dev liblapack-dev
+        sudo apt-get install -y --fix-missing --no-install-recommends gfortran libhdf5-openmpi-dev libopenmpi-dev libblas-dev liblapack-dev
     - name: Run ED2
       working-directory: ./EDTS/
       run: |
