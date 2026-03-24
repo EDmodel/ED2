@@ -123,7 +123,7 @@ ptcloud.2.patch <<- function( pt.cloud
                             , patch            = rep(pname,times=ni.now)
                             , cohort           = sequence(ni.now)
                             , dbh              = i.now$DBH
-                            , hite             = i.now$Htot
+                            , height           = i.now$Htot
                             , pft              = i.now$pft
                             , n                = i.now$nplant
                             , bdead            = i.now$bdead
@@ -156,7 +156,7 @@ ptcloud.2.patch <<- function( pt.cloud
                             , patch            = character(0)
                             , cohort           = numeric(0)
                             , dbh              = numeric(0)
-                            , hite             = numeric(0)
+                            , height           = numeric(0)
                             , pft              = numeric(0)
                             , n                = numeric(0)
                             , bdead            = numeric(0)
@@ -516,7 +516,7 @@ ptcloud.2.patch <<- function( pt.cloud
                w.lai = 0.
             }else{
                f.lai = lai.goal / sum(lai.pft)
-            }#end if (sum(bsa.pft) == 0)
+            }#end if (sum(lai.pft) == 0)
             #----- Biomass.  Check for singularities before finding the global f. ---------#
             if (sum(agb.pft) == 0){
                f.agb = f.net.def
@@ -572,7 +572,7 @@ ptcloud.2.patch <<- function( pt.cloud
             }else{
                b.lai = lai.goal / sum(lai.bft)
                m.lai = w.lai
-            }#end if (sum(bsa.bft) == 0)
+            }#end if (sum(lai.bft) == 0)
             #----- Biomass.  Check for singularities before finding the global f. ---------#
             if (sum(agb.bft) == 0){
                b.agb = f.net.def
@@ -661,7 +661,7 @@ ptcloud.2.patch <<- function( pt.cloud
                                   , patch            = rep(pname,times=nidx)
                                   , cohort           = sequence(nidx)
                                   , dbh              = dbh.pft   [idx]
-                                  , hite             = hgt.pft   [idx]
+                                  , height           = hgt.pft   [idx]
                                   , pft              = ipft.pft  [idx]
                                   , n                = npl.pft   [idx]
                                   , bdead            = bdead.pft [idx]
@@ -692,7 +692,7 @@ ptcloud.2.patch <<- function( pt.cloud
                                   , patch            = character(0)
                                   , cohort           = numeric(0)
                                   , dbh              = numeric(0)
-                                  , hite             = numeric(0)
+                                  , height           = numeric(0)
                                   , pft              = numeric(0)
                                   , n                = numeric(0)
                                   , bdead            = numeric(0)
@@ -730,9 +730,9 @@ ptcloud.2.patch <<- function( pt.cloud
                   #----- Aggregate information of the suspicious patch. -------------------#
                   css.agf    = pft$agf.bs[cssnow$pft]
                   css.sla    = pft$SLA[cssnow$pft]
-                  css.bleaf  = with(cssnow,size2bl(dbh=dbh,hgt=hite,sla=css.sla,ipft=pft))
-                  css.bsap   = pft$qsw   [cssnow$pft] * cssnow$hite * css.bleaf
-                  css.bbark  = pft$qbark [cssnow$pft] * cssnow$hite * css.bleaf
+                  css.bleaf  = with(cssnow,size2bl(dbh=dbh,hgt=height,sla=css.sla,ipft=pft))
+                  css.bsap   = pft$qsw   [cssnow$pft] * cssnow$height * css.bleaf
+                  css.bbark  = pft$qbark [cssnow$pft] * cssnow$height * css.bleaf
                   css.agb    = ( css.bleaf
                                + css.agf * ( css.bsap + css.bbark + cssnow$bdead )
                                )#end css.agb

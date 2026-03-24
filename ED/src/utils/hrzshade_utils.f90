@@ -519,19 +519,19 @@ module hrzshade_utils
             select case (ihrzrad)
             case (2,4)
                sz_fact = cpatch%dbh(ico) / min(cpatch%dbh(ico),dbh_crit(ipft))
-               hgt_eff = min(cci_hmax, cpatch%hite(ico) * sz_fact * sz_fact)
+               hgt_eff = min(cci_hmax, cpatch%height(ico) * sz_fact * sz_fact)
             case default
-               hgt_eff = cpatch%hite(ico)
+               hgt_eff = cpatch%height(ico)
             end select
             !------------------------------------------------------------------------------!
 
 
 
             !----- Find horizontal and vertical radii. ------------------------------------!
-            ca_ind  = size2ca(cpatch%dbh(ico),cpatch%hite(ico),cpatch%sla(ico)             &
+            ca_ind  = size2ca(cpatch%dbh(ico),cpatch%height(ico),cpatch%sla(ico)           &
                              ,cpatch%pft(ico),cap_crit=.false.)
             rh_ind  = sqrt(ca_ind * pii)
-            ch_fact = h2crownbh(cpatch%hite(ico),cpatch%pft(ico))/cpatch%hite(ico)
+            ch_fact = h2crownbh(cpatch%height(ico),cpatch%pft(ico))/cpatch%height(ico)
             rv_ind  = 0.5 * hgt_eff * (1.0 - ch_fact)
             !------------------------------------------------------------------------------!
 
@@ -798,9 +798,9 @@ module hrzshade_utils
                select case (ihrzrad)
                case (2,4)
                   sz_fact = max(dbh_crit(ipft),cpatch%dbh(ico))/dbh_crit(ipft)
-                  hgt_eff = min(cci_hmax, cpatch%hite(ico) * sz_fact * sz_fact)
+                  hgt_eff = min(cci_hmax, cpatch%height(ico) * sz_fact * sz_fact)
                case default
-                  hgt_eff = cpatch%hite(ico)
+                  hgt_eff = cpatch%height(ico)
                end select
                !---------------------------------------------------------------------------!
 

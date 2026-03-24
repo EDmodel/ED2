@@ -1251,8 +1251,8 @@ module rk4_copy_patch
             available_water = 0.d0
             do k = kroot, nzg
                nsoil            = rk4site%ntext_soil(k)
-               mcheight         = 5.d-1 * ( dble(cpatch%hite(ico))                         &
-                                          + dble(h2crownbh(cpatch%hite(ico),ipft)) )
+               mcheight         = 5.d-1 * ( dble(cpatch%height(ico))                       &
+                                          + dble(h2crownbh(cpatch%height(ico),ipft)) )
                psiplusz         = slzt8(k) - mcheight                                      &
                                 + matric_potential8(nsoil,initp%soil_water(k))
                available_water  = available_water                                          &
@@ -1543,14 +1543,14 @@ module rk4_copy_patch
                   !------------------------------------------------------------------------!
                end if
                !---------------------------------------------------------------------------!
-            elseif (cpatch%hite(ico) <=  csite%total_sfcw_depth(ipa)) then
+            elseif (cpatch%height(ico) <=  csite%total_sfcw_depth(ipa)) then
                !---------------------------------------------------------------------------!
                !    For plants buried in snow, fix the leaf and branch temperatures to the !
                ! snow temperature of the layer that is the closest to the cohort top.      !
                !---------------------------------------------------------------------------!
                kclosest = 1
                do k = csite%nlev_sfcwater(ipa), 1, -1
-                  if (sum(csite%sfcwater_depth(1:k,ipa)) > cpatch%hite(ico)) kclosest = k
+                  if (sum(csite%sfcwater_depth(1:k,ipa)) > cpatch%height(ico)) kclosest = k
                end do
                !---------------------------------------------------------------------------!
 
@@ -1771,14 +1771,14 @@ module rk4_copy_patch
                                       / sngl(hdid)
                !---------------------------------------------------------------------------!
 
-            elseif (cpatch%hite(ico) <=  csite%total_sfcw_depth(ipa)) then
+            elseif (cpatch%height(ico) <=  csite%total_sfcw_depth(ipa)) then
                !---------------------------------------------------------------------------!
                !    For plants buried in snow, fix the leaf temperature to the snow        !
                ! temperature of the layer that is the closest to the leaves.               !
                !---------------------------------------------------------------------------!
                kclosest = 1
                do k = csite%nlev_sfcwater(ipa), 1, -1
-                  if (sum(csite%sfcwater_depth(1:k,ipa)) > cpatch%hite(ico)) kclosest = k
+                  if (sum(csite%sfcwater_depth(1:k,ipa)) > cpatch%height(ico)) kclosest = k
                end do
                cpatch%leaf_temp(ico)   = csite%sfcwater_tempk(kclosest,ipa)
                if (cpatch%leaf_temp(ico) == t3ple) then
@@ -1917,14 +1917,14 @@ module rk4_copy_patch
                cpatch%wood_gbw(ico) = sngloff(initp%wood_gbw(ico), tiny_offset)
                !---------------------------------------------------------------------------!
 
-            elseif (cpatch%hite(ico) <=  csite%total_sfcw_depth(ipa)) then
+            elseif (cpatch%height(ico) <=  csite%total_sfcw_depth(ipa)) then
                !---------------------------------------------------------------------------!
                !    For plants buried in snow, fix the wood temperature to the snow        !
                ! temperature of the layer that is the closest to the branches.             !
                !---------------------------------------------------------------------------!
                kclosest = 1
                do k = csite%nlev_sfcwater(ipa), 1, -1
-                  if (sum(csite%sfcwater_depth(1:k,ipa)) > cpatch%hite(ico)) kclosest = k
+                  if (sum(csite%sfcwater_depth(1:k,ipa)) > cpatch%height(ico)) kclosest = k
                end do
                cpatch%wood_temp(ico)   = csite%sfcwater_tempk(kclosest,ipa)
                if (cpatch%wood_temp(ico) == t3ple) then

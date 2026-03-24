@@ -54,7 +54,7 @@ module fuse_fiss_utils
       !------------------------------------------------------------------------------------!
       sorted = .true.
       sortcheck: do ico=1,cpatch%ncohorts-1
-         sorted = cpatch%hite(ico) >= cpatch%dbh(ico+1) .and.                              &
+         sorted = cpatch%height(ico) >= cpatch%dbh(ico+1) .and.                            &
                   cpatch%dbh(ico)  >= cpatch%dbh(ico+1)
          if (.not. sorted) exit sortcheck
       end do sortcheck
@@ -79,10 +79,10 @@ module fuse_fiss_utils
          ico = ico + 1
 
          !----- Find the maximum height. --------------------------------------------------!
-         tophgt = maxval(cpatch%hite)
+         tophgt = maxval(cpatch%height)
 
          !----- Find all cohorts that are at this height. ---------------------------------!
-         attop  = cpatch%hite == tophgt
+         attop  = cpatch%height == tophgt
 
          !----- Find the fattest cohort at a given height. --------------------------------!
          tallco = maxloc(cpatch%dbh,dim=1,mask=attop)
@@ -91,8 +91,8 @@ module fuse_fiss_utils
          call copy_patchtype(cpatch,temppatch,tallco,tallco,ico,ico)
 
          !----- Put a non-sense DBH so this will never "win" again. -----------------------!
-         cpatch%hite(tallco) = -huge(1.)
-         cpatch%dbh (tallco) = -huge(1.)
+         cpatch%height(tallco) = -huge(1.)
+         cpatch%dbh   (tallco) = -huge(1.)
 
       end do
 
@@ -569,7 +569,8 @@ module fuse_fiss_utils
             pat_lai_max = 0.0
             do ico=1,cpatch%ncohorts
                ipft        = cpatch%pft(ico)
-               bleaf_max   = size2bl(cpatch%dbh(ico),cpatch%hite(ico),cpatch%sla(ico),ipft)
+               bleaf_max   = size2bl(cpatch%dbh(ico),cpatch%height(ico),cpatch%sla(ico)    &
+                                    ,ipft)
                pat_lai_max = pat_lai_max + cpatch%nplant(ico) * SLA(ipft) * bleaf_max
             end do
             !------------------------------------------------------------------------------!
@@ -772,7 +773,7 @@ module fuse_fiss_utils
          do ico = 1,cpatch%ncohorts
             ipft              = cpatch%pft(ico)
             laimax            = cpatch%nplant(ico) * cpatch%sla(ico)                       &
-                              * size2bl(cpatch%dbh(ico),cpatch%hite(ico)                   &
+                              * size2bl(cpatch%dbh(ico),cpatch%height(ico)                 &
                                        ,cpatch%sla(ico),ipft)
             patch_laimax(ipa) = patch_laimax(ipa) + laimax * csite%area(ipa)
          end do
@@ -1065,11 +1066,11 @@ module fuse_fiss_utils
                else
                   !----- Trees or old grasses. Use on-allometry LAI. ----------------------!
                   donc_lai_max = cpatch%nplant(donc)                                       &
-                               * size2bl(cpatch%dbh(donc),cpatch%hite(donc)                &
+                               * size2bl(cpatch%dbh(donc),cpatch%height(donc)              &
                                         ,cpatch%sla(donc),dpft)                            &
                                * cpatch%sla(donc)
                   recc_lai_max = cpatch%nplant(recc)                                       &
-                               * size2bl(cpatch%dbh(recc),cpatch%hite(recc)                &
+                               * size2bl(cpatch%dbh(recc),cpatch%height(recc)              &
                                         ,cpatch%sla(recc),rpft)                            &
                                * cpatch%sla(recc)
                   !------------------------------------------------------------------------!
@@ -1099,8 +1100,8 @@ module fuse_fiss_utils
                !---------------------------------------------------------------------------!
                !     Test for similarity.                                                  !
                !---------------------------------------------------------------------------!
-               diff_dbh    = abs ( cpatch%dbh (donc) - cpatch%dbh (recc) )
-               diff_hgt    = abs ( cpatch%hite(donc) - cpatch%hite(recc) )
+               diff_dbh    = abs ( cpatch%dbh   (donc) - cpatch%dbh   (recc) )
+               diff_hgt    = abs ( cpatch%height(donc) - cpatch%height(recc) )
                dr_may_fuse = ( diff_dbh < (dbh_crit(dpft)  * coh_size_tol) ) .and.         &
                              ( diff_hgt < (hgt_max (dpft)  * coh_size_tol) )
                !---------------------------------------------------------------------------!
@@ -1121,12 +1122,12 @@ module fuse_fiss_utils
                   ! inside the donor loop because the receptor may change when we fuse     !
                   ! cohorts.                                                               !
                   !------------------------------------------------------------------------!
-                  recc_bleaf_max  = size2bl(cpatch%dbh(recc),cpatch%hite(recc)             &
+                  recc_bleaf_max  = size2bl(cpatch%dbh(recc),cpatch%height(recc)           &
                                            ,cpatch%sla(recc),rpft)
                   recc_bsapa_max  = agf_bs(rpft)                                           &
-                                  * recc_bleaf_max * qsw  (rpft) * cpatch%hite(recc)
+                                  * recc_bleaf_max * qsw  (rpft) * cpatch%height(recc)
                   recc_bbarka_max = agf_bs(rpft)                                           &
-                                  * recc_bleaf_max * qbark(rpft) * cpatch%hite(recc)
+                                  * recc_bleaf_max * qbark(rpft) * cpatch%height(recc)
                   call calc_veg_hcap(recc_bleaf_max,cpatch%bdeada(recc),recc_bsapa_max     &
                                     ,recc_bbarka_max,cpatch%nplant(recc),rpft              &
                                     ,recc_lhcap_max,recc_whcap_max)
@@ -1137,12 +1138,12 @@ module fuse_fiss_utils
                   !------------------------------------------------------------------------!
                   !    Find potential heat capacity -- Donor cohort.                       !
                   !------------------------------------------------------------------------!
-                  donc_bleaf_max  = size2bl(cpatch%dbh(donc),cpatch%hite(donc)             &
+                  donc_bleaf_max  = size2bl(cpatch%dbh(donc),cpatch%height(donc)           &
                                            ,cpatch%sla(donc),dpft)
                   donc_bsapa_max  = agf_bs(dpft)                                           &
-                                  * donc_bleaf_max * qsw  (dpft) * cpatch%hite(donc)
+                                  * donc_bleaf_max * qsw  (dpft) * cpatch%height(donc)
                   donc_bbarka_max = agf_bs(dpft)                                           &
-                                  * donc_bleaf_max * qbark(dpft) * cpatch%hite(donc)
+                                  * donc_bleaf_max * qbark(dpft) * cpatch%height(donc)
                   call calc_veg_hcap(donc_bleaf_max,cpatch%bdeada(donc),donc_bsapa_max     &
                                     ,donc_bbarka_max,cpatch%nplant(donc),dpft              &
                                     ,donc_lhcap_max,donc_whcap_max)
@@ -1153,8 +1154,8 @@ module fuse_fiss_utils
                   !     In case heat capacity is less than minimum, ignore the size        !
                   ! similarity and fuse the cohort.                                        !
                   !------------------------------------------------------------------------!
-                  diff_dbh    = abs ( cpatch%dbh (donc) - cpatch%dbh (recc) )
-                  diff_hgt    = abs ( cpatch%hite(donc) - cpatch%hite(recc) )
+                  diff_dbh    = abs ( cpatch%dbh   (donc) - cpatch%dbh   (recc) )
+                  diff_hgt    = abs ( cpatch%height(donc) - cpatch%height(recc) )
                   dr_may_fuse = ( ( recc_lhcap_max < veg_hcap_min(rpft) ) .or.             &
                                   ( donc_lhcap_max < veg_hcap_min(dpft) )         ) .and.  &
                                 ( diff_dbh < (dbh_crit(dpft)  * coh_size_tol_max) ) .and.  &
@@ -1378,7 +1379,7 @@ module fuse_fiss_utils
       real                                 :: tolerance_mult ! Multiplication factor
       integer                              :: ncohorts_old   ! # of coh. before fusion test
       real                                 :: mean_dbh       ! Mean DBH           (???)
-      real                                 :: mean_hite      ! Mean height        (???)
+      real                                 :: mean_height    ! Mean height        (???)
       real                                 :: new_size       ! New size
       integer                              :: ntall          ! # of tall cohorts  (???)
       integer                              :: nshort         ! # of short cohorts (???)
@@ -1398,31 +1399,31 @@ module fuse_fiss_utils
       if (maxcohort == 0 .or. cpatch%ncohorts < 2) return
 
       !------------------------------------------------------------------------------------!
-      !    Calculate mean DBH and HITE to help with the normalization of differences mean  !
-      ! hite is not being used right now, but can be optioned in the future if it seems    !
+      !    Calculate mean DBH and HEIGHT to help normalise the differences. As of now,     !
+      ! height is not being used, but it might be used  in the future if proved            !
       ! advantageous.                                                                      !
       !------------------------------------------------------------------------------------!
-      mean_dbh  = 0.0
-      mean_hite = 0.0
-      nshort    = 0
-      ntall     = 0
+      mean_dbh    = 0.0
+      mean_height = 0.0
+      nshort      = 0
+      ntall       = 0
       do ico3 = 1,cpatch%ncohorts
          !---------------------------------------------------------------------------------!
          !    Get fusion height threshold.  Height is a good predictor when plants are     !
          ! growing in height, but it approaches the maximum height DBH becomes the only    !
          ! possible predictor because height saturates.                                    !
          !---------------------------------------------------------------------------------!
-         if (cpatch%hite(ico3) < (0.95 * hgt_max(cpatch%pft(ico3))) ) then
-            mean_hite = mean_hite + cpatch%hite(ico3)
-            nshort    = nshort + 1
+         if (cpatch%height(ico3) < (0.95 * hgt_max(cpatch%pft(ico3))) ) then
+            mean_height = mean_height + cpatch%height(ico3)
+            nshort      = nshort + 1
          else
             mean_dbh  = mean_dbh + cpatch%dbh(ico3)
             ntall     = ntall + 1
          end if
       end do 
       !------------------------------------------------------------------------------------!
-      if (ntall  > 0) mean_dbh = mean_dbh   / real(ntall)
-      if (nshort > 0) mean_hite= mean_hite  / real(nshort)
+      if (ntall  > 0) mean_dbh    = mean_dbh    / real(ntall)
+      if (nshort > 0) mean_height = mean_height / real(nshort)
 
       !----- Initialize table. In principle, all cohorts stay. ----------------------------!
       allocate(fuse_table(cpatch%ncohorts))
@@ -1449,16 +1450,16 @@ module fuse_fiss_utils
                ! when the cohort is not approaching the maximum height.  If this is the    !
                ! case, then we use DBH to test.                                            !
                !---------------------------------------------------------------------------!
-               if (cpatch%hite(donc) >= (0.95 * hgt_max(cpatch%pft(donc))) ) then
+               if (cpatch%height(donc) >= (0.95 * hgt_max(cpatch%pft(donc))) ) then
                   mean_dbh=0.5*(cpatch%dbh(donc)+cpatch%dbh(recc))
                   fusion_test = ( abs(cpatch%dbh(donc) - cpatch%dbh(recc)))/mean_dbh       &
                               < fusetol * tolerance_mult
                elseif (fuse_relax) then
-                  fusion_test = ( abs(cpatch%hite(donc) - cpatch%hite(recc))               &
-                                     / (0.5*(cpatch%hite(donc) + cpatch%hite(recc)))  <    &
+                  fusion_test = ( abs(cpatch%height(donc) - cpatch%height(recc))           &
+                                     / (0.5*(cpatch%height(donc) + cpatch%height(recc))) < &
                                 fusetol * tolerance_mult)  
                else
-                  fusion_test = (abs(cpatch%hite(donc) - cpatch%hite(recc))  <             &
+                  fusion_test = (abs(cpatch%height(donc) - cpatch%height(recc))  <         &
                                 fusetol_h * tolerance_mult)
                end if
 
@@ -1481,10 +1482,10 @@ module fuse_fiss_utils
                   else
                       !--use dbh for trees
                       lai_max = ( cpatch%nplant(recc)                                      &
-                                * size2bl(cpatch%dbh(recc),cpatch%hite(recc)               &
+                                * size2bl(cpatch%dbh(recc),cpatch%height(recc)             &
                                          ,cpatch%sla(recc),cpatch%pft(recc))               &
                                 + cpatch%nplant(donc)                                      &
-                                * size2bl(cpatch%dbh(donc),cpatch%hite(donc)               &
+                                * size2bl(cpatch%dbh(donc),cpatch%height(donc)             &
                                          ,cpatch%sla(donc),cpatch%pft(donc)))              &
                                 * cpatch%sla(recc)
                   end if
@@ -1584,16 +1585,16 @@ module fuse_fiss_utils
                      !---------------------------------------------------------------------!
                      !    Recalculate the means                                            !
                      !---------------------------------------------------------------------!
-                     mean_dbh  = 0.0
-                     mean_hite = 0.0
-                     nshort    = 0
-                     ntall     = 0
+                     mean_dbh    = 0.0
+                     mean_height = 0.0
+                     nshort      = 0
+                     ntall       = 0
                      recalcloop: do ico3 = 1,cpatch%ncohorts
                         if (.not. fuse_table(ico3)) cycle recalcloop
                         !----- Get fusion height threshold --------------------------------!
-                        if (cpatch%hite(ico3) < (0.95 * hgt_max(cpatch%pft(ico3))) ) then
-                           mean_hite = mean_hite + cpatch%hite(ico3)
-                           nshort = nshort+1
+                        if (cpatch%height(ico3) < (0.95 * hgt_max(cpatch%pft(ico3))) ) then
+                           mean_height = mean_height + cpatch%height(ico3)
+                           nshort      = nshort+1
                         else
                            mean_dbh = mean_dbh + cpatch%dbh(ico3)
                            ntall=ntall+1
@@ -1749,7 +1750,7 @@ module fuse_fiss_utils
             ! (green_leaf_factor and SLA).                                                 !
             !------------------------------------------------------------------------------!
             bleaf_mp = green_leaf_factor(ipft)                                             &
-                     * size2bl(cpatch%dbh(ico),cpatch%hite(ico),cpatch%sla(ico),ipft)
+                     * size2bl(cpatch%dbh(ico),cpatch%height(ico),cpatch%sla(ico),ipft)
             tai_mp   = cpatch%nplant(ico) * bleaf_mp * cpatch%sla(ico) + cpatch%wai(ico)
             !------------------------------------------------------------------------------! 
 
@@ -1836,13 +1837,13 @@ module fuse_fiss_utils
                      cpatch%bleaf(ico)  = cpatch%bleaf(ico) * (1.-epsilon)
                      cpatch%dbh  (ico)  = bl2dbh(cpatch%bleaf(ico), cpatch%sla(ico)        &
                                                 ,cpatch%pft(ico))
-                     cpatch%hite (ico)  = bl2h(cpatch%bleaf(ico), cpatch%sla(ico)          &
+                     cpatch%height(ico) = bl2h(cpatch%bleaf(ico), cpatch%sla(ico)          &
                                               ,cpatch%pft(ico))
 
                      cpatch%bleaf(inew)  = cpatch%bleaf(inew) * (1.+epsilon)
                      cpatch%dbh  (inew)  = bl2dbh(cpatch%bleaf(inew), cpatch%sla(inew)     &
                                                  ,cpatch%pft(inew))
-                     cpatch%hite (inew)  = bl2h  (cpatch%bleaf(inew), cpatch%sla(inew)     &
+                     cpatch%height(inew) = bl2h  (cpatch%bleaf(inew), cpatch%sla(inew)     &
                                                  ,cpatch%pft(inew))
                      !---------------------------------------------------------------------!
                   else
@@ -1851,13 +1852,13 @@ module fuse_fiss_utils
                      cpatch%bdeadb(ico)  = cpatch%bdeadb(ico) * (1.-epsilon)
                      cpatch%dbh   (ico)  = bd2dbh(cpatch%pft(ico),cpatch%bdeada(ico)       &
                                                  ,cpatch%bdeadb(ico))
-                     cpatch%hite  (ico)  = dbh2h(cpatch%pft(ico), cpatch%dbh(ico))
+                     cpatch%height(ico)  = dbh2h(cpatch%pft(ico), cpatch%dbh(ico))
 
                      cpatch%bdeada(inew) = cpatch%bdeada(inew) * (1.+epsilon)
                      cpatch%bdeadb(inew) = cpatch%bdeadb(inew) * (1.+epsilon)
                      cpatch%dbh   (inew) = bd2dbh(cpatch%pft(inew),cpatch%bdeada(inew)     &
                                                  ,cpatch%bdeadb(inew))
-                     cpatch%hite  (inew) = dbh2h(cpatch%pft(inew), cpatch%dbh(inew))
+                     cpatch%height(inew) = dbh2h(cpatch%pft(inew), cpatch%dbh(inew))
                      !---------------------------------------------------------------------!
                   end if
                   !------------------------------------------------------------------------!
@@ -2178,14 +2179,16 @@ module fuse_fiss_utils
       !------------------------------------------------------------------------------------!
       if (is_grass(cpatch%pft(recc)) .and. igrass == 1) then
           !----- New grass scheme, use bleaf then find DBH and height. --------------------!
-          cpatch%dbh  (recc) = bl2dbh(cpatch%bleaf(recc),cpatch%sla(recc),cpatch%pft(recc))
-          cpatch%hite (recc) = bl2h  (cpatch%bleaf(recc),cpatch%sla(recc),cpatch%pft(recc))
+          cpatch%dbh   (recc) = bl2dbh(cpatch%bleaf(recc),cpatch%sla(recc)                 &
+                                      ,cpatch%pft(recc))
+          cpatch%height(recc) = bl2h  (cpatch%bleaf(recc),cpatch%sla(recc)                 &
+                                      ,cpatch%pft(recc))
           !--------------------------------------------------------------------------------!
       else
           !----- Trees, or old grass scheme.  Use bdead then find DBH and height. ---------!
-          cpatch%dbh  (recc) = bd2dbh(cpatch%pft(recc),cpatch%bdeada(recc)                 &
-                                                      ,cpatch%bdeadb(recc))
-          cpatch%hite (recc) = dbh2h(cpatch%pft(recc),cpatch%dbh(recc))
+          cpatch%dbh   (recc) = bd2dbh(cpatch%pft(recc),cpatch%bdeada(recc)                &
+                                                       ,cpatch%bdeadb(recc))
+          cpatch%height(recc) = dbh2h(cpatch%pft(recc),cpatch%dbh(recc))
           !--------------------------------------------------------------------------------!
       end if
       !------------------------------------------------------------------------------------!
@@ -2193,7 +2196,7 @@ module fuse_fiss_utils
 
 
       !----- Rooting depth. ---------------------------------------------------------------!
-      cpatch%krdepth(recc) = size2krdepth(cpatch%hite(recc),cpatch%dbh(recc)               &
+      cpatch%krdepth(recc) = size2krdepth(cpatch%height(recc),cpatch%dbh(recc)             &
                                          ,cpatch%pft(recc),lsl)
       !------------------------------------------------------------------------------------!
 
@@ -2226,8 +2229,9 @@ module fuse_fiss_utils
       !------------------------------------------------------------------------------------!
       !     Bark thickness is calculated based on the fused size and biomass.              !
       !------------------------------------------------------------------------------------!
-      cpatch%thbark(recc) = size2xb(cpatch%dbh(recc),cpatch%hite(recc),cpatch%bbarka(recc) &
-                                   ,cpatch%bbarkb(recc),cpatch%sla(recc),cpatch%pft(recc))
+      cpatch%thbark(recc) = size2xb(cpatch%dbh(recc),cpatch%height(recc)                   &
+                                   ,cpatch%bbarka(recc),cpatch%bbarkb(recc)                &
+                                   ,cpatch%sla(recc),cpatch%pft(recc))
       !------------------------------------------------------------------------------------!
 
 

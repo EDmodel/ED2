@@ -806,7 +806,7 @@ if ( (! file.exists(summary.fullname)) || plot.site){
                #     Map the height to the closest DART level.                             #
                #---------------------------------------------------------------------------#
                ipft     = mymont$PFT
-               ed.hgt   = mymont$HITE
+               ed.hgt   = mymont$HEIGHT
                dart.hgt = ( zdart.above * (ed.hgt            - pft$hgt.min[ipft])
                                         / (pft$hgt.max[ipft] - pft$hgt.min[ipft]) )
                dart.hgt = mapply(FUN=closest,x=dart.hgt,MoreArgs=list(A=zdart[-1]))

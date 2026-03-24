@@ -180,7 +180,7 @@ subroutine read_ed22_initial_file
    real                 , dimension(huge_cohort)               :: balive
    real                 , dimension(huge_cohort)               :: bdead
    real                 , dimension(huge_cohort)               :: nplant
-   real                 , dimension(huge_cohort)               :: hite
+   real                 , dimension(huge_cohort)               :: height
    real                 , dimension(huge_cohort)               :: dbh
    real                 , dimension(huge_cohort)               :: ctime
    real                 , dimension(maxfiles)                  :: slon_list
@@ -336,7 +336,7 @@ subroutine read_ed22_initial_file
          balive       (:) = undef_real
          bdead        (:) = undef_real
          nplant       (:) = undef_real
-         hite         (:) = undef_real
+         height       (:) = undef_real
          dbh          (:) = undef_real
          ctime        (:) = undef_real
          !---------------------------------------------------------------------------------!
@@ -611,7 +611,7 @@ subroutine read_ed22_initial_file
 
             !----- Read line.  Exit loop when finished reading cohorts. -------------------!
             read(unit=12,fmt=*,iostat=ierr) ctime(gco),csname(gco),cpname(gco),cname(gco)  &
-                                           ,dbh(gco),hite(gco),ipft(gco),nplant(gco)       &
+                                           ,dbh(gco),height(gco),ipft(gco),nplant(gco)     &
                                            ,bdead(gco),balive(gco),dummy,dummy
             if (ierr /= 0) exit read_cohorts
             !------------------------------------------------------------------------------!
@@ -1065,8 +1065,9 @@ subroutine read_ed22_initial_file
 
 
             !------ Update allometry to define height and heartwood. ----------------------!
-            cpatch%hite  (ico) = dbh2h(cpatch%pft(ico),cpatch%dbh(ico))
-            bdead        (gco) = size2bd(cpatch%dbh(ico),cpatch%hite(ico),cpatch%pft(ico))
+            cpatch%height(ico) = dbh2h(cpatch%pft(ico),cpatch%dbh(ico))
+            bdead        (gco) = size2bd(cpatch%dbh(ico),cpatch%height(ico)                &
+                                        ,cpatch%pft(ico))
             cpatch%bdeada(ico) =        agf_bs(cpatch%pft(ico))  * bdead(gco)
             cpatch%bdeadb(ico) = (1.0 - agf_bs(cpatch%pft(ico))) * bdead(gco)
             !------------------------------------------------------------------------------!
@@ -1090,17 +1091,21 @@ subroutine read_ed22_initial_file
             !------------------------------------------------------------------------------!
             !     Use allometry to define leaf and the other live biomass pools.           !
             !------------------------------------------------------------------------------!
-            cpatch%bleaf    (ico) = size2bl(cpatch%dbh(ico),cpatch%hite(ico)               &
+            cpatch%bleaf    (ico) = size2bl(cpatch%dbh(ico),cpatch%height(ico)             &
                                            ,cpatch%sla(ico),ipft(gco))
             cpatch%broot    (ico) = cpatch%bleaf(ico) * q(ipft(gco))
             cpatch%bsapwooda(ico) = agf_bs(ipft(gco))                                      &
-                                  * cpatch%bleaf(ico) * qsw(ipft(gco))   * cpatch%hite(ico)
+                                  * cpatch%bleaf(ico) * qsw(ipft(gco))                     &
+                                  * cpatch%height(ico)
             cpatch%bsapwoodb(ico) = (1.-agf_bs(ipft(gco)))                                 &
-                                  * cpatch%bleaf(ico) * qsw(ipft(gco))   * cpatch%hite(ico)
+                                  * cpatch%bleaf(ico) * qsw(ipft(gco))                     &
+                                  * cpatch%height(ico)
             cpatch%bbarka(ico)    = agf_bs(ipft(gco))                                      &
-                                  * cpatch%bleaf(ico) * qbark(ipft(gco)) * cpatch%hite(ico)
+                                  * cpatch%bleaf(ico) * qbark(ipft(gco))                   &
+                                  * cpatch%height(ico)
             cpatch%bbarkb(ico)    = (1.-agf_bs(ipft(gco)))                                 &
-                                  * cpatch%bleaf(ico) * qbark(ipft(gco)) * cpatch%hite(ico)
+                                  * cpatch%bleaf(ico) * qbark(ipft(gco))                   &
+                                  * cpatch%height(ico)
             !------------------------------------------------------------------------------!
 
 
@@ -1184,13 +1189,13 @@ subroutine read_ed22_initial_file
             cpatch%agb    (ico) = ed_biomass(cpatch, ico)
             cpatch%basarea(ico) = pio4 * cpatch%dbh(ico) * cpatch%dbh(ico)
             cpatch%btimber(ico) = size2bt( cpatch%dbh       (ico)                          &
-                                         , cpatch%hite      (ico)                          &
+                                         , cpatch%height    (ico)                          &
                                          , cpatch%bdeada    (ico)                          &
                                          , cpatch%bsapwooda (ico)                          &
                                          , cpatch%bbarka    (ico)                          &
                                          , cpatch%pft       (ico) )
             cpatch%thbark (ico) = size2xb( cpatch%dbh       (ico)                          &
-                                         , cpatch%hite      (ico)                          &
+                                         , cpatch%height    (ico)                          &
                                          , cpatch%bbarka    (ico)                          &
                                          , cpatch%bbarkb    (ico)                          &
                                          , cpatch%sla       (ico)                          &

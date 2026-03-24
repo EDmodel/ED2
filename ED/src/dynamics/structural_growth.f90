@@ -97,7 +97,7 @@ module structural_growth
       real                          :: bdeada_in
       real                          :: bdeadb_in
       real                          :: bevery_in
-      real                          :: hite_in
+      real                          :: height_in
       real                          :: dbh_in
       real                          :: nplant_in
       real                          :: bstorage_in
@@ -221,8 +221,8 @@ module structural_growth
                !---------------------------------------------------------------------------!
                maxh = h_edge
                hcohortloop: do ico = 1,cpatch%ncohorts
-                  if (.not. is_liana(cpatch%pft(ico)) .and. cpatch%hite(ico) > maxh) then
-                     maxh = cpatch%hite(ico)
+                  if (.not. is_liana(cpatch%pft(ico)) .and. cpatch%height(ico) > maxh) then
+                     maxh = cpatch%height(ico)
                   end if
                end do hcohortloop
                !---------------------------------------------------------------------------!
@@ -275,7 +275,7 @@ module structural_growth
                   bsapwoodb_in    = cpatch%bsapwoodb       (ico)
                   bbarka_in       = cpatch%bbarka          (ico)
                   bbarkb_in       = cpatch%bbarkb          (ico)
-                  hite_in         = cpatch%hite            (ico)
+                  height_in       = cpatch%height          (ico)
                   dbh_in          = cpatch%dbh             (ico)
                   nplant_in       = cpatch%nplant          (ico)
                   bstorage_in     = cpatch%bstorage        (ico)
@@ -383,13 +383,13 @@ module structural_growth
 
                   !----- Calculate bstorage reserved for future refulushing needs ---------!
                   bstorage_reserve = (1.0 + q(ipft)) * storage_reflush_times(ipft)         &
-                                   * size2bl(cpatch%dbh(ico),cpatch%hite(ico)              &
+                                   * size2bl(cpatch%dbh(ico),cpatch%height(ico)            &
                                             ,cpatch%sla(ico),ipft)
                   !------------------------------------------------------------------------!
 
 
                   !----- Determine how to distribute what is in bstorage. -----------------!
-                  call plant_structural_allocation(cpatch%pft(ico),cpatch%hite(ico)        &
+                  call plant_structural_allocation(cpatch%pft(ico),cpatch%height(ico)      &
                                                   ,cpatch%dbh(ico),cgrid%lat(ipy)          &
                                                   ,cpatch%phenology_status(ico)            &
                                                   ,cpatch%elongf(ico)                      &
@@ -766,7 +766,7 @@ module structural_growth
                      cpatch%bsapwoodb       (ico) = bsapwoodb_in
                      cpatch%bbarka          (ico) = bbarka_in
                      cpatch%bbarkb          (ico) = bbarkb_in
-                     cpatch%hite            (ico) = hite_in
+                     cpatch%height          (ico) = height_in
                      cpatch%dbh             (ico) = dbh_in
                      cpatch%nplant          (ico) = nplant_in
                      cpatch%bstorage        (ico) = bstorage_in
@@ -898,7 +898,7 @@ module structural_growth
    !     This subroutine will decide the partition of storage biomass into seeds and dead  !
    ! (structural) biomass.                                                                 !
    !---------------------------------------------------------------------------------------!
-   subroutine plant_structural_allocation(ipft,hite,dbh,lat,phen_status,elongf,bdeada      &
+   subroutine plant_structural_allocation(ipft,height,dbh,lat,phen_status,elongf,bdeada    &
                                          ,bdeadb,bstorage,bstorage_reserve,maxh            &
                                          ,f_bseeds,f_growth,f_bstorage)
       use pft_coms      , only : phenology      & ! intent(in)
@@ -922,7 +922,7 @@ module structural_growth
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       integer, intent(in)  :: ipft
-      real   , intent(in)  :: hite
+      real   , intent(in)  :: height
       real   , intent(in)  :: dbh
       real   , intent(in)  :: lat
       real   , intent(in)  :: bdeada     !> Current dead biomass
@@ -1000,7 +1000,7 @@ module structural_growth
       !----- Find the current target for allocation to reproduction. ----------------------!
       if (r_bang(ipft)) then
          !----- "Bang" reproduction once plant reaches reproductive maturity. -------------!
-         if ( hite <  ( (1.0-r_tol_trunc) * repro_min_h(ipft) ) ) then
+         if ( height <  ( (1.0-r_tol_trunc) * repro_min_h(ipft) ) ) then
             r_fract_act = 0.0
          else
             r_fract_act = min(r_fract(ipft), 1.0 - st_fract(ipft))
@@ -1055,8 +1055,8 @@ module structural_growth
             !      Decide allocation to seeds and heartwood based on size and life form.   !
             !------------------------------------------------------------------------------!
             if (is_liana(ipft)) then
-               zero_growth = hite >= ( (1.0-r_tol_trunc) * maxh )
-               zero_repro  = hite <  ( (1.0-r_tol_trunc) * repro_min_h(ipft) )
+               zero_growth = height >= ( (1.0-r_tol_trunc) * maxh )
+               zero_repro  = height <  ( (1.0-r_tol_trunc) * repro_min_h(ipft) )
 
                !---------------------------------------------------------------------------!
                !    Lianas: we must check height relative to the rest of the local plant   !
@@ -1090,7 +1090,7 @@ module structural_growth
                !     New grasses don't growth here (they do in dbalive_dt).  Decide        !
                ! whether they may reproduce or not.                                        !
                !---------------------------------------------------------------------------!
-               zero_repro = hite <  ( (1.0-r_tol_trunc) * repro_min_h(ipft) )
+               zero_repro = height <  ( (1.0-r_tol_trunc) * repro_min_h(ipft) )
                if (zero_repro) then
                   f_bseeds = 0.0
                else
@@ -1105,7 +1105,7 @@ module structural_growth
                ! DBH).                                                                     !
                !---------------------------------------------------------------------------!
                zero_growth = is_grass(ipft) .and.                                          &
-                             hite >= ( (1.0-r_tol_trunc) * hgt_max(ipft)     )
+                             height >= ( (1.0-r_tol_trunc) * hgt_max(ipft)     )
                !---------------------------------------------------------------------------!
 
 
@@ -1173,7 +1173,7 @@ module structural_growth
          open (unit=66,file=fracfile,status='old',position='append',action='write')
          write (unit=66,fmt='(6(i6,1x),2(5x,l1,1x),10(f12.6,1x))')                         &
                current_time%year,current_time%month,current_time%date,ipft,phenology(ipft) &
-              ,phen_status,late_spring,is_grass(ipft),hite,repro_min_h(ipft),dbh           &
+              ,phen_status,late_spring,is_grass(ipft),height,repro_min_h(ipft),dbh         &
               ,dbh_crit(ipft),elongf,bdeada+bdeadb,bstorage,f_bstorage,f_bseeds,f_growth
          close (unit=66,status='keep')
       end if
@@ -1230,7 +1230,7 @@ module structural_growth
       real   , intent(out)   :: f_bdeadb
       !----- Local variables. -------------------------------------------------------------!
       real                   :: dbh_aim
-      real                   :: hite_aim
+      real                   :: height_aim
       real                   :: bleaf_aim
       real                   :: broot_aim
       real                   :: bsapwooda_aim
@@ -1300,7 +1300,7 @@ module structural_growth
       select case (istruct_growth_scheme)
       case (1)
          !----- Find the new biomass with the storage inputs. -----------------------------!
-         call expand_bevery(ipft,bevery_aim,dbh_aim,hite_aim,bleaf_aim,broot_aim           &
+         call expand_bevery(ipft,bevery_aim,dbh_aim,height_aim,bleaf_aim,broot_aim         &
                            ,bsapwooda_aim,bsapwoodb_aim,bbarka_aim,bbarkb_aim,balive_aim   &
                            ,bdeada_aim,bdeadb_aim)
          !---------------------------------------------------------------------------------!
@@ -1507,7 +1507,7 @@ module structural_growth
          write(unit=*,fmt=fmti )  ' COHORT              : ',ico
          write(unit=*,fmt=fmti )  ' IPFT                : ',ipft
          write(unit=*,fmt=fmtf )  ' DBH                 : ',cpatch%dbh(ico)
-         write(unit=*,fmt=fmtf )  ' HITE                : ',cpatch%hite(ico)
+         write(unit=*,fmt=fmtf )  ' HEIGHT              : ',cpatch%height(ico)
          write(unit=*,fmt='(a)')  ' ---------------------------------------------------- '
          write(unit=*,fmt=fmtf )  ' BLEAF_IN            : ',bleaf_in
          write(unit=*,fmt=fmtf )  ' BROOT_IN            : ',broot_in

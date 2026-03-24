@@ -506,7 +506,7 @@ module phenology_aux
                   ! storage.                                                               !
                   !------------------------------------------------------------------------!
                   call pheninit_balive_bstorage(nzg,cpatch%pft(ico),cpatch%krdepth(ico)    &
-                                               ,cpatch%hite(ico),cpatch%dbh(ico)           &
+                                               ,cpatch%height(ico),cpatch%dbh(ico)         &
                                                ,cpatch%sla(ico)                            &
                                                ,csite%soil_water(:,ipa)                    &
                                                ,cpoly%ntext_soil(:,isi)                    &

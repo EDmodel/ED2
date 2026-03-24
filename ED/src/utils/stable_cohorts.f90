@@ -198,7 +198,7 @@ module stable_cohorts
       ! 1.  Check for cohort height relative to snow/water depth.  If the cohort is buried !
       !     in snow or has drowned in the standing water, we can't solve it.               !
       !------------------------------------------------------------------------------------!
-      exposed      = cpatch%hite(ico)  > csite%total_sfcw_depth(ipa)
+      exposed      = cpatch%height(ico)  > csite%total_sfcw_depth(ipa)
       !------------------------------------------------------------------------------------!
 
 
@@ -428,18 +428,18 @@ module stable_cohorts
             ! welcome to modify this term in case leaf_psi shows strong oscillations from  !
             ! each timestep to another.                                                    !
             !------------------------------------------------------------------------------!
-            bleafhydro = size2bl(cpatch%dbh(ico),cpatch%hite(ico),cpatch%sla(ico),ipft)
+            bleafhydro = size2bl(cpatch%dbh(ico),cpatch%height(ico),cpatch%sla(ico),ipft)
             broothydro = q(ipft) * bleafhydro
             sap_frac   = dbh2sf(cpatch%dbh(ico),ipft)
-            bsapwhydro = qsw(ipft) * cpatch%hite(ico) * bleafhydro
-            bdeadhydro = size2bd(cpatch%dbh(ico),cpatch%hite(ico),ipft)
+            bsapwhydro = qsw(ipft) * cpatch%height(ico) * bleafhydro
+            bdeadhydro = size2bd(cpatch%dbh(ico),cpatch%height(ico),ipft)
             bsapwhydro = ( bsapwhydro + bdeadhydro ) * sap_frac
             !----- Find leaf and stem capacities. -----------------------------------------!
             c_leaf               = leaf_water_cap(ipft) * C2B * bleafhydro
             c_stem               = wood_water_cap(ipft) * C2B * (broothydro  + bsapwhydro)
             cpatch%is_small(ico) = is_grass(ipft)                     .or.                 &
                                    c_leaf           >  (0.5 * c_stem) .or.                 &
-                                   cpatch%hite(ico) == hgt_min(ipft)
+                                   cpatch%height(ico) == hgt_min(ipft)
             cpatch%is_small(ico) = .false.
             !------------------------------------------------------------------------------!
          end select
@@ -469,7 +469,7 @@ module stable_cohorts
          write(unit=53,fmt=fmti ) ' PHEN_STATUS = ', cpatch%phenology_status(ico)
          write(unit=53,fmt='(a)') ' '
          write(unit=53,fmt=fmtf ) ' DBH         = ', cpatch%dbh   (ico)
-         write(unit=53,fmt=fmtf ) ' HITE        = ', cpatch%hite  (ico)
+         write(unit=53,fmt=fmtf ) ' HEIGHT      = ', cpatch%height(ico)
          write(unit=53,fmt=fmtf ) ' NPLANT_HA   = ', cpatch%nplant(ico) * 10000.
          write(unit=53,fmt=fmtf ) ' LAI         = ', cpatch%lai   (ico)
          write(unit=53,fmt=fmtf ) ' WAI         = ', cpatch%wai   (ico)

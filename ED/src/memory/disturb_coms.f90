@@ -149,9 +149,9 @@ module disturb_coms
    !    Patch dynamics variables, to be set in ed_params.f90.                              !
    !---------------------------------------------------------------------------------------!
    !----- Only trees above this height create a gap when they fall. -----------------------!
-   real                          :: treefall_hite_threshold
+   real                          :: treefall_height_threshold
    !----- Flag to decide whether or not to limit disturbance to patches with tall trees. --!
-   logical                       :: does_hite_limit_tfpatch
+   logical                       :: does_height_limit_tfpatch
    !---------------------------------------------------------------------------------------!
    !      Minimum age above which we disregard the disturbance type (land use) and assume  !
    ! old growth, thus allowing patch fusion to occur.                                      !

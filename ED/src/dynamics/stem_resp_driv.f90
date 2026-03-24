@@ -60,7 +60,7 @@ subroutine stem_respiration(csite,ipa)
             !  The resulting stem surface area is comparable to reported values in the     !
             !  tropics, such as Chambers et al. 2004 Ecological Applicaitons               !
             !------------------------------------------------------------------------------!
-            stem_area = ( cpatch%dbh(ico) * 1e-2 * cpatch%hite(ico) * cpatch%nplant(ico)   &
+            stem_area = ( cpatch%dbh(ico) * 1e-2 * cpatch%height(ico) * cpatch%nplant(ico) &
                         + cpatch%wai(ico) ) * pi1 / agf_bs(ipft)
             cpatch%stem_respiration(ico) = stem_resp_norm(ipft,cpatch%dbh(ico),cpatch%wood_temp(ico)) &
                                          * stem_area

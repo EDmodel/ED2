@@ -238,7 +238,7 @@ for (ipy in 1:nplaces){
          cpatch[[ipa]]$cai    = myhist$CROWN.AREA[icoa:icoz]
          cpatch[[ipa]]$agb    = myhist$AGB.CO[icoa:icoz]
          cpatch[[ipa]]$ba     = myhist$BA.CO[icoa:icoz]
-         cpatch[[ipa]]$height = myhist$HITE[icoa:icoz]
+         cpatch[[ipa]]$height = myhist$HEIGHT[icoa:icoz]
          patch.lai[ipa] = sum(cpatch[[ipa]]$lai)
          patch.wai[ipa] = sum(cpatch[[ipa]]$wai)
          patch.tai[ipa] = sum(cpatch[[ipa]]$tai)

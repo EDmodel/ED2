@@ -291,16 +291,16 @@ module reproduction
                         !    Recruits start at minimum height and dbh and bleaf are        !
                         ! calculated from that.                                            !
                         !------------------------------------------------------------------!
-                        rectest%hite      = hgt_min(ipft)
-                        rectest%dbh       = h2dbh(rectest%hite, ipft)
-                        rectest%krdepth   = size2krdepth(rectest%hite,rectest%dbh          &
+                        rectest%height    = hgt_min(ipft)
+                        rectest%dbh       = h2dbh(rectest%height, ipft)
+                        rectest%krdepth   = size2krdepth(rectest%height,rectest%dbh        &
                                                         ,rectest%pft,cpoly%lsl(isi))
-                        rec_bdead         = size2bd(rectest%dbh,rectest%hite,ipft)
+                        rec_bdead         = size2bd(rectest%dbh,rectest%height,ipft)
                         rectest%bdeada    =         agf_bs(ipft)   * rec_bdead
                         rectest%bdeadb    = ( 1.0 - agf_bs(ipft) ) * rec_bdead
 
                         call pheninit_balive_bstorage(nzg,rectest%pft,rectest%krdepth      &
-                                                     ,rectest%hite,rectest%dbh,SLA(ipft)   &
+                                                     ,rectest%height,rectest%dbh,SLA(ipft) &
                                                      ,csite%soil_water(:,ipa)              &
                                                      ,cpoly%ntext_soil(:,isi)              &
                                                      ,rectest%paw_avg,rectest%elongf       &
@@ -447,7 +447,7 @@ module reproduction
 
                         !----- Copy from recruitment table (I). ---------------------------!
                         cpatch%pft   (ico)    = recruit(inew)%pft
-                        cpatch%hite  (ico)    = recruit(inew)%hite
+                        cpatch%height(ico)    = recruit(inew)%height
                         cpatch%dbh   (ico)    = recruit(inew)%dbh
                         cpatch%nplant(ico)    = recruit(inew)%nplant
 
@@ -544,13 +544,13 @@ module reproduction
                         cpatch%agb      (ico) = ed_biomass(cpatch, ico)
                         cpatch%balive   (ico) = ed_balive(cpatch,ico)
                         cpatch%btimber  (ico) = size2bt   ( cpatch%dbh       (ico)         &
-                                                          , cpatch%hite      (ico)         &
+                                                          , cpatch%height    (ico)         &
                                                           , cpatch%bdeada    (ico)         &
                                                           , cpatch%bsapwooda (ico)         &
                                                           , cpatch%bbarka    (ico)         &
                                                           , cpatch%pft       (ico) )
                         cpatch%thbark   (ico) = size2xb   ( cpatch%dbh       (ico)         &
-                                                          , cpatch%hite      (ico)         &
+                                                          , cpatch%height    (ico)         &
                                                           , cpatch%bbarka    (ico)         &
                                                           , cpatch%bbarkb    (ico)         &
                                                           , cpatch%sla       (ico)         &
@@ -800,14 +800,14 @@ module reproduction
                         !    Will only reproduce/grow if on-allometry so dont' have to     !
                         ! worry about elongation factor.                                   !
                         !------------------------------------------------------------------!
-                        bleaf_plant     = size2bl(cpatch%dbh(ico),cpatch%hite(ico)         &
+                        bleaf_plant     = size2bl(cpatch%dbh(ico),cpatch%height(ico)       &
                                                  ,cpatch%sla(ico),ipft) 
                         broot_plant     = bleaf_plant * q    (ipft)
-                        bsapwood_plant  = bleaf_plant * qsw  (ipft) * cpatch%hite(ico)
-                        bbark_plant     = bleaf_plant * qbark(ipft) * cpatch%hite(ico)
+                        bsapwood_plant  = bleaf_plant * qsw  (ipft) * cpatch%height(ico)
+                        bbark_plant     = bleaf_plant * qbark(ipft) * cpatch%height(ico)
                         balive_plant    = bleaf_plant + broot_plant + bsapwood_plant       &
                                         + bbark_plant
-                        bdead_plant     = size2bd(cpatch%dbh(ico),cpatch%hite(ico),ipft)
+                        bdead_plant     = size2bd(cpatch%dbh(ico),cpatch%height(ico),ipft)
                         !------------------------------------------------------------------!
 
 

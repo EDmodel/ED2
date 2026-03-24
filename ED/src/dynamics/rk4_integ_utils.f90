@@ -2576,7 +2576,7 @@ module rk4_integ_utils
                write(unit=*,fmt='(a)')           '========================================'
                write(unit=*,fmt='(a,1x,i6)')     ' ICO:           ',ico
                write(unit=*,fmt='(a,1x,i6)')     ' PFT:           ',cpatch%pft(ico)
-               write(unit=*,fmt='(a,1x,es12.4)') ' HEIGHT:        ',cpatch%hite(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' HEIGHT:        ',cpatch%height(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' LAI:           ',y%lai(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' WAI:           ',y%wai(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' TAI:           ',y%tai(ico)
@@ -2619,7 +2619,7 @@ module rk4_integ_utils
                write(unit=*,fmt='(a)')           '========================================'
                write(unit=*,fmt='(a,1x,i6)')     ' ICO:           ',ico
                write(unit=*,fmt='(a,1x,i6)')     ' PFT:           ',cpatch%pft(ico)
-               write(unit=*,fmt='(a,1x,es12.4)') ' HEIGHT:        ',cpatch%hite(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' HEIGHT:        ',cpatch%height(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' LAI:           ',y%lai(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' WAI:           ',y%wai(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' TAI:           ',y%tai(ico)
@@ -2663,7 +2663,7 @@ module rk4_integ_utils
                write(unit=*,fmt='(a)')           '========================================'
                write(unit=*,fmt='(a,1x,i6)')     ' ICO:           ',ico
                write(unit=*,fmt='(a,1x,i6)')     ' PFT:           ',cpatch%pft(ico)
-               write(unit=*,fmt='(a,1x,es12.4)') ' HEIGHT:        ',cpatch%hite(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' HEIGHT:        ',cpatch%height(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' LAI:           ',y%lai(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' WAI:           ',y%wai(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' TAI:           ',y%tai(ico)
@@ -2729,7 +2729,7 @@ module rk4_integ_utils
                write(unit=*,fmt='(a)')           '========================================'
                write(unit=*,fmt='(a,1x,i6)')     ' ICO:           ',ico
                write(unit=*,fmt='(a,1x,i6)')     ' PFT:           ',cpatch%pft(ico)
-               write(unit=*,fmt='(a,1x,es12.4)') ' HEIGHT:        ',cpatch%hite(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' HEIGHT:        ',cpatch%height(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' LAI:           ',y%lai(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' WAI:           ',y%wai(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' TAI:           ',y%tai(ico)
@@ -2773,7 +2773,7 @@ module rk4_integ_utils
                write(unit=*,fmt='(a)')           '========================================'
                write(unit=*,fmt='(a,1x,i6)')     ' ICO:           ',ico
                write(unit=*,fmt='(a,1x,i6)')     ' PFT:           ',cpatch%pft(ico)
-               write(unit=*,fmt='(a,1x,es12.4)') ' HEIGHT:        ',cpatch%hite(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' HEIGHT:        ',cpatch%height(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' LAI:           ',y%lai(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' WAI:           ',y%wai(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' TAI:           ',y%tai(ico)
@@ -2816,7 +2816,7 @@ module rk4_integ_utils
                write(unit=*,fmt='(a)')           '========================================'
                write(unit=*,fmt='(a,1x,i6)')     ' ICO:           ',ico
                write(unit=*,fmt='(a,1x,i6)')     ' PFT:           ',cpatch%pft(ico)
-               write(unit=*,fmt='(a,1x,es12.4)') ' HEIGHT:        ',cpatch%hite(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' HEIGHT:        ',cpatch%height(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' LAI:           ',y%lai(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' WAI:           ',y%wai(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' TAI:           ',y%tai(ico)

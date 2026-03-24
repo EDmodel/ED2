@@ -25,7 +25,7 @@ module mortality
                                , frost_mort                 & ! intent(in)
                                , cbr_severe_stress          ! ! intent(in)
       use disturb_coms  , only : treefall_disturbance_rate  & ! intent(in)
-                               , treefall_hite_threshold    & ! intent(in)
+                               , treefall_height_threshold  & ! intent(in)
                                , time2canopy                ! ! intent(in)
       use ed_max_dims   , only : n_pft                      ! ! intent(in)
       use physiology_coms,only : carbon_mortality_scheme
@@ -92,8 +92,8 @@ module mortality
       !------------------------------------------------------------------------------------!
       if (dist_type == 2) then
          cpatch%mort_rate(3,ico) = treefall_disturbance_rate
-      elseif ( cpatch%hite(ico) <= treefall_hite_threshold .and.                           &
-               patch_age        >  time2canopy             ) then
+      elseif ( cpatch%height(ico) <= treefall_height_threshold .and.                       &
+               patch_age          >  time2canopy             ) then
          cpatch%mort_rate(3,ico) = treefall_disturbance_rate
       else
          cpatch%mort_rate(3,ico) = 0.
@@ -307,7 +307,7 @@ module mortality
          !---------------------------------------------------------------------------------!
          !     Tree fall.  Mortality depends on the cohort height and PFT.                 !
          !---------------------------------------------------------------------------------!
-         if (cpatch%hite(ico) < treefall_hite_threshold) then
+         if (cpatch%height(ico) < treefall_height_threshold) then
             survivorship = treefall_s_ltht(ipft)
          else
             survivorship = treefall_s_gtht(ipft)

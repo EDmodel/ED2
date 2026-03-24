@@ -197,7 +197,7 @@ module ed_type_init
       !------------------------------------------------------------------------------------!
       !      The root depth should be the actual level for the roots.                      !
       !------------------------------------------------------------------------------------!
-      cpatch%krdepth(ico) = size2krdepth(cpatch%hite(ico),cpatch%dbh(ico),ipft,lsl)
+      cpatch%krdepth(ico) = size2krdepth(cpatch%height(ico),cpatch%dbh(ico),ipft,lsl)
       kroot               = cpatch%krdepth(ico)
       !------------------------------------------------------------------------------------!
 
@@ -237,8 +237,8 @@ module ed_type_init
             cpatch%wood_psi(ico) = min(cpatch%wood_psi(ico),soil(ntext)%slpotfc)
          end do
          cpatch%wood_psi(ico) = min( 0., max( cpatch%wood_psi(ico)                         &
-                                            , small_psi_min(ipft)+cpatch%hite(ico) )  )
-         cpatch%leaf_psi(ico) = min( 0., max( cpatch%wood_psi(ico) - cpatch%hite(ico)      &
+                                            , small_psi_min(ipft)+cpatch%height(ico) )  )
+         cpatch%leaf_psi(ico) = min( 0., max( cpatch%wood_psi(ico) - cpatch%height(ico)    &
                                             , small_psi_min(ipft) )                   )
          !---------------------------------------------------------------------------------!
 
