@@ -56,13 +56,15 @@ subroutine node_sendfeed(ngr)
   use grid_dims , only:    &
        maxgrds               ! intent(in)
 
+#if defined(RAMS_MPI)
+   use mpi
+#endif
 implicit none
 
 integer :: ngr
 
 #if defined(RAMS_MPI)
 include 'interface.h'
-include 'mpif.h'
 #endif
 
 integer :: ierr,ipos
@@ -255,12 +257,14 @@ subroutine node_getfeed(icm,ifm)
        nypmax,             &  ! intent(in)
        nzpmax,             &  ! intent(in)
        maxgrds                ! intent(in)
+#if defined(RAMS_MPI)
+   use mpi
+#endif
 
 implicit none
 
 #if defined(RAMS_MPI)
 include 'interface.h'
-include 'mpif.h'
 #endif
 
 integer :: ierr,ipos

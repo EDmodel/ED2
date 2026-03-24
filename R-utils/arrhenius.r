@@ -4,13 +4,13 @@
 # given by tarrh8.  The output variable will have the same unit as the pre-factor          #
 # coefficient.                                                                             #
 #------------------------------------------------------------------------------------------#
-arrhenius = function(temp,prefactor,expcoeff){
+arrhenius <<- function(temp,prefactor,expcoeff){
 
    #---------------------------------------------------------------------------------------#
    #     Find the term that goes to the exponential term, and check its size.  This is to  #
    # avoid floating point exceptions due to overflow or underflow.                         #
    #---------------------------------------------------------------------------------------#
-   lnexp = expcoeff * (tarrhi - 1.0/temp)
+   lnexp = expcoeff * (1.0/tphysref - 1.0/temp)
    #---------------------------------------------------------------------------------------#
 
 

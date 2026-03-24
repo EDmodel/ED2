@@ -606,12 +606,12 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
                !      Decide whether to assume infinite crown, or the crown area allometry !
                ! method as in Dietze and Clark (2008).                                     !
                !---------------------------------------------------------------------------!
-!               select case (crown_mod)
-!               case (0)
-!                  radscr(ibuff)%CA_array(cohort_count) = 1.d0
-!               case (1)
+               select case (crown_mod)
+               case (0)
+                  radscr(ibuff)%CA_array(cohort_count) = 1.d0
+               case (1)
                   radscr(ibuff)%CA_array(cohort_count) = dble(cpatch%crown_area(ico))
-!               end select
+               end select
                !---------------------------------------------------------------------------!
             end if
             !------------------------------------------------------------------------------!

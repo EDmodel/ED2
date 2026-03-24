@@ -23,7 +23,7 @@ endif
 
 
 #----- Compiler commands. -----------------------------------------------------------------#
-INCLUDES         = $(PAR_INCS) -I$(UTILS_INCS) $(HDF5_INCS) $(MPI_INCS) 
+INCLUDES         = $(PAR_INCS) -I$(UTILS_INCS) $(HDF5_INCS) $(MPI_INCS) $(LAPACK_INCS)
 F90_COMMAND      = $(F_COMP) -c $(F_OPTS) $(INCLUDES) $(PAR_DEFS)
 F90_LOWO_COMMAND = $(F_COMP) -c $(F_LOWO_OPTS) $(INCLUDES) $(PAR_DEFS)
 FPP_COMMAND      = $(F_COMP) -c -DUSE_INTERF=$(USE_INTERF) -DUSENC=$(USENC) -D$(CMACH)     \
@@ -63,7 +63,7 @@ gendep:
 $(EXE): $(LIBMODEL) $(MAINOBJ)
 	@echo ""
 	$(LOADER) -o $(EXE) rammain.o $(LOADER_OPTS) $(LIBMODEL) \
-	$(HDF4_LIBS) $(HDF5_LIBS) $(PAR_LIBS) $(NC_LIBS) $(LIBS)
+	$(HDF4_LIBS) $(HDF5_LIBS) $(PAR_LIBS) $(LAPACK_LIBS) $(NC_LIBS) $(LIBS)
 	@echo ""
 	@echo Finished building === $(EXE)
 	@echo ""

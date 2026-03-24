@@ -57,23 +57,14 @@ module canopy_layer_coms
    !------------------------------------------------------------------------------------!
    
    type canstrtype
-      
-      
       !----- Variables used by the roughness scheme. --------------------------------------!
-      real(kind=4), dimension(:), allocatable :: lad          ! Leaf area density
-      real(kind=4), dimension(:), allocatable :: cdrag        ! Drag coefficient
-      real(kind=4), dimension(:), allocatable :: pshelter     ! Sheltering factor
-      real(kind=4), dimension(:), allocatable :: cumldrag     ! Cumulative leaf drag area fctn.
-      real(kind=4), dimension(:), allocatable :: windlyr      ! Wind profile
-      real(kind=4), dimension(:), allocatable :: windext_full ! Full Wind extinction 
-      real(kind=4), dimension(:), allocatable :: windext_half ! Half-layer wind extinction
-      real(kind=8), dimension(:), allocatable :: lad8         
-      real(kind=8), dimension(:), allocatable :: cdrag8
-      real(kind=8), dimension(:), allocatable :: pshelter8
-      real(kind=8), dimension(:), allocatable :: cumldrag8
-      real(kind=8), dimension(:), allocatable :: windlyr8
-      real(kind=8), dimension(:), allocatable :: windext_full8
-      real(kind=8), dimension(:), allocatable :: windext_half8
+      real(kind=8), dimension(:), allocatable :: lad8          ! Leaf area density
+      real(kind=8), dimension(:), allocatable :: cdrag8        ! Drag coefficient
+      real(kind=8), dimension(:), allocatable :: pshelter8     ! Sheltering factor
+      real(kind=8), dimension(:), allocatable :: cumldrag8     ! Cumulative leaf drag area fctn.
+      real(kind=8), dimension(:), allocatable :: windlyr8      ! Wind profile
+      real(kind=8), dimension(:), allocatable :: windext_full8 ! Full Wind extinction 
+      real(kind=8), dimension(:), allocatable :: windext_half8 ! Half-layer wind extinction
       !------------------------------------------------------------------------------------!
 
    end type canstrtype
@@ -175,13 +166,6 @@ module canopy_layer_coms
       implicit none
       type(canstrtype), target    :: ccanstr
 
-      allocate(ccanstr%lad                  (  ncanlyr)          )
-      allocate(ccanstr%cdrag                (  ncanlyr)          )
-      allocate(ccanstr%pshelter             (  ncanlyr)          )
-      allocate(ccanstr%cumldrag             (  ncanlyr)          )
-      allocate(ccanstr%windlyr              (  ncanlyr)          )
-      allocate(ccanstr%windext_full         (  ncanlyr)          )
-      allocate(ccanstr%windext_half         (  ncanlyr)          )
       allocate(ccanstr%lad8                 (  ncanlyr)          )
       allocate(ccanstr%cdrag8               (  ncanlyr)          )
       allocate(ccanstr%pshelter8            (  ncanlyr)          )
@@ -307,23 +291,14 @@ module canopy_layer_coms
       !     Select which variables to flush to zero based on the call.                     !
       !------------------------------------------------------------------------------------!
       select case(trim(thiscall))
-      case ('canopy_turbulence')
-         ccanstr%lad                  (:)   = 0.
-         ccanstr%cdrag                (:)   = 0.
-         ccanstr%pshelter             (:)   = 0.
-         ccanstr%cumldrag             (:)   = 0.
-         ccanstr%windlyr              (:)   = 0.
-         ccanstr%windext_full         (:)   = 0.
-         ccanstr%windext_half         (:)   = 0.
-
       case ('canopy_turbulence8')
-         ccanstr%lad8                 (:)   = 0.d0
-         ccanstr%cdrag8               (:)   = 0.d0
-         ccanstr%pshelter8            (:)   = 0.d0
-         ccanstr%cumldrag8            (:)   = 0.d0
-         ccanstr%windlyr8             (:)   = 0.d0
-         ccanstr%windext_full8        (:)   = 0.d0
-         ccanstr%windext_half8        (:)   = 0.d0
+         ccanstr%lad8         (:)   = 0.d0
+         ccanstr%cdrag8       (:)   = 0.d0
+         ccanstr%pshelter8    (:)   = 0.d0
+         ccanstr%cumldrag8    (:)   = 0.d0
+         ccanstr%windlyr8     (:)   = 0.d0
+         ccanstr%windext_full8(:)   = 0.d0
+         ccanstr%windext_half8(:)   = 0.d0
 
       case ('sw_twostream_layer')
          indx                 (:)   = 0

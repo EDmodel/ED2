@@ -1425,7 +1425,7 @@ subroutine sfcinit_nofile(n1,n2,n3,mzg,mzs,npat,ifm,theta,pi0,pp,rv,co2p,seatp,s
                end if
 
                soil_energy(k,i,j,ipat) = cmtl2uext( slcpd(nsoil)                           &
-                                                  , soil_water(k,i,j,ipat)                 &
+                                                  , soil_water(k,i,j,ipat) * wdns          &
                                                   , soil_temp,soil_fliq )
 
                !------ Integrate the relative potential. ----------------------------------!

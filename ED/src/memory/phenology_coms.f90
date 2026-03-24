@@ -20,44 +20,16 @@ module phenology_coms
    !---------------------------------------------------------------------------------------!
 
 
-   integer                :: iphen_scheme
    !---------------------------------------------------------------------------------------!
-   !< IPHEN_SCHEME -- It controls the phenology scheme.  Even within each scheme, the     \n
-   !<                 actual phenology will be different depending on the PFT.            \n
+   !<IPHEN_SCHEME -- It controls how phenology is updated for non-evergreen PFTs.         \n
+   !<                This variable NO LONGER controls which leaf phenology strategy each  \n
+   !<                PFT adopts. This is defined directly by PFT-parameter phenology.     \n
    !<                                                                                     \n
-   !< -1: grasses   - evergreen;                                                          \n
-   !<     tropical  - evergreen;                                                          \n
-   !<     conifers  - evergreen;                                                          \n
-   !<     hardwoods - cold-deciduous (Botta et al.);                                      \n
-   !<                                                                                     \n
-   !<  0: grasses   - drought-deciduous (old scheme);                                     \n
-   !<     tropical  - drought-deciduous (old scheme);                                     \n
-   !<     conifers  - evergreen;                                                          \n
-   !<     hardwoods - cold-deciduous;                                                     \n
-   !<                                                                                     \n
-   !<  1: prescribed phenology                                                            \n
-   !<                                                                                     \n
-   !<  2: grasses   - drought-deciduous (new scheme);                                     \n
-   !<     tropical  - drought-deciduous (new scheme);                                     \n
-   !<     conifers  - evergreen;                                                          \n
-   !<     hardwoods - cold-deciduous;                                                     \n
-   !<                                                                                     \n
-   !<  3: grasses   - drought-deciduous (new scheme);                                     \n
-   !<     tropical  - drought-deciduous (light phenology);                                \n
-   !<     conifers  - evergreen;                                                          \n
-   !<     hardwoods - cold-deciduous;                                                     \n
-   !<                                                                                     \n
-   !<  4: grasses   - drought-deciduous (plant hydraulics);                               \n
-   !<     tropical  - drought-deciduous (plant hydraulics;                                \n
-   !<     conifers  - evergreen;                                                          \n
-   !<     hardwoods - cold-deciduous;                                                     \n
-   !<                                                                                     \n
-   !<  Old scheme: plants shed their leaves once instantaneous amount of available water  \n
-   !<              becomes less than a critical value.                                    \n
-   !<  New scheme: plants shed their leaves once a 10-day running average of available    \n
-   !<              water becomes less than a critical value.                              \n
+   !< 0: Predicted internally for all plant functional types.                             \n
+   !< 1: Phenology is prescribed for cold-deciduous broadleaf trees and predicted for     \n
+   !<    all other PFTs.                                                                  \n
    !---------------------------------------------------------------------------------------!
-
+   integer                 :: iphen_scheme
    !---------------------------------------------------------------------------------------!
 
 
@@ -71,6 +43,10 @@ module phenology_coms
    !                     to the same polygon, even if they are in different sites.  They   !
    !                     can't go outside their original polygon, though.  This is the     !
    !                     same as option 1 if there is only one site per polygon.           !
+   !                 3.  Similar to 2, but reproduction allocation for tropical trees is   !
+   !                     assumed to be an asymptote as a function of height, following one !
+   !                     of the functional forms proposed by Wenk and Falster (2015). This !
+   !                     is experimental, use it at your own risk.                         !
    !---------------------------------------------------------------------------------------!
    integer                 :: repro_scheme
    !---------------------------------------------------------------------------------------!
@@ -114,8 +90,7 @@ module phenology_coms
 
 
    !---------------------------------------------------------------------------------------!
-   !     Parameters that control the phenology response to radiation, used only when       !
-   ! IPHEN_SCHEME = 3.                                                                     !
+   !     Parameters that control the phenology response to radiation.                      !
    !                                                                                       !
    ! RADINT -- Intercept                                                                   !
    ! RADSLP -- Slope.                                                                      !
@@ -149,10 +124,35 @@ module phenology_coms
 
 
    !---------------------------------------------------------------------------------------!
+   !     Factor that controls the fine-root "elongation factor" relative to leaf           !
+   ! elongation factor.  This is currently applied only for PFTs with phenology = 5.       !
+   !                                                                                       !
+   ! e_root = (e_leaf + root_phen_factor - 1) / root_phen_factor.                          !
+   !                                                                                       !
+   ! root_phen_factor > 1.  Fine roots will senesce more slowly than leaf shedding.        !
+   ! root_phen_factor = 1.  Fine root elongation factor will be the same as for leaves.    !
+   ! root_phen_factor < 1.  Fine roots will senesce more rapidly than leaf shedding.       !
+   ! root_phen_factor = 0.  Special flag to disable fine-root phenology.                   !
+   ! root_phen_factor < 0.  Non-sensical, currently assume the same as 0.                  !
+   !---------------------------------------------------------------------------------------!
+   real    :: root_phen_factor
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
    !     Flag that checks whether to Use soil potential rather than soil moisture to drive !
    ! phenology.                                                                            !
    !---------------------------------------------------------------------------------------!
    logical :: spot_phen
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Threshold for shedding all leaves when leaf water potential is very low. .       !
+   !---------------------------------------------------------------------------------------!
+   real    :: f_psi_xdry
    !---------------------------------------------------------------------------------------!
 
 
@@ -240,8 +240,12 @@ module phenology_coms
 
 
    !---------------------------------------------------------------------------------------!
-   !      Variables controlling the light phenology as in Kim et al. (20??)                !
+   !      Variables controlling the light phenology as in Kim et al. (2012)                !
    !---------------------------------------------------------------------------------------!
+   !----- Radiation window for running average [days] -------------------------------------!
+   real :: radavg_window
+   !----- Turnover weight, the inverse of the window. -------------------------------------!
+   real :: radavg_wgt
    !----- Turnover window for running average [days] --------------------------------------!
    real :: turnamp_window
    !----- Turnover weight, the inverse of the window. -------------------------------------!
@@ -273,6 +277,10 @@ module phenology_coms
    real :: vm0_slope
    real :: vm0_amp
    real :: vm0_min
+   !----- SLA window for running average [days]. ------------------------------------------!
+   real :: sla_window
+   !----- SLA weight, the inverse of the window. ------------------------------------------!
+   real :: sla_wgt
    !---------------------------------------------------------------------------------------!
 
 end module phenology_coms

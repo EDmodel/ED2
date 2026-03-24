@@ -1319,6 +1319,11 @@ vtab_fill.o : $(MEMORY)/vtab_fill.f90
 #------------------------------------------------------------------------------------------#
 #------------------------------------------------------------------------------------------#
 
+ed_mem_grid_dim_defs.o : $(ED_MIXED)/ed_mem_grid_dim_defs.f90
+	/bin/rm -f $(<F:.f90=.f90)
+	/bin/cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+
 edcp_driver.o : $(ED_MIXED)/edcp_driver.F90
 	/bin/rm -f $(<F:.f90=.F90) 
 	/bin/cp -f $< $(<F:.f90=.F90)
@@ -1469,6 +1474,11 @@ ed_bigleaf_init.o : $(ED_INIT)/ed_bigleaf_init.f90
 	/bin/cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 
+ed_cn_utils.o : $(ED_UTILS)/ed_cn_utils.f90
+	/bin/rm -f $(<F:.f90=.f90)
+	/bin/cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+
 ed_driver.o : $(ED_DRIVER)/ed_driver.F90
 	/bin/rm -f $(<F:.F90=.F90)
 	/bin/cp -f $< $(<F:.F90=.F90)
@@ -1494,20 +1504,15 @@ ed_init_atm.o : $(ED_INIT)/ed_init_atm.F90
 	/bin/cp -f $< $(<F:.F90=.F90)
 	$(FPP_COMMAND) $(<F:.F90=.F90)
 
-ed_init_full_history.o : $(ED_IO)/ed_init_full_history.F90
-	/bin/rm -f $(<F:.F90=.F90)
-	/bin/cp -f $< $(<F:.F90=.F90)
-	$(FPP_COMMAND) $(HDF5_INCS) $(<F:.F90=.F90)
+ed_init_history.o : $(ED_IO)/ed_init_history.f90
+	/bin/rm -f $(<F:.f90=.f90)
+	/bin/cp -f $< $(<F:.f90=.f90)
+	$(F90_LOWO_COMMAND) $(<F:.f90=.f90)
 
 ed_max_dims.o : $(ED_MEMORY)/ed_max_dims.F90
 	/bin/rm -f $(<F:.F90=.F90)
 	/bin/cp -f $< $(<F:.F90=.F90)
 	$(FPP_COMMAND) $(<F:.F90=.F90)
-
-ed_mem_grid_dim_defs.o : $(ED_MEMORY)/ed_mem_grid_dim_defs.f90
-	/bin/rm -f $(<F:.f90=.f90)
-	/bin/cp -f $< $(<F:.f90=.f90)
-	$(F90_COMMAND) $(<F:.f90=.f90)
 
 ed_misc_coms.o : $(ED_MEMORY)/ed_misc_coms.f90
 	/bin/rm -f $(<F:.f90=.f90)
@@ -1614,7 +1619,12 @@ fatal_error.o : $(ED_UTILS)/fatal_error.F90
 	/bin/cp -f $< $(<F:.F90=.F90)
 	$(FPP_COMMAND) $(<F:.F90=.F90)
 
-fire.o : $(ED_DYNAMICS)/fire.f90
+fire_ed10.o : $(ED_DYNAMICS)/fire_ed10.f90
+	/bin/rm -f $(<F:.f90=.f90)
+	/bin/cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+
+fire_ed22.o : $(ED_DYNAMICS)/fire_ed22.f90
 	/bin/rm -f $(<F:.f90=.f90)
 	/bin/cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
@@ -1650,6 +1660,11 @@ h5_output.o : $(ED_IO)/h5_output.F90
 	$(FPP_COMMAND) $(HDF5_INCS) $(<F:.F90=.F90)
 
 heun_driver.o: $(ED_DYNAMICS)/heun_driver.f90
+	/bin/rm -f $(<F:.f90=.f90)
+	/bin/cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+
+hrzshade_utils.o: $(ED_UTILS)/hrzshade_utils.f90
 	/bin/rm -f $(<F:.f90=.f90)
 	/bin/cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
@@ -1779,6 +1794,11 @@ radiate_utils.o : $(ED_UTILS)/radiate_utils.f90
 	/bin/cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 
+random_utils.o : $(ED_UTILS)/random_utils.F90
+	/bin/rm -f $(<F:.F90=.F90)
+	/bin/cp -f $< $(<F:.F90=.F90)
+	$(FPP_COMMAND) $(<F:.F90=.F90)
+
 reproduction.o : $(ED_DYNAMICS)/reproduction.f90
 	/bin/rm -f $(<F:.f90=.f90)
 	/bin/cp -f $< $(<F:.f90=.f90)
@@ -1839,7 +1859,7 @@ twostream_rad.o : $(ED_DYNAMICS)/twostream_rad.f90
 	/bin/cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 
-update_derived_props.o : $(ED_UTILS)/update_derived_props.f90
+update_derived_utils.o : $(ED_UTILS)/update_derived_utils.f90
 	/bin/rm -f $(<F:.f90=.f90)
 	/bin/cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)

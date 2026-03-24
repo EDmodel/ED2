@@ -9,8 +9,6 @@
 !------------------------------------------------------------------------------------------!
 Module decomp_coms
 
-   use ed_max_dims, only: n_pft
-
    implicit none
 
    !=======================================================================================!
@@ -26,16 +24,26 @@ Module decomp_coms
    !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
-   ! DECOMP_SCHEME -- This specifies the dependence of soil decomposition on temperature.  !
-   !                  0.  ED-2.1 default, the original exponential (low temperature        !
-   !                      limitation only).                                                !
-   !                  1.  Lloyd and Taylor (1994) model                                    !
+   ! DECOMP_SCHEME -- This specifies the soil Carbon (decomposition) model.                !
+   !                  0.  ED-2.1 default, with three soil carbon pools.  Temperature the   !
+   !                      original exponential (low temperature limitation only).          !
+   !                  1.  Similar to option 0, except that temperature is solved using     !
+   !                      the Lloyd and Taylor (1994) model.                               !
    !                      [[option 1 requires parameters to be set in xml]]                !
    !                  2.  Similar to ED-1.0 and CENTURY model, heterotrophic respiration   !
    !                      reaches a maximum at around 38C (using the default parameters),  !
-   !                      then quickly falls to zero at around 50C.                        !
-   !                  3.  Similar to option 0. Uses empirical moisture limit equation.     !
-   !                  4.  Similar to option 1. Uses empirical moisture limit equation.     !           
+   !                      then quickly falls to zero at around 50C.  It applies a similar  !
+   !                      function for soil moisture, which allows higher decomposition    !
+   !                      rates when it is close to the optimal, plumetting when it is     !
+   !                      almost saturated.                                                !
+   !                  3.  Similar to option 0. Uses empirical moisture limit equation from !
+   !                      Moyano et al., 2012, Biogeosciences.                             !
+   !                  4.  Similar to option 1. Uses empirical moisture limit equation from !
+   !                      Moyano et al., 2012, Biogeosciences.                             !
+   !                  5.  Based on Bolker et al. (1998) CENTURY model.  Five necromass     !
+   !                      pools (litter aka fast, structural, microbial,                   !
+   !                      humified aka slow, and passive).  Temperature and moisture       !
+   !                      functions are the same as 2.                                     !
    !---------------------------------------------------------------------------------------!
    integer :: decomp_scheme
    !---------------------------------------------------------------------------------------!
@@ -78,6 +86,17 @@ Module decomp_coms
    real :: rh_lloyd_2
    real :: rh_lloyd_3
    !---------------------------------------------------------------------------------------!
+   !     The following variables are used when DECOMP_SCHEME is 3 or 4. (based on M12).    !
+   !                                                                                       !
+   !  Moyano FE, Vasilyeva N, Bouckaert L, Cook F, Craine J, Curiel Yuste J, Don A,        !
+   !     Epron D, Formanek P, Franzluebbers A et al. 2012. The moisture response of soil   !
+   !     heterotrophic respiration: interaction with soil properties. Biogeosciences, 9:   !
+   !     1173-1182. doi:10.5194/bg-9-1173-2012 (M12).                                      !
+   !---------------------------------------------------------------------------------------!
+   real :: rh_moyano12_a0
+   real :: rh_moyano12_a1
+   real :: rh_moyano12_a2
+   !---------------------------------------------------------------------------------------!
    !     The following variables are used when DECOMP_SCHEME is 2. (based on CENTURY model !
    ! and ED-1.0).                                                                          !
    !---------------------------------------------------------------------------------------!
@@ -92,27 +111,51 @@ Module decomp_coms
    real    :: rh_active_depth  !  Maximum depth for avg. temperature and moisture   [    m]
    integer :: k_rh_active      !  Index of the bottommost layer                     [   --]
    !---------------------------------------------------------------------------------------!
+   !      Parameters used for the new temperature scaling of heterotrophic respiration,    !
+   ! based on CLM (K13), but with a simplified approach for anoxic environment (used when  !
+   ! DECOMP_SCHEME=5).                                                                     !
+   !                                                                                       !
+   !  Koven CD, Riley WJ, Subin ZM, Tang JY, Torn MS, Collins WD, Bonan GB, Lawrence DM,   !
+   !     Swenson SC. 2013. The effect of vertically resolved soil biogeochemistry and      !
+   !     alternate soil C and N models on C dynamics of CLM4. Biogeosciences, 10:          !
+   !     7109-7131. doi:10.5194/bg-10-7109-2013 (K13).                                     !
+   !---------------------------------------------------------------------------------------!
+   real         :: rh0         !  Reference scaling for RH at 15C                   [   --]
+   real         :: rh_q10      !  Q10 factor for heterotrophic respiration          [   --]
+   real(kind=8) :: rh08        !  Reference scaling for RH at 15C                   [   --]
+   real(kind=8) :: rh_q108     !  Q10 factor for heterotrophic respiration          [   --]
+   real         :: rh_p_smoist !  Power factor for moisture limitation factor       [   --]
+   real         :: rh_p_oxygen !  Power factor for oxygen limitation factor         [   --]
+   !---------------------------------------------------------------------------------------!
+   !---------------------------------------------------------------------------------------!
    !     Supply coefficient for nitrogen immobilization (1/day).                           !
    !---------------------------------------------------------------------------------------!
    real :: N_immobil_supply_scale
-   !---------------------------------------------------------------------------------------!
-   !     Fraction of structural material that goes to coarse woody debris upon mortality.  !
-   ! Note that currently CWD decomposed at a rate identical to structural soil C.          !
-   !---------------------------------------------------------------------------------------!
-   real :: cwd_frac
    !---------------------------------------------------------------------------------------!
    !     Fraction of structural pool decomposition going to heterotrophic respiration.     !
    !---------------------------------------------------------------------------------------!
    real :: r_fsc
    !---------------------------------------------------------------------------------------!
-   !     Fraction of structural pool decomposition going to heterotrophic respiration      !
-   ! instead of the slow pool.                                                             !
+   !     Fraction of structural pool decomposition going to heterotrophic respiration.     !
+   !  Two values correspond to the fraction for lignin (r_stsc_l) and other materials      !
+   ! (r_stsc_o).                                                                           !
    !---------------------------------------------------------------------------------------!
-   real :: r_stsc
+   real :: r_stsc_l
+   real :: r_stsc_o
    !---------------------------------------------------------------------------------------!
-   !     Fraction of structural pool decomposition going to heterotrophic respiration      !
+   !     Fraction of microbial soil decomposition going to heterotrophic respiration.      !
+   ! Two values are provided because the actual value depends on the sand content.         !
+   !---------------------------------------------------------------------------------------!
+   real :: r_msc_int
+   real :: r_msc_slp
+   !---------------------------------------------------------------------------------------!
+   !     Fraction of humified soil decomposition going to heterotrophic respiration.       !
    !---------------------------------------------------------------------------------------!
    real :: r_ssc
+   !---------------------------------------------------------------------------------------!
+   !     Fraction of passive soil decomposition going to heterotrophic respiration.        !
+   !---------------------------------------------------------------------------------------!
+   real :: r_psc
    !---------------------------------------------------------------------------------------!
    !     Intrinsic decay rate of structural pool soil carbon (1/days); this is modulated   !
    ! by Lc.                                                                                !
@@ -123,16 +166,72 @@ Module decomp_coms
    !---------------------------------------------------------------------------------------!
    real :: decay_rate_fsc
    !---------------------------------------------------------------------------------------!
-   !     Intrinsic decay rate of slow pool soil carbon (1/days).  This pool has already    !
-   ! decayed from the structural pool.                                                     !
+   !     Intrinsic decay rate of microbial soil carbon (1/days).                           !
+   !---------------------------------------------------------------------------------------!
+   real :: decay_rate_msc
+   !---------------------------------------------------------------------------------------!
+   !     Intrinsic decay rate of slow (humified) pool soil carbon (1/days).                !
    !---------------------------------------------------------------------------------------!
    real :: decay_rate_ssc
    !---------------------------------------------------------------------------------------!
-   !     Labile fraction of leaves, fine roots and sapwood. (parte non immediatamente      !
-   !     solubile che però a un certo punto diventa disponibile)                           !
-   !     ([[MCD]].  Moved setting of values to initialize_pft_resp_params)                 !
+   !     Intrinsic decay rate of passive pool soil carbon (1/days).                        !
    !---------------------------------------------------------------------------------------!
-   real, dimension(n_pft) :: f_labile
+   real :: decay_rate_psc
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Fraction of decay that is transferred between soil pools.  These quantities are   !
+   ! functions of clay content, following CENTURY, and thus both the intercept and the     !
+   ! slope must be provided.  This option is used only when DECOMP_SCHEME is 2.            !
+   !---------------------------------------------------------------------------------------!
+   real :: fx_msc_psc_int
+   real :: fx_msc_psc_slp
+   real :: fx_ssc_psc_int
+   real :: fx_ssc_psc_slp
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !  CENTURY parameter that controls the effect of lignin on structural decomposition.    !
+   !---------------------------------------------------------------------------------------!
+   real :: e_lignin
+   !---------------------------------------------------------------------------------------!
+
+   !---------------------------------------------------------------------------------------!
+   !     Parameters to indicate above-ground (and flammable) necromass.  These are used    !
+   ! only during initialisation (NBG or pss/css files).                                    !
+   !---------------------------------------------------------------------------------------!
+   real :: agf_fsc
+   real :: agf_stsc
+   !---------------------------------------------------------------------------------------!
+
+   !---------------------------------------------------------------------------------------!
+   !     Parameters to indicate the fraction of soil carbon that should be microbial and   !
+   ! passive.  Humified (slow) will be 1 - f0_msc - f0_psc.  These are used only during    !
+   ! initialisation (NBG or pss/css files), and only when DECOMP_SCHEME = 2.               !
+   !---------------------------------------------------------------------------------------!
+   real :: f0_msc
+   real :: f0_psc
+   real :: f0_ssc
+   !---------------------------------------------------------------------------------------!
+
+   !---------------------------------------------------------------------------------------!
+   !     Parameters to initialise soil carbon pools for near bare ground simulations when  !
+   ! N limitation is turned on.                                                            !
+   !---------------------------------------------------------------------------------------!
+   real :: nbg_nlim_fsc
+   real :: nbg_nlim_stsc
+   real :: nbg_nlim_ssc
+   !---------------------------------------------------------------------------------------!
+
+
+   !----- Carbon to Nitrogen ratio, fast pool (for initial conditions only). --------------!
+   real :: c2n_fast_0
+   !----- Carbon to Nitrogen ratio, structural pool. --------------------------------------!
+   real :: c2n_structural
+   !----- Carbon to Nitrogen ratio, slow pool (or microbial, slow, and passive). ----------!
+   real :: c2n_slow
    !---------------------------------------------------------------------------------------!
 
 end Module decomp_coms

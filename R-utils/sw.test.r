@@ -46,7 +46,7 @@ sw.test <<- function(x){
      #-------------------------------------------------------------------------------------#
      #      Decide which method to use based on the kurtosis.                              #
      #-------------------------------------------------------------------------------------#
-     if (kurt(x) %>% 3){
+     if (kurt(x) %gt% 3){
         #----------------------------------------------------------------------------------#
         #    Use Shapiro-Francia as the sample is leptokurtic.  The Shapiro-Francia        #
         # statistic W is calculated to avoid excessive rounding errors for W close to 1    #

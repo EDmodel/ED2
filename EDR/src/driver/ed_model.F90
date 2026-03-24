@@ -85,11 +85,10 @@ subroutine ed_model()
                             , zero_ed_fmean_vars          & ! sub-routine
                             , integrate_ed_fmean_met_vars & ! sub-routine
                             , zero_ed_yearly_vars         ! ! sub-routine
-   implicit none
-   !----- Common blocks. ------------------------------------------------------------------!
 #if defined(RAMS_MPI)
-   include 'mpif.h'
+   use mpi
 #endif
+   implicit none
    !----- Local variables. ----------------------------------------------------------------!
    character(len=28)  :: fmthead
    character(len=32)  :: fmtcntr

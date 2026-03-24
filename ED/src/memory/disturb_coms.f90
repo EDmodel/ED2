@@ -7,9 +7,10 @@
 !         initialize variables in modules.                                                 !
 !------------------------------------------------------------------------------------------!
 module disturb_coms
-   use ed_max_dims, only : str_len & ! intent(in)
-                         , maxgrds & ! intent(in)
-                         , n_pft   ! ! intent(in)
+   use ed_max_dims, only : str_len      & ! intent(in)
+                         , maxgrds      & ! intent(in)
+                         , n_pft        & ! intent(in)
+                         , n_dist_types ! ! intent(in)
    implicit none
 
 
@@ -58,6 +59,14 @@ module disturb_coms
 
    !----- Dimensionless parameter controlling speed of fire spread. -----------------------!
    real :: fire_parameter
+   
+   !----- Fractions of fast and structural carbon and nitrogen lost through combustion. ---!
+   real :: f_combusted_fast_c
+   real :: f_combusted_struct_c
+   real :: f_combusted_fast_n
+   real :: f_combusted_struct_n
+   !---- Maximum height for non-grass cohort to be considered part of fuel. ---------------!
+   real :: fuel_height_max
 
 !    
 !    ! FROM MARCOS
@@ -73,8 +82,7 @@ module disturb_coms
    !     Anthropogenic disturbance.                                                        !
    ! 0. No anthropogenic disturbance                                                       !
    ! 1. Anthropogenic disturbances; harvest based on biomass                               !
-   ! 2. Anthropogenic disturbances; forest harvest base don land area                      !
-   ! 3. Marcos' single-site scheme (not implemented)                                       !
+   ! 2. Anthropogenic disturbances; forest harvest based on land area                      !
    !---------------------------------------------------------------------------------------!
    integer :: ianth_disturb
    !---------------------------------------------------------------------------------------!
@@ -110,6 +118,24 @@ module disturb_coms
    character(len=str_len), dimension(maxgrds) :: plantation_file
    !----- File with initial land use area scale.  If no file is available, leave it blank. !
    character(len=str_len), dimension(maxgrds) :: lu_rescale_file
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   ! Cropland variables, used when IANTH_DISTURB is 1 or 2.                                !
+   !                                                                                       !
+   ! CL_FSEEDS_HARVEST   -- fraction of seeds that is harvested.                           !
+   ! CL_FSTORAGE_HARVEST -- fraction of non-structural carbon that is harvested.           !
+   ! CL_FLEAF_HARVEST    -- fraction of leaves that is harvested in croplands.             !
+   !---------------------------------------------------------------------------------------!
+   real(kind=4)                   :: cl_fseeds_harvest
+   real(kind=4)                   :: cl_fstorage_harvest
+   real(kind=4)                   :: cl_fleaf_harvest
+   !---------------------------------------------------------------------------------------!
+
+
+
    !=======================================================================================!
    !=======================================================================================!
 
@@ -123,17 +149,15 @@ module disturb_coms
    !    Patch dynamics variables, to be set in ed_params.f90.                              !
    !---------------------------------------------------------------------------------------!
    !----- Only trees above this height create a gap when they fall. -----------------------!
-   real :: treefall_hite_threshold
-   !----- Cut-off for different fire survivorship. ----------------------------------------!
-   real :: fire_hite_threshold
-!    
-!    ! MARCOS -- Not implemented
-!    !---------------------------------------------------------------------------------------!
-!    !      Minimum age above which we disregard the disturbance type (land use) and assume  !
-!    ! old growth, thus allowing patch fusion to occur.                                      !
-!    !---------------------------------------------------------------------------------------!
-!    real, dimension(n_dist_types) :: min_oldgrowth
-! 
+   real                          :: treefall_hite_threshold
+   !----- Flag to decide whether or not to limit disturbance to patches with tall trees. --!
+   logical                       :: does_hite_limit_tfpatch
+   !---------------------------------------------------------------------------------------!
+   !      Minimum age above which we disregard the disturbance type (land use) and assume  !
+   ! old growth, thus allowing patch fusion to occur.                                      !
+   !---------------------------------------------------------------------------------------!
+   real, dimension(n_dist_types) :: min_oldgrowth
+   !---------------------------------------------------------------------------------------!
    !=======================================================================================!
    !=======================================================================================!
 
@@ -238,13 +262,13 @@ module disturb_coms
       ! 11 - Primary forest to secondary forest                            [         1/yr] !
       !  ====== Biomass to be harvested. ======                                            !
       ! 12 - Wood harvest on mature secondary forest land.                 [          kgC] !
-      ! 13 - Wood harvest on mature secondary forest land.                 [       kgC/m²] !
+      ! 13 - Wood harvest on mature secondary forest land.                 [       kgC/m2] !
       ! 14 - Wood harvest on primary forested land.                        [          kgC] !
-      ! 15 - Wood harvest on primary forested land.                        [       kgC/m²] !
+      ! 15 - Wood harvest on primary forested land.                        [       kgC/m2] !
       ! 16 - Wood harvest on young secondary forest land.                  [          kgC] !
-      ! 17 - Wood harvest on young secondary forest land.                  [       kgC/m²] !
+      ! 17 - Wood harvest on young secondary forest land.                  [       kgC/m2] !
       ! 18 - Wood harvest on primary non-forested land.                    [          kgC] !
-      ! 19 - Wood harvest on primary non-forested land.                    [       kgC/m²] !
+      ! 19 - Wood harvest on primary non-forested land.                    [       kgC/m2] !
       !  ====== Special flags. ======                                                      !
       ! 12 - Secondary forest is harvested using the probability of harvesting when the    !
       !      DBH is above the minimum DBH.                                                 !

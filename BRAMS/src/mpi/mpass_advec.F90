@@ -36,6 +36,9 @@ subroutine node_sendadv(iaflag)
    use mem_cuparm , only : nclouds  ! ! intent(in)
    use grid_dims  , only : maxgrds  ! ! intent(in)
    use mem_aerad  , only : nwave    ! ! intent(in)
+#if defined(RAMS_MPI)
+   use mpi
+#endif
 
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
@@ -59,7 +62,6 @@ subroutine node_sendadv(iaflag)
    !----- Module variables. ---------------------------------------------------------------!
 #if defined(RAMS_MPI)
    include 'interface.h'
-   include 'mpif.h'
 #endif
    !---------------------------------------------------------------------------------------!
 
@@ -220,12 +222,14 @@ subroutine node_getadv(iaflag)
    use mem_scratch
    use mem_cuparm , only : nclouds  ! ! intent(in)
    use mem_aerad  , only : nwave    ! ! intent(in)
+#if defined(RAMS_MPI)
+   use mpi
+#endif
 
    implicit none
    !----- Module variables. ---------------------------------------------------------------!
 #if defined(RAMS_MPI)
    include 'interface.h'
-   include 'mpif.h'
 #endif
    !----- Arguments. ----------------------------------------------------------------------!
    integer                            , intent(in)   :: iaflag

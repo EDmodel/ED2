@@ -8,7 +8,7 @@ dlt.weibull <<- function(x,left=0,shape,scale=1,log=FALSE){
    lnorm =  left / scale
    #---------------------------------------------------------------------------------------#
 
-   dens = ifelse( x %<% left
+   dens = ifelse( x %lt% left
                 , 0.
                 , shape / scale * xnorm ^ (shape-1) * exp( lnorm ^ shape - xnorm ^ shape )
                 )#end ifelse
@@ -34,7 +34,7 @@ plt.weibull <<- function(q,left=0,shape,scale=1,lower.tail=TRUE,log.p=FALSE){
    #---------------------------------------------------------------------------------------#
 
 
-   prob = ifelse( q %<% left, 0., 1. - exp( lnorm^shape - qnorm^shape ) )
+   prob = ifelse( q %lt% left, 0., 1. - exp( lnorm^shape - qnorm^shape ) )
    if (lower.tail) prob = 1. - prob
    if (log.p     ) prob = log(prob)
    return(prob)

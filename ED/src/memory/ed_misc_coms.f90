@@ -1,8 +1,17 @@
-Module ed_misc_coms
+module ed_misc_coms
 
-   use ed_max_dims, only: str_len,maxpvars,str_len_short,maxgrds,max_obstime
+   use ed_max_dims, only : str_len       & ! intent(in)
+                         , maxpvars      & ! intent(in)
+                         , str_len_short & ! intent(in)
+                         , maxgrds       & ! intent(in)
+                         , max_obstime   ! ! intent(in)
 
    implicit none
+
+
+   !----- String for the output format of the restore file. -------------------------------!
+   character(len=26), parameter :: fmtrest = '(i4.4,2(1x,i2.2),1x,2i2.2)'
+   !---------------------------------------------------------------------------------------!
 
    type simtime
       integer :: year
@@ -47,8 +56,10 @@ Module ed_misc_coms
    integer :: imonthh
    integer :: idateh
 
-   real :: dtlsm
-   real :: radfrq
+   real    :: dtlsm
+   integer :: nsub_euler
+   real    :: dteuler
+   real    :: radfrq
 
    integer :: ifoutput
    integer :: idoutput
@@ -58,6 +69,7 @@ Module ed_misc_coms
    integer :: itoutput
    integer :: isoutput
    integer :: iooutput !Observation time output
+   integer :: igoutput
    integer :: iclobber
 
    integer :: iadd_site_means
@@ -82,9 +94,11 @@ Module ed_misc_coms
    type(simtime) :: out_time_state
 
    character(len=str_len), dimension(maxgrds) :: sfilin
-   character(len=str_len) ::ffilout 
-   character(len=str_len) ::sfilout
-   character(len=str_len) ::obstime_db
+   character(len=str_len)                     :: ffilout
+   character(len=str_len)                     :: sfilout
+   character(len=str_len)                     :: gfilout
+   character(len=str_len)                     :: obstime_db
+   character(len=str_len)                     :: restore_file
    integer :: ied_init_mode
    
    character(len=str_len) :: thsums_database
@@ -162,6 +176,14 @@ Module ed_misc_coms
    !---------------------------------------------------------------------------------------!
 
 
+
+
+   !---------------------------------------------------------------------------------------!
+   ! MONTH_YRSTEP -- Month in which the yearly time step (patch dynamics) should occur.    !
+   !---------------------------------------------------------------------------------------!
+   integer :: month_yrstep
+   !---------------------------------------------------------------------------------------!
+
    ! Control parameters for printing. Read in the namelist
    integer :: iprintpolys
    integer :: npvars
@@ -179,8 +201,6 @@ Module ed_misc_coms
 
    integer :: burnin          !! number of years to ignore demography when starting a run
 
-   integer :: outputMonth     !! month to output annual files
-
    integer :: restart_target_year    !! year to read when parsing pss/css with multiple years
 
    integer :: use_target_year        !! flag specifying whether to search for a target year in pss/css
@@ -193,10 +213,16 @@ Module ed_misc_coms
 
    ! soil biogeochem initial conditions (over-rides patch files)
    ! useful for data assimilation & sensitivity analysis
+   real    :: init_fgc 
    real    :: init_fsc 
+   real    :: init_stgc 
    real    :: init_stsc 
+   real    :: init_msc 
    real    :: init_ssc 
+   real    :: init_psc 
+   real    :: init_stgl 
    real    :: init_stsl 
+   real    :: init_fgn 
    real    :: init_fsn 
    real    :: init_msn 
 
@@ -239,22 +265,62 @@ Module ed_misc_coms
 
 
    !----- Namelist option for allometry scheme. -------------------------------------------!
-   integer :: iallom ! 0 -- Original ED-2.1 allometry
-                     ! 1 -- DBH -> AGB Tree allometry based on Baker et al. (2004)
-                     !      keep original ED-2.1 Bl/Bd ratio
-                     ! 2 -- DBH -> AGB Tree allometry based on Baker et al. (2004)
-                     !      keep original ED-2.1 Bl
-                     ! 3 -- Same as 2, root profile as in Kenzo et al. (2008)
-                     ! 4 -- Same as 2, root profile defined in a simple equation that
-                     !      puts roots at 0.5 m when the height is 0.15m, and 5.0 m when
-                     !      the height is 35.0m.
-   !---------------------------------------------------------------------------------------!
+   integer :: iallom ! 0 -- (Legacy) Original ED-1.0, included for back compatibility.
+                     ! 1 -- (Legacy) ED-2.1 allometry, included for back compatibility.
+                     !      a. The coefficients for structural biomass are set so the
+                     !         total AGB is similar to Baker et al. (2004, Glob. Change
+                     !         Biol.), equation 2.
+                     !      b. Experimental root depth that makes canopy trees to have
+                     !         root depths of 5m and grasses/seedlings at 0.5 to have root
+                     !         depth of 0.5 m.
+                     !      c. Crown area defined as in Poorter et al. (2006, Ecology),
+                     !         imposing maximum crown area.
+                     ! 2 -- (ED-2.2 default) Similar to 1, but with a few extra changes.
+                     !      a. Height -> DBH allometry as in Poorter et al. (2006)
+                     !      b. Balive is retuned, using a few leaf biomass allometric
+                     !         equations for a few genera in Costa Rica.  References:
+                     !         Cole and Ewel (2006, Forest Ecol. Manag.), and
+                     !         Calvo-Alvarado et al. (2008, Tree Physiol.).
+                     ! 3 -- (Beta) Revised tropical PFT allometric (Longo et al. 2020, 
+                     !      J. Geophys. Res.-Biogeosci.).
+                     !      a. Height -> DBH and DBH^2*H -> CA. Model fitting using the 
+                     !         Sustainable Landscapes Dataset (Longo et al. 2016, Glob. 
+                     !         Biogeochem. Cycles). DBH-Height takes a simpler log-linear 
+                     !         form fitted using SMA so it can be inverted (useful for 
+                     !         airborne lidar initialisation).
+                     !      b. DBH^2*H -> AGB. Based on Chave et al. (2014, Glob. Change 
+                     !         Biol.)
+                     !      c. DBH^2*H -> Leaf area based on the BAAD data base:
+                     !         Falster et al. (2015, Ecology).
+                     ! 4 -- (Under Development) Similar to 3 but (a) leaf and height
+                     !      allometric equations depend on wood density; (b) use
+                     !      height-based root allometry from Smith-Martin et al. (2020, 
+                     !      New Phyt.).
+                     ! 5 -- (Under Development) Similar to IALLOM = 3 but using the 
+                     !      rooting allometry from IALLOM = 4.
+    !---------------------------------------------------------------------------------------!
+
 
 
    !----- Namelist option for the new grass scheme. (ALS, Feb 2012) -----------------------!
    integer :: igrass ! 0 -- Original ED-2.1 grasses (aka bonzai grass)
                      ! 1 -- New grass scheme which has bdead = 0, height = f(bleaf), and   
                      !      growth occurs daily
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   ! ECONOMICS_SCHEME -- Temporary variable for testing the relationship amongst traits in !
+   !                     the tropics.                                                      !
+   !                     0. ED-2.1 standard, based on Reich et al. (1997) and some updates !
+   !                        following Kim et al. (2012).                                   !
+   !                     1. When available, trait relationships were derived from more     !
+   !                        up-to-date data sets, including the TRY database,              !
+   !                        NGEE-Tropics, RAINFOR, and GLOPNET. Check ed_params.f90 for    !
+   !                        details and references.                                        !
+   !---------------------------------------------------------------------------------------!
+   integer :: economics_scheme
    !---------------------------------------------------------------------------------------!
    
    !----- Namelist option to suppress warnings when HDF5 data is not in the 
@@ -263,4 +329,36 @@ Module ed_misc_coms
    logical :: suppress_h5_warnings
 
 
+   !----- Temporary flag: which method to use for estimating rooting depth. --------------!
+   logical :: use_efrd_trtree ! TRUE  - Use efective functional rooting depth based on 
+                              !         delta 18O, following Brum et al. (2018)
+                              ! FALSE - Use direct size-dependent.
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Some useful conversion factors.                                                   !
+   ! 1. FRQSUMI         -- inverse of the elapsed time between two analyses (or one day).  !
+   !                       This should be used by variables that are fluxes and are solved !
+   !                       by RK4, they are holding the integral over the past frqsum      !
+   !                       seconds.                                                        !
+   ! 2. DTLSM_O_FRQSUM  -- inverse of the number of the main time steps (DTLSM) since      !
+   !                       previous analysis.  Only photosynthesis- and decomposition-     !
+   !                       related variables, or STATE VARIABLES should use this factor.   !
+   !                       Do not use this for energy and water fluxes, CO2 eddy flux, and !
+   !                       CO2 storage.                                                    !
+   ! 3. RADFRQ_O_FRQSUM -- inverse of the number of radiation time steps since the         !
+   !                       previous analysis.  Only radiation-related variables should use !
+   !                       this factor.                                                    !
+   !---------------------------------------------------------------------------------------!
+   real :: frqsumi
+   real :: dtlsm_o_frqsum
+   real :: radfrq_o_frqsum
+   !---------------------------------------------------------------------------------------!
+
+
+   !----- Flag to tell whether lianas are included in this simulation. --------------------!
+   logical :: lianas_included
+   !---------------------------------------------------------------------------------------!
 end module ed_misc_coms

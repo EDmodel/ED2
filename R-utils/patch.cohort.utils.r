@@ -3,19 +3,27 @@
 #      This function appends the patch level either at the beginning or the end of each    #
 # cohort.                                                                                  #
 #------------------------------------------------------------------------------------------#
-append.patch <<- function(ipaco,xpa,xco,left=TRUE){
-   xpa = mapply(FUN=list,xpa,SIMPLIFY=TRUE)
-   xco = split (x=xco,f=ipaco)
-   if (left){
-      xpaco = unlist(mapply(FUN=c,xpa,xco,SIMPLIFY=FALSE))
+append.patch <<- function(ipa,ipaco,xpa,xco,left=TRUE){
+   if (length(ipaco) == 0){
+      xpaco = xpa
    }else{
-      xpaco = unlist(mapply(FUN=c,xco,xpa,SIMPLIFY=FALSE))
+      xpa            = mapply(FUN=list,xpa,SIMPLIFY=TRUE)
+      names(xpa)     = ipa
+      xcofull        = replicate(n=length(ipa),list(vector(length=0)))
+      names(xcofull) = ipa
+      xco            = split(x=xco,f=ipaco)
+      idx            = match(names(xco),names(xcofull))
+      xcofull[idx]   = xco
+      if (left){
+         xpaco = unlist(mapply(FUN=c,xpa,xcofull,SIMPLIFY=FALSE))
+      }else{
+         xpaco = unlist(mapply(FUN=c,xcofull,xpa,SIMPLIFY=FALSE))
+      }#end if
    }#end if
    return(xpaco)
 }#end append.patch
 #==========================================================================================#
 #==========================================================================================#
-
 
 
 
@@ -50,21 +58,6 @@ layer.absorption <<- function(ipaco,use,down,up){
 
 
    return(ans)
-}#end layer.absorption
-#==========================================================================================#
-#==========================================================================================#
-
-
-
-
-
-
-#==========================================================================================#
-#==========================================================================================#
-#      This function finds the total absorbed by each layer.                               #
-#------------------------------------------------------------------------------------------#
-layer.absorption.one.cohort <<- function(use,down,up){
-   #----- We must skip "invisible" cohorts. -----------------------------------------------#
 }#end layer.absorption
 #==========================================================================================#
 #==========================================================================================#

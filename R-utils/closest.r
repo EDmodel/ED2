@@ -33,12 +33,12 @@ which.closest <<- function(x,A,mask=rep(TRUE,length(A)) ){
    if (! any(is.finite(x)) || ! any(mask,na.rm=TRUE)){
       #----- x is invalid, return NA. -----------------------------------------------------#
       idx = NA
-   }else if(sum(x %==% A,na.rm=TRUE) > 1){
+   }else if(sum(x %eq% A,na.rm=TRUE) > 1){
       #------------------------------------------------------------------------------------#
       #      If there are multiple values of x that are the same as x, we randomly sample  #
       # one value.                                                                         #
       #------------------------------------------------------------------------------------#
-      idx = sample(A.idx[x %==% A],size=1)
+      idx = sample(A.idx[x %eq% A],size=1)
       #------------------------------------------------------------------------------------#
    }else{
       #------------------------------------------------------------------------------------#

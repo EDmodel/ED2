@@ -25,13 +25,15 @@ subroutine node_sendanl(vtype)
    use var_tables
    use mem_scratch
    use grid_dims
+#if defined(RAMS_MPI)
+   use mpi
+#endif
 
 
    implicit none
    !----- External variable declaration ---------------------------------------------------!
 #if defined(RAMS_MPI)
    include 'interface.h'
-   include 'mpif.h'
 #endif
    !----- Arguments -----------------------------------------------------------------------!
    character(len=*)         , intent(in) :: vtype
@@ -120,12 +122,14 @@ subroutine master_getanl(vtype)
    use mem_cuparm, only : nclouds
    use mem_aerad , only : nwave
    use grid_dims
+#if defined(RAMS_MPI)
+   use mpi
+#endif
 
    implicit none
    !----- External variable declaration ---------------------------------------------------!
 #if defined(RAMS_MPI)
    include 'interface.h'
-   include 'mpif.h'
 #endif
    !----- Arguments -----------------------------------------------------------------------!
    character(len=*)         , intent(in) :: vtype

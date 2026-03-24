@@ -110,6 +110,17 @@ module therm_lib
    !=======================================================================================!
 
 
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !   Weighting factor for atmospheric ThetaV (as opposed to canopy air space ThetaV).    !
+   !---------------------------------------------------------------------------------------!
+   real(kind=4), parameter :: fthva_rp = 0.5
+   !=======================================================================================!
+   !=======================================================================================!
+
+
    contains
 
 
@@ -2443,6 +2454,42 @@ module therm_lib
 
    !=======================================================================================!
    !=======================================================================================!
+   !     This function finds the dry-air molar density (mol/m3), using the ideal gas law.  !
+   !---------------------------------------------------------------------------------------!
+   real(kind=4) function idealdmolsh(pres,temp,qvpr)
+      use rconstants, only : rmol & ! intent(in)
+                           , ep   ! ! intent(in)
+      implicit none
+      !----- Arguments --------------------------------------------------------------------!
+      real(kind=4), intent(in)           :: pres ! Pressure                        [    Pa]
+      real(kind=4), intent(in)           :: temp ! Temperature                     [     K]
+      real(kind=4), intent(in)           :: qvpr ! Vapour specific mass            [ kg/kg]
+      !----- Local variables. -------------------------------------------------------------!
+      real(kind=4)                       :: pdry ! Dry-air pressure                [    Pa]
+      !------------------------------------------------------------------------------------!
+
+
+      !----- Find the partial pressure of water vapour. -----------------------------------!
+      pdry = pres * (1.0 - qvpr / (ep + (1.0 - ep) * qvpr))
+      !------------------------------------------------------------------------------------!
+
+
+      !----- Convert using a generalised function. ----------------------------------------!
+      idealdmolsh = pdry / (rmol * temp)
+      !------------------------------------------------------------------------------------!
+
+      return
+   end function idealdmolsh
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
    !     This function computes reduces the pressure from the reference height to the      !
    ! canopy height by assuming hydrostatic equilibrium.  For simplicity, we assume that    !
    ! R and cp are constants (in reality they are dependent on humidity).                   !
@@ -2465,14 +2512,19 @@ module therm_lib
       real(kind=4), intent(in) :: zcan     ! Height at canopy level              [       m]
       !------Local variables. -------------------------------------------------------------!
       real(kind=4)             :: pinc     ! Pressure increment                  [ Pa^R/cp]
+      real(kind=4)             :: thvref   ! Reference virtual pot. temperature  [       K]
+      real(kind=4)             :: thvcan   ! CAS virtual pot. temperature        [       K]
       real(kind=4)             :: thvbar   ! Average virtual pot. temperature    [       K]
       !------------------------------------------------------------------------------------!
 
       !------------------------------------------------------------------------------------!
       !      First we compute the average virtual potential temperature between the canopy !
-      ! top and the reference level.                                                       !
+      ! top and the reference level.  Because of the equation below, we average the        !
+      ! inverse of the potential temperature.                                              !
       !------------------------------------------------------------------------------------!
-      thvbar = 0.5 * (thetaref * (1. + epim1 * shvref) + thetacan * (1. + epim1 * shvcan))
+      thvref = thetaref * (1.0 + epim1 * shvref)
+      thvcan = thetacan * (1.0 + epim1 * shvcan)
+      thvbar = thvref * thvcan / ( ( 1.0 - fthva_rp ) * thvref + fthva_rp * thvcan )
       !------------------------------------------------------------------------------------!
 
 

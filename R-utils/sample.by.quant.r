@@ -37,18 +37,17 @@
 sample.by.quant <<- function(x,v,method="skew",a=1){
 
    #----- First we check whether a is valid. ----------------------------------------------#
-   if (length(a) != 1){
-      stop (paste(" Factor a must be a scalar, and you entered one with length "
-                 ,length(a),"...",sep=""))
-   }#end if
+   if (! (length(a) %eq% 1L)){
+      stop(paste0(" Factor \"a\" must be scalar. The input one has length ",length(a),"."))
+   }#end if (! (length(a) %eq% 1L))
    #---------------------------------------------------------------------------------------#
 
 
    #----- First we check whether x or v are valid. ----------------------------------------#
    if (missing(x) || missing(v)){
-      cat (" - x is missing: ",missing(x),"\n")
-      cat (" - v is missing: ",missing(v),"\n")
-      stop(" Either x or v (or both) is missing...")
+      cat (" - \"x\" is missing: ",missing(x),"\n")
+      cat (" - \"v\" is missing: ",missing(v),"\n")
+      stop(" Either \"x\" or \"v\" (or both) is missing.")
    }else if (length(x) < length(v)){
       v.names   = as.numeric(names(v))
       ix        = match(x,v.names)
@@ -74,7 +73,7 @@ sample.by.quant <<- function(x,v,method="skew",a=1){
       v        = v[as.numeric(names(v)) %in% keep]
    }else{
       ix       = sequence(length(x))
-   }#end if
+   }#end if (missing(x) || missing(v))
    #---------------------------------------------------------------------------------------#
 
 
@@ -86,7 +85,7 @@ sample.by.quant <<- function(x,v,method="skew",a=1){
       stop(" Variable method must be scalar!")
    }else{
       use = substring(tolower(method),1,1)
-   }#end if
+   }#end if (length(method) != 1)
    #---------------------------------------------------------------------------------------#
 
 
@@ -124,7 +123,7 @@ sample.by.quant <<- function(x,v,method="skew",a=1){
                   , quant  = quant
                   , prob   = rep(1/nx,times=nx)
                   )#end list
-   }else if (a == 0){
+   }else if (a %in% 0L){
       s         = sample(x=x,size=nx,replace=TRUE)
       cnt       = table(s)
       prob      = rep(0,times=nx)
@@ -137,7 +136,7 @@ sample.by.quant <<- function(x,v,method="skew",a=1){
                        , quant  = quant
                        , prob   = prob
                        )#end list
-   }else if (use == "p"){
+   }else if (use %in% "p"){
 
       prob = abs(a) ^ (sign(a)*(1-2*quant))
 
@@ -149,7 +148,7 @@ sample.by.quant <<- function(x,v,method="skew",a=1){
                  , quant  = quant
                  , prob   = prob
                  )#end list
-   }else if (use == "l"){
+   }else if (use %in% "l"){
       prob = inv.logit((a-sign(a))*(quant-0.5-0.01*a))
       s    = sample(x=x,size=nx,replace=TRUE,prob=prob)
       ans  = list( orig   = x
@@ -159,7 +158,7 @@ sample.by.quant <<- function(x,v,method="skew",a=1){
                  , quant  = quant
                  , prob   = prob
                  )#end list
-   }else if (use == "b"){
+   }else if (use %in% "b"){
       s    = rep(NA,times=nx)
       prob = abs(a) ^ (sign(a)*quant > sign(a)*0.5)
       s[1] = sample(x=x,size=1,replace=TRUE,prob=prob)
@@ -179,7 +178,7 @@ sample.by.quant <<- function(x,v,method="skew",a=1){
                       , quant  = quant
                       , prob   = prob
                       )#end list
-   }else if (use == "s"){
+   }else if (use %in% "s"){
       #----- Find the skew normal statistics. ---------------------------------------------#
       v.loc    = sn.location(x=v,na.rm=TRUE)
       v.scl    = sn.scale   (x=v,na.rm=TRUE)
@@ -193,8 +192,8 @@ sample.by.quant <<- function(x,v,method="skew",a=1){
       s.scl   = v.scl
       s.shp   = v.shp
       d.shp   = round.log(abs(s.shp))
-      q.100   = qsn(p=0.10,location=s.loc,scale=s.scl,shape=s.shp)
-      q.900   = qsn(p=0.90,location=s.loc,scale=s.scl,shape=s.shp)
+      q.100   = qsn(p=0.10,xi=s.loc,omega=s.scl,alpha=s.shp)
+      q.900   = qsn(p=0.90,xi=s.loc,omega=s.scl,alpha=s.shp)
       v.min   = min(v)
       v.max   = max(v)
       #it = 0
@@ -207,14 +206,14 @@ sample.by.quant <<- function(x,v,method="skew",a=1){
       #   if (q.900 > v.max){
       #      s.shp = s.shp - 0.1 * d.shp
       #   }#end if
-      #   q.100 = qsn(p=0.10,location=s.loc,scale=s.scl,shape=s.shp)
-      #   q.900 = qsn(p=0.90,location=s.loc,scale=s.scl,shape=s.shp)
+      #   q.100 = qsn(p=0.10,xi=s.loc,omega=s.scl,alpha=s.shp)
+      #   q.900 = qsn(p=0.90,xi=s.loc,omega=s.scl,alpha=s.shp)
       #}#end while
       #------------------------------------------------------------------------------------#
 
 
       #----- Use the new statistics to find the new distribution. -------------------------#
-      v.goal    = rsn(n=nx,location=s.loc,scale=s.scl,shape=s.shp)
+      v.goal    = rsn(n=nx,xi=s.loc,omega=s.scl,alpha=s.shp)
       s.idx     = mapply(FUN=which.closest,x=v.goal,MoreArgs=list(A=v))
       s         = x[s.idx]
       cnt       = table(s)
@@ -231,10 +230,10 @@ sample.by.quant <<- function(x,v,method="skew",a=1){
       #------------------------------------------------------------------------------------#
 
    }else{
-       stop (paste(" Method ",method," is not recognised...",sep=""))
+       stop (paste0(" Method ",method," is not recognised."))
    }#end if
    #---------------------------------------------------------------------------------------#
 
    return(ans)
-}#end function
+}#end function sample.by.quant
 #------------------------------------------------------------------------------------------#
