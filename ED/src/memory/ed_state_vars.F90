@@ -2527,23 +2527,6 @@ module ed_state_vars
       !------------------------------------------------------------------------------------!
 
 
-! 
-!       ! MARCOS (not implemented)
-!       !------------------------------------------------------------------------------------!
-!       !      Crop and logging output.                                                      !
-!       !------------------------------------------------------------------------------------!
-!       real, pointer, dimension(:,:) :: crop_yield
-!       !< Crop yield (specifically, seeds), kgC/m2, one value for each month.
-! 
-!       real, pointer, dimension(:) :: crop_harvest
-!       !< Crop harvest (leaves or non-structural carbon), kgC/m2, patch dynamics.
-! 
-!       real, pointer, dimension(:) :: logging_harvest
-!       !< Logging harvest (timber), kgC/m2, patch dynamics.
-! 
-!       real, pointer, dimension(:) :: combusted_fuel
-!       !< Carbon lost through combustion of fuels, kgC/m2, patch dynamics.
-!       !------------------------------------------------------------------------------------!
 
       real,pointer,dimension(:) :: cosaoi
 
