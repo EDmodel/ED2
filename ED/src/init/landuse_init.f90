@@ -13,26 +13,19 @@ module landuse_init
                                , sitetype            & ! structure
                                , edgrid_g            ! ! structure
       use pft_coms      , only : is_grass            & ! intent(in)
-                               , is_liana            ! ! intent(in)
+                               , is_liana            & ! intent(in)
+                               , pasture_stock       & ! intent(in)
+                               , agri_stock          & ! intent(in)
+                               , plantation_stock    ! ! intent(in)
       use consts_coms   , only : erad                & ! intent(in)
                                , pio180              & ! intent(in)
-                               , lnexp_max           ! ! intent(in)
+                               , lnexp_max           & ! intent(in)
+                               , huge_num            ! ! intent(in)
       use disturb_coms  , only : lutime              & ! intent(in)
                                , max_lu_years        & ! intent(in)
                                , num_lu_trans        & ! intent(in)
                                , ianth_disturb       & ! intent(in)
-                               , lu_database         & ! intent(in)
-                               , sl_pft              & ! intent(in)
-                               , sl_scale            & ! intent(in)
-                               , sl_nyrs             & ! intent(in)
-                               , sl_yr_first         & ! intent(in)
-                               , sl_skid_rel_area    & ! intent(in)
-                               , sl_skid_dbh_thresh  & ! intent(in)
-                               , sl_skid_s_gtharv    & ! intent(in)
-                               , sl_skid_s_ltharv    & ! intent(in)
-                               , sl_felling_s_ltharv & ! intent(in)
-                               , sl_mindbh_harvest   & ! intent(in)
-                               , sl_prob_harvest     ! ! intent(in)
+                               , lu_database         ! ! intent(in)
       use ed_misc_coms  , only : iyeara              & ! intent(in)
                                , iyearz              ! ! intent(in)
       use grid_coms     , only : ngrids              ! ! intent(in)
@@ -42,7 +35,6 @@ module landuse_init
                                , maxlist             & ! intent(in)
                                , undef_real          & ! intent(in)
                                , undef_integer       ! ! intent(in)
-      use detailed_coms , only : idetailed           ! ! intent(in)
 
       implicit none
       !----- Local variables --------------------------------------------------------------!
@@ -60,8 +52,6 @@ module landuse_init
       character(len=str_len)                          :: lu_name
       character(len=str_len)                          :: cdum
       character(len=str_len)                          :: vkey
-      character(len=13)                               :: hifmt
-      character(len=15)                               :: hffmt
       integer                                         :: nharvest
       integer               , dimension(n_pft)        :: harvest_pft
       integer                                         :: nf
@@ -80,18 +70,21 @@ module landuse_init
       integer                                         :: yd_last
       integer                                         :: poseq
       logical                                         :: inside
-      logical                                         :: write_lu_settings
       real                                            :: skid_rel_area
-      real                  , dimension(n_pft)        :: mindbh_slog
-      real                  , dimension(n_pft)        :: harvprob_slog
-      real                  , dimension(n_pft)        :: mindbh_fplt
-      real                  , dimension(n_pft)        :: harvprob_fplt
-      real                  , dimension(n_pft)        :: skid_dbh_thresh
+      real                                            :: thinning_age_offset
+      real                                            :: thinning_frac_area
+      real                  , dimension(n_pft)        :: mindbh_felling
+      real                  , dimension(n_pft)        :: prob_harv_felling
+      real                  , dimension(n_pft)        :: mindbh_plantation
+      real                  , dimension(n_pft)        :: prob_harv_plantation
       real                  , dimension(n_pft)        :: felling_s_gtharv
       real                  , dimension(n_pft)        :: felling_s_ltharv
+      real                  , dimension(n_pft)        :: thinning_dbh_thresh
+      real                  , dimension(n_pft)        :: thinning_s_gtharv
+      real                  , dimension(n_pft)        :: thinning_s_ltharv
+      real                  , dimension(n_pft)        :: skid_dbh_thresh
       real                  , dimension(n_pft)        :: skid_s_gtharv
       real                  , dimension(n_pft)        :: skid_s_ltharv
-      real                  , dimension(num_lu_trans) :: landuse_now
       real                                            :: lu_area
       real                                            :: lu_area_i
       real                                            :: wlon
@@ -102,10 +95,8 @@ module landuse_init
       character(len=12)     , parameter :: fffmt    = '(a,1x,f12.5)'
       character(len=13)     , parameter :: esfmt    = '(a,1x,es12.5)'
       real                  , parameter :: huge_dbh = huge(1.)
-      character(len=str_len), parameter :: lu_table = "anth_disturb_table.txt"
       !----- External function. -----------------------------------------------------------!
       real                  , external  :: dist_gc
-      real                  , external  :: solid_area
       !------------------------------------------------------------------------------------!
 
 
@@ -114,12 +105,10 @@ module landuse_init
       sim_years = iyearz-iyeara+1
       !------------------------------------------------------------------------------------!
 
-      !------ Decide whether to write lu settings. ----------------------------------------!
-      write_lu_settings = btest(idetailed,6) .and. ianth_disturb /= 0
+
       !------------------------------------------------------------------------------------!
-
-
-      !----- Crashing the run if the user set up a very long run... -----------------------!
+      !     Graciously fail if the user set up an extremely long run.                      !
+      !------------------------------------------------------------------------------------!
       if (ianth_disturb /= 0 .and. sim_years > max_lu_years) then
          write (unit=*,fmt='(a,1x,i5)') 'IYEARA       (From namelist)        :',iyeara
          write (unit=*,fmt='(a,1x,i5)') 'IYEARZ       (From namelist)        : ',iyearz
@@ -134,15 +123,66 @@ module landuse_init
       !------------------------------------------------------------------------------------!
 
 
+
+      !------------------------------------------------------------------------------------!
+      !    This check was migrated from ed_opspec to here because the definition of life   !
+      ! forms can be modified through xml.                                                 !
+      !------------------------------------------------------------------------------------!
+      if (ianth_disturb /= 0) then
+         !---------------------------------------------------------------------------------!
+         !     Pasture stocks must come from grasses.                                      !
+         !---------------------------------------------------------------------------------!
+         if (.not. is_grass(pasture_stock)) then
+            write(unit=*,fmt='(a,1x,i5)') ' PASTURE_STOCK = ',pasture_stock
+            write(unit=*,fmt='(a,5x,l1)') ' IS_GRASS      = ',is_grass(agri_stock)
+            call fatal_error ('Pasture stock must come from a grass PFT.'                  &
+                             ,'read_landuse_matrix','landuse_init.f90')
+         end if
+         !---------------------------------------------------------------------------------!
+
+
+
+         !---------------------------------------------------------------------------------!
+         !     Cropland (agricultural) stocks must come from grasses. This may be          !
+         ! revisited if we start simulating tree crops.                                    !
+         !---------------------------------------------------------------------------------!
+         if (.not. is_grass(agri_stock)) then
+            write(unit=*,fmt='(a,1x,i5)') ' AGRI_STOCK = ',agri_stock
+            write(unit=*,fmt='(a,5x,l1)') ' IS_GRASS   = ',is_grass(agri_stock)
+            call fatal_error ('Cropland stock must come from a grass PFT.'                 &
+                             ,'read_landuse_matrix','landuse_init.f90')
+         end if
+         !---------------------------------------------------------------------------------!
+
+
+
+         !----- Plantation stocks must come from tree PFTs. -------------------------------!
+         if (is_grass(plantation_stock) .or. is_liana(plantation_stock)) then
+            write(unit=*,fmt='(a,1x,i5)') ' PLANTATION_STOCK = ',plantation_stock
+            write(unit=*,fmt='(a,5x,l1)') ' IS_GRASS         = ',is_grass(plantation_stock)
+            write(unit=*,fmt='(a,5x,l1)') ' IS_LIANA         = ',is_liana(plantation_stock)
+            call fatal_error ('Plantation stock must come from a tree PFT.'                &
+                             ,'read_landuse_matrix','landuse_init.f90')
+         end if
+         !---------------------------------------------------------------------------------!
+      end if
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Loop through all grid cells.                                                   !
+      !------------------------------------------------------------------------------------!
       gridloop: do igr = 1,ngrids
 
          !---------------------------------------------------------------------------------!
          !     Find the list of disturbance rate files.                                    !
          !---------------------------------------------------------------------------------!
-         if (ianth_disturb == 1) then
+         select case (ianth_disturb)
+         case (1,2)
             call ed_filelist(full_list,lu_database(igr),nflist)
             call ed1_fileinfo('.lu',nflist,full_list,nfllu,lu_list,llon_list,llat_list)
-         end if
+         end select
          !---------------------------------------------------------------------------------!
 
          cgrid=>edgrid_g(igr)
@@ -165,21 +205,24 @@ module landuse_init
 
                !----- Set the parameters in a way that no logging/ploughing will happen. --!
                do isi = 1,cpoly%nsites
-                  cpoly%num_landuse_years       (isi) = 1
-                  cpoly%mindbh_harvest  (:,isi) = huge_dbh
-                  cpoly%prob_harvest    (:,isi) = 0.
-                  cpoly%skid_dbh_thresh (:,isi) = huge_dbh
-                  cpoly%skid_s_gtharv   (:,isi) = 1.
-                  cpoly%skid_s_ltharv   (:,isi) = 1.
-                  cpoly%felling_s_gtharv(:,isi) = 1.
-                  cpoly%felling_s_ltharv(:,isi) = 1.
+                  cpoly%num_landuse_years     (isi) = 1
+                  cpoly%mindbh_felling      (:,isi) = huge_dbh
+                  cpoly%prob_felling        (:,isi) = 0.
+                  cpoly%felling_s_gtharv    (:,isi) = 1.
+                  cpoly%felling_s_ltharv    (:,isi) = 1.
+                  cpoly%thinning_dbh_thresh (:,isi) = huge_dbh
+                  cpoly%thinning_s_gtharv   (:,isi) = 1.
+                  cpoly%thinning_s_ltharv   (:,isi) = 1.
+                  cpoly%skid_dbh_thresh     (:,isi) = huge_dbh
+                  cpoly%skid_s_gtharv       (:,isi) = 1.
+                  cpoly%skid_s_ltharv       (:,isi) = 1.
 
                   cpoly%clutimes(1,isi)%landuse_year            = iyeara
                   cpoly%clutimes(1,isi)%landuse(1:num_lu_trans) = 0.0
                end do
                !---------------------------------------------------------------------------!
 
-            case (1)
+            case (1,2)
 
                !---------------------------------------------------------------------------!
                !    Initialise plantation patches if plantation information is available.  !
@@ -191,20 +234,20 @@ module landuse_init
 
 
                !---------------------------------------------------------------------------!
-               !     Initialise the PFT-dependent arrays with namelist data, but keep      !
-               ! harvest probability zero and minimum DBH for harvesting to infinity, to   !
-               ! prevent felling of these PFTs.                                            !
+               !     Initialise the PFT-dependent arrays with values that will prevent any !
+               ! harvesting. Only if the data are found these will be defined.             !
                !---------------------------------------------------------------------------!
                do isi = 1,cpoly%nsites
-                  cpoly%mindbh_harvest  (:,isi) = huge_dbh
-                  cpoly%prob_harvest    (:,isi) = 0.
-                  cpoly%skid_dbh_thresh (:,isi) = merge(huge_dbh,sl_skid_dbh_thresh        &
-                                                                              ,is_grass(:))
-                  cpoly%skid_s_gtharv   (:,isi) = merge( 1.00,sl_skid_s_gtharv,is_grass(:))
-                  cpoly%skid_s_ltharv   (:,isi) = merge( 1.00,sl_skid_s_ltharv,is_grass(:))
-                  cpoly%felling_s_gtharv(:,isi) = merge( 0.70,            0.00,is_grass(:))
-                  cpoly%felling_s_ltharv(:,isi) = merge( 0.70,sl_felling_s_ltharv          &
-                                                                              ,is_grass(:))
+                  cpoly%mindbh_felling      (:,isi) = huge_dbh
+                  cpoly%prob_felling        (:,isi) = 0.
+                  cpoly%felling_s_gtharv    (:,isi) = 1.
+                  cpoly%felling_s_ltharv    (:,isi) = 1.
+                  cpoly%thinning_dbh_thresh (:,isi) = huge_dbh
+                  cpoly%thinning_s_gtharv   (:,isi) = 1.
+                  cpoly%thinning_s_ltharv   (:,isi) = 1.
+                  cpoly%skid_dbh_thresh     (:,isi) = huge_dbh
+                  cpoly%skid_s_gtharv       (:,isi) = 1.
+                  cpoly%skid_s_ltharv       (:,isi) = 1.
                end do
                !---------------------------------------------------------------------------!
 
@@ -240,18 +283,19 @@ module landuse_init
 
                !---------------------------------------------------------------------------!
                !    Top header variables. Initialise them with dummy values.  Except for   !
-               ! skid_area, they must be all assigned.  Skid area by default the value     !
-               ! from the namelist.                                                        !
+               ! skid_area, they must be all assigned.  Skid area is zero by default.      !
                !---------------------------------------------------------------------------!
-               wlon          = undef_real
-               elon          = undef_real
-               slat          = undef_real
-               nlat          = undef_real
-               lu_area       = undef_real
-               yd_1st        = undef_integer
-               yd_last       = undef_integer
-               skid_rel_area = sl_skid_rel_area
-               nharvest      = undef_integer
+               wlon                = undef_real
+               elon                = undef_real
+               slat                = undef_real
+               nlat                = undef_real
+               lu_area             = undef_real
+               yd_1st              = undef_integer
+               yd_last             = undef_integer
+               skid_rel_area       = 0.
+               thinning_age_offset = huge_num
+               thinning_frac_area  = 0.
+               nharvest            = undef_integer
                !---------------------------------------------------------------------------!
 
 
@@ -260,16 +304,19 @@ module landuse_init
                ! optional variables, but they are useful to define logging strategies in   !
                ! more detail.                                                              !
                !---------------------------------------------------------------------------!
-               harvest_pft     (1:n_pft) = undef_integer
-               mindbh_slog     (1:n_pft) = undef_real
-               harvprob_slog   (1:n_pft) = undef_real
-               mindbh_fplt     (1:n_pft) = undef_real
-               harvprob_fplt   (1:n_pft) = undef_real
-               skid_dbh_thresh (1:n_pft) = undef_real
-               skid_s_gtharv   (1:n_pft) = undef_real
-               skid_s_ltharv   (1:n_pft) = undef_real
-               felling_s_gtharv(1:n_pft) = undef_real
-               felling_s_ltharv(1:n_pft) = undef_real
+               harvest_pft         (1:n_pft) = undef_integer
+               mindbh_felling      (1:n_pft) = undef_real
+               prob_harv_felling   (1:n_pft) = 0.
+               mindbh_plantation   (1:n_pft) = undef_real
+               prob_harv_plantation(1:n_pft) = 0.
+               felling_s_gtharv    (1:n_pft) = 1.
+               felling_s_ltharv    (1:n_pft) = 1.
+               thinning_dbh_thresh (1:n_pft) = undef_real
+               thinning_s_gtharv   (1:n_pft) = 1.
+               thinning_s_ltharv   (1:n_pft) = 1.
+               skid_dbh_thresh     (1:n_pft) = undef_real
+               skid_s_gtharv       (1:n_pft) = 1.
+               skid_s_ltharv       (1:n_pft) = 1.
                !---------------------------------------------------------------------------!
 
 
@@ -335,6 +382,14 @@ module landuse_init
                      !---- Damage area due to skid trails and roads. ----------------------!
                      read(cdum,fmt=*) skid_rel_area
                      !---------------------------------------------------------------------!
+                  case ('THINNING_FRAC_AREA','THINNING.FRAC.AREA')
+                     !---- Relative area to be thinned after logging. ---------------------!
+                     read(cdum,fmt=*) thinning_frac_area
+                     !---------------------------------------------------------------------!
+                  case ('THINNING_AGE_OFFSET','THINNING.AGE.OFFSET')
+                     !---- Time (age) offset to apply canopy thinning after harvesting. ---!
+                     read(cdum,fmt=*) thinning_age_offset
+                     !---------------------------------------------------------------------!
                   case ('N_PFT_HARVEST' ,'N.PFT.HARVEST' )
                      !---- Number of PFTs to harvest. -------------------------------------!
                      read(cdum,fmt=*) nharvest
@@ -371,15 +426,19 @@ module landuse_init
                   write (unit=*,fmt='(a)')           '------------------------------------'
                   write (unit=*,fmt='(2(a,1x))')     ' - File: ',trim(lu_name)
                   write (unit=*,fmt='(a)')           '------------------------------------'
-                  write (unit=*,fmt='(a,1x,es12.5)') ' - WEST_LONGITUDE = ',wlon
-                  write (unit=*,fmt='(a,1x,es12.5)') ' - EAST_LONGITUDE = ',elon
-                  write (unit=*,fmt='(a,1x,es12.5)') ' - SOUTH_LATITUDE = ',slat
-                  write (unit=*,fmt='(a,1x,es12.5)') ' - NORTH_LATITUDE = ',nlat
-                  write (unit=*,fmt='(a,1x,es12.5)') ' - BLOCK_AREA     = ',lu_area
-                  write (unit=*,fmt='(a,1x,i6)')     ' - FIRST_LUYEAR   = ',yd_1st
-                  write (unit=*,fmt='(a,1x,i6)')     ' - LAST_LUYEAR    = ',yd_last
-                  write (unit=*,fmt='(a,1x,es12.5)') ' - SKID_AREA      = ',skid_rel_area
-                  write (unit=*,fmt='(a,1x,i6)')     ' - N_PFT_HARVEST  = ',nharvest
+                  write (unit=*,fmt='(a,1x,es12.5)') ' - WEST_LONGITUDE  = ',wlon
+                  write (unit=*,fmt='(a,1x,es12.5)') ' - EAST_LONGITUDE  = ',elon
+                  write (unit=*,fmt='(a,1x,es12.5)') ' - SOUTH_LATITUDE  = ',slat
+                  write (unit=*,fmt='(a,1x,es12.5)') ' - NORTH_LATITUDE  = ',nlat
+                  write (unit=*,fmt='(a,1x,es12.5)') ' - BLOCK_AREA      = ',lu_area
+                  write (unit=*,fmt='(a,1x,i6)')     ' - FIRST_LUYEAR    = ',yd_1st
+                  write (unit=*,fmt='(a,1x,i6)')     ' - LAST_LUYEAR     = ',yd_last
+                  write (unit=*,fmt='(a,1x,es12.5)') ' - SKID_AREA       = ',skid_rel_area
+                  write (unit=*,fmt='(a,1x,es12.5)') ' - THIN_FRAC_AREA  = '               &
+                                                     , thinning_frac_area
+                  write (unit=*,fmt='(a,1x,es12.5)') ' - THIN_AGE_OFFSET = '               &
+                                                     , thinning_age_offset
+                  write (unit=*,fmt='(a,1x,i6)')     ' - N_PFT_HARVEST   = ',nharvest
                   write (unit=*,fmt='(a)')           '------------------------------------'
                   call fatal_error('Missing variables in input file (not an ED2 bug)!'     &
                                   ,'read_landuse_matrix','landuse_init.f90')
@@ -414,6 +473,7 @@ module landuse_init
                      !---------------------------------------------------------------------!
 
 
+
                      !---------------------------------------------------------------------!
                      !     Identify which variable to read (multiple options are for       !
                      ! back compatibility).                                                !
@@ -421,57 +481,54 @@ module landuse_init
                      select case (trim(vkey))
                      case ('HARVEST_PFT','HARVEST.PFT')
                         !---- PFTs to read. -----------------------------------------------!
-                        read (cdum, fmt=*) (harvest_pft(h)  ,h=1,nharvest)
+                        read (cdum, fmt=*) (harvest_pft         (h),h=1,nharvest)
                         !------------------------------------------------------------------!
-
-                        !------------------------------------------------------------------!
-                        !     Assign defaults to variables in case they have not been      !
-                        ! read yet.                                                        !
-                        !------------------------------------------------------------------!
-                        mindbh_slog      = merge( mindbh_slog     , 0.                     &
-                                                , harvest_pft      /= undef_integer .and.  &
-                                                  mindbh_slog      /= undef_real         )
-                        harvprob_slog    = merge( harvprob_slog   , 1.                     &
-                                                , harvest_pft      /= undef_integer .and.  &
-                                                  harvprob_slog    /= undef_real         )
-                        mindbh_fplt      = merge( mindbh_fplt     , 0.                     &
-                                                , harvest_pft      /= undef_integer .and.  &
-                                                  mindbh_fplt      /= undef_real         )
-                        harvprob_fplt    = merge( harvprob_fplt   , 1.                     &
-                                                , harvest_pft      /= undef_integer .and.  &
-                                                  harvprob_fplt    /= undef_real         )
-                        skid_dbh_thresh  = merge( skid_dbh_thresh , sl_skid_dbh_thresh     &
-                                                , harvest_pft      /= undef_integer .and.  &
-                                                  skid_dbh_thresh  /= undef_real         )
-                        skid_s_gtharv    = merge( skid_s_gtharv   , sl_skid_s_gtharv       &
-                                                , harvest_pft      /= undef_integer .and.  &
-                                                  skid_s_gtharv    /= undef_real         )
-                        skid_s_ltharv    = merge( skid_s_ltharv   , sl_skid_s_ltharv       &
-                                                , harvest_pft      /= undef_integer .and.  &
-                                                  skid_s_ltharv    /= undef_real         )
-                        felling_s_ltharv = merge( felling_s_ltharv, sl_felling_s_ltharv    &
-                                                , harvest_pft      /= undef_integer .and.  &
-                                                  felling_s_ltharv /= undef_real          )
-                        felling_s_gtharv = merge( felling_s_gtharv, 0.                     &
-                                                , harvest_pft      /= undef_integer .and.  &
-                                                  felling_s_gtharv /= undef_real          )
-                        !------------------------------------------------------------------!
-                        
-                     case ('MINDBH_SLOG','MINDBH.SLOG','MINDBH_1ARY','MINDBH.1ARY')
+                     case ('MINDBH_SLOG','MINDBH.SLOG','MINDBH_1ARY','MINDBH.1ARY'         &
+                          ,'MINDBH_FELLING','MINDBH.FELLING')
                         !---- Minimum DBH for harvesting: (selective) logging. ------------!
-                        read (cdum, fmt=*) (mindbh_slog     (h),h=1,nharvest)
+                        read (cdum, fmt=*) (mindbh_felling      (h),h=1,nharvest)
                         !------------------------------------------------------------------!
-                     case ('HARVPROB_SLOG','HARVPROB.SLOG','HARVPROB_1ARY','HARVPROB.1ARY')
+                     case ('HARVPROB_SLOG','HARVPROB.SLOG','HARVPROB_1ARY','HARVPROB.1ARY' &
+                          ,'HARVPROB_FELLING','HARVPROB.FELLING')
                         !---- Harvest probability: (selective) logging. -------------------!
-                        read (cdum, fmt=*) (harvprob_slog   (h),h=1,nharvest)
+                        read (cdum, fmt=*) (prob_harv_felling   (h),h=1,nharvest)
                         !------------------------------------------------------------------!
-                     case ('MINDBH_FPLT','MINDBH.FPLT','MINDBH_2ARY','MINDBH.2ARY')
+                     case ('MINDBH_FPLT','MINDBH.FPLT','MINDBH_2ARY','MINDBH.2ARY'         &
+                          ,'MINDBH_PLANTATION','MINDBH.PLANTATION')
                         !---- Minimum DBH for harvesting: forest plantation. --------------!
-                        read (cdum, fmt=*) (mindbh_fplt     (h),h=1,nharvest)
+                        read (cdum, fmt=*) (mindbh_plantation   (h),h=1,nharvest)
                         !------------------------------------------------------------------!
-                     case ('HARVPROB_FPLT','HARVPROB.FPLT','HARVPROB_2ARY','HARVPROB.2ARY')
+                     case ('HARVPROB_FPLT','HARVPROB.FPLT','HARVPROB_2ARY','HARVPROB.2ARY' &
+                          ,'HARVPROB_PLANTATION','HARVPROB.PLANTATION')
                         !---- Harvest probability: forest plantation. ---------------------!
-                        read (cdum, fmt=*) (harvprob_fplt   (h),h=1,nharvest)
+                        read (cdum, fmt=*) (prob_harv_plantation(h),h=1,nharvest)
+                        !------------------------------------------------------------------!
+                     case ('FELLING_S_LTHARV','FELLING.S.LTHARV')
+                        !---- Tree felling: Survivorship of small trees. ------------------!
+                        read (cdum, fmt=*) (felling_s_ltharv    (h),h=1,nharvest)
+                        !------------------------------------------------------------------!
+                     case ('FELLING_S_GTHARV','FELLING.S.GTHARV')
+                        !------------------------------------------------------------------!
+                        !    Tree felling: Survivorship of large trees.  Leaving this as   !
+                        ! a future option, though there is no strong reason to make this   !
+                        ! survivorship anything other than 0.                              !
+                        !------------------------------------------------------------------!
+                        read (cdum, fmt=*) (felling_s_gtharv    (h),h=1,nharvest)
+                        !------------------------------------------------------------------!
+                     case ('THIN_DBH_THRESH','THIN.DBH.THRESH'                             &
+                          ,'THINNING_DBH_THRESH','THINNING.DBH.THRESH')
+                        !---- Canopy thinning: DBH threshold for small/large tree. --------!
+                        read (cdum, fmt=*) (thinning_dbh_thresh (h),h=1,nharvest)
+                        !------------------------------------------------------------------!
+                     case ('THIN_S_GTHARV','THIN.S.GTHARV'                                 &
+                          ,'THINNING_S_GTHARV','THINNING.S.GTHARV')
+                        !---- Canopy thinning: Survivorship of large trees. ---------------!
+                        read (cdum, fmt=*) (thinning_s_gtharv   (h),h=1,nharvest)
+                        !------------------------------------------------------------------!
+                     case ('THIN_S_LTHARV','THIN.S.LTHARV'                                 &
+                          ,'THINNING_S_LTHARV','THINNING.S.LTHARV')
+                        !---- Canopy thinning: Survivorship of small trees. ---------------!
+                        read (cdum, fmt=*) (thinning_s_ltharv   (h),h=1,nharvest)
                         !------------------------------------------------------------------!
                      case ('SKID_DBH_THRESH','SKID.DBH.THRESH')
                         !---- Skid damage: DBH threshold for small/large tree. ------------!
@@ -484,18 +541,6 @@ module landuse_init
                      case ('SKID_S_LTHARV','SKID.S.LTHARV')
                         !---- Skid damage: Survivorship of small trees. -------------------!
                         read (cdum, fmt=*) (skid_s_ltharv   (h),h=1,nharvest)
-                        !------------------------------------------------------------------!
-                     case ('FELLING_S_LTHARV','FELLING.S.LTHARV')
-                        !---- Tree felling: Survivorship of small trees. ------------------!
-                        read (cdum, fmt=*) (felling_s_ltharv(h),h=1,nharvest)
-                        !------------------------------------------------------------------!
-                     case ('FELLING_S_GTHARV','FELLING.S.GTHARV')
-                        !------------------------------------------------------------------!
-                        !    Tree felling: Survivorship of large trees.  Leaving this as   !
-                        ! a future option, though there is no strong reason to make this   !
-                        ! survivorship anything other than 0.                              !
-                        !------------------------------------------------------------------!
-                        read (cdum, fmt=*) (felling_s_gtharv(h),h=1,nharvest)
                         !------------------------------------------------------------------!
                      case default
                         !----- Key is not recognised. Stop the model. ---------------------!
@@ -512,9 +557,10 @@ module landuse_init
                   !------------------------------------------------------------------------!
                else
                   !------------------------------------------------------------------------!
-                  !     No specific PFT information was given, this is likely to be a case !
-                  ! in which the logging is based on absolute target biomass (PFT- and     !
-                  ! DBH-blind).                                                            !
+                  !     No specific PFT information was given. This is likely an old file. !
+                  ! Back then all logging was assumed to be clear-cut for all PFTs, set    !
+                  ! parameters to be based on absolute target biomass. Set all tree PFTs   !
+                  ! to behave like clear cut, for back compatibility.                      !
                   !------------------------------------------------------------------------!
                   h = 0
                   nopftloop: do ipft=1,n_pft
@@ -524,16 +570,19 @@ module landuse_init
 
 
                      !----- Fill in with default. -----------------------------------------!
-                     h                   = h + 1
-                     mindbh_slog     (h) = 0.
-                     harvprob_slog   (h) = 1.
-                     mindbh_fplt     (h) = 0.
-                     harvprob_fplt   (h) = 1.
-                     skid_dbh_thresh (h) = sl_skid_dbh_thresh
-                     skid_s_gtharv   (h) = sl_skid_s_gtharv
-                     skid_s_ltharv   (h) = sl_skid_s_ltharv
-                     felling_s_ltharv(h) = sl_felling_s_ltharv
-                     felling_s_gtharv(h) = 0.
+                     h                       = h + 1
+                     mindbh_felling      (h) = 0.
+                     prob_harv_felling   (h) = 1.
+                     mindbh_plantation   (h) = 0.
+                     prob_harv_plantation(h) = 1.
+                     felling_s_ltharv    (h) = 0.
+                     felling_s_gtharv    (h) = 0.
+                     thinning_dbh_thresh (h) = 0.
+                     thinning_s_gtharv   (h) = 0.
+                     thinning_s_ltharv   (h) = 0.
+                     skid_dbh_thresh     (h) = 0.
+                     skid_s_gtharv       (h) = 0.
+                     skid_s_ltharv       (h) = 0.
                      !---------------------------------------------------------------------!
                   end do nopftloop
                   !------------------------------------------------------------------------!
@@ -594,24 +643,36 @@ module landuse_init
                   !------------------------------------------------------------------------!
 
 
+                  !------------------------------------------------------------------------!
+                  !     Set some PFT-independent canopy thinning instructions: the         !
+                  ! fraction of area previously logged where canopy thinning will occur,   !
+                  ! and the time (age) offset to apply thinning. The minimum offset is one !
+                  ! year. If the offset is set to zero, then we will assume 1.  Likewise,  !
+                  ! the maximum fraction allowed is 1.                                     !
+                  !------------------------------------------------------------------------!
+                  cpoly%thinning_frac_area (isi) = min(1.0,thinning_frac_area )
+                  cpoly%thinning_age_offset(isi) = max(1.0,thinning_age_offset)
+                  !------------------------------------------------------------------------!
+
+
                   !----- Fill the arrays with the appropriate PFT. ------------------------!
                   select case(cpoly%plantation(isi))
                   case (0)
-                     harvloop_slog: do h=1,nharvest
+                     harvloop_felling: do h=1,nharvest
                         ipft = harvest_pft(h)
                         if (ipft >= 1 .and. ipft <= n_pft) then
-                           cpoly%mindbh_harvest(ipft,isi) = mindbh_slog  (h)
-                           cpoly%prob_harvest  (ipft,isi) = harvprob_slog(h)
+                           cpoly%mindbh_felling(ipft,isi) = mindbh_felling   (h)
+                           cpoly%prob_felling  (ipft,isi) = prob_harv_felling(h)
                         end if
-                     end do harvloop_slog
+                     end do harvloop_felling
                   case (1)
-                     harvloop_fplt: do h=1,nharvest
+                     harvloop_plantation: do h=1,nharvest
                         ipft = harvest_pft(h)
                         if (ipft >= 1 .and. ipft <= n_pft) then
-                           cpoly%mindbh_harvest(ipft,isi) = mindbh_fplt  (h)
-                           cpoly%prob_harvest  (ipft,isi) = harvprob_fplt(h)
+                           cpoly%mindbh_felling(ipft,isi) = mindbh_plantation   (h)
+                           cpoly%prob_felling  (ipft,isi) = prob_harv_plantation(h)
                         end if
-                     end do harvloop_fplt
+                     end do harvloop_plantation
                   end select
                   !------------------------------------------------------------------------!
 
@@ -624,11 +685,14 @@ module landuse_init
                   skidloop_site: do h=1,nharvest
                      ipft = harvest_pft(h)
                      if (ipft >= 1 .and. ipft <= n_pft) then
-                        cpoly%skid_dbh_thresh (ipft,isi) = skid_dbh_thresh (h)
-                        cpoly%skid_s_gtharv   (ipft,isi) = skid_s_gtharv   (h)
-                        cpoly%skid_s_ltharv   (ipft,isi) = skid_s_ltharv   (h)
-                        cpoly%felling_s_ltharv(ipft,isi) = felling_s_ltharv(h)
-                        cpoly%felling_s_gtharv(ipft,isi) = felling_s_gtharv(h)
+                        cpoly%felling_s_ltharv   (ipft,isi) = felling_s_ltharv   (h)
+                        cpoly%felling_s_gtharv   (ipft,isi) = felling_s_gtharv   (h)
+                        cpoly%thinning_dbh_thresh(ipft,isi) = thinning_dbh_thresh(h)
+                        cpoly%thinning_s_gtharv  (ipft,isi) = thinning_s_gtharv  (h)
+                        cpoly%thinning_s_ltharv  (ipft,isi) = thinning_s_ltharv  (h)
+                        cpoly%skid_dbh_thresh    (ipft,isi) = skid_dbh_thresh    (h)
+                        cpoly%skid_s_gtharv      (ipft,isi) = skid_s_gtharv      (h)
+                        cpoly%skid_s_ltharv      (ipft,isi) = skid_s_ltharv      (h)
                      end if
                   end do skidloop_site
                   !------------------------------------------------------------------------!
@@ -693,14 +757,23 @@ module landuse_init
                      !---------------------------------------------------------------------!
 
 
+                     !----- Define canopy thinning instructions. --------------------------!
+                     cpoly%thinning_frac_area (isi) = cpoly%thinning_frac_area (1)
+                     cpoly%thinning_age_offset(isi) = cpoly%thinning_age_offset(1)
+                     !---------------------------------------------------------------------!
+
+
                      !----- PFT-dependent harvest characteristics. ------------------------!
-                     cpoly%mindbh_harvest  (:,isi) = cpoly%mindbh_harvest  (:,1)
-                     cpoly%prob_harvest    (:,isi) = cpoly%prob_harvest    (:,1)
-                     cpoly%skid_dbh_thresh (:,isi) = cpoly%skid_dbh_thresh (:,1)
-                     cpoly%skid_s_gtharv   (:,isi) = cpoly%skid_s_gtharv   (:,1)
-                     cpoly%skid_s_ltharv   (:,isi) = cpoly%skid_s_ltharv   (:,1)
-                     cpoly%felling_s_ltharv(:,isi) = cpoly%felling_s_ltharv(:,1)
-                     cpoly%felling_s_gtharv(:,isi) = cpoly%felling_s_gtharv(:,1)
+                     cpoly%mindbh_felling      (:,isi) = cpoly%mindbh_felling      (:,1)
+                     cpoly%prob_felling        (:,isi) = cpoly%prob_felling        (:,1)
+                     cpoly%felling_s_gtharv    (:,isi) = cpoly%felling_s_gtharv    (:,1)
+                     cpoly%felling_s_ltharv    (:,isi) = cpoly%felling_s_ltharv    (:,1)
+                     cpoly%thinning_dbh_thresh (:,isi) = cpoly%thinning_dbh_thresh (:,1)
+                     cpoly%thinning_s_gtharv   (:,isi) = cpoly%thinning_s_gtharv   (:,1)
+                     cpoly%thinning_s_ltharv   (:,isi) = cpoly%thinning_s_ltharv   (:,1)
+                     cpoly%skid_dbh_thresh     (:,isi) = cpoly%skid_dbh_thresh     (:,1)
+                     cpoly%skid_s_gtharv       (:,isi) = cpoly%skid_s_gtharv       (:,1)
+                     cpoly%skid_s_ltharv       (:,isi) = cpoly%skid_s_ltharv       (:,1)
                      !---------------------------------------------------------------------!
 
 
@@ -744,14 +817,19 @@ module landuse_init
                   do isi = 1,cpoly%nsites
                      cpoly%clutimes(1,isi)%landuse_year            = iyeara
                      cpoly%clutimes(1,isi)%landuse(1:num_lu_trans) = 0.0
-                     cpoly%skid_rel_area     (isi)                 = 0.
-                     cpoly%mindbh_harvest  (:,isi)                 = huge_dbh
-                     cpoly%prob_harvest    (:,isi)                 = 0.
-                     cpoly%skid_dbh_thresh (:,isi)                 = huge_dbh
-                     cpoly%skid_s_gtharv   (:,isi)                 = 1.
-                     cpoly%skid_s_ltharv   (:,isi)                 = 1.
-                     cpoly%felling_s_ltharv(:,isi)                 = 1.
-                     cpoly%felling_s_gtharv(:,isi)                 = 1.
+                     cpoly%skid_rel_area                     (isi) = 0.
+                     cpoly%thinning_frac_area                (isi) = 0.
+                     cpoly%thinning_age_offset               (isi) = huge_num
+                     cpoly%mindbh_felling                  (:,isi) = huge_dbh
+                     cpoly%prob_felling                    (:,isi) = 0.
+                     cpoly%felling_s_gtharv                (:,isi) = 1.
+                     cpoly%felling_s_ltharv                (:,isi) = 1.
+                     cpoly%thinning_dbh_thresh             (:,isi) = huge_dbh
+                     cpoly%thinning_s_gtharv               (:,isi) = 1.
+                     cpoly%thinning_s_ltharv               (:,isi) = 1.
+                     cpoly%skid_dbh_thresh                 (:,isi) = huge_dbh
+                     cpoly%skid_s_gtharv                   (:,isi) = 1.
+                     cpoly%skid_s_ltharv                   (:,isi) = 1.
                   end do
                end if
                !---------------------------------------------------------------------------!
@@ -760,246 +838,12 @@ module landuse_init
                !----- Close the land use file, outside the if statement. ------------------!
                close(unit=12,status='keep')
                !---------------------------------------------------------------------------!
-
-            case (2)
-               !---------------------------------------------------------------------------!
-               !      Make the land use data based on ED2IN.                               !
-               !      Work with the first site, then copy the data to the others.          !
-               !---------------------------------------------------------------------------!
-               isi   = 1
-               csite => cpoly%site(isi)
-               !---------------------------------------------------------------------------!
-
-
-               !----- No plantations. -----------------------------------------------------!
-               cpoly%plantation(:) = 0
-               !---------------------------------------------------------------------------!
-
-
-
-               !----- Determine the number of disturbance years. --------------------------!
-               cpoly%num_landuse_years(isi) = sim_years
-               !---------------------------------------------------------------------------!
-
-
-
-               !----- File exists, allocate the maximum number of years. ------------------!
-               allocate(cpoly%clutimes(sim_years,cpoly%nsites))
-               !---------------------------------------------------------------------------!
-
-
-               !----- Define the degree of damage relative to felling. --------------------!
-               cpoly%skid_rel_area(isi) = cpoly%skid_rel_area(1)
-               !---------------------------------------------------------------------------!
-
-
-               !----- Initialise the PFT-dependent arrays. --------------------------------!
-               cpoly%mindbh_harvest  (:,isi) = huge_dbh
-               cpoly%prob_harvest    (:,isi) = 0.
-               cpoly%skid_dbh_thresh (:,isi) = merge(huge_dbh,sl_skid_dbh_thresh           &
-                                                                              ,is_grass(:))
-               cpoly%skid_s_gtharv   (:,isi) = merge( 1.00,sl_skid_s_gtharv   ,is_grass(:))
-               cpoly%skid_s_ltharv   (:,isi) = merge( 1.00,sl_skid_s_ltharv   ,is_grass(:))
-               cpoly%felling_s_gtharv(:,isi) = merge( 0.70,            0.00   ,is_grass(:))
-               cpoly%felling_s_ltharv(:,isi) = merge( 0.70,sl_felling_s_ltharv,is_grass(:))
-               !---------------------------------------------------------------------------!
-
-
-
-               !------ Find the number of PFT that can be harvested. ----------------------!
-               nharvest = count(sl_pft >= 1 .and. sl_pft <= n_pft)
-               !---------------------------------------------------------------------------!
-
-               !----- Fill the arrays with the appropriate PFT. ---------------------------!
-               harvloop_two: do h=1,nharvest
-                  ipft = sl_pft(h)
-                  if (ipft >= 1 .and. ipft <= n_pft) then
-                     cpoly%mindbh_harvest(ipft,isi) = sl_mindbh_harvest(h)
-                     cpoly%prob_harvest  (ipft,isi) = sl_prob_harvest  (h)
-                  end if
-               end do harvloop_two
-               !---------------------------------------------------------------------------!
-
-
-
-               !---------------------------------------------------------------------------!
-               !      Fill in the disturbance matrices and biomass target.                 !
-               !---------------------------------------------------------------------------!
-               iyear = 0
-               do yd_this = iyeara,iyearz
-                  iyear = iyear + 1
-                  clutime => cpoly%clutimes(iyear,isi)
-
-                  clutime%landuse_year            = yd_this
-                  clutime%landuse(1:num_lu_trans) = 0.
-
-                  !------------------------------------------------------------------------!
-                  !     Decide whether to include logging disturbance in this year.        !
-                  !------------------------------------------------------------------------!
-                  if (yd_this >= sl_yr_first) then
-                     if ( (sl_scale == 1) .or. (mod(yd_this-sl_yr_first,sl_nyrs) == 0) )   &
-                     then
-                        clutime%landuse(11) = lnexp_max
-                        clutime%landuse(12) = -1.0
-                        clutime%landuse(14) = -1.0
-                     end if
-                  end if
-                  !------------------------------------------------------------------------!
-               end do
-               !---------------------------------------------------------------------------!
-
-
-               !---------------------------------------------------------------------------!
-               !      Copy the information from the first site to the others.              !
-               !---------------------------------------------------------------------------!
-               siteloop_two: do isi = 2,cpoly%nsites
-                  csite => cpoly%site(isi)
-
-                  !----- Determine the number of disturbance years. -----------------------!
-                  cpoly%num_landuse_years(isi) = cpoly%num_landuse_years(1)
-                  !------------------------------------------------------------------------!
-
-
-                  !----- Define the degree of damage relative to felling. -----------------!
-                  cpoly%skid_rel_area(isi) = cpoly%skid_rel_area(1)
-                  !------------------------------------------------------------------------!
-
-
-                  !----- PFT-dependent harvest characteristics. ---------------------------!
-                  cpoly%mindbh_harvest  (:,isi) = cpoly%mindbh_harvest  (:,1)
-                  cpoly%prob_harvest    (:,isi) = cpoly%prob_harvest    (:,1)
-                  cpoly%skid_dbh_thresh (:,isi) = cpoly%skid_dbh_thresh (:,1)
-                  cpoly%skid_s_gtharv   (:,isi) = cpoly%skid_s_gtharv   (:,1)
-                  cpoly%skid_s_ltharv   (:,isi) = cpoly%skid_s_ltharv   (:,1)
-                  cpoly%felling_s_gtharv(:,isi) = cpoly%felling_s_gtharv(:,1)
-                  cpoly%felling_s_ltharv(:,isi) = cpoly%felling_s_ltharv(:,1)
-                  !------------------------------------------------------------------------!
-
-
-
-                  !----- Disturbances. ----------------------------------------------------!
-                  do iyear = 1,cpoly%num_landuse_years(isi)
-                     clutime   => cpoly%clutimes(iyear,isi)
-                     onelutime => cpoly%clutimes(iyear,1)
-                     clutime%landuse_year            = onelutime%landuse_year 
-                     clutime%landuse(1:num_lu_trans) = onelutime%landuse(1:num_lu_trans)
-                  end do
-                  !------------------------------------------------------------------------!
-
-               end do siteloop_two
             end select
-            !------------------------------------------------------------------------------!
-
-
-            !------------------------------------------------------------------------------!
-            !       Write a table somewhat similar to lu file.                             !
-            !------------------------------------------------------------------------------!
-            if (write_lu_settings) then
-               cpoly   => cgrid%polygon(ipy)
-               isi     = 1
-            
-               wlon    = 0.1 * real(nint(10.*cgrid%lon(ipy))) - 0.5
-               elon    = 0.1 * real(nint(10.*cgrid%lon(ipy))) + 0.5
-               slat    = 0.1 * real(nint(10.*cgrid%lat(ipy))) - 0.5
-               nlat    = 0.1 * real(nint(10.*cgrid%lat(ipy))) + 0.5
-               lu_area = solid_area(wlon,slat,elon,nlat)
-               
-               !---------------------------------------------------------------------------!
-               !      Find which PFTs to harvest.  If none is provided, we skip this part  !
-               ! of the header.                                                            !
-               !---------------------------------------------------------------------------!
-               nharvest = count(cpoly%prob_harvest(:,isi) > 0.0)
-               write(hifmt,fmt='(a,i2.2,a)') '(a,',nharvest,'(i2,1x))'
-               write(hffmt,fmt='(a,i2.2,a)') '(a,',nharvest,'(f8.3,1x))'
-               h = 0
-               do ipft=1,n_pft
-                  if (cpoly%prob_harvest(ipft,isi) > 0.0) then
-                     h = h + 1
-                     harvest_pft     (h) = ipft
-                     mindbh_slog     (h) = cpoly%mindbh_harvest  (ipft,isi)
-                     harvprob_slog   (h) = cpoly%prob_harvest    (ipft,isi)
-                     mindbh_fplt     (h) = cpoly%mindbh_harvest  (ipft,isi)
-                     harvprob_fplt   (h) = cpoly%prob_harvest    (ipft,isi)
-                     skid_dbh_thresh (h) = cpoly%skid_dbh_thresh (ipft,isi)
-                     skid_s_gtharv   (h) = cpoly%skid_s_gtharv   (ipft,isi)
-                     skid_s_ltharv   (h) = cpoly%skid_s_ltharv   (ipft,isi)
-                     felling_s_ltharv(h) = cpoly%felling_s_ltharv(ipft,isi)
-                     felling_s_gtharv(h) = cpoly%felling_s_gtharv(ipft,isi)
-                  end if
-               end do
-               !---------------------------------------------------------------------------!
-
-
-
-               !---------------------------------------------------------------------------!
-               !      Write the LU-like file.                                              !
-               !---------------------------------------------------------------------------!
-
-
-
-               !---------------------------------------------------------------------------!
-               !      Write the LU-like file.                                              !
-               !---------------------------------------------------------------------------!
-               open(unit=16,file=trim(lu_table),status='replace',action='write')
-               write(unit=16,fmt='(a,1x,f8.3)' ) 'WEST_LONGITUDE = ',wlon
-               write(unit=16,fmt='(a,1x,f8.3)' ) 'EAST_LONGITUDE = ',elon
-               write(unit=16,fmt='(a,1x,f8.3)' ) 'SOUTH_LATITUDE = ',slat
-               write(unit=16,fmt='(a,1x,f8.3)' ) 'NORTH_LATITUDE = ',nlat
-               write(unit=16,fmt='(a,1x,f20.5)') 'BLOCK_AREA     = ',lu_area
-               write(unit=16,fmt='(a,1x,i4.4)' ) 'FIRST_LUYEAR   = ',iyeara
-               write(unit=16,fmt='(a,1x,i4.4)' ) 'LAST_LUYEAR    = ',iyearz
-               write(unit=16,fmt='(a,1x,f8.3)' ) 'SKID_AREA      = ',skid_rel_area
-               write(unit=16,fmt='(a,1x,i2)'   ) 'N_PFT_HARVEST  = ',nharvest
-               if (nharvest > 0) then
-                  write(unit=16,fmt=hifmt)                                                 &
-                                   'HARVEST_PFT      = ',(harvest_pft     (h),h=1,nharvest)
-                  write(unit=16,fmt=hffmt)                                                 &
-                                   'MINDBH_SLOG      = ',(mindbh_slog     (h),h=1,nharvest)
-                  write(unit=16,fmt=hffmt)                                                 &
-                                   'HARVPROB_SLOG    = ',(harvprob_slog   (h),h=1,nharvest)
-                  write(unit=16,fmt=hffmt)                                                 &
-                                   'MINDBH_FPLT      = ',(mindbh_fplt     (h),h=1,nharvest)
-                  write(unit=16,fmt=hffmt)                                                 &
-                                   'HARVPROB_FPLT    = ',(harvprob_fplt   (h),h=1,nharvest)
-                  write(unit=16,fmt=hffmt)                                                 &
-                                   'SKID_DBH_THRESH  = ',(skid_dbh_thresh (h),h=1,nharvest)
-                  write(unit=16,fmt=hffmt)                                                 &
-                                   'SKID_S_GTHARV    = ',(skid_s_gtharv   (h),h=1,nharvest)
-                  write(unit=16,fmt=hffmt)                                                 &
-                                   'SKID_S_LTHARV    = ',(skid_s_ltharv   (h),h=1,nharvest)
-                  write(unit=16,fmt=hffmt)                                                 &
-                                   'FELLING_S_LTHARV = ',(felling_s_ltharv(h),h=1,nharvest)
-                  write(unit=16,fmt=hffmt)                                                 &
-                                   'FELLING_S_GTHARV = ',(felling_s_gtharv(h),h=1,nharvest)
-               end if
-               write(unit=16,fmt='(a,19(1x,a))')  'YEAR','     CPL_PST','     PST_CPL'     &
-                          ,'     PST_VEG','     VEG_PST','     VEG_CLP','     CPL_VEG'     &
-                          ,'     SEC_CPL','     CPL_SEC','     SEC_PST','     PST_SEC'     &
-                          ,'     VEG_SEC','  BT_MAT_SEC','  FL_MAT_SEC','  BT_MAT_VEG'     &
-                          ,'  FL_MAT_VEG','  BT_YNG_SEC','  FL_YNG_SEC','  BT_YNG_VEG'     &
-                          ,'  FL_YNG_VEG'
-               !----- Disturbances. -------------------------------------------------------!
-               do iyear = 1,cpoly%num_landuse_years(isi)
-                  clutime     => cpoly%clutimes(iyear,isi)
-                  landuse_now =  clutime%landuse
-                  if (landuse_now(12) > 0.) landuse_now(12) = lu_area * landuse_now(12)
-                  if (landuse_now(14) > 0.) landuse_now(14) = lu_area * landuse_now(14)
-                  landuse_now(16) = lu_area * landuse_now(16)
-                  landuse_now(18) = lu_area * landuse_now(18)
-
-                  write(unit=16,fmt='(i4.4,19(1x,es12.5))')                                &
-                                     clutime%landuse_year,(landuse_now(h),h=1,num_lu_trans)
-                  !------------------------------------------------------------------------!
-               end do
-               close(unit=16,status='keep')
-               !---------------------------------------------------------------------------!
-            end if
             !------------------------------------------------------------------------------!
          end do polyloop
          !---------------------------------------------------------------------------------!
       end do gridloop
       !------------------------------------------------------------------------------------!
-
       return
    end subroutine read_landuse_matrix
    !=======================================================================================!

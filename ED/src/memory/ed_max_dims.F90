@@ -192,11 +192,12 @@ module ed_max_dims
    ! 3 -- Tree fall.                                                                       !
    ! 4 -- Fire.                                                                            !
    ! 5 -- Forest regrowth.                                                                 !
-   ! 6 -- Logged forest (felling).                                                         !
+   ! 6 -- Logged forest (tree felling).                                                    !
    ! 7 -- Logged forest (skid trail + road).                                               !
-   ! 8 -- Cropland.                                                                        !
+   ! 8 -- Logged forest (mechanical canopy thinning).                                      !
+   ! 9 -- Cropland.                                                                        !
    !---------------------------------------------------------------------------------------!
-   integer, parameter :: n_dist_types = 8
+   integer, parameter :: n_dist_types = 9
    !---------------------------------------------------------------------------------------!
 
 

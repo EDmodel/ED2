@@ -251,7 +251,7 @@ module reproduction
                            cpoly%min_monthly_temp(isi) >= plant_min_temp(ipft) - 5.0 .and. &
                            repro_scheme                /= 0
                         !------------------------------------------------------------------!
-                     case (8)
+                     case (9)
                         !----- Cropland. --------------------------------------------------!
                         allow_pft =                                                        &
                            include_pft_ag(ipft)                                      .and. &
@@ -756,7 +756,7 @@ module reproduction
                            repro_scheme                /= 0
                         !------------------------------------------------------------------!
 
-                     case (8)
+                     case (9)
                         !----- Cropland. --------------------------------------------------!
                         allow_pft =                                                        &
                            include_pft_ag(ipft)                                      .and. &
@@ -1047,7 +1047,7 @@ module reproduction
                         repro_scheme                /= 0
                      !---------------------------------------------------------------------!
 
-                  case (8)
+                  case (9)
                      !----- Cropland. -----------------------------------------------------!
                      allow_pft =                                                           &
                         include_pft_ag(ipft)                                      .and.    &

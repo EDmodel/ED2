@@ -665,9 +665,10 @@ $ED_NL
    !  SLCOL_DATABASE   -- If ISLCOLFLG=1, this variable specifies the path and prefix of   !
    !                      soil colour data base.                                           !
    !  LU_DATABASE      -- land-use change disturbance rates database, used only when       !
-   !                      IANTH_DISTURB is set to 1.  Fill with the path and the prefix.   !
+   !                      IANTH_DISTURB is set to 1 or 2.  Fill with the path and the      !
+   !                      prefix.                                                          !
    !  PLANTATION_FILE  -- Character string for the path to the forest plantation fraction  !
-   !                      file.  This is used only when IANTH_DISTURB is set to 1 and      !
+   !                      file.  This is used only when IANTH_DISTURB is set to 1 or 2 and !
    !                      the user wants to simulate forest plantations.  Otherwise, leave !
    !                      it empty (PLANTATION_FILE='')                                    !
    !  THSUMS_DATABASE  -- input directory with dataset to initialise chilling-degree and   !
@@ -1374,43 +1375,11 @@ $ED_NL
    !  IANTH_DISTURB -- This flag controls whether to include anthropogenic disturbances    !
    !                   such as land clearing, abandonment, and logging.                    !
    !                   0.  No anthropogenic disturbance.                                   !
-   !                   1.  Use anthropogenic disturbance dataset (ED-2.2 default when      !
-   !                       anthropogenic disturbance is sought).                           !
-   !                   2.  Site-specific forest plantation or selective logging cycle.     !
-   !                       (Longo et al., in prep.) (Beta)                                 !
-   !                                                                                       !
-   ! The following variables are used only when IANTH_DISTURB is 2.                        !
-   !                                                                                       !
-   ! SL_SCALE           -- This flag assumes whether the simulation scale is local or      !
-   !                       landscape.  This controls the recurrence of logging.            !
-   !                       0.  Local. The simulation represents one logging unit.  Apply   !
-   !                           logging only once every SL_NYRS                             !
-   !                       1.  Landscape.  The simulation represents a landscape. Logging  !
-   !                           occurs every year but it is restricted to patches with age  !
-   !                           greater than or equal to SL_NYRS                            !
-   ! SL_YR_FIRST        -- The first year to apply logging.  In case IANTH_DISTURB is 2 it !
-   !                       must be a simulation year (i.e. between IYEARA and IYEARZ).     !
-   ! SL_NYRS            -- This variable defines the logging cycle, in years (see variable !
-   !                       SL_SCALE above)                                                 !
-   ! SL_PFT             -- PFTs that can be harvested.                                     !
-   ! SL_PROB_HARVEST    -- Logging intensity (one value for each PFT provided in SL_PFT).  !
-   !                       Values should be between 0.0 and 1.0, with 0 meaning no         !
-   !                       removal, and 1 removal of all trees needed to meet demands.     !
-   ! SL_MINDBH_HARVEST  -- Minimum DBH for logging (one value for each PFT provided in     !
-   !                       SL_PFT).                                                        !
-   ! SL_BIOMASS_HARVEST -- Target biomass to be harvested in each cycle, in kgC/m2.  If    !
-   !                       zero, then all trees that meet the minimum DBH and minimum      !
-   !                       patch age will be logged.  In case you don't want logging to    !
-   !                       occur, don't set this value to zero! Instead, set IANTH_DISTURB !
-   !                       to zero.                                                        !
-   !                                                                                       !
-   ! The following variables are used when IANTH_DISTURB is 1 or 2.                        !
-   !                                                                                       !
-   ! SL_SKID_REL_AREA    -- area damaged by skid trails (relative to felled area).         !
-   ! SL_SKID_DBH_THRESH  -- DBH threshold for damage caused in skid trails.                !
-   ! SL_SKID_S_GTHARV    -- survivorship of trees with DBH > MINDBH in skid trails.        !
-   ! SL_SKID_S_LTHARV    -- survivorship of trees with DBH < MINDBH in skid trails.        !
-   ! SL_FELLING_S_LTHARV -- survivorship of trees with DBH < MINDBH in felling gaps.       !
+   !                   1.  Use anthropogenic disturbance datasets, with either mass-based  !
+   !                       harvesting targets, or selective logging when the target is -1  !
+   !                       (ED-2.2 default when anthropogenic disturbance is sought).      !
+   !                   2.  Use anthropogenic disturbance datasets, with area-based         !
+   !                       harvesting targets (beta).                                      !
    !                                                                                       !
    ! Cropland variables, used when IANTH_DISTURB is 1 or 2.                                !
    !                                                                                       !

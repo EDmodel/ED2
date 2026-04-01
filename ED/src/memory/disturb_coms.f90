@@ -68,9 +68,21 @@ module disturb_coms
    !---- Maximum height for non-grass cohort to be considered part of fuel. ---------------!
    real :: fuel_height_max
 
+!    
+!    ! FROM MARCOS
+!    !----- Fractions of fast and structural carbon and nitrogen lost through combustion. ---!
+!    real :: f_combusted_fast_c
+!    real :: f_combusted_struct_c
+!    real :: f_combusted_fast_n
+!    real :: f_combusted_struct_n
+!    !---- Maximum height for non-grass cohort to be considered part of fuel. ---------------!
+!    real :: fuel_height_max
+
    !---------------------------------------------------------------------------------------!
-   !     Anthropogenic disturbance.  1 means that anthropogenic disturbances will be       !
-   ! included, whereas 0 means that it won't.                                              !
+   !     Anthropogenic disturbance.                                                        !
+   ! 0. No anthropogenic disturbance                                                       !
+   ! 1. Anthropogenic disturbances; harvest based on biomass                               !
+   ! 2. Anthropogenic disturbances; forest harvest based on land area                      !
    !---------------------------------------------------------------------------------------!
    integer :: ianth_disturb
    !---------------------------------------------------------------------------------------!
@@ -111,58 +123,12 @@ module disturb_coms
 
 
    !---------------------------------------------------------------------------------------!
-   !      Selective logging characteristics (when IANTH_DISTURB is set to 2).  Included in !
-   ! ED2IN because selective logging is site-dependent.  Variable description.             !
-   !                                                                                       !
-   ! SL_SCALE           -- This flag assumes whether the simulation scale is local or      !
-   !                       landscape.  This controls the recurrence of logging.            !
-   !                       0.  Local. The simulation represents one logging unit.  Apply   !
-   !                           logging only once every SL_NYRS                             !
-   !                       1.  Landscape.  The simulation represents a landscape. Logging  !
-   !                           occurs every year but it is restricted to patches with age  !
-   !                           greater than or equal to SL_NYRS                            !
-   ! SL_YR_FIRST        -- The first year to apply logging.  In case IANTH_DISTURB is 2 it !
-   !                       must be a simulation year (i.e. between IYEARA and IYEARZ).     !
-   ! SL_NYRS            -- This variable defines the logging cycle, in years (see variable !
-   !                       SL_SCALE above)                                                 !
-   ! SL_PFT             -- PFTs that can be harvested.                                     !
-   ! SL_PROB_HARVEST    -- Logging intensity (one value for each PFT provided in SL_PFT).  !
-   !                       Values should be between 0.0 and 1.0, with 0 meaning no         !
-   !                       removal, and 1 removal of all trees needed to meet demands.     !
-   ! SL_MINDBH_HARVEST  -- Minimum DBH for logging (one value for each PFT provided in     !
-   !                       SL_PFT).                                                        !
-   ! SL_BIOMASS_HARVEST -- Target biomass to be harvested in each cycle, in kgC/m2.  If    !
-   !                       zero, then all trees that meet the minimum DBH and minimum      !
-   !                       patch age will be logged.  In case you don't want logging to    !
-   !                       occur, don't set this value to zero! Instead, set IANTH_DISTURB !
-   !                       to zero.                                                        !
-   !                                                                                       !
-   ! The following variables are used when IANTH_DISTURB is 1 or 2.                        !
-   !                                                                                       !
-   ! SL_SKID_REL_AREA    -- area damaged by skid trails (relative to felled area).         !
-   ! SL_SKID_DBH_THRESH  -- DBH threshold for damage caused in skid trails.                !
-   ! SL_SKID_S_GTHARV    -- survivorship of trees with DBH > MINDBH in skid trails.        !
-   ! SL_SKID_S_LTHARV    -- survivorship of trees with DBH < MINDBH in skid trails.        !
-   ! SL_FELLING_S_LTHARV -- survivorship of trees with DBH < MINDBH in felling gaps.       !
-   !                                                                                       !
    ! Cropland variables, used when IANTH_DISTURB is 1 or 2.                                !
    !                                                                                       !
    ! CL_FSEEDS_HARVEST   -- fraction of seeds that is harvested.                           !
    ! CL_FSTORAGE_HARVEST -- fraction of non-structural carbon that is harvested.           !
    ! CL_FLEAF_HARVEST    -- fraction of leaves that is harvested in croplands.             !
    !---------------------------------------------------------------------------------------!
-   integer                        :: sl_scale
-   integer                        :: sl_yr_first
-   integer                        :: sl_nyrs
-   integer     , dimension(n_pft) :: sl_pft
-   real(kind=4), dimension(n_pft) :: sl_prob_harvest
-   real(kind=4), dimension(n_pft) :: sl_mindbh_harvest
-   real(kind=4)                   :: sl_biomass_harvest
-   real(kind=4)                   :: sl_skid_rel_area
-   real(kind=4)                   :: sl_skid_dbh_thresh
-   real(kind=4)                   :: sl_skid_s_gtharv
-   real(kind=4)                   :: sl_skid_s_ltharv
-   real(kind=4)                   :: sl_felling_s_ltharv
    real(kind=4)                   :: cl_fseeds_harvest
    real(kind=4)                   :: cl_fstorage_harvest
    real(kind=4)                   :: cl_fleaf_harvest

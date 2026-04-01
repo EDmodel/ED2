@@ -625,9 +625,10 @@ $ED_NL
    !  SOIL_DATABASE    -- soil database, used to determine the soil type.  Fill with the   !
    !                      path and the prefix.                                             !
    !  LU_DATABASE      -- land-use change disturbance rates database, used only when       !
-   !                      IANTH_DISTURB is set to 1.  Fill with the path and the prefix.   !
+   !                      IANTH_DISTURB is set to 1 or 2.  Fill with the path and the      !
+   !                      prefix.                                                          !
    !  PLANTATION_FILE  -- Character string for the path to the forest plantation fraction  !
-   !                      file.  This is used only when IANTH_DISTURB is set to 1 and      !
+   !                      file.  This is used only when IANTH_DISTURB is set to 1 or 2 and !
    !                      the user wants to simulate forest plantations.  Otherwise, leave !
    !                      it empty (PLANTATION_FILE='')                                    !
    !  THSUMS_DATABASE  -- input directory with dataset to initialise chilling-degree and   !
@@ -1284,12 +1285,22 @@ $ED_NL
    !  IANTH_DISTURB -- This flag controls whether to include anthropogenic disturbances    !
    !                   such as land clearing, abandonment, and logging.                    !
    !                   0.  No anthropogenic disturbance.                                   !
-   !                   1.  Use anthropogenic disturbance dataset (ED-2.2 default when      !
-   !                       anthropogenic disturbance is sought).                           !
-   !                   2.  Site-specific forest plantation or selective logging cycle.     !
-   !                       (Longo et al., in prep.) (Beta)                                 !
+   !                   1.  Use anthropogenic disturbance datasets, with either mass-based  !
+   !                       harvesting targets, or selective logging when the target is -1  !
+   !                       (ED-2.2 default when anthropogenic disturbance is sought).      !
+   !                   2.  Use anthropogenic disturbance datasets, with area-based         !
+   !                       harvesting targets (beta).                                      !
+   !                                                                                       !
+   ! Cropland variables, used when IANTH_DISTURB is 1 or 2.                                !
+   !                                                                                       !
+   ! CL_FSEEDS_HARVEST   -- fraction of seeds that is harvested.                           !
+   ! CL_FSTORAGE_HARVEST -- fraction of non-structural carbon that is harvested.           !
+   ! CL_FLEAF_HARVEST    -- fraction of leaves that is harvested in croplands.             !
    !---------------------------------------------------------------------------------------!
    NL%IANTH_DISTURB       = 0
+   NL%CL_FSEEDS_HARVEST   = 0.75
+   NL%CL_FSTORAGE_HARVEST = 0.00
+   NL%CL_FLEAF_HARVEST    = 0.00
    !---------------------------------------------------------------------------------------!
 
 
@@ -1382,6 +1393,8 @@ $ED_NL
    ! used in this simulation.                                                              !
    !                                                                                       !
    ! INCLUDE_THESE_PFT -- which PFTs to be considered for the simulation.                  !
+   ! PASTURE_STOCK     -- which PFT should be used for pastures                            !
+   !                      (used only when IANTH_DISTURB = 1 or 2)                          !
    ! AGRI_STOCK        -- which PFT should be used for agriculture                         !
    !                      (used only when IANTH_DISTURB = 1 or 2)                          !
    ! PLANTATION_STOCK  -- which PFT should be used for plantation                          !
@@ -1408,7 +1421,8 @@ $ED_NL
    ! 17 - (Beta) Lianas                                                                    !
    !---------------------------------------------------------------------------------------!
    NL%INCLUDE_THESE_PFT = 1,2,3,4,16
-   NL%AGRI_STOCK        = 16
+   NL%PASTURE_STOCK     = 1
+   NL%AGRI_STOCK        = 1
    NL%PLANTATION_STOCK  = 3
    !---------------------------------------------------------------------------------------!
 

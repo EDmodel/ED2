@@ -11,14 +11,9 @@ module ed_mem_alloc
    !---------------------------------------------------------------------------------------!
    subroutine ed_memory_allocation(proc_type)
 
-      use ed_max_dims         , only : n_pft                   & ! intent(in)
-                                     , n_dist_types            & ! intent(in)
-                                     , n_dbh                   & ! intent(in)
-                                     , maxgrds                 ! ! intent(in)
       use ed_state_vars       , only : gdpy                    & ! intent(in)
                                      , edgrid_g                & ! intent(out)
                                      , allocate_edglobals      & ! subroutine
-                                     , nullify_edtype          & ! subroutine
                                      , allocate_edtype         ! ! subroutine
       use grid_coms           , only : nnxp                    & ! intent(in)
                                      , nnyp                    & ! intent(in)

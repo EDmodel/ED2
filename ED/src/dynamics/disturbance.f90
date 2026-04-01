@@ -63,7 +63,8 @@ module disturbance
       use mortality           , only : disturbance_mortality      ! ! subroutine
       use consts_coms         , only : lnexp_max                  & ! intent(in)
                                      , tiny_num                   & ! intent(in)
-                                     , huge_num                   ! ! intent(in)
+                                     , huge_num                   & ! intent(in)
+                                     , almost_one                 ! ! intent(in)
       use forestry            , only : find_lambda_harvest        ! ! sub-routine
       use detailed_coms       , only : idetailed                  ! ! intent(in)
       use update_derived_utils, only : update_patch_thermo_props  & ! subroutine
@@ -115,9 +116,12 @@ module disturbance
       logical                                       :: disturbed
       logical                                       :: same_pft
       logical                                       :: is_primary
-      real   , dimension(n_pft)                     :: mindbh_harvest
+      real   , dimension(n_pft)                     :: mindbh_felling
       real   , dimension(n_pft)                     :: felling_s_gtharv
       real   , dimension(n_pft)                     :: felling_s_ltharv
+      real   , dimension(n_pft)                     :: thinning_dbh_thresh
+      real   , dimension(n_pft)                     :: thinning_s_gtharv
+      real   , dimension(n_pft)                     :: thinning_s_ltharv
       real   , dimension(n_pft)                     :: skid_dbh_thresh
       real   , dimension(n_pft)                     :: skid_s_gtharv
       real   , dimension(n_pft)                     :: skid_s_ltharv
@@ -139,8 +143,10 @@ module disturbance
       real                                          :: cb_water_np
       real                                          :: cb_co2_np
       logical                                       :: is_managed
+      logical                                       :: is_logged
       logical                                       :: is_oldgrowth
       logical                                       :: is_plantation
+      logical                                       :: time_to_thin
       logical                                       :: print_detailed
       !------------------------------------------------------------------------------------!
 
@@ -168,7 +174,7 @@ module disturbance
       !------------------------------------------------------------------------------------!
       !      nnsp_ble stands for the new number of site patches for big leaf.  Each site   !
       ! may have additional mypfts, except if land use is 1 (cropland/pasture), 2          !
-      ! (forest plantation), or 8 (cropland), in which case only one PFT is allowed.       !
+      ! (forest plantation), or 9 (cropland), in which case only one PFT is allowed.       !
       !------------------------------------------------------------------------------------!
       nnsp_ble = 3 + (n_dist_types - 3) * mypfts
       !------------------------------------------------------------------------------------!
@@ -227,12 +233,15 @@ module disturbance
             !------------------------------------------------------------------------------!
             !     Copy harvest and skid trail instructions to local variables.             !
             !------------------------------------------------------------------------------!
-            mindbh_harvest  (:) = cpoly%mindbh_harvest  (:,isi)
-            felling_s_gtharv(:) = cpoly%felling_s_gtharv(:,isi)
-            felling_s_ltharv(:) = cpoly%felling_s_ltharv(:,isi)
-            skid_dbh_thresh (:) = cpoly%skid_dbh_thresh (:,isi)
-            skid_s_gtharv   (:) = cpoly%skid_s_gtharv   (:,isi)
-            skid_s_ltharv   (:) = cpoly%skid_s_ltharv   (:,isi)
+            mindbh_felling     (:) = cpoly%mindbh_felling     (:,isi)
+            felling_s_gtharv   (:) = cpoly%felling_s_gtharv   (:,isi)
+            felling_s_ltharv   (:) = cpoly%felling_s_ltharv   (:,isi)
+            thinning_dbh_thresh(:) = cpoly%thinning_dbh_thresh(:,isi)
+            thinning_s_gtharv  (:) = cpoly%thinning_s_gtharv  (:,isi)
+            thinning_s_ltharv  (:) = cpoly%thinning_s_ltharv  (:,isi)
+            skid_dbh_thresh    (:) = cpoly%skid_dbh_thresh    (:,isi)
+            skid_s_gtharv      (:) = cpoly%skid_s_gtharv      (:,isi)
+            skid_s_ltharv      (:) = cpoly%skid_s_ltharv      (:,isi)
             !------------------------------------------------------------------------------!
 
 
@@ -274,7 +283,7 @@ module disturbance
 
             !------------------------------------------------------------------------------!
             !      Find the area to be harvested when biomass targets have been            !
-            ! established.                                                                 !
+            ! established.  Returns zero if ianth != 1                                     !
             !------------------------------------------------------------------------------!
             call find_lambda_harvest(cpoly,isi,onsp,lambda_harv_og_max,lambda_harvest)
             !------------------------------------------------------------------------------!
@@ -397,8 +406,10 @@ module disturbance
                ! sense that anything can potentially grow in there.                        !
                !---------------------------------------------------------------------------!
                old_lu       = csite%dist_type(ipa)
-               is_managed   = old_lu == 1 .or. old_lu == 2 .or. old_lu == 8
+               is_managed   = any(old_lu == [1,2,9])
+               is_logged    = any(old_lu == [2,6,7])
                is_oldgrowth = csite%age(ipa) >= min_oldgrowth(old_lu)
+               time_to_thin = abs(csite%age(ipa) - cpoly%thinning_age_offset(isi)) < 0.5
                !---------------------------------------------------------------------------!
 
                !---------------------------------------------------------------------------!
@@ -485,6 +496,21 @@ module disturbance
                   !----- No collateral damage, or no logging. -----------------------------!
                   lambda_now(7) = 0.0
                   !------------------------------------------------------------------------!
+               end if
+               !---------------------------------------------------------------------------!
+
+
+               !---------------------------------------------------------------------------!
+               !     Canopy thinning. For now we allow canopy thinning only on patches     !
+               ! whose last disturbance was either forest plantation, selective logging    !
+               ! or skid trails.                                                           !
+               !---------------------------------------------------------------------------!
+               if (is_logged .and. time_to_thin) then
+                  if (cpoly%thinning_frac_area(isi) > almost_one) then
+                     lambda_now(8) = lnexp_max
+                  else
+                     lambda_now(8) = log( 1.0 / (1.0 - cpoly%thinning_frac_area(isi)) )
+                  end if
                end if
                !---------------------------------------------------------------------------!
 
@@ -616,7 +642,7 @@ module disturbance
                      ! transition patch.                                                   !
                      !---------------------------------------------------------------------!
                      select case (new_lu)
-                     case (1,2,8)
+                     case (1,2,9)
                         !------------------------------------------------------------------!
                         !     Cropland, pasture, and forest plantation.  Only one PFT is   !
                         ! allowed in such patches.                                         !
@@ -624,7 +650,7 @@ module disturbance
                         select case (new_lu)
                         case (1,2)
                            npa = onsp + new_lu
-                        case (8)
+                        case (9)
                            npa = onsp + 2 + (new_lu - 3)*mypfts + 1
                         end select
                         !------------------------------------------------------------------!
@@ -713,7 +739,6 @@ module disturbance
                      ! patch area here.                                                    !
                      !---------------------------------------------------------------------!
                      if (disturbed) then
-
                         !------------------------------------------------------------------!
                         !     Add area and survivors to the new patches.  Here again we    !
                         ! must check whether this is a conventional or a  big leaf         !
@@ -730,14 +755,17 @@ module disturbance
                                                     ,cb_mass_np,cb_molar_np,cb_water_np    &
                                                     ,cb_co2_np)
                            call insert_survivors(csite,onsp+new_lu,ipa,new_lu,area_fac     &
-                                                ,mindbh_harvest,felling_s_gtharv           &
-                                                ,felling_s_ltharv,skid_dbh_thresh          &
-                                                ,skid_s_gtharv,skid_s_ltharv)
+                                                ,mindbh_felling,felling_s_gtharv           &
+                                                ,felling_s_ltharv,thinning_dbh_thresh      &
+                                                ,thinning_s_gtharv,thinning_s_ltharv       &
+                                                ,skid_dbh_thresh,skid_s_gtharv             &
+                                                ,skid_s_ltharv)
                            call accum_dist_harv_litt(cpoly,isi,1,onsp+new_lu,ipa,new_lu    &
-                                                    ,area_fac,mindbh_harvest               &
+                                                    ,area_fac,mindbh_felling               &
                                                     ,felling_s_gtharv,felling_s_ltharv     &
-                                                    ,skid_dbh_thresh,skid_s_gtharv         &
-                                                    ,skid_s_ltharv)
+                                                    ,thinning_dbh_thresh,thinning_s_gtharv &
+                                                    ,skid_s_ltharv,skid_dbh_thresh         &
+                                                    ,skid_s_gtharv,skid_s_ltharv)
                            !---------------------------------------------------------------!
                         case (1)
                            !---------------------------------------------------------------!
@@ -745,14 +773,14 @@ module disturbance
                            ! we are creating.                                              !
                            !---------------------------------------------------------------!
                            select case (new_lu)
-                           case (1,2,8)
+                           case (1,2,9)
                               !------------------------------------------------------------!
                               !    Find the correct index.                                 !
                               !------------------------------------------------------------!
                               select case (new_lu)
                               case (1,2)
                                  npa = onsp + new_lu 
-                              case (8)
+                              case (9)
                                  npa = onsp + 2 + (new_lu - 3) * mypfts + 1
                               end select
                               !------------------------------------------------------------!
@@ -766,12 +794,17 @@ module disturbance
                                                        ,cb_mass_np,cb_molar_np,cb_water_np &
                                                        ,cb_co2_np)
                               call insert_survivors(csite,npa,ipa,new_lu,area_fac          &
-                                                   ,mindbh_harvest,felling_s_gtharv        &
-                                                   ,felling_s_ltharv,skid_dbh_thresh       &
-                                                   ,skid_s_gtharv,skid_s_ltharv)
+                                                   ,mindbh_felling,felling_s_gtharv        &
+                                                   ,felling_s_ltharv,thinning_dbh_thresh   &
+                                                   ,thinning_s_gtharv,thinning_s_ltharv    &
+                                                   ,skid_dbh_thresh,skid_s_gtharv          &
+                                                   ,skid_s_ltharv)
                               call accum_dist_harv_litt(cpoly,isi,1,npa,ipa,new_lu         &
-                                                       ,area_fac,mindbh_harvest            &
+                                                       ,area_fac,mindbh_felling            &
                                                        ,felling_s_gtharv,felling_s_ltharv  &
+                                                       ,thinning_dbh_thresh                &
+                                                       ,thinning_s_gtharv                  &
+                                                       ,thinning_s_ltharv                  &
                                                        ,skid_dbh_thresh,skid_s_gtharv      &
                                                        ,skid_s_ltharv)
                               !------------------------------------------------------------!
@@ -825,13 +858,20 @@ module disturbance
                                                              ,cb_mass_np,cb_molar_np       &
                                                              ,cb_water_np,cb_co2_np)
                                     call insert_survivors(csite,npa,ipa,new_lu,area_fac    &
-                                                         ,mindbh_harvest,felling_s_gtharv  &
-                                                         ,felling_s_ltharv,skid_dbh_thresh &
+                                                         ,mindbh_felling,felling_s_gtharv  &
+                                                         ,felling_s_ltharv                 &
+                                                         ,thinning_dbh_thresh              &
+                                                         ,thinning_s_gtharv                &
+                                                         ,thinning_s_ltharv                &
+                                                         ,skid_dbh_thresh                  &
                                                          ,skid_s_gtharv,skid_s_ltharv)
                                     call accum_dist_harv_litt(cpoly,isi,1,npa,ipa,new_lu   &
-                                                             ,area_fac,mindbh_harvest      &
+                                                             ,area_fac,mindbh_felling      &
                                                              ,felling_s_gtharv             &
                                                              ,felling_s_ltharv             &
+                                                             ,thinning_dbh_thresh          &
+                                                             ,thinning_s_gtharv            &
+                                                             ,thinning_s_ltharv            &
                                                              ,skid_dbh_thresh              &
                                                              ,skid_s_gtharv,skid_s_ltharv)
                                  end if
@@ -890,7 +930,7 @@ module disturbance
                                      ,cpoly%plantation_stocking_density(isi)               &
                                      ,cpoly%ntext_soil(:,isi), 2.0                         &
                                      ,cpoly%lsl(isi))
-                  case (8)
+                  case (9)
                      call plant_patch(csite,onsp+new_lu,nzg                                &
                                      ,cpoly%agri_stocking_pft(isi)                         &
                                      ,cpoly%agri_stocking_density(isi)                     &
@@ -1023,9 +1063,11 @@ module disturbance
             !------------------------------------------------------------------------------!
             old_lu_l4th: do ipa=1,onsp
                pat_area_loss = act_area_loss(ipa,:)
-               call disturbance_mortality(csite,ipa,pat_area_loss,mindbh_harvest           &
+               call disturbance_mortality(csite,ipa,pat_area_loss,mindbh_felling           &
                                          ,felling_s_gtharv,felling_s_ltharv                &
-                                         ,skid_dbh_thresh,skid_s_gtharv,skid_s_ltharv)
+                                         ,thinning_dbh_thresh,thinning_s_gtharv            &
+                                         ,thinning_s_ltharv,skid_dbh_thresh,skid_s_gtharv  &
+                                         ,skid_s_ltharv)
                csite%area(ipa) = csite%area(ipa) - sum(pat_area_loss)
             end do old_lu_l4th
             !------------------------------------------------------------------------------!
@@ -1048,7 +1090,7 @@ module disturbance
                   case (2)
                      apa = onsp + 2
                      zpa = onsp + 2
-                  case (8)
+                  case (9)
                      apa = onsp + 2 + ( new_lu - 3 ) * mypfts + 1
                      zpa = onsp + 2 + ( new_lu - 3 ) * mypfts + 1
                   case default
@@ -1344,12 +1386,12 @@ module disturbance
                               , plantation_year           & ! intent(in)
                               , plantation_rotation       & ! intent(in)
                               , mature_harvest_age        & ! intent(in)
-                              , min_oldgrowth             & ! intent(in)
-                              , sl_biomass_harvest        ! ! intent(in)
+                              , min_oldgrowth             ! ! intent(in)
       use ed_max_dims  , only : n_pft                     & ! intent(in)
                               , n_dist_types              ! ! intent(in)
       use ed_misc_coms , only : current_time              ! ! intent(in)
-      use consts_coms  , only : lnexp_max                 ! ! intent(in)
+      use consts_coms  , only : lnexp_max                 & ! intent(in)
+                              , almost_one                ! ! intent(in)
 
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
@@ -1369,7 +1411,6 @@ module disturbance
       integer                                    :: iyear
       integer                                    :: useyear
       real                                       :: bharvest
-      real                                       :: pot_harvest_target
       real                                       :: fire_disturbance_rate
       real                                       :: lambda_harv_og_max
       real                                       :: f_harv_prim_max
@@ -1412,7 +1453,8 @@ module disturbance
             !  5.  Abandoned                                                               !
             !  6.  Logged (felling)                                                        !
             !  7.  Logged (skid trail / road)                                              !
-            !  8.  Agricultural lands (cropland / pasture)                                 !
+            !  8.  Logged (canopy thinning)                                                !
+            !  9.  Agricultural lands (cropland / pasture)                                 !
             !------------------------------------------------------------------------------!
             cpoly%disturbance_rates(:,:,isi) = 0.0
             !------------------------------------------------------------------------------!
@@ -1447,11 +1489,7 @@ module disturbance
             !      Disturbance that creates new "tree fall patches".  Only non-cultivated  !
             ! lands may suffer this disturbance.                                           !
             !------------------------------------------------------------------------------!
-            cpoly%disturbance_rates(3,3,isi) = treefall_disturbance_rate
-            cpoly%disturbance_rates(3,4,isi) = treefall_disturbance_rate
-            cpoly%disturbance_rates(3,5,isi) = treefall_disturbance_rate
-            cpoly%disturbance_rates(3,6,isi) = treefall_disturbance_rate
-            cpoly%disturbance_rates(3,7,isi) = treefall_disturbance_rate
+            cpoly%disturbance_rates(3,3:8,isi) = treefall_disturbance_rate
             !------------------------------------------------------------------------------!
 
 
@@ -1460,11 +1498,7 @@ module disturbance
             !      Disturbance that creates new "burnt patches".  Only non-cultivated      !
             ! lands may suffer this disturbance.                                           !
             !------------------------------------------------------------------------------!
-            cpoly%disturbance_rates(4,3,isi) = fire_disturbance_rate
-            cpoly%disturbance_rates(4,4,isi) = fire_disturbance_rate
-            cpoly%disturbance_rates(4,5,isi) = fire_disturbance_rate
-            cpoly%disturbance_rates(4,6,isi) = fire_disturbance_rate
-            cpoly%disturbance_rates(4,7,isi) = fire_disturbance_rate
+            cpoly%disturbance_rates(4,3:8,isi) = fire_disturbance_rate
             !------------------------------------------------------------------------------!
 
 
@@ -1546,20 +1580,22 @@ module disturbance
             cpoly%disturbance_rates(1,5,isi) = clutime%landuse(9)
             cpoly%disturbance_rates(1,6,isi) = clutime%landuse(9)
             cpoly%disturbance_rates(1,7,isi) = clutime%landuse(9)
-            cpoly%disturbance_rates(1,8,isi) = clutime%landuse(1)
+            cpoly%disturbance_rates(1,8,isi) = clutime%landuse(9)
+            cpoly%disturbance_rates(1,9,isi) = clutime%landuse(1)
             !------------------------------------------------------------------------------!
 
 
             !------------------------------------------------------------------------------!
             !      Apply disturbance rates that generate cropland (see table above).        !
             !------------------------------------------------------------------------------!
-            cpoly%disturbance_rates(8,1,isi) = clutime%landuse(2)
-            cpoly%disturbance_rates(8,2,isi) = clutime%landuse(7)
-            cpoly%disturbance_rates(8,3,isi) = clutime%landuse(5)
-            cpoly%disturbance_rates(8,4,isi) = clutime%landuse(7)
-            cpoly%disturbance_rates(8,5,isi) = clutime%landuse(7)
-            cpoly%disturbance_rates(8,6,isi) = clutime%landuse(7)
-            cpoly%disturbance_rates(8,7,isi) = clutime%landuse(7)
+            cpoly%disturbance_rates(9,1,isi) = clutime%landuse(2)
+            cpoly%disturbance_rates(9,2,isi) = clutime%landuse(7)
+            cpoly%disturbance_rates(9,3,isi) = clutime%landuse(5)
+            cpoly%disturbance_rates(9,4,isi) = clutime%landuse(7)
+            cpoly%disturbance_rates(9,5,isi) = clutime%landuse(7)
+            cpoly%disturbance_rates(9,6,isi) = clutime%landuse(7)
+            cpoly%disturbance_rates(9,7,isi) = clutime%landuse(7)
+            cpoly%disturbance_rates(9,8,isi) = clutime%landuse(7)
             !------------------------------------------------------------------------------!
 
 
@@ -1572,14 +1608,14 @@ module disturbance
             case (0)
                !----- Abandoned lands only. -----------------------------------------------!
                cpoly%disturbance_rates(5,1,isi) = clutime%landuse( 3) + clutime%landuse(10)
-               cpoly%disturbance_rates(5,8,isi) = clutime%landuse( 6) + clutime%landuse( 8)
+               cpoly%disturbance_rates(5,9,isi) = clutime%landuse( 6) + clutime%landuse( 8)
                !---------------------------------------------------------------------------!
             case (1)
                !----- "Secondary" sends area to plantation, "Primary" to abandoned. -------!
                cpoly%disturbance_rates(2,1,isi) = clutime%landuse(10)
-               cpoly%disturbance_rates(2,8,isi) = clutime%landuse( 8)
+               cpoly%disturbance_rates(2,9,isi) = clutime%landuse( 8)
                cpoly%disturbance_rates(5,1,isi) = clutime%landuse( 3)
-               cpoly%disturbance_rates(5,8,isi) = clutime%landuse( 6)
+               cpoly%disturbance_rates(5,9,isi) = clutime%landuse( 6)
                !---------------------------------------------------------------------------!
             end select
             !------------------------------------------------------------------------------!
@@ -1591,8 +1627,8 @@ module disturbance
             ! possible for old-growth forests.  The actual disturbance rate may be lower   !
             ! (but never higher) than the rates obtained from the instruction file.        !
             ! We save this information in cpoly%disturbance_rates(6,3,isi) only but this   !
-            ! is accounted for any old-growth patch (which includes types 4, 5, 6, and 7   !
-            ! if their age is old).                                                        !
+            ! is accounted for any old-growth patch (which includes types 4-8) if their    !
+            ! age is old).                                                                 !
             !------------------------------------------------------------------------------!
             lambda_harv_og_max = max(0.,min(lnexp_max,clutime%landuse(11)))
             if (lambda_harv_og_max == lnexp_max) then
@@ -1607,11 +1643,10 @@ module disturbance
 
 
             !------------------------------------------------------------------------------!
-            !     Harvesting (either plantation -> plantation or logging) when a biomass   !
-            ! target does not exist (e.g. SimAmazonia)).  Convert the harvest probability  !
-            ! of being cut given that the DBH exceeds the minimum DBH.  This is done only  !
-            ! when anthropogenic disturbance is on and we are not seeking the biomass      !
-            ! target, otherwise we set it to zero.                                         !
+            !     Decide the biomass harvesting target for primary and secondary forests.  !
+            ! This is done only when IANTH_DIST = 1 and the biomass targets are positive.  !
+            ! Otherwise, these are not intended for mass-based logging, so force memory    !
+            ! variables to zero. quaquaquaraqua                                                           !
             !------------------------------------------------------------------------------!
             select case (ianth_disturb)
             case (0)
@@ -1620,7 +1655,7 @@ module disturbance
                cpoly%primary_harvest_target  (isi) = 0.
                cpoly%secondary_harvest_target(isi) = 0.
                !---------------------------------------------------------------------------!
-            case default
+            case (1)
                !------ Read anthropogenic disturbance from external data set. -------------!
                if (clutime%landuse(12) < 0. .or. clutime%landuse(14) < 0.) then
                   find_target                         = .true.
@@ -1634,6 +1669,25 @@ module disturbance
                                                       + clutime%landuse(16)
                end if
                !---------------------------------------------------------------------------!
+            case (2)
+               !---------------------------------------------------------------------------!
+               !     Logging based on grid fraction and tree size.  Harvest creates new    !
+               ! patches and target biomass harvest set to zero.                           !
+               !---------------------------------------------------------------------------!
+               find_target                             = .false.
+               if (clutime%landuse(15) > almost_one) then
+                  cpoly%disturbance_rates    (6,6,isi) = lnexp_max
+               else
+                  cpoly%disturbance_rates    (6,6,isi) = log(1./(1.-clutime%landuse(15)))
+               end if
+               if (clutime%landuse(13) > almost_one) then
+                  cpoly%disturbance_rates    (2,2,isi) = lnexp_max
+               else
+                  cpoly%disturbance_rates    (2,2,isi) = log(1./(1.-clutime%landuse(13)))
+               end if
+               cpoly%primary_harvest_target      (isi) = 0.0
+               cpoly%secondary_harvest_target    (isi) = 0.0
+               !------------------------------------------------------------------------!
             end select
             !------------------------------------------------------------------------------!
 
@@ -1662,7 +1716,7 @@ module disturbance
 
                   !----- Select the minimum DBH depending on the forest category. ---------!
                   select case(ilu)
-                  case (1,8)
+                  case (1,9)
                      !----- Pasture and agriculture.  No timber harvesting here. ----------!
                      harv_primary      = .false.
                      harv_secondary    = .false.
@@ -1677,7 +1731,7 @@ module disturbance
                      harv_primary      = is_mature
                      harv_secondary    = .false.
                      !---------------------------------------------------------------------!
-                  case (4:7)
+                  case (4:8)
                      !---------------------------------------------------------------------!
                      !      Other disturbances.  Assume "primary" in case this is old-     !
                      ! growth, otherwise assume it secondary vegetation.                   !
@@ -1696,8 +1750,8 @@ module disturbance
                   if (harv_primary .or. harv_secondary) then
                      do ico=1,cpatch%ncohorts
                         ipft = cpatch%pft(ico)
-                        if (cpatch%dbh(ico) >= cpoly%mindbh_harvest(ipft,isi)) then
-                           bharvest  = bharvest + cpoly%prob_harvest(ipft,isi)             &
+                        if (cpatch%dbh(ico) >= cpoly%mindbh_felling(ipft,isi)) then
+                           bharvest  = bharvest + cpoly%prob_felling(ipft,isi)             &
                                                 * cpatch%nplant(ico) * cpatch%btimber(ico)
                         end if  
                      end do
@@ -1725,32 +1779,16 @@ module disturbance
 
 
             !------------------------------------------------------------------------------!
-            !     Check whether to scale targets.                                          !
-            !------------------------------------------------------------------------------!
-            if (ianth_disturb == 2 .and. sl_biomass_harvest > 0.) then
-               pot_harvest_target = cpoly%primary_harvest_target  (isi)                    &
-                                  + cpoly%secondary_harvest_target(isi)
-               if (pot_harvest_target > 0) then
-                  cpoly%primary_harvest_target  (isi) =                                    &
-                        cpoly%primary_harvest_target  (isi) * sl_biomass_harvest           &
-                                                            / pot_harvest_target
-                  cpoly%secondary_harvest_target(isi) =                                    &
-                        cpoly%secondary_harvest_target(isi) * sl_biomass_harvest           &
-                                                            / pot_harvest_target
-               end if
-               !---------------------------------------------------------------------------!
-            end if
-            !------------------------------------------------------------------------------!
-
-
-            !------------------------------------------------------------------------------!
             !     In case anthropogenic disturbance is turned on, make sure that croplands !
             ! that remain croplands are completely ploughed.  This may need to change for  !
             ! a perennial crop.                                                            !
             !------------------------------------------------------------------------------!
             select case (ianth_disturb)
             case (0)
-               !----- Anthropogenic disturbance is off. No logging should occur. ----------!
+               !---------------------------------------------------------------------------!
+               !    Anthropogenic disturbance is off. No land use transitions should       !
+               ! occur.                                                                    !
+               !---------------------------------------------------------------------------!
                continue
                !---------------------------------------------------------------------------!
             case default
@@ -1758,8 +1796,8 @@ module disturbance
                !   Anthropogenic disturbance is on.  All area that is not abandoned or     !
                ! converted to pasture should be cleared again for cropland.                !
                !---------------------------------------------------------------------------!
-               cpoly%disturbance_rates(8,8,isi) = lnexp_max                                &
-                                                - sum(cpoly%disturbance_rates(1:7,8,isi))
+               cpoly%disturbance_rates(9,9,isi) = lnexp_max                                &
+                                                - sum(cpoly%disturbance_rates(1:8,9,isi))
                !---------------------------------------------------------------------------!
             end select
             !------------------------------------------------------------------------------!
@@ -3403,8 +3441,9 @@ module disturbance
    !     This subroutine will populate the disturbed patch with the cohorts that were      !
    ! disturbed but did not go extinct.                                                     !
    !---------------------------------------------------------------------------------------!
-   subroutine insert_survivors(csite,np,cp,new_lu,area_fac,mindbh_harvest,felling_s_gtharv &
-                              ,felling_s_ltharv,skid_dbh_thresh,skid_s_gtharv              &
+   subroutine insert_survivors(csite,np,cp,new_lu,area_fac,mindbh_felling,felling_s_gtharv &
+                              ,felling_s_ltharv,thinning_dbh_thresh,thinning_s_gtharv      &
+                              ,thinning_s_ltharv,skid_dbh_thresh,skid_s_gtharv             &
                               ,skid_s_ltharv)
       use ed_state_vars       , only : sitetype                      & ! structure
                                      , patchtype                     ! ! structure
@@ -3418,9 +3457,12 @@ module disturbance
       integer                         , intent(in)    :: new_lu
       integer                         , intent(in)    :: np
       integer                         , intent(in)    :: cp
-      real          , dimension(n_pft), intent(in)    :: mindbh_harvest
+      real          , dimension(n_pft), intent(in)    :: mindbh_felling
       real          , dimension(n_pft), intent(in)    :: felling_s_gtharv
       real          , dimension(n_pft), intent(in)    :: felling_s_ltharv
+      real          , dimension(n_pft), intent(in)    :: thinning_dbh_thresh
+      real          , dimension(n_pft), intent(in)    :: thinning_s_gtharv
+      real          , dimension(n_pft), intent(in)    :: thinning_s_ltharv
       real          , dimension(n_pft), intent(in)    :: skid_dbh_thresh
       real          , dimension(n_pft), intent(in)    :: skid_s_gtharv
       real          , dimension(n_pft), intent(in)    :: skid_s_ltharv
@@ -3457,10 +3499,11 @@ module disturbance
 
          survivalloop: do ico = 1,cpatch%ncohorts
             ipft              = cpatch%pft(ico)
-            survival_fac(ico) = survivorship(new_lu,csite%dist_type(cp),mindbh_harvest     &
+            survival_fac(ico) = survivorship(new_lu,csite%dist_type(cp),mindbh_felling     &
                                             ,felling_s_gtharv,felling_s_ltharv             &
-                                            ,skid_dbh_thresh,skid_s_gtharv,skid_s_ltharv   &
-                                            ,cpatch,ico                                )   &
+                                            ,thinning_dbh_thresh,thinning_s_gtharv         &
+                                            ,thinning_s_ltharv,skid_dbh_thresh             &
+                                            ,skid_s_gtharv,skid_s_ltharv,cpatch,ico)       &
                               * area_fac
             n_survivors       = cpatch%nplant(ico) * survival_fac(ico)
 
@@ -3545,7 +3588,8 @@ module disturbance
    ! place.                                                                                !
    !---------------------------------------------------------------------------------------!
    subroutine accum_dist_harv_litt(cpoly,isi,census_flag,np,cp,new_lu,area_fac             &
-                                  ,mindbh_harvest,felling_s_gtharv,felling_s_ltharv        &
+                                  ,mindbh_felling,felling_s_gtharv,felling_s_ltharv        &
+                                  ,thinning_dbh_thresh,thinning_s_gtharv,thinning_s_ltharv &
                                   ,skid_dbh_thresh,skid_s_gtharv,skid_s_ltharv)
       use ed_state_vars, only : sitetype              & ! structure
                               , patchtype             & ! structure
@@ -3574,9 +3618,12 @@ module disturbance
       integer                            , intent(in) :: census_flag
       integer                            , intent(in) :: np
       integer                            , intent(in) :: cp
-      real             , dimension(n_pft), intent(in) :: mindbh_harvest
+      real             , dimension(n_pft), intent(in) :: mindbh_felling
       real             , dimension(n_pft), intent(in) :: felling_s_gtharv
       real             , dimension(n_pft), intent(in) :: felling_s_ltharv
+      real             , dimension(n_pft), intent(in) :: thinning_dbh_thresh
+      real             , dimension(n_pft), intent(in) :: thinning_s_gtharv
+      real             , dimension(n_pft), intent(in) :: thinning_s_ltharv
       real             , dimension(n_pft), intent(in) :: skid_dbh_thresh
       real             , dimension(n_pft), intent(in) :: skid_s_gtharv
       real             , dimension(n_pft), intent(in) :: skid_s_ltharv
@@ -3686,7 +3733,7 @@ module disturbance
          ! thing remains in the patch.                                                     !
          !---------------------------------------------------------------------------------!
          select case(new_lu)
-         case (8)
+         case (9)
             !------ Agriculture. Harvest living tissues and NSC. --------------------------!
             a_bfast_remove     = f_labile_leaf(ipft) * cl_fleaf_harvest * cpatch%bleaf(ico)
             a_bstruct_remove   = ( 1.0 - f_labile_leaf(ipft) )                             &
@@ -3753,8 +3800,11 @@ module disturbance
          ! ing contribute to biomass loss.                                                 !
          !---------------------------------------------------------------------------------!
          select case(new_lu)
-         case (2)
-            !------ Forest plantation, everything is cut. ---------------------------------!
+         case (2,8)
+            !------------------------------------------------------------------------------!
+            !     Forest plantation or canopy thinning, all losses are assumed to be from  !
+            ! cutting trees.                                                               !
+            !------------------------------------------------------------------------------!
             agb_cut  = cpatch%agb(ico)
             agb_mort = 0.
             ba_cut   = cpatch%basarea(ico)
@@ -3765,7 +3815,7 @@ module disturbance
             !     Logging, we must decide whether the losses are due to cutting or due to  !
             ! mortality.                                                                   !
             !------------------------------------------------------------------------------!
-            if (cpatch%dbh(ico) >= mindbh_harvest(ipft)) then
+            if (cpatch%dbh(ico) >= mindbh_felling(ipft)) then
                agb_cut          = cpatch%agb(ico)
                agb_mort         = 0.
                ba_cut           = cpatch%basarea(ico)
@@ -3789,9 +3839,11 @@ module disturbance
 
 
          !----- Find survivorship. --------------------------------------------------------!
-         survival_fac  = survivorship(new_lu,csite%dist_type(cp),mindbh_harvest            &
-                                     ,felling_s_gtharv,felling_s_ltharv,skid_dbh_thresh    &
-                                     ,skid_s_gtharv,skid_s_ltharv,cpatch,ico)
+         survival_fac  = survivorship(new_lu,csite%dist_type(cp),mindbh_felling            &
+                                     ,felling_s_gtharv,felling_s_ltharv                    &
+                                     ,thinning_dbh_thresh,thinning_s_gtharv                &
+                                     ,thinning_s_ltharv,skid_dbh_thresh,skid_s_gtharv      &
+                                     ,skid_s_ltharv,cpatch,ico)
          !---------------------------------------------------------------------------------!
 
 

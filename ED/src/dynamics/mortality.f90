@@ -144,7 +144,8 @@ module mortality
    ! disturbance.                                                                          !
    !---------------------------------------------------------------------------------------!
    subroutine disturbance_mortality(csite,ipa,area_loss,mindbh_harvest,felling_s_gtharv    &
-                                   ,felling_s_ltharv,skid_dbh_thresh,skid_s_gtharv         &
+                                   ,felling_s_ltharv,thinning_dbh_thresh,thinning_s_gtharv &
+                                   ,thinning_s_ltharv,skid_dbh_thresh,skid_s_gtharv        &
                                    ,skid_s_ltharv)
       use ed_state_vars, only : sitetype      & ! structure
                               , patchtype     ! ! structure
@@ -161,6 +162,9 @@ module mortality
       real          , dimension(n_pft)       , intent(in)  :: mindbh_harvest
       real          , dimension(n_pft)       , intent(in)  :: felling_s_gtharv
       real          , dimension(n_pft)       , intent(in)  :: felling_s_ltharv
+      real          , dimension(n_pft)       , intent(in)  :: thinning_dbh_thresh
+      real          , dimension(n_pft)       , intent(in)  :: thinning_s_gtharv
+      real          , dimension(n_pft)       , intent(in)  :: thinning_s_ltharv
       real          , dimension(n_pft)       , intent(in)  :: skid_dbh_thresh
       real          , dimension(n_pft)       , intent(in)  :: skid_s_gtharv
       real          , dimension(n_pft)       , intent(in)  :: skid_s_ltharv
@@ -194,8 +198,9 @@ module mortality
             do ico=1,cpatch%ncohorts
               f_survival    = survivorship(new_lu,csite%dist_type(ipa),mindbh_harvest      &
                                           ,felling_s_gtharv,felling_s_ltharv               &
-                                          ,skid_dbh_thresh,skid_s_gtharv,skid_s_ltharv     &
-                                          ,cpatch,ico)
+                                          ,thinning_dbh_thresh,thinning_s_gtharv           &
+                                          ,thinning_s_ltharv,skid_dbh_thresh,skid_s_gtharv &
+                                          ,skid_s_ltharv,cpatch,ico)
               a_factor(ico) = a_factor(ico)                                                &
                             + ( 1.0 - f_survival ) * area_loss(new_lu) / csite%area(ipa)
             end do
@@ -239,32 +244,37 @@ module mortality
    !     5. Forest regrowth.                                                               !
    !     6. Logging (tree felling).                                                        !
    !     7. Logging (mechanical damage).                                                   !
-   !     8. Cropland.                                                                      !
+   !     8. Logging (canopy thinning).                                                     !
+   !     9. Cropland.                                                                      !
    !  -- mindbh_harvest: minimum DBH for selective logging.  All trees above threshold     !
    !                     will be logged in the tree felling patch.                         !
    !  -- cpatch: current patch.                                                            !
    !  -- ico: index for current cohort.                                                    !
    !---------------------------------------------------------------------------------------!
    real function survivorship(new_lu,old_lu,mindbh_harvest,felling_s_gtharv                &
-                             ,felling_s_ltharv,skid_dbh_thresh,skid_s_gtharv,skid_s_ltharv &
-                             ,cpatch,ico)
-      use ed_state_vars, only : patchtype                 ! ! structure
-      use disturb_coms , only : treefall_height_threshold ! ! intent(in)
-      use pft_coms     , only : treefall_s_ltht           & ! intent(in)
-                              , treefall_s_gtht           & ! intent(in)
-                              , fire_s_min                & ! intent(in)
-                              , fire_s_max                & ! intent(in)
-                              , fire_s_inter              & ! intent(in)
-                              , fire_s_slope              ! ! intent(in)
-      use ed_max_dims  , only : n_pft                     ! ! intent(in)
-      use consts_coms  , only : lnexp_min                 & ! intent(in)
-                              , lnexp_max                 ! ! intent(in)
+                             ,felling_s_ltharv,thinning_dbh_thresh,thinning_s_gtharv       &
+                             ,thinning_s_ltharv,skid_dbh_thresh,skid_s_gtharv              &
+                             ,skid_s_ltharv,cpatch,ico)
+      use ed_state_vars, only : patchtype                ! ! structure
+      use disturb_coms , only : treefall_hite_threshold  ! ! intent(in)
+      use pft_coms     , only : treefall_s_ltht          & ! intent(in)
+                              , treefall_s_gtht          & ! intent(in)
+                              , fire_s_min               & ! intent(in)
+                              , fire_s_max               & ! intent(in)
+                              , fire_s_inter             & ! intent(in)
+                              , fire_s_slope             ! ! intent(in)
+      use ed_max_dims  , only : n_pft                    ! ! intent(in)
+      use consts_coms  , only : lnexp_min                & ! intent(in)
+                              , lnexp_max                ! ! intent(in)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       type(patchtype)                 , target     :: cpatch
       real          , dimension(n_pft), intent(in) :: mindbh_harvest
       real          , dimension(n_pft), intent(in) :: felling_s_gtharv
       real          , dimension(n_pft), intent(in) :: felling_s_ltharv
+      real          , dimension(n_pft), intent(in) :: thinning_dbh_thresh
+      real          , dimension(n_pft), intent(in) :: thinning_s_gtharv
+      real          , dimension(n_pft), intent(in) :: thinning_s_ltharv
       real          , dimension(n_pft), intent(in) :: skid_dbh_thresh
       real          , dimension(n_pft), intent(in) :: skid_s_gtharv
       real          , dimension(n_pft), intent(in) :: skid_s_ltharv
@@ -287,7 +297,7 @@ module mortality
       ! and size.                                                                          !
       !------------------------------------------------------------------------------------!
       select case(new_lu)
-      case (1,2,8)
+      case (1,2,9)
          !---------------------------------------------------------------------------------!
          !     Clear cut (cropland/pasture/forest plantation).  Nothing survives.          !
          !---------------------------------------------------------------------------------!
@@ -324,7 +334,7 @@ module mortality
          ! occurs after one last harvest, or the field/plantation is left as is.           !
          !---------------------------------------------------------------------------------!
          select case (old_lu)
-         case (8)
+         case (9)
             !----- Cropland: final harvest. -----------------------------------------------!
             survivorship = 0.0
             !------------------------------------------------------------------------------!
@@ -349,7 +359,7 @@ module mortality
          !---------------------------------------------------------------------------------!
       case (6)
          !---------------------------------------------------------------------------------!
-         !     Tree felling.                                                               !
+         !     Tree felling (for timber wood).                                             !
          !---------------------------------------------------------------------------------!
          if (cpatch%dbh(ico) >= mindbh_harvest(ipft)) then
             survivorship = felling_s_gtharv(ipft)
@@ -369,6 +379,17 @@ module mortality
             survivorship = skid_s_gtharv(ipft)
          else
             survivorship = skid_s_ltharv(ipft)
+         end if
+         !---------------------------------------------------------------------------------!
+      case (8)
+         !---------------------------------------------------------------------------------!
+         !     Canopy thinning.  This most likely targets smaller trees, which are         !
+         ! harvested to reduce competition with larger, marketable timber.                 !
+         !---------------------------------------------------------------------------------!
+         if (cpatch%dbh(ico) >= thinning_dbh_thresh(ipft)) then
+            survivorship = thinning_s_gtharv(ipft)
+         else
+            survivorship = thinning_s_ltharv(ipft)
          end if
          !---------------------------------------------------------------------------------!
       end select

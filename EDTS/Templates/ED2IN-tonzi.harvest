@@ -584,10 +584,12 @@ $ED_NL
    !  SLCOL_DATABASE   -- If ISLCOLFLG=1, this variable specifies the path and prefix of   !
    !                      soil colour data base.                                           !
    !  LU_DATABASE      -- land-use change disturbance rates database, used only when       !
-   !                      IANTH_DISTURB is set to 1.  Fill with the path and the prefix.   !
-   !  PLANTATION_FILE  -- plantation fraction file.  In case you don't have such a file or !
-   !                      you do not want to use it, you must leave this variable empty:   !
-   !                      (NL%PLANTATION_FILE = ''                                         !
+   !                      IANTH_DISTURB is set to 1 or 2.  Fill with the path and the      !
+   !                      prefix.                                                          !
+   !  PLANTATION_FILE  -- Character string for the path to the forest plantation fraction  !
+   !                      file.  This is used only when IANTH_DISTURB is set to 1 or 2 and !
+   !                      the user wants to simulate forest plantations.  Otherwise, leave !
+   !                      it empty (PLANTATION_FILE='')                                    !
    !  THSUMS_DATABASE  -- input directory with dataset to initialise chilling degrees and  !
    !                      growing degree days, which is used to drive the cold-deciduous   !
    !                      phenology (you must always provide this, even when your PFTs are !
@@ -1219,43 +1221,11 @@ $ED_NL
    !  IANTH_DISTURB -- This flag controls whether to include anthropogenic disturbances    !
    !                   such as land clearing, abandonment, and logging.                    !
    !                   0.  No anthropogenic disturbance.                                   !
-   !                   1.  Use anthropogenic disturbance dataset (ED-2.2 default when      !
-   !                       anthropogenic disturbance is sought).                           !
-   !                   2.  Site-specific forest plantation or selective logging cycle.     !
-   !                       (Longo et al., in prep.) (Beta)                                 !
-   !                                                                                       !
-   ! The following variables are used only when IANTH_DISTURB is 2.                        !
-   !                                                                                       !
-   ! SL_SCALE           -- This flag assumes whether the simulation scale is local or      !
-   !                       landscape.  This controls the recurrence of logging.            !
-   !                       0.  Local. The simulation represents one logging unit.  Apply   !
-   !                           logging only once every SL_NYRS                             !
-   !                       1.  Landscape.  The simulation represents a landscape. Logging  !
-   !                           occurs every year but it is restricted to patches with age  !
-   !                           greater than or equal to SL_NYRS                            !
-   ! SL_YR_FIRST        -- The first year to apply logging.  In case IANTH_DISTURB is 2 it !
-   !                       must be a simulation year (i.e. between IYEARA and IYEARZ).     !
-   ! SL_NYRS            -- This variable defines the logging cycle, in years (see variable !
-   !                       SL_SCALE above)                                                 !
-   ! SL_PFT             -- PFTs that can be harvested.                                     !
-   ! SL_PROB_HARVEST    -- Logging intensity (one value for each PFT provided in SL_PFT).  !
-   !                       Values should be between 0.0 and 1.0, with 0 meaning no         !
-   !                       removal, and 1 removal of all trees needed to meet demands.     !
-   ! SL_MINDBH_HARVEST  -- Minimum DBH for logging (one value for each PFT provided in     !
-   !                       SL_PFT).                                                        !
-   ! SL_BIOMASS_HARVEST -- Target biomass to be harvested in each cycle, in kgC/m2.  If    !
-   !                       zero, then all trees that meet the minimum DBH and minimum      !
-   !                       patch age will be logged.  In case you don't want logging to    !
-   !                       occur, don't set this value to zero! Instead, set IANTH_DISTURB !
-   !                       to zero.                                                        !
-   !                                                                                       !
-   ! The following variables are used when IANTH_DISTURB is 1 or 2.                        !
-   !                                                                                       !
-   ! SL_SKID_REL_AREA    -- area damaged by skid trails (relative to felled area).         !
-   ! SL_SKID_DBH_THRESH  -- DBH threshold for damage caused in skid trails.                !
-   ! SL_SKID_S_GTHARV    -- survivorship of trees with DBH > MINDBH in skid trails.        !
-   ! SL_SKID_S_LTHARV    -- survivorship of trees with DBH < MINDBH in skid trails.        !
-   ! SL_FELLING_S_LTHARV -- survivorship of trees with DBH < MINDBH in felling gaps.       !
+   !                   1.  Use anthropogenic disturbance datasets, with either mass-based  !
+   !                       harvesting targets, or selective logging when the target is -1  !
+   !                       (ED-2.2 default when anthropogenic disturbance is sought).      !
+   !                   2.  Use anthropogenic disturbance datasets, with area-based         !
+   !                       harvesting targets (beta).                                      !
    !                                                                                       !
    ! Cropland variables, used when IANTH_DISTURB is 1 or 2.                                !
    !                                                                                       !
@@ -1264,18 +1234,6 @@ $ED_NL
    ! CL_FLEAF_HARVEST    -- fraction of leaves that is harvested in croplands.             !
    !---------------------------------------------------------------------------------------!
    NL%IANTH_DISTURB       = 0
-   NL%SL_SCALE            = 1
-   NL%SL_YR_FIRST         = 1992
-   NL%SL_NYRS             = 50
-   NL%SL_PFT              = 2,3,4
-   NL%SL_PROB_HARVEST     = 1.0,1.0,1.0
-   NL%SL_MINDBH_HARVEST   = 50.,50.,50.
-   NL%SL_BIOMASS_HARVEST  = 0
-   NL%SL_SKID_REL_AREA    = 1
-   NL%SL_SKID_DBH_THRESH  = 30.
-   NL%SL_SKID_S_GTHARV    = 1
-   NL%SL_SKID_S_LTHARV    = 0.6
-   NL%SL_FELLING_S_LTHARV = 0.35
    NL%CL_FSEEDS_HARVEST   = 0.75
    NL%CL_FSTORAGE_HARVEST = 0.00
    NL%CL_FLEAF_HARVEST    = 0.00
@@ -1366,10 +1324,12 @@ $ED_NL
    ! used in this simulation.                                                              !
    !                                                                                       !
    ! INCLUDE_THESE_PFT -- a list containing all the PFTs you want to include in this run   !
+   ! PASTURE_STOCK     -- which PFT should be used for pastures                            !
+   !                      (used only when IANTH_DISTURB = 1 or 2)                          !
    ! AGRI_STOCK        -- which PFT should be used for agriculture                         !
-   !                      (used only when IANTH_DISTURB = 1)                               !
+   !                      (used only when IANTH_DISTURB = 1 or 2)                          !
    ! PLANTATION_STOCK  -- which PFT should be used for plantation                          !
-   !                      (used only when IANTH_DISTURB = 1)                               !
+   !                      (used only when IANTH_DISTURB = 1 or 2)                          !
    !                                                                                       !
    ! PFT table                                                                             !
    !---------------------------------------------------------------------------------------!
@@ -1385,7 +1345,7 @@ $ED_NL
    NL%INCLUDE_THESE_PFT = 11,5,7
    NL%AGRI_STOCK        = 5
    NL%PLANTATION_STOCK  = 6
-   NL%PASTURE_STOCK      = 5
+   NL%PASTURE_STOCK     = 5
    !---------------------------------------------------------------------------------------!
 
 

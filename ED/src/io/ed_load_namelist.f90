@@ -136,17 +136,6 @@ subroutine copy_nl(copy_type)
                                    , sm_fire                   & ! intent(out)
                                    , time2canopy               & ! intent(out)
                                    , min_patch_area            & ! intent(out)
-                                   , sl_scale                  & ! intent(out)
-                                   , sl_yr_first               & ! intent(out)
-                                   , sl_nyrs                   & ! intent(out)
-                                   , sl_pft                    & ! intent(out)
-                                   , sl_prob_harvest           & ! intent(out)
-                                   , sl_mindbh_harvest         & ! intent(out)
-                                   , sl_biomass_harvest        & ! intent(out)
-                                   , sl_skid_rel_area          & ! intent(out)
-                                   , sl_skid_s_gtharv          & ! intent(out)
-                                   , sl_skid_s_ltharv          & ! intent(out)
-                                   , sl_felling_s_ltharv       & ! intent(out)
                                    , cl_fseeds_harvest         & ! intent(out)
                                    , cl_fstorage_harvest       & ! intent(out)
                                    , cl_fleaf_harvest          ! ! intent(out)
@@ -280,7 +269,6 @@ subroutine copy_nl(copy_type)
    character(len=*), intent(in) :: copy_type
    !----- Internal variables. -------------------------------------------------------------!
    integer                      :: ifm
-   integer, dimension(n_pft)    :: idx
    !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
@@ -419,17 +407,6 @@ subroutine copy_nl(copy_type)
       fire_parameter            = nl%fire_parameter
       sm_fire                   = nl%sm_fire
       ianth_disturb             = nl%ianth_disturb
-      sl_scale                  = nl%sl_scale
-      sl_yr_first               = nl%sl_yr_first
-      sl_nyrs                   = nl%sl_nyrs
-      sl_pft                    = nl%sl_pft
-      sl_prob_harvest           = nl%sl_prob_harvest
-      sl_mindbh_harvest         = nl%sl_mindbh_harvest
-      sl_biomass_harvest        = nl%sl_biomass_harvest
-      sl_skid_rel_area          = nl%sl_skid_rel_area
-      sl_skid_s_gtharv          = nl%sl_skid_s_gtharv
-      sl_skid_s_ltharv          = nl%sl_skid_s_ltharv
-      sl_felling_s_ltharv       = nl%sl_felling_s_ltharv
       cl_fseeds_harvest         = nl%cl_fseeds_harvest
       cl_fstorage_harvest       = nl%cl_fstorage_harvest
       cl_fleaf_harvest          = nl%cl_fleaf_harvest
@@ -636,21 +613,6 @@ subroutine copy_nl(copy_type)
       include_these_pft = skip_integer
    end where
    call sort_up(include_these_pft,n_pft)
-   !---------------------------------------------------------------------------------------!
-
-
-
-
-   !----- Sort up the PFTs that may be logged. --------------------------------------------!
-   where (sl_pft < 1 .or. sl_pft > n_pft)
-      sl_pft            = skip_integer
-      sl_mindbh_harvest = skip_real
-      sl_prob_harvest   = skip_real
-   end where
-   call rank_up_i(n_pft,sl_pft,idx)
-   sl_pft           (idx) = sl_pft(:)
-   sl_mindbh_harvest(idx) = sl_mindbh_harvest(:)
-   sl_prob_harvest  (idx) = sl_prob_harvest(:)
    !---------------------------------------------------------------------------------------!
 
       

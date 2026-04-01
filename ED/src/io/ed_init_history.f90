@@ -640,14 +640,7 @@ module ed_init_history
    !=======================================================================================!
    !=======================================================================================!
    subroutine fill_history_grid(cgrid,ipy,py_index)
-      use ed_state_vars, only : edtype        & ! structure
-                              , polygontype   ! ! structure
-      use ed_max_dims  , only : n_pft         & ! intent(in)
-                              , n_dbh         & ! intent(in)
-                              , n_age         & ! intent(in)
-                              , max_site      & ! intent(in)
-                              , n_dist_types  ! ! intent(in)
-      use hdf5
+      use ed_state_vars, only : edtype        ! ! structure
       implicit none
       !------------------------------------------------------------------------------------!
 
@@ -688,13 +681,7 @@ module ed_init_history
    !=======================================================================================!
    !=======================================================================================!
    subroutine fill_history_grid_p11(cgrid,ipy,py_index)
-      use ed_state_vars, only : edtype        & ! structure
-                              , polygontype   ! ! structure
-      use ed_max_dims  , only : n_pft         & ! intent(in)
-                              , n_dbh         & ! intent(in)
-                              , n_age         & ! intent(in)
-                              , max_site      & ! intent(in)
-                              , n_dist_types  ! ! intent(in)
+      use ed_state_vars, only : edtype        ! ! structure
       use hdf5
       use hdf5_coms    , only : globdims      & ! intent(inout)
                               , chnkdims      & ! intent(inout)
@@ -894,13 +881,7 @@ module ed_init_history
    !=======================================================================================!
    !=======================================================================================!
    subroutine fill_history_grid_p11dmean(cgrid,ipy,py_index)
-      use ed_state_vars, only : edtype        & ! structure
-                              , polygontype   ! ! structure
-      use ed_max_dims  , only : n_pft         & ! intent(in)
-                              , n_dbh         & ! intent(in)
-                              , n_age         & ! intent(in)
-                              , max_site      & ! intent(in)
-                              , n_dist_types  ! ! intent(in)
+      use ed_state_vars, only : edtype        ! ! structure
       use hdf5
       use hdf5_coms    , only : globdims      & ! intent(inout)
                               , chnkdims      & ! intent(inout)
@@ -1304,13 +1285,7 @@ module ed_init_history
    !=======================================================================================!
    !=======================================================================================!
    subroutine fill_history_grid_p11mmean(cgrid,ipy,py_index)
-      use ed_state_vars, only : edtype        & ! structure
-                              , polygontype   ! ! structure
-      use ed_max_dims  , only : n_pft         & ! intent(in)
-                              , n_dbh         & ! intent(in)
-                              , n_age         & ! intent(in)
-                              , max_site      & ! intent(in)
-                              , n_dist_types  ! ! intent(in)
+      use ed_state_vars, only : edtype        ! ! structure
       use hdf5
       use hdf5_coms    , only : globdims      & ! intent(inout)
                               , chnkdims      & ! intent(inout)
@@ -1831,14 +1806,8 @@ module ed_init_history
    !=======================================================================================!
    !=======================================================================================!
    subroutine fill_history_grid_p12(cgrid,ipy,py_index)
-      use ed_state_vars, only : edtype        & ! structure
-                              , polygontype   ! ! structure
+      use ed_state_vars, only : edtype        ! ! structure
       use grid_coms    , only : nzg           ! ! intent(in)
-      use ed_max_dims  , only : n_pft         & ! intent(in)
-                              , n_dbh         & ! intent(in)
-                              , n_age         & ! intent(in)
-                              , max_site      & ! intent(in)
-                              , n_dist_types  ! ! intent(in)
       use hdf5
       use hdf5_coms    , only : globdims      & ! intent(inout)
                               , chnkdims      & ! intent(inout)
@@ -1976,13 +1945,7 @@ module ed_init_history
    !=======================================================================================!
    !=======================================================================================!
    subroutine fill_history_grid_m11(cgrid,ipy,py_index)
-      use ed_state_vars, only : edtype        & ! structure
-                              , polygontype   ! ! structure
-      use ed_max_dims  , only : n_pft         & ! intent(in)
-                              , n_dbh         & ! intent(in)
-                              , n_age         & ! intent(in)
-                              , max_site      & ! intent(in)
-                              , n_dist_types  ! ! intent(in)
+      use ed_state_vars, only : edtype        ! ! structure
       use hdf5
       use hdf5_coms    , only : globdims      & ! intent(inout)
                               , chnkdims      & ! intent(inout)
@@ -2426,13 +2389,7 @@ module ed_init_history
    !=======================================================================================!
    !=======================================================================================!
    subroutine fill_history_grid_p19(cgrid,ipy,py_index)
-      use ed_state_vars, only : edtype        & ! structure
-                              , polygontype   ! ! structure
-      use ed_max_dims  , only : n_pft         & ! intent(in)
-                              , n_dbh         & ! intent(in)
-                              , n_age         & ! intent(in)
-                              , max_site      & ! intent(in)
-                              , n_dist_types  ! ! intent(in)
+      use ed_state_vars, only : edtype        ! ! structure
       use hdf5
       use hdf5_coms    , only : globdims      & ! intent(inout)
                               , chnkdims      & ! intent(inout)
@@ -2532,13 +2489,7 @@ module ed_init_history
    !=======================================================================================!
    !=======================================================================================!
    subroutine fill_history_grid_p191(cgrid,ipy,py_index)
-      use ed_state_vars, only : edtype        & ! structure
-                              , polygontype   ! ! structure
-      use ed_max_dims  , only : n_pft         & ! intent(in)
-                              , n_dbh         & ! intent(in)
-                              , n_age         & ! intent(in)
-                              , max_site      & ! intent(in)
-                              , n_dist_types  ! ! intent(in)
+      use ed_state_vars, only : edtype        ! ! structure
       use hdf5
       use hdf5_coms    , only : globdims      & ! intent(inout)
                               , chnkdims      & ! intent(inout)
@@ -2635,14 +2586,8 @@ module ed_init_history
    !=======================================================================================!
    !=======================================================================================!
    subroutine fill_history_grid_m12(cgrid,ipy,py_index)
-      use ed_state_vars, only : edtype        & ! structure
-                              , polygontype   ! ! structure
+      use ed_state_vars, only : edtype        ! ! structure
       use grid_coms    , only : nzg           ! ! intent(in)
-      use ed_max_dims  , only : n_pft         & ! intent(in)
-                              , n_dbh         & ! intent(in)
-                              , n_age         & ! intent(in)
-                              , max_site      & ! intent(in)
-                              , n_dist_types  ! ! intent(in)
       use hdf5
       use hdf5_coms    , only : globdims      & ! intent(inout)
                               , chnkdims      & ! intent(inout)
@@ -2767,10 +2712,7 @@ module ed_init_history
       use ed_state_vars, only : edtype        & ! structure
                               , polygontype   ! ! structure
       use ed_max_dims  , only : n_pft         & ! intent(in)
-                              , n_dbh         & ! intent(in)
-                              , n_age         & ! intent(in)
-                              , max_site      & ! intent(in)
-                              , n_dist_types  ! ! intent(in)
+                              , n_dbh         ! ! intent(in)
       use hdf5
       use hdf5_coms    , only : globdims      & ! intent(inout)
                               , chnkdims      & ! intent(inout)

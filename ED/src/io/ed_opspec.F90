@@ -1167,8 +1167,6 @@ subroutine ed_opspec_misc
                                     , iooutput                     & ! intent(in)
                                     , isoutput                     & ! intent(in)
                                     , igoutput                     & ! intent(in)
-                                    , iyeara                       & ! intent(in)
-                                    , iyearz                       & ! intent(in)
                                     , iadd_site_means              & ! intent(in)
                                     , iadd_patch_means             & ! intent(in)
                                     , iadd_cohort_means            & ! intent(in)
@@ -1230,18 +1228,6 @@ subroutine ed_opspec_misc
                                     , time2canopy                  & ! intent(in)
                                     , treefall_disturbance_rate    & ! intent(in)
                                     , min_patch_area               & ! intent(in)
-                                    , sl_scale                     & ! intent(in)
-                                    , sl_yr_first                  & ! intent(in)
-                                    , sl_nyrs                      & ! intent(in)
-                                    , sl_pft                       & ! intent(in)
-                                    , sl_prob_harvest              & ! intent(in)
-                                    , sl_mindbh_harvest            & ! intent(in)
-                                    , sl_biomass_harvest           & ! intent(in)
-                                    , sl_skid_rel_area             & ! intent(in)
-                                    , sl_skid_dbh_thresh           & ! intent(in)
-                                    , sl_skid_s_gtharv             & ! intent(in)
-                                    , sl_skid_s_ltharv             & ! intent(in)
-                                    , sl_felling_s_ltharv          & ! intent(in)
                                     , cl_fseeds_harvest            & ! intent(in)
                                     , cl_fstorage_harvest          & ! intent(in)
                                     , cl_fleaf_harvest             ! ! intent(in)
@@ -1286,7 +1272,7 @@ subroutine ed_opspec_misc
    logical                :: plantation_ok
    logical                :: patch_detailed
    logical                :: lu_detailed
-  !---------------------------------------------------------------------------------------!
+   !---------------------------------------------------------------------------------------!
 
    !----- IFATERR will count the number of bad set ups. -----------------------------------!
    ifaterr=0
@@ -1994,156 +1980,12 @@ end do
       call opspec_fatal(reason,'opspec_misc')  
       ifaterr = ifaterr +1
    end if
-   
-   !---------------------------------------------------------------------------------------!
-   !      The following settings matter only when ianth_disturb is 2.                      !
-   !---------------------------------------------------------------------------------------!
-   select case (ianth_disturb)
-   case (2)
-      if (sl_scale < 0 .or. sl_scale > 1) then
-         write (reason,fmt='(a,1x,i4,a)')                                                  &
-                       'Invalid SL_SCALE, it must be either 0 and 1. Yours is set to'      &
-                      ,sl_scale,'...'
-         call opspec_fatal(reason,'opspec_misc')  
-         ifaterr = ifaterr +1
-      end if
-
-      if (sl_yr_first < iyeara .or. sl_yr_first > iyearz) then
-         write (reason,fmt='(a,i4,2a,i4,a,1x,i4,a)')                                       &
-                       'Invalid SL_YR_FIRST, it must be between IYEARA (',iyeara,') and '  &
-                      ,'IYEARZ (',iyearz,'). Yours is set to',sl_yr_first,'...'
-         call opspec_fatal(reason,'opspec_misc')  
-         ifaterr = ifaterr +1
-      end if
-
-      if (sl_nyrs < 1 .or. sl_nyrs > 2000) then
-         write (reason,fmt='(a,1x,i4,a)')                                                  &
-                       'Invalid SL_NYRS, it must be between 1 and 2000. Yours is set to'   &
-                      ,sl_nyrs,'...'
-         call opspec_fatal(reason,'opspec_misc')  
-         ifaterr = ifaterr +1
-      end if
-
-      !------------------------------------------------------------------------------------!
-      !     Check whether the user is attempting to include invalid pfts.                  !
-      !------------------------------------------------------------------------------------!
-      sl_pft_loop: do ipft=1,n_pft
-         if (sl_pft(ipft) == skip_integer) then
-           if (ipft /= 1) then
-              exit sl_pft_loop
-           else
-              write (reason,fmt='(a)') 'You did not specify any valid SL_PFT.'
-              call opspec_fatal(reason,'opspec_misc')
-              ifaterr=ifaterr+1
-           end if
-         elseif (sl_pft(ipft) < 0 .or. sl_pft(ipft) > n_pft) then
-            write (reason,fmt='(a,1x,i4,a,1x,i4,a)')                                       &
-                'Invalid SL_PFT, it must be between 1 and ',n_pft                          &
-               ,'. One of yours is set to',sl_pft(ipft),'...'
-            call opspec_fatal(reason,'opspec_misc')  
-            ifaterr=ifaterr+1
-         end if
-      end do sl_pft_loop
-      !------------------------------------------------------------------------------------!
-
-      !------------------------------------------------------------------------------------!
-      !     Check whether the user is attempting to include invalid minimum DBH.           !
-      !------------------------------------------------------------------------------------!
-      sl_mindbh_loop: do ipft=1,n_pft
-         if (sl_mindbh_harvest(ipft) == skip_real) then
-           if (ipft /= 1) then
-              exit sl_mindbh_loop
-           else
-              write (reason,fmt='(a)') 'You did not specify any valid SL_MINDBH_HARVEST.'
-              call opspec_fatal(reason,'opspec_misc')
-              ifaterr=ifaterr+1
-           end if
-         elseif (sl_mindbh_harvest(ipft) < 0) then
-            write (reason,fmt='(2a,1x,es12.5,a)')                                          &
-                'Invalid SL_MINDBH_HARVEST, it must be non-negative.'                      &
-               ,' One of yours is set to',sl_mindbh_harvest(ipft),'...'
-            call opspec_fatal(reason,'opspec_misc')  
-            ifaterr=ifaterr+1
-         end if
-      end do sl_mindbh_loop
-      !------------------------------------------------------------------------------------!
-
-      !------------------------------------------------------------------------------------!
-      !     Check whether the user is attempting to include invalid harvest probability.   !
-      !------------------------------------------------------------------------------------!
-      sl_pharv_loop: do ipft=1,n_pft
-         if (sl_prob_harvest(ipft) == skip_real) then
-           if (ipft /= 1) then
-              exit sl_pharv_loop
-           else
-              write (reason,fmt='(a)') 'You did not specify any valid SL_PROB_HARVEST.'
-              call opspec_fatal(reason,'opspec_misc')
-              ifaterr=ifaterr+1
-           end if
-         elseif (sl_prob_harvest(ipft) < 0. .or. sl_prob_harvest(ipft) > 1.) then
-            write (reason,fmt='(2a,1x,es12.5,a)')                                          &
-                'Invalid SL_MINDBH_HARVEST, it must be between 0.0 and 1.0.'               &
-               ,'. One of yours is set to',sl_prob_harvest(ipft),'...'
-            call opspec_fatal(reason,'opspec_misc')  
-            ifaterr=ifaterr+1
-         end if
-      end do sl_pharv_loop
-      !------------------------------------------------------------------------------------!
-
-      if (sl_biomass_harvest < 0. .or. sl_biomass_harvest > 50.) then
-         write (reason,fmt='(2a,1x,es12.5,a)')                                             &
-                       'Invalid SL_BIOMASS_HARVEST, it must be between 0. and 50.'         &
-                      ,'  Yours is set to',sl_biomass_harvest,'...'
-         call opspec_fatal(reason,'opspec_misc')  
-         ifaterr = ifaterr +1
-      end if
-   end select
 
    !---------------------------------------------------------------------------------------!
-   !      The following settings matter only when ianth_disturb is 1 or 2.                 !
+   !      The following settings matter only when anthropogenic disturbance is enabled.    !
    !---------------------------------------------------------------------------------------!
    select case (ianth_disturb)
    case (1,2)
-      if (sl_skid_rel_area < 0. .or. sl_skid_rel_area > 5.) then
-         write (reason,fmt='(2a,1x,es12.5,a)')                                             &
-                       'Invalid SL_SKID_REL_AREA, it must be between 0. and 5.'            &
-                      ,'  Yours is set to',sl_skid_rel_area,'...'
-         call opspec_fatal(reason,'opspec_misc')
-         ifaterr = ifaterr +1
-      end if
-
-      if (sl_skid_dbh_thresh < 0. .or. sl_skid_dbh_thresh > 1000.) then
-         write (reason,fmt='(2a,1x,es12.5,a)')                                             &
-                       'Invalid SL_SKID_DBH_THRESH, it must be between 0. and 1000.'       &
-                      ,'  Yours is set to',sl_skid_dbh_thresh,'...'
-         call opspec_fatal(reason,'opspec_misc')
-         ifaterr = ifaterr +1
-      end if
-
-      if (sl_skid_s_gtharv < 0. .or. sl_skid_s_gtharv > 1.) then
-         write (reason,fmt='(2a,1x,es12.5,a)')                                             &
-                       'Invalid SL_SKID_S_GTHARV, it must be between 0. and 1.'            &
-                      ,'  Yours is set to',sl_skid_s_gtharv,'...'
-         call opspec_fatal(reason,'opspec_misc')
-         ifaterr = ifaterr +1
-      end if
-
-      if (sl_skid_s_ltharv < 0. .or. sl_skid_s_ltharv > 1.) then
-         write (reason,fmt='(2a,1x,es12.5,a)')                                             &
-                       'Invalid SL_SKID_S_LTHARV, it must be between 0. and 1.'            &
-                      ,'  Yours is set to',sl_skid_s_ltharv,'...'
-         call opspec_fatal(reason,'opspec_misc')
-         ifaterr = ifaterr +1
-      end if
-
-      if (sl_felling_s_ltharv < 0. .or. sl_felling_s_ltharv > 1.) then
-         write (reason,fmt='(2a,1x,es12.5,a)')                                             &
-                       'Invalid SL_FELLING_S_LTHARV, it must be between 0. and 1.'            &
-                      ,'  Yours is set to',sl_felling_s_ltharv,'...'
-         call opspec_fatal(reason,'opspec_misc')  
-         ifaterr = ifaterr +1
-      end if
-
       if (cl_fseeds_harvest < 0. .or. cl_fseeds_harvest > 1.) then
          write (reason,fmt='(2a,1x,es12.5,a)')                                             &
                        'Invalid CL_FSEEDS_HARVEST, it must be between 0. and 1.'           &
@@ -2270,6 +2112,11 @@ end do
          ifaterr = ifaterr +1
          call opspec_fatal(reason,'opspec_misc')
       end if
+
+
+
+
+
    end select
    !---------------------------------------------------------------------------------------!
 

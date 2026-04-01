@@ -456,7 +456,7 @@ module structural_growth
                   ! also set a fraction of seeds as crop yield.                            !
                   !------------------------------------------------------------------------!
                   select case (csite%dist_type(ipa))
-                  case (8)
+                  case (9)
                      !---------------------------------------------------------------------!
                      !      Cropland patch.  Here we must account for harvesting of seeds. !
                      ! Leaves and non-structural carbon must be harvested at the end of    !

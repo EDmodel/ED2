@@ -921,6 +921,9 @@ subroutine init_disturb_params
    !---------------------------------------------------------------------------------------!
    !     Find the minimum age above which we disregard the disturbance type because the    !
    ! patch can be considered old growth.                                                   !
+   ! MLO - In the future, disturbances that primarily impact the under storey could have a !
+   !       much shorter age to be considered old-growth, as repopulating the under storey  !
+   !       likely takes less time than repopulating the upper canopy.                      ! 
    !---------------------------------------------------------------------------------------!
    !----- Non-cultivated patches: use the mean age for tree fall disturbances. ------------!
    if (abs(treefall_disturbance_rate) > tiny_num) then
@@ -931,7 +934,7 @@ subroutine init_disturb_params
    !----- Cultivated lands should never be considered old-growth. -------------------------!
    min_oldgrowth(1) = huge_num
    min_oldgrowth(2) = huge_num
-   min_oldgrowth(8) = huge_num
+   min_oldgrowth(9) = huge_num
    !---------------------------------------------------------------------------------------!
 
    return

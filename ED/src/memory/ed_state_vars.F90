@@ -1119,7 +1119,8 @@ module ed_state_vars
       !               5.  Forest regrowth.                                                 !
       !               6.  Logged forest (felling).                                         !
       !               7.  Logged forest (skid trail + road).                               !
-      !               8.  Cropland.                                                        !
+      !               8.  Logged forest (canopy thinning).                                 !
+      !               9.  Cropland.                                                        !
       !------------------------------------------------------------------------------------!
       real   , pointer,dimension(:) :: area 
       !< Patch area relative to the total SITE area (dimensionless)
@@ -1134,7 +1135,8 @@ module ed_state_vars
       !!5.  Forest regrowth.\n
       !!6.  Logged forest (felling).\n
       !!7.  Logged forest (skid trail + road).\n
-      !!8.  Cropland.\n
+      !!8.  Logged forest (canopy thinning).\n
+      !!9.  Cropland.\n
 
       real   , pointer,dimension(:) :: fbeam
       !< Correction term to account for neighbouring shaded (1.0 unless ihrzrad /= 0)
@@ -2379,18 +2381,35 @@ module ed_state_vars
       !< Area of collateral damage disturbance in logged areas due to skid trails and 
       !< roads.
 
-      real        , pointer, dimension(:,:) :: mindbh_harvest
-      !<Minimum DBH for selective logging.  If stand clearing logging, this can be set to
-      !<zero.
+      real        , pointer, dimension(:) :: thinning_frac_area
+      !< Fraction of previously logged areas that will receive canopy thinning treatment.
 
-      real        , pointer, dimension(:,:) :: prob_harvest
-      !<Probability of being harvest when selective logging happens.
+      real        , pointer, dimension(:) :: thinning_age_offset
+      !< Time (age) offset from logging until canopy thinning is applied.
+
+      real        , pointer, dimension(:,:) :: mindbh_felling
+      !< Minimum DBH for selective logging (tree felling will remove trees with DBH > 
+      !< mindbh_felling.  If stand-clearing logging, this can be set to zero.
+
+      real        , pointer, dimension(:,:) :: prob_felling
+      !<Probability of being felled when selective logging happens.
 
       real        , pointer, dimension(:,:) :: felling_s_gtharv
       !< Survivorship of large trees (DBH > mindbh_harvest) in patches with tree felling.
 
       real        , pointer, dimension(:,:) :: felling_s_ltharv
       !< Survivorship of small trees (DBH < mindbh_harvest) in patches with tree felling.
+
+      real        , pointer, dimension(:,:) :: thinning_dbh_thresh
+      !< DBH threshold for canopy thinning. Typically canopy thinning operations remove 
+      !< more small trees than large ones, though some large trees may also be removed 
+      !< depending on the treatment.
+
+      real        , pointer, dimension(:,:) :: thinning_s_gtharv
+      !< Survivorship of large trees (DBH > maxdbh_thinning) in patches with canopy thinning.
+
+      real        , pointer, dimension(:,:) :: thinning_s_ltharv
+      !< Survivorship of small trees (DBH < maxdbh_thinning) in patches with canopy thinning.
 
       real        , pointer, dimension(:,:) :: skid_dbh_thresh
       !< DBH threshold for survivorship to logging collateral damage (skid trails and 
@@ -2508,6 +2527,7 @@ module ed_state_vars
       !------------------------------------------------------------------------------------!
 
 
+
       real,pointer,dimension(:) :: cosaoi
 
       !----- Length of day light, used to average light levels properly. -------------------!
@@ -2516,6 +2536,8 @@ module ed_state_vars
       
       !-----  Light-phenology variable.
       real, pointer, dimension(:) :: rad_avg
+
+
 
       !====================================================================================!
       !====================================================================================!
@@ -4794,10 +4816,15 @@ module ed_state_vars
       allocate(cpoly%min_monthly_temp              (                          nsites))
       allocate(cpoly%num_landuse_years             (                          nsites))
       allocate(cpoly%skid_rel_area                 (                          nsites))
-      allocate(cpoly%mindbh_harvest                (                    n_pft,nsites))
-      allocate(cpoly%prob_harvest                  (                    n_pft,nsites))
+      allocate(cpoly%thinning_frac_area            (                          nsites))
+      allocate(cpoly%thinning_age_offset           (                          nsites))
+      allocate(cpoly%mindbh_felling                (                    n_pft,nsites))
+      allocate(cpoly%prob_felling                  (                    n_pft,nsites))
       allocate(cpoly%felling_s_gtharv              (                    n_pft,nsites))
       allocate(cpoly%felling_s_ltharv              (                    n_pft,nsites))
+      allocate(cpoly%thinning_dbh_thresh           (                    n_pft,nsites))
+      allocate(cpoly%thinning_s_gtharv             (                    n_pft,nsites))
+      allocate(cpoly%thinning_s_ltharv             (                    n_pft,nsites))
       allocate(cpoly%skid_dbh_thresh               (                    n_pft,nsites))
       allocate(cpoly%skid_s_gtharv                 (                    n_pft,nsites))
       allocate(cpoly%skid_s_ltharv                 (                    n_pft,nsites))
@@ -7084,10 +7111,15 @@ module ed_state_vars
       nullify(cpoly%min_monthly_temp           )
       nullify(cpoly%num_landuse_years          )
       nullify(cpoly%skid_rel_area              )
-      nullify(cpoly%mindbh_harvest             )
-      nullify(cpoly%prob_harvest               )
+      nullify(cpoly%thinning_frac_area         )
+      nullify(cpoly%thinning_age_offset        )
+      nullify(cpoly%mindbh_felling             )
+      nullify(cpoly%prob_felling               )
       nullify(cpoly%felling_s_gtharv           )
       nullify(cpoly%felling_s_ltharv           )
+      nullify(cpoly%thinning_dbh_thresh        )
+      nullify(cpoly%thinning_s_gtharv          )
+      nullify(cpoly%thinning_s_ltharv          )
       nullify(cpoly%skid_dbh_thresh            )
       nullify(cpoly%skid_s_gtharv              )
       nullify(cpoly%skid_s_ltharv              )
@@ -21840,6 +21872,26 @@ module ed_state_vars
                            ,'[0-1]','(isite)') 
       end if
 
+      if (associated(cpoly%thinning_frac_area)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cpoly%thinning_frac_area,nvar,igr,init                    &
+                           ,cpoly%siglob_id,var_len,var_len_global,max_ptrs                &
+                           ,'THINNING_FRAC_AREA :21:hist') 
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Fraction of area to receive canopy thinning after logging'    &
+                           ,'[0-1]','(isite)') 
+      end if
+
+      if (associated(cpoly%thinning_age_offset)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cpoly%thinning_age_offset,nvar,igr,init                   &
+                           ,cpoly%siglob_id,var_len,var_len_global,max_ptrs                &
+                           ,'THINNING_AGE_OFFSET :21:hist') 
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Age offset since logging before canopy thinning happens'      &
+                           ,'[yr]','(isite)') 
+      end if
+
       if (associated(cpoly%agri_stocking_density)) then
          nvar=nvar+1
          call vtable_edio_r(npts,cpoly%agri_stocking_density,nvar,igr,init                 &
@@ -22783,23 +22835,23 @@ module ed_state_vars
                            ,'[m2_leaf/kgC]','(n_pft,isite)')
       end if
 
-      if (associated(cpoly%mindbh_harvest)) then
+      if (associated(cpoly%mindbh_felling)) then
          nvar=nvar+1
-         call vtable_edio_r(npts,cpoly%mindbh_harvest                                      &
+         call vtable_edio_r(npts,cpoly%mindbh_felling                                      &
                            ,nvar,igr,init,cpoly%siglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MINDBH_HARVEST :24:hist')
+                           ,'MINDBH_FELLING :24:hist')
          call metadata_edio(nvar,igr                                                       &
-                           ,'Minimum DBH for harvesting in selective logging'              &
+                           ,'Minimum DBH for tree felling in selective logging'            &
                            ,'[cm]','(n_pft,isite)')
       end if
 
-      if (associated(cpoly%prob_harvest)) then
+      if (associated(cpoly%prob_felling)) then
          nvar=nvar+1
-         call vtable_edio_r(npts,cpoly%prob_harvest                                        &
+         call vtable_edio_r(npts,cpoly%prob_felling                                        &
                            ,nvar,igr,init,cpoly%siglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'PROB_HARVEST :24:hist')
+                           ,'PROB_FELLING :24:hist')
          call metadata_edio(nvar,igr                                                       &
-                           ,'Harvesting probability in selective logging'                  &
+                           ,'Tree felling probability in selective logging'                  &
                            ,'[0-1]','(n_pft,isite)')
       end if
 
@@ -22820,6 +22872,36 @@ module ed_state_vars
                            ,'FELLING_S_LTHARV :24:hist')
          call metadata_edio(nvar,igr                                                       &
                            ,'Survivorship to felling for trees with DBH < MINDBH_HARVEST'  &
+                           ,'[0-1]','(n_pft,isite)')
+      end if
+
+      if (associated(cpoly%thinning_dbh_thresh)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cpoly%thinning_dbh_thresh                                 &
+                           ,nvar,igr,init,cpoly%siglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'THINNING_DBH_THRESH :24:hist')
+         call metadata_edio(nvar,igr                                                       &
+                           ,'DBH threshold for canopy thinning treatment'                  &
+                           ,'[cm]','(n_pft,isite)')
+      end if
+
+      if (associated(cpoly%thinning_s_gtharv)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cpoly%thinning_s_gtharv                                   &
+                           ,nvar,igr,init,cpoly%siglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'THINNING_S_GTHARV :24:hist')
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Thinning survivorship: trees with DBH > THINNING_DBH_THRESH'  &
+                           ,'[0-1]','(n_pft,isite)')
+      end if
+
+      if (associated(cpoly%thinning_s_ltharv)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cpoly%thinning_s_ltharv                                   &
+                           ,nvar,igr,init,cpoly%siglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'THINNING_S_LTHARV :24:hist')
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Thinning survivorship: trees with DBH < THINNING_DBH_THRESH'  &
                            ,'[0-1]','(n_pft,isite)')
       end if
 

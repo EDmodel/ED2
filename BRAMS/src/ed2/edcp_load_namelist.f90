@@ -76,18 +76,6 @@ subroutine read_ednl(iunit,filename)
    use disturb_coms         , only : include_fire                          & ! intent(out)
                                    , fire_parameter                        & ! intent(out)
                                    , ianth_disturb                         & ! intent(out)
-                                   , sl_scale                              & ! intent(out)
-                                   , sl_yr_first                           & ! intent(out)
-                                   , sl_nyrs                               & ! intent(out)
-                                   , sl_pft                                & ! intent(out)
-                                   , sl_prob_harvest                       & ! intent(out)
-                                   , sl_mindbh_harvest                     & ! intent(out)
-                                   , sl_biomass_harvest                    & ! intent(out)
-                                   , sl_skid_rel_area                      & ! intent(out)
-                                   , sl_skid_dbh_thresh                    & ! intent(out)
-                                   , sl_skid_s_gtharv                      & ! intent(out)
-                                   , sl_skid_s_ltharv                      & ! intent(out)
-                                   , sl_felling_s_ltharv                   & ! intent(out)
                                    , cl_fseeds_harvest                     & ! intent(out)
                                    , cl_fstorage_harvest                   & ! intent(out)
                                    , cl_fleaf_harvest                      & ! intent(out)
@@ -263,16 +251,13 @@ subroutine read_ednl(iunit,filename)
                        ,trait_plasticity_scheme,iddmort_scheme,cbr_scheme,ddmort_const     &
                        ,carbon_mortality_scheme,hydraulic_mortality_scheme                 &
                        ,thetacrit                                                          &
-                       ,quantum_efficiency_t,n_plant_lim,n_decomp_lim,include_fire,sl_pft  &
-                       ,sl_prob_harvest,sl_mindbh_harvest,sl_biomass_harvest               &
-                       ,sl_skid_rel_area,sl_skid_dbh_thresh,sl_skid_s_gtharv               &
-                       ,sl_skid_s_ltharv,sl_felling_s_ltharv,cl_fseeds_harvest             &
-                       ,cl_fstorage_harvest,cl_fleaf_harvest,icanturb,include_these_pft    &
-                       ,pasture_stock,agri_stock,plantation_stock,pft_1st_check,ifusion    &
-                       ,maxpatch,maxcohort,min_patch_area,treefall_disturbance_rate        &
-                       ,time2canopy,iprintpolys,npvars,printvars,pfmtstr,ipmin,ipmax       &
-                       ,imetrad,iphenys1,iphenysf,iphenyf1,iphenyff,iedcnfgf,event_file    &
-                       ,phenpath
+                       ,quantum_efficiency_t,n_plant_lim,n_decomp_lim,include_fire         &
+                       ,ianth_disturb,cl_fseeds_harvest,cl_fstorage_harvest                &
+                       ,cl_fleaf_harvest,icanturb,include_these_pft,pasture_stock          &
+                       ,agri_stock,plantation_stock,pft_1st_check,ifusion,maxpatch         &
+                       ,maxcohort,min_patch_area,treefall_disturbance_rate,time2canopy     &
+                       ,iprintpolys,npvars,printvars,pfmtstr,ipmin,ipmax,imetrad,iphenys1  &
+                       ,iphenysf,iphenyf1,iphenyff,iedcnfgf,event_file,phenpath
 
    !----- Initialise some database variables with a non-sense path. -----------------------!
    islcolflg       (:) = undef_integer
