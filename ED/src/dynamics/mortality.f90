@@ -255,17 +255,17 @@ module mortality
                              ,felling_s_ltharv,thinning_dbh_thresh,thinning_s_gtharv       &
                              ,thinning_s_ltharv,skid_dbh_thresh,skid_s_gtharv              &
                              ,skid_s_ltharv,cpatch,ico)
-      use ed_state_vars, only : patchtype                ! ! structure
-      use disturb_coms , only : treefall_hite_threshold  ! ! intent(in)
-      use pft_coms     , only : treefall_s_ltht          & ! intent(in)
-                              , treefall_s_gtht          & ! intent(in)
-                              , fire_s_min               & ! intent(in)
-                              , fire_s_max               & ! intent(in)
-                              , fire_s_inter             & ! intent(in)
-                              , fire_s_slope             ! ! intent(in)
-      use ed_max_dims  , only : n_pft                    ! ! intent(in)
-      use consts_coms  , only : lnexp_min                & ! intent(in)
-                              , lnexp_max                ! ! intent(in)
+      use ed_state_vars, only : patchtype                  ! ! structure
+      use disturb_coms , only : treefall_height_threshold  ! ! intent(in)
+      use pft_coms     , only : treefall_s_ltht            & ! intent(in)
+                              , treefall_s_gtht            & ! intent(in)
+                              , fire_s_min                 & ! intent(in)
+                              , fire_s_max                 & ! intent(in)
+                              , fire_s_inter               & ! intent(in)
+                              , fire_s_slope               ! ! intent(in)
+      use ed_max_dims  , only : n_pft                      ! ! intent(in)
+      use consts_coms  , only : lnexp_min                  & ! intent(in)
+                              , lnexp_max                  ! ! intent(in)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       type(patchtype)                 , target     :: cpatch
