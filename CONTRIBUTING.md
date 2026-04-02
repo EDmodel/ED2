@@ -23,6 +23,16 @@ To make sure your contributions are the most effective, please consider the foll
 6. **Test, test, test**. Before submitting your contribution, make sure you test your changes. One very useful step is to compile the code and run it with comprehensive and strict debugging flags, which may help you find some code bugs at an early development stage. Please refer to our [compilation instructions](https://github.com/EDmodel/ED2/wiki/Compiler-instructions-%28aka-the-include.mk-files%29) for more details on how to build ED2 with strict compilation rules.
 7. **Submit a pull request**. Once you are confident that your changes are ready, create a [pull request](https://github.com/EDmodel/ED2/pulls). Make sure to document your changes in detail, and engage with the community as you receive feedback. At this point, it is very common that people will provide you suggestions on additional modifications. Please follow up with them, and in most cases, it is possible to submit additional changes to the same pull request. Once the changes are approved, your contributions will be merged to the ED2 main branch.
 
+## Use of Generative Artifical Intelligence (GenAI) and AI Agents
+
+We understand that the use of Artificial Intelligence (AI) is becoming increasingly common in code and software development. However, we ask users to read our guidelines on how to use these tools within the context of the ED2 model development. 
+
+1. Contributors that use GenAI to help develop code must disclose its usage when submitting a pull request. Specifically, we request information such as the platform use and the extent of its use in producing the pull request (for example, specific commands versus chunks of code written with GenAI). To ensure the long-term quality of the ED2 code, we may request contributors to carry out and report additional testing, and for cases with extensive code additions or changes, we will request two approving reviews.
+
+2. Users must refrain from using AI agents to submit pull requests, open or comment on issues and discussion items, produce or edit Wiki content, or other features available in the ED2 model repository on GitHub. The only exception is when such usage was approved (on a case-by-case basis) by one of the core members of the ED2 model development team. Any unapproved submission to the ED2 repository will be closed and reverted. Repeated unapproved submissions will result in the submitting user being blocked. 
+
+*Note*. The AI guidelines are inspired by similar ones proposed by @glemieux for the [FATES](https://github.com/NGEET/fates) model.
+
 ## Additional resources
 
 - [GitHub Docs](https://docs.github.com/en). An excellent starting point for best practices when using git and GitHub for ED2 or any other project. Particularly relevant documents include (1) [how to use forks](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks/about-forks), (2) [how to use branches](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/about-branches) and (3) [how to make pull requests](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/about-pull-requests).
