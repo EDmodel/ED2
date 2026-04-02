@@ -3,51 +3,51 @@
 ! Model 2, when run in coupled mode.                                                       !
 !------------------------------------------------------------------------------------------!
 subroutine ed_coup_driver()
-   use grid_coms            , only : ngrids                & ! intent(in)
-                                   , time                  & ! intent(in)
-                                   , timmax                ! ! intent(in)
-   use ed_state_vars        , only : allocate_edglobals    & ! subroutine
-                                   , filltab_alltypes      & ! subroutine
-                                   , edgrid_g              ! ! subroutine
-   use ed_init              , only : read_obstime          ! ! subroutine
-   use ed_misc_coms         , only : fast_diagnostics      & ! intent(in)
-                                   , current_time          & ! intent(in)
-                                   , iyeara                & ! intent(in)
-                                   , imontha               & ! intent(in)
-                                   , idatea                & ! intent(in)
-                                   , itimea                & ! intent(in)
-                                   , runtype               & ! intent(in)
-                                   , ifoutput              & ! intent(in)
-                                   , idoutput              & ! intent(in)
-                                   , imoutput              & ! intent(in)
-                                   , iqoutput              & ! intent(in)
-                                   , isoutput              & ! intent(in)
-                                   , iyoutput              & ! intent(in)
-                                   , iooutput              & ! intent(in)
-                                   , writing_long          & ! intent(in)
-                                   , writing_eorq          & ! intent(in)
-                                   , writing_dcyc          & ! intent(in)
-                                   , runtype               ! ! intent(in)
-   use ed_work_vars         , only : ed_dealloc_work       & ! subroutine
-                                   , work_e                ! ! intent(inout)
-   use soil_coms            , only : alloc_soilgrid        ! ! subroutine
-   use ed_node_coms         , only : mynum                 & ! intent(in)
-                                   , nnodetot              & ! intent(in)
-                                   , sendnum               & ! intent(in)
-                                   , recvnum               ! ! intent(in)
-   use io_params            , only : ioutput               ! ! intent(in)
-   use rk4_coms             , only : checkbudget           ! ! intent(in)
-   use phenology_aux        , only : first_phenology       ! ! subroutine
-   use average_utils        , only : update_ed_yearly_vars & ! sub-routine
-                                   , zero_ed_fmean_vars    & ! sub-routine
-                                   , zero_ed_dmean_vars    & ! sub-routine
-                                   , zero_ed_qmean_vars    & ! sub-routine
-                                   , zero_ed_mmean_vars    ! ! sub-routine
-   use hrzshade_utils       , only : init_cci_variables    ! ! subroutine
-   use canopy_radiation_coms, only : ihrzrad               ! ! intent(in)
-   use budget_utils         , only : ed_init_budget        ! ! sub-routine
-   use ed_type_init         , only : ed_init_viable        ! ! sub-routine
-   use soil_respiration     , only : zero_litter_inputs    ! ! sub-routine
+   use grid_coms            , only : ngrids                    & ! intent(in)
+                                   , time                      & ! intent(in)
+                                   , timmax                    ! ! intent(in)
+   use ed_state_vars        , only : allocate_edglobals        & ! subroutine
+                                   , filltab_alltypes          & ! subroutine
+                                   , edgrid_g                  ! ! subroutine
+   use ed_init              , only : read_obstime              ! ! subroutine
+   use ed_misc_coms         , only : fast_diagnostics          & ! intent(in)
+                                   , current_time              & ! intent(in)
+                                   , iyeara                    & ! intent(in)
+                                   , imontha                   & ! intent(in)
+                                   , idatea                    & ! intent(in)
+                                   , itimea                    & ! intent(in)
+                                   , runtype                   & ! intent(in)
+                                   , ifoutput                  & ! intent(in)
+                                   , idoutput                  & ! intent(in)
+                                   , imoutput                  & ! intent(in)
+                                   , iqoutput                  & ! intent(in)
+                                   , isoutput                  & ! intent(in)
+                                   , iyoutput                  & ! intent(in)
+                                   , iooutput                  & ! intent(in)
+                                   , writing_long              & ! intent(in)
+                                   , writing_eorq              & ! intent(in)
+                                   , writing_dcyc              & ! intent(in)
+                                   , runtype                   ! ! intent(in)
+   use ed_work_vars         , only : ed_dealloc_work           & ! subroutine
+                                   , work_e                    ! ! intent(inout)
+   use soil_coms            , only : alloc_soilgrid            ! ! subroutine
+   use ed_node_coms         , only : mynum                     & ! intent(in)
+                                   , nnodetot                  & ! intent(in)
+                                   , sendnum                   & ! intent(in)
+                                   , recvnum                   ! ! intent(in)
+   use io_params            , only : ioutput                   ! ! intent(in)
+   use rk4_coms             , only : checkbudget               ! ! intent(in)
+   use phenology_aux        , only : first_phenology           ! ! subroutine
+   use average_utils        , only : update_ed_yearly_polygons & ! sub-routine
+                                   , zero_ed_fmean_polygons    & ! sub-routine
+                                   , zero_ed_dmean_polygons    & ! sub-routine
+                                   , zero_ed_qmean_polygons    & ! sub-routine
+                                   , zero_ed_mmean_polygons    ! ! sub-routine
+   use hrzshade_utils       , only : init_cci_variables        ! ! subroutine
+   use canopy_radiation_coms, only : ihrzrad                   ! ! intent(in)
+   use budget_utils         , only : ed_init_budget            ! ! sub-routine
+   use ed_type_init         , only : ed_init_viable            ! ! sub-routine
+   use soil_respiration     , only : zero_litter_inputs        ! ! sub-routine
 #if defined(RAMS_MPI)
    use mpi
 #endif
@@ -371,15 +371,15 @@ subroutine ed_coup_driver()
    if (trim(runtype) /= 'HISTORY') then
       if (mynum == nnodetot) write(unit=*,fmt='(a)') ' [+] Reset long-term means...'
       do ifm=1,ngrids
-         if (writing_long) call zero_ed_dmean_vars(edgrid_g(ifm))
-         if (writing_eorq) call zero_ed_mmean_vars(edgrid_g(ifm))
-         if (writing_dcyc) call zero_ed_qmean_vars(edgrid_g(ifm))
+         if (writing_long) call zero_ed_dmean_polygons(edgrid_g(ifm))
+         if (writing_eorq) call zero_ed_mmean_polygons(edgrid_g(ifm))
+         if (writing_dcyc) call zero_ed_qmean_polygons(edgrid_g(ifm))
       end do
 
       !----- Output Initial State. --------------------------------------------------------!
       if (mynum == nnodetot) write(unit=*,fmt='(a)') ' [+] Update annual means...'
       do ifm=1,ngrids
-         call update_ed_yearly_vars(edgrid_g(ifm))
+         call update_ed_yearly_polygons(edgrid_g(ifm))
       end do
    end if
 
@@ -391,7 +391,7 @@ subroutine ed_coup_driver()
 
    if (mynum == nnodetot) write(unit=*,fmt='(a)') ' [+] Reset averaged variables...'
    do ifm=1,ngrids
-      call zero_ed_fmean_vars(edgrid_g(ifm))
+      call zero_ed_fmean_polygons(edgrid_g(ifm))
    end do
 
 
