@@ -24,6 +24,14 @@
 
  <!-- If any of the boxes above were checked, please describe the changes. -->
 
+### Use of Generative Artificial Intelligence (GenAI)
+  - [ ] This commit used GenAI to produce code (beyond inline suggestions)
+    - [ ] Code produced by GenAI were limited (i.e., a few commands)
+    - [ ] Code produced by GenAI were extensive (i.e., entire subroutines)
+    - [ ] I have revised and tested the code produced by GenAI
+
+ <!-- If any of the boxes above were checked, please describe the changes. -->
+
 ### Expectation of Answer Changes:
 <!--- Go over the following points, and put an `x` in the option that describes -->
 <!--- the expected behaviour of this pull request. -->
