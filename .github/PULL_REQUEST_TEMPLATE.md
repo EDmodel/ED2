@@ -30,7 +30,8 @@
     - [ ] Code produced by GenAI were extensive (i.e., entire subroutines)
     - [ ] I have revised and tested the code produced by GenAI
 
- <!-- If any of the boxes above were checked, please describe the changes. -->
+ <!-- If any of the boxes above were checked, please briefly describe the usage. -->
+ <!-- Please let us know which GenAI tool you used too. -->
 
 ### Expectation of Answer Changes:
 <!--- Go over the following points, and put an `x` in the option that describes -->
