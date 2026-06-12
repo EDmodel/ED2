@@ -49,8 +49,8 @@ program main
    integer                               :: num_procs        !<= omp_get_num_procs()
    integer                               :: thread
    integer                               :: cpu
-   integer, dimension(64)                :: thread_use
-   integer, dimension(64)                :: cpu_use
+   integer, dimension(:), allocatable    :: thread_use
+   integer, dimension(:), allocatable    :: cpu_use
    integer, external                     :: findmycpu
    !---------------------------------------------------------------------------------------!
 
@@ -191,6 +191,8 @@ program main
    cpu_use(:)    = 0
    !$ max_threads = omp_get_max_threads()
    !$ num_procs   = omp_get_num_procs()
+   allocate(thread_use(max_threads))
+   allocate(cpu_use(num_procs))
 
    !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(thread,cpu)
    do n = 1,max_threads
@@ -306,6 +308,12 @@ program main
    case default
       continue
    end select
+   !---------------------------------------------------------------------------------------!
+
+
+   !----- Deallocate arrays ---------------------------------------------------------------!
+   deallocate(thread_use)
+   deallocate(cpu_use)
    !---------------------------------------------------------------------------------------!
 
    stop
