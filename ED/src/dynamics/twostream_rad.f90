@@ -654,6 +654,8 @@ module twostream_rad
          !     Find the diffuse radiation properties.                                      !
          !---------------------------------------------------------------------------------!
          diffuseloop: do i=1,ncoh
+            ipft      = pft(i)
+
             !----- Scattering coefficient. ------------------------------------------------!
             iota      (i) = leaf_weight(i) * leaf_scatter(ipft)                            &
                           + wood_weight(i) * wood_scatter(ipft)
