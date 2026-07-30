@@ -636,7 +636,7 @@ module radiate_driver
          albedo_soil_nir = soilcol(colour)%alb_nir_dry
          !----- Damp soil, for temporary surface water albedo. ----------------------------!
          albedo_damp_par = albedo_soil_par
-         albedo_damp_nir = albedo_damp_nir
+         albedo_damp_nir = albedo_soil_nir
       case (12)
          !----- Peat, follow McCumber and Pielke (1981). ----------------------------------!
          fcpct = csite%soil_water(mzg,ipa) / soil(nsoil)%soilpo
