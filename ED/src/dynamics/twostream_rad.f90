@@ -592,7 +592,7 @@ module twostream_rad
             ! longwave radiation.                                                          !
             !------------------------------------------------------------------------------!
             mu (i) = - etai(i) / log( ( 1.d0 - cai(i) )                                    &
-                                    + cai(i) * exp( - etai(i) / mu_bar(ipft) ) )
+                                    + cai(i) * exp( - etai(i) / (cai(i) * mu_bar(ipft) ) ) )
             !------------------------------------------------------------------------------!
 
 
@@ -654,6 +654,8 @@ module twostream_rad
          !     Find the diffuse radiation properties.                                      !
          !---------------------------------------------------------------------------------!
          diffuseloop: do i=1,ncoh
+            ipft      = pft(i)
+
             !----- Scattering coefficient. ------------------------------------------------!
             iota      (i) = leaf_weight(i) * leaf_scatter(ipft)                            &
                           + wood_weight(i) * wood_scatter(ipft)
