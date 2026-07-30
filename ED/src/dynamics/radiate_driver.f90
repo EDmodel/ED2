@@ -1104,9 +1104,11 @@ module radiate_driver
                                         * radscr(ibuff)%LAI_array(il)                      &
                                         + (1.d0 - wood_scatter_nir(ipft))                  &
                                         * radscr(ibuff)%WAI_array(il) ), tiny_offset  )
-                  wleaf_tir = sngloff( ( leaf_emiss_tir(ipft)                              &
+                  wleaf_tir = sngloff( ( clumping_factor(ipft)                             &
+                                       * leaf_emiss_tir(ipft)                              &
                                        * radscr(ibuff)%LAI_array(il) )                     &
-                                     / ( leaf_emiss_tir(ipft)                              &
+                                     / ( clumping_factor(ipft)                             &
+                                       * leaf_emiss_tir(ipft)                              &
                                        * radscr(ibuff)%LAI_array(il)                       &
                                        + wood_emiss_tir(ipft)                              &
                                        * radscr(ibuff)%WAI_array(il) )                     &
