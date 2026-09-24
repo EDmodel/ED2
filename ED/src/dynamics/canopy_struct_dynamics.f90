@@ -82,8 +82,7 @@ module canopy_struct_dynamics
       real(kind=8) :: veg_gbw8      !> Water conductance                        [  kg/m2/s]
       real(kind=8) :: veg_reynolds8 !> Reynolds number                          [      ---]
       real(kind=8) :: veg_grashof8  !> Grashop number                           [      ---]
-      real(kind=8) :: veg_nussfree8 !> Nusselt number (free convection)         [      ---]
-      real(kind=8) :: veg_nussforc8 !> Nusselt number (forced convection)       [      ---]
+      real(kind=8) :: veg_nusselt8  !> Nusselt number                           [      ---]
       !----- External functions. ----------------------------------------------------------!
       real(kind=4), external :: sngloff !> Safe dble->sngl precision converter
       !------------------------------------------------------------------------------------!
@@ -276,15 +275,13 @@ module canopy_struct_dynamics
          !---------------------------------------------------------------------------------!
          call leaf_aerodynamic_conductances8(ipft,veg_wind8,leaf_temp8,can_temp8           &
                                             ,can_rhos8,can_cp8,veg_gbh8,veg_gbw8           &
-                                            ,veg_reynolds8,veg_grashof8,veg_nussfree8      &
-                                            ,veg_nussforc8 )
+                                            ,veg_reynolds8,veg_grashof8,veg_nusselt8 )
          cpatch%leaf_gbh(ico) = sngloff(veg_gbh8,tiny_offset)
          cpatch%leaf_gbw(ico) = sngloff(veg_gbw8,tiny_offset)
          aux = 1. / cpatch%leaf_gbw(ico)
          call wood_aerodynamic_conductances8(ipft,veg_wind8,wood_temp8,can_temp8           &
                                            ,can_rhos8,can_cp8,veg_gbh8,veg_gbw8            &
-                                           ,veg_reynolds8,veg_grashof8,veg_nussfree8       &
-                                           ,veg_nussforc8)
+                                           ,veg_reynolds8,veg_grashof8,veg_nusselt8 )
          cpatch%wood_gbh(ico) = sngloff(veg_gbh8,tiny_offset)
          cpatch%wood_gbw(ico) = sngloff(veg_gbw8,tiny_offset)
          !---------------------------------------------------------------------------------!
@@ -710,8 +707,7 @@ module canopy_struct_dynamics
                                                   ,initp%leaf_gbh(ico),initp%leaf_gbw(ico) &
                                                   ,initp%leaf_reynolds(ico)                &
                                                   ,initp%leaf_grashof(ico)                 &
-                                                  ,initp%leaf_nussfree(ico)                &
-                                                  ,initp%leaf_nussforc(ico) )
+                                                  ,initp%leaf_nusselt(ico) )
                cpatch%leaf_gbh(ico) = sngloff(initp%leaf_gbh(ico),tiny_offset)
                cpatch%leaf_gbw(ico) = sngloff(initp%leaf_gbw(ico),tiny_offset)
                !---------------------------------------------------------------------------!
@@ -719,8 +715,7 @@ module canopy_struct_dynamics
                !----- Set numbers to zero. ------------------------------------------------!
                initp%leaf_reynolds(ico) = 0.d0
                initp%leaf_grashof (ico) = 0.d0
-               initp%leaf_nussfree(ico) = 0.d0
-               initp%leaf_nussforc(ico) = 0.d0
+               initp%leaf_nusselt (ico) = 0.d0
                !---------------------------------------------------------------------------!
 
 
@@ -745,8 +740,7 @@ module canopy_struct_dynamics
                                                   ,initp%wood_gbh(ico),initp%wood_gbw(ico) &
                                                   ,initp%wood_reynolds(ico)                &
                                                   ,initp%wood_grashof(ico)                 &
-                                                  ,initp%wood_nussfree(ico)                &
-                                                  ,initp%wood_nussforc(ico) )
+                                                  ,initp%wood_nusselt(ico) )
                cpatch%wood_gbh(ico) = sngloff(initp%wood_gbh(ico),tiny_offset)
                cpatch%wood_gbw(ico) = sngloff(initp%wood_gbw(ico),tiny_offset)
                !---------------------------------------------------------------------------!
@@ -754,8 +748,7 @@ module canopy_struct_dynamics
                !----- Set numbers to zero. ------------------------------------------------!
                initp%wood_reynolds(ico) = 0.d0
                initp%wood_grashof (ico) = 0.d0
-               initp%wood_nussfree(ico) = 0.d0
-               initp%wood_nussforc(ico) = 0.d0
+               initp%wood_nusselt (ico) = 0.d0
                !---------------------------------------------------------------------------!
 
 
@@ -877,8 +870,7 @@ module canopy_struct_dynamics
                                                   ,initp%leaf_gbh(ico),initp%leaf_gbw(ico) &
                                                   ,initp%leaf_reynolds(ico)                &
                                                   ,initp%leaf_grashof(ico)                 &
-                                                  ,initp%leaf_nussfree(ico)                &
-                                                  ,initp%leaf_nussforc(ico) )
+                                                  ,initp%leaf_nusselt(ico) )
                cpatch%leaf_gbh(ico) = sngloff(initp%leaf_gbh(ico),tiny_offset)
                cpatch%leaf_gbw(ico) = sngloff(initp%leaf_gbw(ico),tiny_offset)
                !---------------------------------------------------------------------------!
@@ -886,8 +878,7 @@ module canopy_struct_dynamics
                !----- Set numbers to zero. ------------------------------------------------!
                initp%leaf_reynolds(ico) = 0.d0
                initp%leaf_grashof (ico) = 0.d0
-               initp%leaf_nussfree(ico) = 0.d0
-               initp%leaf_nussforc(ico) = 0.d0
+               initp%leaf_nusselt (ico) = 0.d0
                !---------------------------------------------------------------------------!
 
 
@@ -912,8 +903,7 @@ module canopy_struct_dynamics
                                                   ,initp%wood_gbh(ico),initp%wood_gbw(ico) &
                                                   ,initp%wood_reynolds(ico)                &
                                                   ,initp%wood_grashof(ico)                 &
-                                                  ,initp%wood_nussfree(ico)                &
-                                                  ,initp%wood_nussforc(ico) )
+                                                  ,initp%wood_nusselt(ico) )
                cpatch%wood_gbh(ico) = sngloff(initp%wood_gbh(ico),tiny_offset)
                cpatch%wood_gbw(ico) = sngloff(initp%wood_gbw(ico),tiny_offset)
                !---------------------------------------------------------------------------!
@@ -921,8 +911,7 @@ module canopy_struct_dynamics
                !----- Set numbers to zero. ------------------------------------------------!
                initp%wood_reynolds(ico) = 0.d0
                initp%wood_grashof (ico) = 0.d0
-               initp%wood_nussfree(ico) = 0.d0
-               initp%wood_nussforc(ico) = 0.d0
+               initp%wood_nusselt (ico) = 0.d0
                !---------------------------------------------------------------------------!
 
 
@@ -1317,8 +1306,7 @@ module canopy_struct_dynamics
                                                   ,initp%leaf_gbh(ico),initp%leaf_gbw(ico) &
                                                   ,initp%leaf_reynolds(ico)                &
                                                   ,initp%leaf_grashof(ico)                 &
-                                                  ,initp%leaf_nussfree(ico)                &
-                                                  ,initp%leaf_nussforc(ico) )
+                                                  ,initp%leaf_nusselt(ico) )
                cpatch%leaf_gbh(ico) = sngloff(initp%leaf_gbh(ico),tiny_offset)
                cpatch%leaf_gbw(ico) = sngloff(initp%leaf_gbw(ico),tiny_offset)
                !---------------------------------------------------------------------------!
@@ -1326,8 +1314,7 @@ module canopy_struct_dynamics
                !----- Set numbers to zero. ------------------------------------------------!
                initp%leaf_reynolds(ico) = 0.d0
                initp%leaf_grashof (ico) = 0.d0
-               initp%leaf_nussfree(ico) = 0.d0
-               initp%leaf_nussforc(ico) = 0.d0
+               initp%leaf_nusselt (ico) = 0.d0
                !---------------------------------------------------------------------------!
 
 
@@ -1352,8 +1339,7 @@ module canopy_struct_dynamics
                                                   ,initp%wood_gbh(ico),initp%wood_gbw(ico) &
                                                   ,initp%wood_reynolds(ico)                &
                                                   ,initp%wood_grashof(ico)                 &
-                                                  ,initp%wood_nussfree(ico)                &
-                                                  ,initp%wood_nussforc(ico) )
+                                                  ,initp%wood_nusselt(ico) )
                cpatch%wood_gbh(ico) = sngloff(initp%wood_gbh(ico),tiny_offset)
                cpatch%wood_gbw(ico) = sngloff(initp%wood_gbw(ico),tiny_offset)
                !---------------------------------------------------------------------------!
@@ -1361,8 +1347,7 @@ module canopy_struct_dynamics
                !----- Set numbers to zero. ------------------------------------------------!
                initp%wood_reynolds(ico) = 0.d0
                initp%wood_grashof (ico) = 0.d0
-               initp%wood_nussfree(ico) = 0.d0
-               initp%wood_nussforc(ico) = 0.d0
+               initp%wood_nusselt (ico) = 0.d0
                !---------------------------------------------------------------------------!
 
 
@@ -2197,11 +2182,17 @@ module canopy_struct_dynamics
    !     This sub-routine computes the aerodynamic conductance between leaf and canopy     !
    ! air space for both heat and water vapour, based on:                                   !
    !                                                                                       !
+   ! C77 - Churchill, S. W., 1977: A comprehensive correlating equation for laminar,       !
+   !       assisting, forced and free convection. AIChE J., 23 (1), 10-16,                 !
+   !       doi:10.1002/aic.690230103.                                                      !
+   ! D75 - Dufour, L., and J. van Mieghem, 1975: Thermodynamique de l’atmosphere. 2nd ed., !
+   !       Institut Royal Meteorologique de Belgique, Gembloux, Belgium, 278 pp.           !
    ! L95 - Leuning, R., F. M. Kelliher, D. G. G. de Pury, E. D. Schulze, 1995: Leaf        !
    !       nitrogen, photosynthesis, conductance and transpiration: scaling from leaves to !
    !       canopies.  Plant, Cell and Environ., 18, 1183-1200.                             !
-   ! M08 - Monteith, J. L., M. H. Unsworth, 2008. Principles of Environmental Physics,     !
-   !       3rd. edition, Academic Press, Amsterdam, 418pp.  (Mostly Chapter 10).           !
+   ! M14 - Monteith, J. L., and M. H. Unsworth, 2014: Principles of Environmental Physics. !
+   !       4th ed., Academic Press, London, 401 pp., doi:10.1016/C2010-0-66393-0.          !
+   !       (Mostly Chapter 10 and Table A.5.).                                             !
    !                                                                                       !
    ! Notice that the units are somewhat different from L95.                                !
    ! - gbh is in J/(K m2 s), and                                                           !
@@ -2209,7 +2200,7 @@ module canopy_struct_dynamics
    !---------------------------------------------------------------------------------------!
    subroutine leaf_aerodynamic_conductances8(ipft,veg_wind,leaf_temp,can_temp              &
                                             ,can_rhos,can_cp,leaf_gbh,leaf_gbw,reynolds    &
-                                            ,grashof,nusselt_free,nusselt_forced)
+                                            ,grashof,nusselt)
       use pft_coms       , only : leaf_width    ! ! intent(in)
       use canopy_air_coms, only : aflat_lami8   & ! intent(in)
                                 , nflat_lami8   & ! intent(in)
@@ -2239,8 +2230,7 @@ module canopy_struct_dynamics
       real(kind=8)   , intent(out) :: leaf_gbw        ! Water conductance       [  kg/m2/s]
       real(kind=8)   , intent(out) :: grashof         ! Grashof number          [      ---]
       real(kind=8)   , intent(out) :: reynolds        ! Reynolds number         [      ---]
-      real(kind=8)   , intent(out) :: nusselt_free    ! Nusselt number (free)   [      ---]
-      real(kind=8)   , intent(out) :: nusselt_forced  ! Nusselt number (forced) [      ---]
+      real(kind=8)   , intent(out) :: nusselt         ! Nusselt number          [      ---]
       !----- Local variables. -------------------------------------------------------------!
       real(kind=8)                 :: lwidth          ! Leaf width              [        m]
       real(kind=8)                 :: kin_visc        ! Kinematic viscosity     [     m2/s]
@@ -2249,9 +2239,11 @@ module canopy_struct_dynamics
       real(kind=8)                 :: gr_coeff        ! grav*th_expan/kin_visc2 [   1/K/m2]
       real(kind=8)                 :: nusselt_lami    ! Nusselt number (laminar)[      ---]
       real(kind=8)                 :: nusselt_turb    ! Nusselt number (turb.)  [      ---]
-      real(kind=8)                 :: forced_gbh_mos  ! Forced convection cond. [      m/s]
-      real(kind=8)                 :: free_gbh_mos    ! Free convection cond.   [      m/s]
+      real(kind=8)                 :: nusselt_free    ! Nusselt number (free)   [      ---]
+      real(kind=8)                 :: nusselt_forced  ! Nusselt number (forced) [      ---]
       real(kind=8)                 :: gbh_mos         ! Total convection cond.  [      m/s]
+      !----- External functions. ----------------------------------------------------------!
+      real(kind=8), external       :: cbrt8           ! Cube root function.
       !------------------------------------------------------------------------------------!
 
 
@@ -2266,16 +2258,16 @@ module canopy_struct_dynamics
       ! functions of temperature.  Here we use the canopy air space temperature because    !
       ! this is the representative temperature of the fluid.                               !
       !                                                                                    !
-      !     Kinematic viscosity and thermal diffusivity are determined from MU08, see      !
-      ! discussion on page 32.  Thermal expansion is assumed to be of an ideal gas (1/T),  !
-      ! like in Dufour and van Mieghem (1975), for example.                                !
+      !     Kinematic viscosity and thermal diffusivity are determined from M14, see       !
+      ! discussion in Section 3.2.  Thermal expansion is assumed to be of an ideal gas     !
+      ! (1/T), like in D75, for example.                                                   !
       !------------------------------------------------------------------------------------!
       th_expan = 1.d0 / can_temp
       !----- kin_visc and th_diff are assumed linear functions of temperature. ------------!
       kin_visc = kin_visc08 * ( 1.d0 + dkin_visc8 * ( can_temp - t008 ) )
       th_diff  = th_diff08  * ( 1.d0 + dth_diff8  * ( can_temp - t008 ) )
       !------------------------------------------------------------------------------------!
-      !    Grashof coefficient (a*g/nu2) in MU08's equation 10.8.                          !
+      !    Grashof coefficient (a*g/nu2) in M14's equation 10.8.                           !
       !------------------------------------------------------------------------------------!
       gr_coeff = th_expan * grav8  / ( kin_visc * kin_visc )
       !------------------------------------------------------------------------------------!
@@ -2291,8 +2283,6 @@ module canopy_struct_dynamics
       nusselt_turb    = aflat_turb8 * reynolds ** nflat_turb8
       !----- 3. The right Nusselt number is the largest of the both. ----------------------!
       nusselt_forced  = max(nusselt_lami,nusselt_turb)
-      !----- 4. The conductance is given by MU08 - equation 10.4 --------------------------!
-      forced_gbh_mos  = th_diff * nusselt_forced / lwidth
       !------------------------------------------------------------------------------------!
 
 
@@ -2307,20 +2297,24 @@ module canopy_struct_dynamics
       nusselt_turb    = bflat_turb8 * grashof ** mflat_turb8
       !----- 3. The right Nusselt number is the largest of the both. ----------------------!
       nusselt_free    = max(nusselt_lami,nusselt_turb)
-      !----- 4. The conductance is given by MU08 - equation 10.4 --------------------------!
-      free_gbh_mos    = th_diff * nusselt_free / lwidth
       !------------------------------------------------------------------------------------!
 
 
+      !------------------------------------------------------------------------------------! 
+      !   Find the mixed convection Nusselt number, following C77.                         !
+      !------------------------------------------------------------------------------------!
+      nusselt = cbrt8(nusselt_free**3 + nusselt_forced**3)
+      !------------------------------------------------------------------------------------!
+
 
       !------------------------------------------------------------------------------------!
-      !     The heat conductance for the thermodynamic budget is the sum of conductances,  !
-      ! because we assume both forms of convection happen parallelly.  The conversion from !
-      ! heat to water conductance (in m/s) can be found in L95, page 1198, after equation  !
-      ! E5.  For the ED purposes, the output variables are converted to the units of       !
-      ! entropy and water fluxes [J/K/m2/s and kg/m2/s, respectively].                     !
+      !     The heat conductance for the thermodynamic budget is given by M14, equation    !
+      ! 10.4. The conversion from heat to water conductance (in m/s) can be found in L95,  !
+      ! page 1198, after equationE5.  For the ED purposes, the output variables are        !
+      ! converted to the units of entropy and water fluxes [J/K/m2/s and kg/m2/s,          !
+      ! respectively].                                                                     !
       !------------------------------------------------------------------------------------!
-      gbh_mos  = max(gbhmos_min8, free_gbh_mos + forced_gbh_mos)
+      gbh_mos  = max(gbhmos_min8, th_diff * nusselt / lwidth)
       leaf_gbh =              gbh_mos * can_rhos * can_cp
       leaf_gbw = gbh_2_gbw8 * gbh_mos * can_rhos
       !------------------------------------------------------------------------------------!
@@ -2340,11 +2334,17 @@ module canopy_struct_dynamics
    !     This sub-routine computes the aerodynamic conductance between wood and canopy     !
    ! air space for both heat and water vapour, based on:                                   !
    !                                                                                       !
+   ! C77 - Churchill, S. W., 1977: A comprehensive correlating equation for laminar,       !
+   !       assisting, forced and free convection. AIChE J., 23 (1), 10-16,                 !
+   !       doi:10.1002/aic.690230103.                                                      !
+   ! D75 - Dufour, L., and J. van Mieghem, 1975: Thermodynamique de l’atmosphere. 2nd ed., !
+   !       Institut Royal Meteorologique de Belgique, Gembloux, Belgium, 278 pp.           !
    ! L95 - Leuning, R., F. M. Kelliher, D. G. G. de Pury, E. D. Schulze, 1995: Leaf        !
    !       nitrogen, photosynthesis, conductance and transpiration: scaling from leaves to !
    !       canopies.  Plant, Cell and Environ., 18, 1183-1200.                             !
-   ! M08 - Monteith, J. L., M. H. Unsworth, 2008. Principles of Environmental Physics,     !
-   !       3rd. edition, Academic Press, Amsterdam, 418pp.  (Mostly Chapter 10).           !
+   ! M14 - Monteith, J. L., and M. H. Unsworth, 2014: Principles of Environmental Physics. !
+   !       4th ed., Academic Press, London, 401 pp., doi:10.1016/C2010-0-66393-0.          !
+   !       (Mostly Chapter 10 and Table A.5.).                                             !
    !                                                                                       !
    ! Notice that the units are somewhat different from L95.                                !
    ! - gbh is in J/(K m2 s), and                                                           !
@@ -2352,7 +2352,7 @@ module canopy_struct_dynamics
    !---------------------------------------------------------------------------------------!
    subroutine wood_aerodynamic_conductances8(ipft,veg_wind,wood_temp,can_temp,can_rhos     &
                                             ,can_cp,wood_gbh,wood_gbw,reynolds,grashof     &
-                                            ,nusselt_free,nusselt_forced)
+                                            ,nusselt)
       use canopy_air_coms, only : ocyli_lami8   & ! intent(in)
                                 , acyli_lami8   & ! intent(in)
                                 , ncyli_lami8   & ! intent(in)
@@ -2384,8 +2384,7 @@ module canopy_struct_dynamics
       real(kind=8)   , intent(out) :: wood_gbw        ! Water conductance       [  kg/m2/s]
       real(kind=8)   , intent(out) :: grashof         ! Grashof number          [      ---]
       real(kind=8)   , intent(out) :: reynolds        ! Reynolds number         [      ---]
-      real(kind=8)   , intent(out) :: nusselt_free    ! Nusselt number (free)   [      ---]
-      real(kind=8)   , intent(out) :: nusselt_forced  ! Nusselt number (forced) [      ---]
+      real(kind=8)   , intent(out) :: nusselt         ! Nusselt number          [      ---]
       !----- Local variables. -------------------------------------------------------------!
       real(kind=8)                 :: kin_visc        ! Kinematic viscosity     [     m2/s]
       real(kind=8)                 :: th_diff         ! Kinematic viscosity     [     m2/s]
@@ -2393,10 +2392,12 @@ module canopy_struct_dynamics
       real(kind=8)                 :: gr_coeff        ! grav*th_expan/kin_visc2 [   1/K/m2]
       real(kind=8)                 :: nusselt_lami    ! Nusselt number (laminar)[      ---]
       real(kind=8)                 :: nusselt_turb    ! Nusselt number (turb.)  [      ---]
-      real(kind=8)                 :: forced_gbh_mos  ! Forced convection cond. [      m/s]
-      real(kind=8)                 :: free_gbh_mos    ! Free convection cond.   [      m/s]
+      real(kind=8)                 :: nusselt_free    ! Nusselt number (free)   [      ---]
+      real(kind=8)                 :: nusselt_forced  ! Nusselt number (forced) [      ---]
       real(kind=8)                 :: gbh_mos         ! Total convection cond.  [      m/s]
       real(kind=8)                 :: w_diam          ! Typical branch diameter [        m]
+      !----- External functions. ----------------------------------------------------------!
+      real(kind=8), external       :: cbrt8           ! Cube root function.
       !------------------------------------------------------------------------------------!
 
       !------------------------------------------------------------------------------------!
@@ -2423,7 +2424,7 @@ module canopy_struct_dynamics
       kin_visc = kin_visc08 * ( 1.d0 + dkin_visc8 * ( can_temp - t008 ) )
       th_diff  = th_diff08  * ( 1.d0 + dth_diff8  * ( can_temp - t008 ) )
       !------------------------------------------------------------------------------------!
-      !    Grashof coefficient (a*g/nu2) in MU08's equation 10.8.                          !
+      !    Grashof coefficient (a*g/nu2) in M14's equation 10.8.                           !
       !------------------------------------------------------------------------------------!
       gr_coeff = th_expan * grav8  / ( kin_visc * kin_visc )
       !------------------------------------------------------------------------------------!
@@ -2439,8 +2440,6 @@ module canopy_struct_dynamics
       nusselt_turb    = ocyli_turb8 + acyli_turb8 * reynolds ** ncyli_turb8
       !----- 3. The right Nusselt number is the largest of the both. ----------------------!
       nusselt_forced  = max(nusselt_lami,nusselt_turb)
-      !----- 5. The conductance is given by MU08 - equation 10.4 --------------------------!
-      forced_gbh_mos  = th_diff * nusselt_forced / w_diam
       !------------------------------------------------------------------------------------!
 
 
@@ -2455,20 +2454,24 @@ module canopy_struct_dynamics
       nusselt_turb    = bcyli_turb8 * grashof ** mcyli_turb8
       !----- 3. The right Nusselt number is the largest of the both. ----------------------!
       nusselt_free    = max(nusselt_lami,nusselt_turb)
-      !----- 5. The conductance is given by MU08 - equation 10.4 --------------------------!
-      free_gbh_mos    = th_diff * nusselt_free / w_diam
       !------------------------------------------------------------------------------------!
 
 
+      !------------------------------------------------------------------------------------! 
+      !   Find the mixed convection Nusselt number, following C77.                         !
+      !------------------------------------------------------------------------------------!
+      nusselt = cbrt8(nusselt_free**3 + nusselt_forced**3)
+      !------------------------------------------------------------------------------------!
+
 
       !------------------------------------------------------------------------------------!
-      !     The heat conductance for the thermodynamic budget is the sum of conductances,  !
-      ! because we assume both forms of convection happen parallelly.  The conversion from !
-      ! heat to water conductance (in m/s) can be found in L95, page 1198, after equation  !
-      ! E5.  For the ED purposes, the output variables are converted to the units of       !
-      ! entropy and water fluxes [J/K/m2/s and kg/m2/s, respectively].                     !
+      !     The heat conductance for the thermodynamic budget is given by M14, equation    !
+      ! 10.4. The conversion from heat to water conductance (in m/s) can be found in L95,  !
+      ! page 1198, after equationE5.  For the ED purposes, the output variables are        !
+      ! converted to the units of entropy and water fluxes [J/K/m2/s and kg/m2/s,          !
+      ! respectively].                                                                     !
       !------------------------------------------------------------------------------------!
-      gbh_mos  = max(gbhmos_min8, free_gbh_mos + forced_gbh_mos)
+      gbh_mos  = max(gbhmos_min8, th_diff * nusselt / w_diam)
       wood_gbh =              gbh_mos * can_rhos * can_cp
       wood_gbw = gbh_2_gbw8 * gbh_mos * can_rhos
       !------------------------------------------------------------------------------------!

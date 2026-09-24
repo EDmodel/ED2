@@ -4028,17 +4028,15 @@ module rk4_misc
          end if
       end do
       write (unit=*,fmt='(80a)') ('-',k=1,80)
-      write (unit=*,fmt='(2(a7,1x),8(a12,1x))')                                            &
+      write (unit=*,fmt='(2(a7,1x),7(a12,1x))')                                            &
                  '    PFT','KRDEPTH','         LAI','      HEIGHT','   LEAF_TEMP'          &
-                     ,'    VEG_WIND','  LEAF_REYNO','LEAF_GRASHOF',' LEAF_NUFORC'          &
-                     ,' LEAF_NUFREE'
+                     ,'    VEG_WIND','  LEAF_REYNO','LEAF_GRASHOF','LEAF_NUSSELT'
       do ico = 1,cpatch%ncohorts
          if (y%leaf_resolvable(ico)) then
-            write(unit=*,fmt='(2(i7,1x),8(es12.4,1x))')                                    &
+            write(unit=*,fmt='(2(i7,1x),7(es12.4,1x))')                                    &
                    cpatch%pft(ico),cpatch%krdepth(ico)                                     &
                   ,y%lai(ico),cpatch%height(ico),y%leaf_temp(ico),y%veg_wind(ico)          &
-                  ,y%leaf_reynolds(ico),y%leaf_grashof(ico),y%leaf_nussforc(ico)           &
-                  ,y%leaf_nussfree(ico)
+                  ,y%leaf_reynolds(ico),y%leaf_grashof(ico),y%leaf_nusselt(ico)
          end if
       end do
       write (unit=*,fmt='(80a)') ('-',k=1,80)
@@ -4098,17 +4096,15 @@ module rk4_misc
          end if
       end do
       write (unit=*,fmt='(80a)') ('-',k=1,80)
-      write (unit=*,fmt='(2(a7,1x),8(a12,1x))')                                            &
+      write (unit=*,fmt='(2(a7,1x),7(a12,1x))')                                            &
                  '    PFT','KRDEPTH','         WAI','      HEIGHT','   LEAF_TEMP'          &
-                     ,'    VEG_WIND','  WOOD_REYNO','WOOD_GRASHOF',' WOOD_NUFORC'          &
-                     ,' WOOD_NUFREE'
+                     ,'    VEG_WIND','  WOOD_REYNO','WOOD_GRASHOF','WOOD_NUSSELT'
       do ico = 1,cpatch%ncohorts
          if (y%wood_resolvable(ico)) then
             write(unit=*,fmt='(2(i7,1x),8(es12.4,1x))')                                    &
                    cpatch%pft(ico),cpatch%krdepth(ico)                                     &
                   ,y%wai(ico),cpatch%height(ico),y%wood_temp(ico),y%veg_wind(ico)          &
-                  ,y%wood_reynolds(ico),y%wood_grashof(ico),y%wood_nussforc(ico)           &
-                  ,y%wood_nussfree(ico)
+                  ,y%wood_reynolds(ico),y%wood_grashof(ico),y%wood_nusselt(ico)
          end if
       end do
       write (unit=*,fmt='(80a)') ('-',k=1,80)
@@ -4284,9 +4280,9 @@ module rk4_misc
       character(len=10), parameter :: phfmt='(93(a,1x))'
       character(len=48), parameter ::                                                      &
                                    pbfmt='(3(i13,1x),4(es13.6,1x),3(i13,1x),83(es13.6,1x))'
-      character(len=10), parameter :: chfmt='(58(a,1x))'
+      character(len=10), parameter :: chfmt='(56(a,1x))'
       character(len=48), parameter ::                                                      &
-                                   cbfmt='(3(i13,1x),2(es13.6,1x),4(i13,1x),49(es13.6,1x))'
+                                   cbfmt='(3(i13,1x),2(es13.6,1x),4(i13,1x),47(es13.6,1x))'
       !------------------------------------------------------------------------------------!
 
 
@@ -4552,17 +4548,16 @@ module rk4_misc
                           , '        LEAF_TEMP', '        LEAF_FLIQ', '      WOOD_ENERGY'  &
                           , '       WOOD_WATER', '   WOOD_WATER_IM2', '        WOOD_HCAP'  &
                           , '        WOOD_TEMP', '        WOOD_FLIQ', '         VEG_WIND'  &
-                          , '          FS_OPEN', '       LEAF_REYNO', '     LEAF_GRASHOF'  &
-                          , '      LEAF_NUFREE', '      LEAF_NUFORC', '       WOOD_REYNO'  &
-                          , '     WOOD_GRASHOF', '      WOOD_NUFREE', '      WOOD_NUFORC'  &
-                          , '         LINT_SHV', '         LEAF_GBH', '         LEAF_GBW'  &
-                          , '         WOOD_GBH', '         WOOD_GBW', '         GSW_OPEN'  &
-                          , '         GSW_CLOS', '              GPP', '        LEAF_RESP'  &
-                          , '        ROOT_RESP', '        STEM_RESP', '         RSHORT_L'  &
-                          , '          RLONG_L', '         RSHORT_W', '          RLONG_W'  &
-                          , '           HFLXLC', '           HFLXWC', '          QWFLXLC'  &
-                          , '          QWFLXWC', '           QWSHED', '          QTRANSP'  &
-                          , '     QINTERCEPTED'
+                          , '          FS_OPEN', '    LEAF_REYNOLDS', '     LEAF_GRASHOF'  &
+                          , '     LEAF_NUSSELT', '    WOOD_REYNOLDS', '     WOOD_GRASHOF'  &
+                          , '     WOOD_NUSSELT', '         LINT_SHV', '         LEAF_GBH'  &
+                          , '         LEAF_GBW', '         WOOD_GBH', '         WOOD_GBW'  &
+                          , '         GSW_OPEN', '         GSW_CLOS', '              GPP'  &
+                          , '        LEAF_RESP', '        ROOT_RESP', '        STEM_RESP'  &
+                          , '         RSHORT_L', '          RLONG_L', '         RSHORT_W'  &
+                          , '          RLONG_W', '           HFLXLC', '           HFLXWC'  &
+                          , '          QWFLXLC', '          QWFLXWC', '           QWSHED'  &
+                          , '          QTRANSP', '     QINTERCEPTED'
             close (unit=84,status='keep')
          end if
          !---------------------------------------------------------------------------------!
@@ -4590,9 +4585,8 @@ module rk4_misc
                       , initp%wood_temp(ico)          , initp%wood_fliq(ico)               &
                       , initp%veg_wind(ico)           , initp%fs_open(ico)                 &
                       , initp%leaf_reynolds(ico)      , initp%leaf_grashof(ico)            &
-                      , initp%leaf_nussfree(ico)      , initp%leaf_nussforc(ico)           &
-                      , initp%wood_reynolds(ico)      , initp%wood_grashof(ico)            &
-                      , initp%wood_nussfree(ico)      , initp%wood_nussforc(ico)           &
+                      , initp%leaf_nusselt(ico)       , initp%wood_reynolds(ico)           &
+                      , initp%wood_grashof(ico)       , initp%wood_nusselt(ico)            &
                       , initp%lint_shv(ico)           , initp%leaf_gbh(ico)                &
                       , initp%leaf_gbw(ico)           , initp%wood_gbh(ico)                &
                       , initp%wood_gbw(ico)           , initp%gsw_open(ico)                &
