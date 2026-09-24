@@ -194,8 +194,7 @@ module rk4_coms
       real(kind=8), pointer, dimension(:) :: leaf_hcap       ! Heat capacity    [   J/m2/K]
       real(kind=8), pointer, dimension(:) :: leaf_reynolds   ! Reynolds number  [      ---]
       real(kind=8), pointer, dimension(:) :: leaf_grashof    ! Grashof number   [      ---]
-      real(kind=8), pointer, dimension(:) :: leaf_nussfree   ! Nusselt # (free) [      ---]
-      real(kind=8), pointer, dimension(:) :: leaf_nussforc   ! Nusselt # (forc.)[      ---]
+      real(kind=8), pointer, dimension(:) :: leaf_nusselt    ! Nusselt number   [      ---]
       real(kind=8), pointer, dimension(:) :: lint_shv        ! Interc. sp. hum. [    kg/kg]
       logical     , pointer, dimension(:) :: leaf_resolvable ! resolve leaves?  [      T|F]
       real(kind=8), pointer, dimension(:) :: leaf_gbh        ! Bnd.lyr. condct. [ J/K/m2/s]
@@ -216,8 +215,7 @@ module rk4_coms
       real(kind=8), pointer, dimension(:) :: wood_hcap       ! Heat capacity    [   J/m2/K]
       real(kind=8), pointer, dimension(:) :: wood_reynolds   ! Reynolds number  [      ---]
       real(kind=8), pointer, dimension(:) :: wood_grashof    ! Grashof number   [      ---]
-      real(kind=8), pointer, dimension(:) :: wood_nussfree   ! Nusselt # (free) [      ---]
-      real(kind=8), pointer, dimension(:) :: wood_nussforc   ! Nusselt # (forc.)[      ---]
+      real(kind=8), pointer, dimension(:) :: wood_nusselt    ! Nusselt number   [      ---]
       logical     , pointer, dimension(:) :: wood_resolvable ! resolve wood?    [      T|F]
       real(kind=8), pointer, dimension(:) :: wood_gbh        ! Bnd.lyr. condct. [ J/K/m2/s]
       real(kind=8), pointer, dimension(:) :: wood_gbw        ! Bnd.lyr. condct. [  kg/m2/s]
@@ -1240,8 +1238,7 @@ module rk4_coms
       allocate(y%leaf_hcap          (    maxcohort))
       allocate(y%leaf_reynolds      (    maxcohort))
       allocate(y%leaf_grashof       (    maxcohort))
-      allocate(y%leaf_nussfree      (    maxcohort))
-      allocate(y%leaf_nussforc      (    maxcohort))
+      allocate(y%leaf_nusselt       (    maxcohort))
       allocate(y%lint_shv           (    maxcohort))
       allocate(y%leaf_resolvable    (    maxcohort))
       allocate(y%leaf_gbh           (    maxcohort))
@@ -1258,8 +1255,7 @@ module rk4_coms
       allocate(y%wood_hcap          (    maxcohort))
       allocate(y%wood_reynolds      (    maxcohort))
       allocate(y%wood_grashof       (    maxcohort))
-      allocate(y%wood_nussfree      (    maxcohort))
-      allocate(y%wood_nussforc      (    maxcohort))
+      allocate(y%wood_nusselt       (    maxcohort))
       allocate(y%wood_resolvable    (    maxcohort))
       allocate(y%wood_gbh           (    maxcohort))
       allocate(y%wood_gbw           (    maxcohort))
@@ -1372,8 +1368,7 @@ module rk4_coms
       nullify(y%leaf_hcap          )
       nullify(y%leaf_reynolds      )
       nullify(y%leaf_grashof       )
-      nullify(y%leaf_nussfree      )
-      nullify(y%leaf_nussforc      )
+      nullify(y%leaf_nusselt       )
       nullify(y%lint_shv           )
       nullify(y%leaf_resolvable    )
       nullify(y%leaf_gbh           )
@@ -1390,8 +1385,7 @@ module rk4_coms
       nullify(y%wood_hcap          )
       nullify(y%wood_reynolds      )
       nullify(y%wood_grashof       )
-      nullify(y%wood_nussfree      )
-      nullify(y%wood_nussforc      )
+      nullify(y%wood_nusselt       )
       nullify(y%wood_resolvable    )
       nullify(y%wood_gbh           )
       nullify(y%wood_gbw           )
@@ -1478,8 +1472,7 @@ module rk4_coms
       if (associated(y%leaf_hcap          )) y%leaf_hcap           = 0.d0
       if (associated(y%leaf_reynolds      )) y%leaf_reynolds       = 0.d0
       if (associated(y%leaf_grashof       )) y%leaf_grashof        = 0.d0
-      if (associated(y%leaf_nussfree      )) y%leaf_nussfree       = 0.d0
-      if (associated(y%leaf_nussforc      )) y%leaf_nussforc       = 0.d0
+      if (associated(y%leaf_nusselt       )) y%leaf_nusselt        = 0.d0
       if (associated(y%lint_shv           )) y%lint_shv            = 0.d0
       if (associated(y%leaf_resolvable    )) y%leaf_resolvable     = .false.
       if (associated(y%leaf_gbh           )) y%leaf_gbh            = 0.d0
@@ -1496,8 +1489,7 @@ module rk4_coms
       if (associated(y%wood_hcap          )) y%wood_hcap           = 0.d0
       if (associated(y%wood_reynolds      )) y%wood_reynolds       = 0.d0
       if (associated(y%wood_grashof       )) y%wood_grashof        = 0.d0
-      if (associated(y%wood_nussfree      )) y%wood_nussfree       = 0.d0
-      if (associated(y%wood_nussforc      )) y%wood_nussforc       = 0.d0
+      if (associated(y%wood_nusselt       )) y%wood_nusselt        = 0.d0
       if (associated(y%wood_resolvable    )) y%wood_resolvable     = .false.
       if (associated(y%wood_gbh           )) y%wood_gbh            = 0.d0
       if (associated(y%wood_gbw           )) y%wood_gbw            = 0.d0
@@ -1583,8 +1575,7 @@ module rk4_coms
       if (associated(y%leaf_hcap          )) deallocate(y%leaf_hcap          )
       if (associated(y%leaf_reynolds      )) deallocate(y%leaf_reynolds      )
       if (associated(y%leaf_grashof       )) deallocate(y%leaf_grashof       )
-      if (associated(y%leaf_nussfree      )) deallocate(y%leaf_nussfree      )
-      if (associated(y%leaf_nussforc      )) deallocate(y%leaf_nussforc      )
+      if (associated(y%leaf_nusselt       )) deallocate(y%leaf_nusselt       )
       if (associated(y%lint_shv           )) deallocate(y%lint_shv           )
       if (associated(y%leaf_resolvable    )) deallocate(y%leaf_resolvable    )
       if (associated(y%leaf_resolvable    )) deallocate(y%leaf_resolvable    )
@@ -1602,8 +1593,7 @@ module rk4_coms
       if (associated(y%wood_hcap          )) deallocate(y%wood_hcap          )
       if (associated(y%wood_reynolds      )) deallocate(y%wood_reynolds      )
       if (associated(y%wood_grashof       )) deallocate(y%wood_grashof       )
-      if (associated(y%wood_nussfree      )) deallocate(y%wood_nussfree      )
-      if (associated(y%wood_nussforc      )) deallocate(y%wood_nussforc      )
+      if (associated(y%wood_nusselt       )) deallocate(y%wood_nusselt       )
       if (associated(y%wood_resolvable    )) deallocate(y%wood_resolvable    )
       if (associated(y%wood_gbh           )) deallocate(y%wood_gbh           )
       if (associated(y%wood_gbw           )) deallocate(y%wood_gbw           )
