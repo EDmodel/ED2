@@ -119,16 +119,20 @@ MOD_EXT=mod
 ifeq ($(KIND_COMP),$(filter $(KIND_COMP), A B C D))
    F_OPTS= -O0 -ffree-line-length-none -g -fimplicit-none -Wall -finit-real=snan           \
            -finit-integer=-2147483648 -ffpe-trap=invalid,zero,overflow,underflow           \
-           -fcheck=all -frecursive -fsignaling-nans -Werror -fopenmp -fbacktrace -static
+           -fcheck=all -fsignaling-nans -Werror -fopenmp -fbacktrace -static   \
+           -Wl,-stack_size,0x20000000
    C_OPTS= -O0 -DLITTLE -g -fbacktrace -static
    LOADER_OPTS= -O0 -ffree-line-length-none -g -fimplicit-none -Wall -finit-real=snan      \
                 -finit-integer=-2147483648 -ffpe-trap=invalid,zero,overflow,underflow      \
-                -fcheck=all -frecursive -fsignaling-nans -Werror -fopenmp -fbacktrace
+                -fcheck=all -fsignaling-nans -Werror -fopenmp -fbacktrace      \
+                -Wl,-stack_size,0x20000000
    #---------------------------------------------------------------------------------------#
 else ifeq ($(KIND_COMP),E)
-   F_OPTS= -O3 -ffree-line-length-none -frecursive -fopenmp -fbacktrace -static
+   F_OPTS= -O3 -ffree-line-length-none -fopenmp -fbacktrace -static                        \
+           -Wl,-stack_size,0x20000000
    C_OPTS= -O3 -DLITTLE -g -fbacktrace -static
-   LOADER_OPTS= -O3 -ffree-line-length-none -frecursive -fopenmp -fbacktrace
+   LOADER_OPTS= -O3 -ffree-line-length-none -fopenmp -fbacktrace                           \
+           -Wl,-stack_size,0x20000000
    #---------------------------------------------------------------------------------------#
 else
    $(error Option KIND_COMP provided ($(KIND_COMP)) is invalid)."
