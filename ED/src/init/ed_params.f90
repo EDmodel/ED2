@@ -7416,7 +7416,6 @@ subroutine init_derived_params_after_xml()
                                    , b2d18O                    & ! intent(in)
                                    , b1Efrd                    & ! intent(in)
                                    , b2Efrd                    & ! intent(in)
-                                   , min_dbh                   & ! intent(in)
                                    , dbh_bigleaf               & ! intent(in)
                                    , agf_bs                    & ! intent(in)
                                    , q                         & ! intent(in)
@@ -7509,6 +7508,7 @@ subroutine init_derived_params_after_xml()
                                    , stoma_psi_b               & ! intent(in)
                                    , stoma_psi_c               & ! intent(in)
                                    , C2B                       & ! intent(in)
+                                   , min_dbh                   & ! intent(inout)
                                    , hgt_max                   & ! intent(inout)
                                    , repro_min_h               & ! intent(inout)
                                    , dbh_crit                  & ! intent(inout)
@@ -7685,6 +7685,7 @@ subroutine init_derived_params_after_xml()
    integer                           :: ihgt
    integer                           :: ilut
    logical                           :: print_zero_table
+   logical                           :: bevery_fine
    real(kind=8)                      :: exp_dbh8
    real(kind=8)                      :: dbh_mult8
    real(kind=8)                      :: dbh_now8
@@ -7702,6 +7703,7 @@ subroutine init_derived_params_after_xml()
    real                              :: balive_min
    real                              :: bdead_min
    real                              :: bstorage_min
+   real                              :: bevery_min
    real                              :: bfast_min
    real                              :: bstruct_min
    real                              :: rdepth_min
@@ -7996,19 +7998,32 @@ subroutine init_derived_params_after_xml()
 
 
 
+   !----- Allocate the look-up table for bevery. ------------------------------------------!
+   if (nbt_lut < 2) then
+      write(unit=*,fmt='(a,1x,i5)') ' NBT_LUT = ',nbt_lut
+      call fatal_error(' NBT_LUT must be at least 2.','init_derived_params_after_xml'      &
+                      ,'ed_params.f90')
+   else
+      allocate(dbh_lut    (nbt_lut,n_pft))
+      allocate(bleaf_lut  (nbt_lut,n_pft))
+      allocate(balive_lut (nbt_lut,n_pft))
+      allocate(bdead_lut  (nbt_lut,n_pft))
+      allocate(bevery_lut (nbt_lut,n_pft))
+      allocate(le_mask_lut(nbt_lut      ))     ! Aux variable used by b?2dbh
+      allocate(ge_mask_lut(nbt_lut      ))     ! Aux variable used by b?2dbh
+
+      !----- This does not depend on the PFT, just the size of the look-up table. ---------!
+      exp_dbh8 = 1.d0 / (dble(nbt_lut) - 1.d0)
+      !------------------------------------------------------------------------------------!
+   end if
+   !---------------------------------------------------------------------------------------!
+
+
 
    !---------------------------------------------------------------------------------------!
    !    Derive additional parameters.                                                      !
    !---------------------------------------------------------------------------------------!
    do ipft = 1,n_pft
-      !----- Re-define the "critical" parameters as the numbers may have changed. ---------!
-      dbh_crit    (ipft) = h2dbh(hgt_max(ipft),ipft)
-      bleaf_crit  (ipft) = size2bl(dbh_crit(ipft),hgt_max(ipft),SLA(ipft),ipft)
-      bdead_crit  (ipft) = size2bd(dbh_crit(ipft),hgt_max(ipft),ipft)
-      balive_crit (ipft) = bleaf_crit (ipft)                                               &
-                         * (1. + q(ipft) + (qsw(ipft)+qbark(ipft)) * hgt_max(ipft) )
-      bevery_crit (ipft) = balive_crit(ipft) + bdead_crit(ipft)
-      !------------------------------------------------------------------------------------!
 
 
       !----- Set allometric formula. ------------------------------------------------------!
@@ -8064,6 +8079,15 @@ subroutine init_derived_params_after_xml()
       !------------------------------------------------------------------------------------!
 
 
+      !----- Re-define the "critical" parameters as the numbers may have changed. ---------!
+      min_dbh     (ipft) = h2dbh(hgt_min(ipft),ipft)
+      dbh_crit    (ipft) = h2dbh(hgt_max(ipft),ipft)
+      bleaf_crit  (ipft) = size2bl(dbh_crit(ipft),hgt_max(ipft),SLA(ipft),ipft)
+      bdead_crit  (ipft) = size2bd(dbh_crit(ipft),hgt_max(ipft),ipft)
+      balive_crit (ipft) = bleaf_crit (ipft)                                               &
+                         * (1. + q(ipft) + (qsw(ipft)+qbark(ipft)) * hgt_max(ipft) )
+      bevery_crit (ipft) = balive_crit(ipft) + bdead_crit(ipft)
+      !------------------------------------------------------------------------------------!
 
 
 
@@ -8077,6 +8101,7 @@ subroutine init_derived_params_after_xml()
       balive_min   = bleaf_min + broot_min + bsapwood_min + bbark_min
       bdead_min    = size2bd(dbh,hgt_min(ipft),ipft)
       bstorage_min = max(almost_zero,f_bstorage_init(ipft)) * balive_min
+      bevery_min   = balive_min + bdead_min
       !------------------------------------------------------------------------------------!
 
 
@@ -8108,6 +8133,77 @@ subroutine init_derived_params_after_xml()
       balive_bl    = bleaf_bl + broot_bl + bsapwood_bl + bbark_bl
       bdead_bl     = size2bd(dbh_bigleaf(ipft),hgt_min(ipft),ipft)
       bstorage_bl  = max(almost_zero,f_bstorage_init(ipft)) * balive_bl
+      !------------------------------------------------------------------------------------!
+
+
+
+
+      !----- Build the look-up table for btotal. ------------------------------------------!
+      dbh_mult8 = (dble(dbh_crit(ipft))/dble(min_dbh(ipft))) **exp_dbh8
+      do ilut = 1, nbt_lut
+         dbh_now8               = dble(min_dbh(ipft)) * dbh_mult8 ** (ilut-1)
+         dbh_now                = sngloff(dbh_now8,tiny_num8)
+         height_now             = dbh2h(ipft, dbh_now)
+         bleaf_now              = size2bl(dbh_now,height_now,SLA(ipft),ipft)
+         ! NOTE:
+         ! When IALLOM == 4, bleaf becomes plastic to light conditions
+         ! bleaf_now would therefore become inaccurate (usually biased high)
+         ! This would underestimate the fraction used for structural growth at monthly scale
+         ! But should be ok at annual scale.
+         bdead_now              = size2bd(dbh_now,height_now,ipft)
+         dbh_lut    (ilut,ipft) = dbh_now
+         bleaf_lut  (ilut,ipft) = bleaf_now
+         balive_lut (ilut,ipft) = bleaf_now                                                &
+                                * (1. + q(ipft) + (qsw(ipft) + qbark(ipft))*height_now)
+         bdead_lut  (ilut,ipft) = bdead_now
+         bevery_lut (ilut,ipft) = balive_lut(ilut,ipft) + bdead_lut(ilut,ipft)
+      end do
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !    Check that bevery_lut matches bevery_crit at the largest classes.               !
+      !------------------------------------------------------------------------------------!
+      bevery_fine =    (  abs( bevery_lut(nbt_lut,ipft) - bevery_crit(ipft) )              &
+                       < ( 0.001 * bevery_crit(ipft) ) )                                   &
+                  .or. ( abs( bevery_lut(1,ipft) - bevery_min ) < ( 0.001 * bevery_min ) )
+      if ( .not. bevery_fine ) then
+         write(unit=*,fmt='(a)'       ) '---~---'
+         write(unit=*,fmt='(a)'       ) '   ALLOMETRY LOOK-UP TABLE IS NOT FINE!'
+         write(unit=*,fmt='(a)'       ) '---~---'
+         write(unit=*,fmt='(a)'       ) ''
+         write(unit=*,fmt='(a,i6)'    ) ' + IPFT        = ',ipft
+         write(unit=*,fmt='(a)'       ) ''
+         write(unit=*,fmt='(a)'       ) ' + MINIMUM SIZE'
+         write(unit=*,fmt='(a,es12.5)') '   - DBH_MIN     = ',min_dbh    (ipft)
+         write(unit=*,fmt='(a,es12.5)') '   - HEIGHT_MIN  = ',hgt_min    (ipft)
+         write(unit=*,fmt='(a,es12.5)') '   - BLEAF_MIN   = ',bleaf_min
+         write(unit=*,fmt='(a,es12.5)') '   - BALIVE_MIN  = ',balive_min
+         write(unit=*,fmt='(a,es12.5)') '   - BDEAD_MIN   = ',bdead_min
+         write(unit=*,fmt='(a,es12.5)') '   - BEVERY_MIN  = ',bevery_min
+         write(unit=*,fmt='(a,es12.5)') '   - DBH_LUT     = ',dbh_lut   (1,ipft)
+         write(unit=*,fmt='(a,es12.5)') '   - BLEAF_LUT   = ',bleaf_lut (1,ipft)
+         write(unit=*,fmt='(a,es12.5)') '   - BALIVE_LUT  = ',balive_lut(1,ipft)
+         write(unit=*,fmt='(a,es12.5)') '   - BDEAD_LUT   = ',bdead_lut (1,ipft)
+         write(unit=*,fmt='(a,es12.5)') '   - BEVERY_LUT  = ',bevery_lut(1,ipft)
+         write(unit=*,fmt='(a)'       ) ''
+         write(unit=*,fmt='(a)'       ) ' + CRITICAL SIZE'
+         write(unit=*,fmt='(a,es12.5)') '   - DBH_CRIT    = ',dbh_crit   (ipft)
+         write(unit=*,fmt='(a,es12.5)') '   - HEIGHT_CRIT = ',hgt_max    (ipft)
+         write(unit=*,fmt='(a,es12.5)') '   - BLEAF_CRIT  = ',bleaf_crit (ipft)
+         write(unit=*,fmt='(a,es12.5)') '   - BALIVE_CRIT = ',balive_crit(ipft)
+         write(unit=*,fmt='(a,es12.5)') '   - BDEAD_CRIT  = ',bdead_crit (ipft)
+         write(unit=*,fmt='(a,es12.5)') '   - BEVERY_CRIT = ',bevery_crit(ipft)
+         write(unit=*,fmt='(a,es12.5)') '   - DBH_LUT     = ',dbh_lut   (nbt_lut,ipft)
+         write(unit=*,fmt='(a,es12.5)') '   - BLEAF_LUT   = ',bleaf_lut (nbt_lut,ipft)
+         write(unit=*,fmt='(a,es12.5)') '   - BALIVE_LUT  = ',balive_lut(nbt_lut,ipft)
+         write(unit=*,fmt='(a,es12.5)') '   - BDEAD_LUT   = ',bdead_lut (nbt_lut,ipft)
+         write(unit=*,fmt='(a,es12.5)') '   - BEVERY_LUT  = ',bevery_lut(nbt_lut,ipft)
+         write(unit=*,fmt='(a)'       ) '---~---'
+         call fatal_error(' Inconsistent look-up table settings.'                          &
+                         ,'init_derived_params_after_xml','ed_params.f90')
+      end if
       !------------------------------------------------------------------------------------!
 
 
@@ -8874,49 +8970,6 @@ subroutine init_derived_params_after_xml()
       small_rwc_min(ipft) = min(leaf_rwc_small,wood_rwc_small)
       !------------------------------------------------------------------------------------!
    end do
-   !---------------------------------------------------------------------------------------!
-
-
-
-
-   !----- Build the look-up table for btotal. ---------------------------------------------!
-   if (nbt_lut < 2) then
-      write(unit=*,fmt='(a,1x,i5)') ' NBT_LUT = ',nbt_lut
-      call fatal_error(' NBT_LUT must be at least 2.','init_derived_params_after_xml'      &
-                      ,'ed_params.f90')
-   else
-      allocate(dbh_lut    (nbt_lut,n_pft))
-      allocate(bleaf_lut  (nbt_lut,n_pft))
-      allocate(balive_lut (nbt_lut,n_pft))
-      allocate(bdead_lut  (nbt_lut,n_pft))
-      allocate(bevery_lut (nbt_lut,n_pft))
-      allocate(le_mask_lut(nbt_lut      ))     ! Aux variable used by b?2dbh
-      allocate(ge_mask_lut(nbt_lut      ))     ! Aux variable used by b?2dbh
-      exp_dbh8 = 1.d0 / (dble(nbt_lut) - 1.d0)
-      do ipft=1,n_pft
-         dbh_mult8 = (dble(dbh_crit(ipft))/dble(min_dbh(ipft))) **exp_dbh8
-         do ilut = 1, nbt_lut
-            dbh_now8               = dble(min_dbh(ipft)) * dbh_mult8 ** (ilut-1)
-            dbh_now                = sngloff(dbh_now8,tiny_num8)
-            height_now             = dbh2h(ipft, dbh_now)
-            bleaf_now              = size2bl(dbh_now,height_now,SLA(ipft),ipft)
-            ! NOTE:
-            ! When IALLOM == 4, bleaf becomes plastic to light conditions
-            ! bleaf_now would therefore become inaccurate (usually biased high)
-            ! This would underestimate the fraction used for structural growth at monthly scale
-            ! But should be ok at annual scale.
-            bdead_now              = size2bd(dbh_now,height_now,ipft)
-            dbh_lut    (ilut,ipft) = dbh_now
-            bleaf_lut  (ilut,ipft) = bleaf_now
-            balive_lut (ilut,ipft) = bleaf_now                                             &
-                                   * (1. + q(ipft) + (qsw(ipft) + qbark(ipft))*height_now)
-            bdead_lut  (ilut,ipft) = bdead_now
-            bevery_lut (ilut,ipft) = balive_lut(ilut,ipft) + bdead_lut(ilut,ipft)
-         end do
-         !---------------------------------------------------------------------------------!
-      end do
-      !------------------------------------------------------------------------------------!
-   end if
    !---------------------------------------------------------------------------------------!
 
 
