@@ -100,8 +100,8 @@ CMACH=MACOS
 #   MOD_EXT -- Suffix for external modules. This should be typically set to mod.           #
 #------------------------------------------------------------------------------------------#
 FC_TYPE=GNU
-F_COMP=$(HOMEBREW_PREFIX)/bin/gfortran-15
-C_COMP=$(HOMEBREW_PREFIX)/bin/gcc-15
+F_COMP=$(HOMEBREW_PREFIX)/bin/gfortran-16
+C_COMP=$(HOMEBREW_PREFIX)/bin/gcc-16
 LOADER=$(F_COMP)
 LIBS=
 MOD_EXT=mod
