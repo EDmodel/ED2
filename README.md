@@ -9,6 +9,7 @@
 5. <a href="#info"> Further Information </a>
 6. <a href="#develop">Code Development, Pull Requests, and Commits</a>
 7. <a href="#docker">Using Docker</a>
+8. <a href="#licence">Licence</a>
 
 
 ## <a name="overview"> Model Overview </a>
@@ -74,3 +75,8 @@ docker run -ti --rm --ulimit stack=-1 --volume ${PWD}:/data edmodel/ed2:gnu
 `--volume ${PWD}:/data` : mounts the current folder to the /data folder. This is where the container starts
 
 If no arguments are given it will run `ed2` in the /data folder. Otherwise you can pass in any arguments, for example you can use `ed2 -f Templates/ED2IN-tonzi.harvest` to run ed2 with the input file Templates/ED2IN-tonzi.harvest.
+
+
+## <a name="licence"> Licence </a>
+
+This project is licenced under the Apache Licence 2.0 - see the LICENSE file for details.
