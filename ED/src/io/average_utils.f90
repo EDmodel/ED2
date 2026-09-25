@@ -20,11 +20,11 @@ module average_utils
    !                           |----------------------------------|                        !
    !=======================================================================================!
    !=======================================================================================!
-   !  SUBROUTINE: AGGREGATE_POLYGON_FMEAN
+   !  SUBROUTINE: AGGREGATE_ED_FMEAN_POLYGONS
    !> \brief The following subroutine finds the polygon averages from site-, patch-, and
    !> cohort-level properties that have fmean variables associated.
    !---------------------------------------------------------------------------------------!
-   subroutine aggregate_polygon_fmean(cgrid)
+   subroutine aggregate_ed_fmean_polygons(cgrid)
       use ed_state_vars         , only : edtype             & ! structure
                                        , polygontype        & ! structure
                                        , sitetype           & ! structure
@@ -840,7 +840,7 @@ module average_utils
       end do polyloop
       !------------------------------------------------------------------------------------!
       return
-   end subroutine aggregate_polygon_fmean
+   end subroutine aggregate_ed_fmean_polygons
    !=======================================================================================!
    !=======================================================================================!
 
@@ -851,11 +851,11 @@ module average_utils
 
    !=======================================================================================!
    !=======================================================================================!
-   !  SUBROUTINE: INTEGRATE_ED_FMEAN_MET_VARS
+   !  SUBROUTINE: INTEGRATE_ED_FMEAN_MET_POLYGONS
    !> \brief This subroutine increments the time averaged site met-forcing variables.  The
    !> polygon-level averages are found after the site-level are normalised.
    !---------------------------------------------------------------------------------------!
-   subroutine integrate_ed_fmean_met_vars(cgrid)
+   subroutine integrate_ed_fmean_met_polygons(cgrid)
       use ed_state_vars  , only : edtype          & ! structure
                                 , polygontype     ! ! structure
       use met_driver_coms, only : met_driv_state  ! ! structure
@@ -926,7 +926,7 @@ module average_utils
          end do siteloop
       end do polyloop
       return
-   end subroutine integrate_ed_fmean_met_vars
+   end subroutine integrate_ed_fmean_met_polygons
    !=======================================================================================!
    !=======================================================================================!
 
@@ -937,46 +937,24 @@ module average_utils
 
    !=======================================================================================!
    !=======================================================================================!
-   !  SUBROUTINE: NORMALIZE_ED_FMEAN_VARS 
+   !  SUBROUTINE: NORMALIZE_ED_FMEAN_POLYGONS 
    !> \brief The following sub-routine scales several variables that are integrated during
    !> one output step (frqsum) to actual rates, and find derived properties.
    !---------------------------------------------------------------------------------------!
-   subroutine normalize_ed_fmean_vars(cgrid)
-      use grid_coms    , only : nzg                ! ! intent(in)
-      use ed_misc_coms , only : frqsumi            ! ! intent(in)
+   subroutine normalize_ed_fmean_polygons(cgrid)
       use ed_state_vars, only : edtype             & ! structure
-                              , polygontype        & ! structure
-                              , sitetype           & ! structure
-                              , patchtype          ! ! structure
-      use therm_lib    , only : uextcm2tl          & ! subroutine
-                              , uint2tl            & ! subroutine
-                              , idealdenssh        & ! function
-                              , idealdmolsh        & ! function
+                              , polygontype        ! ! structure
+      use therm_lib    , only : idealdenssh        & ! function
                               , press2exner        & ! function
                               , extheta2temp       ! ! function
-      use consts_coms  , only : t00                & ! intent(in)
-                              , wdns               ! ! intent(in)
-      use soil_coms    , only : tiny_sfcwater_mass & ! intent(in)
-                              , soil               & ! intent(in)
-                              , matric_potential   ! ! function
       implicit none
       !----- Arguments.  ------------------------------------------------------------------!
       type(edtype)      , target     :: cgrid
       !----- Local variables. -------------------------------------------------------------!
       type(polygontype) , pointer    :: cpoly
-      type(sitetype)    , pointer    :: csite
-      type(patchtype)   , pointer    :: cpatch
       integer                        :: ipy
       integer                        :: isi
-      integer                        :: ipa
-      integer                        :: ico
-      integer                        :: lsl
-      integer                        :: nsoil
-      real                           :: pss_npp
-      real                           :: pss_lai
       real                           :: atm_exner
-      real                           :: can_exner
-      integer                        :: k
       !------------------------------------------------------------------------------------!
 
 
@@ -986,8 +964,6 @@ module average_utils
          cpoly => cgrid%polygon(ipy)
 
          siteloop: do isi = 1,cpoly%nsites
-            csite => cpoly%site(isi)
-            lsl   = cpoly%lsl(isi)
 
             !------------------------------------------------------------------------------!
             !      Now we find the derived properties for the air above canopy.            !
@@ -1000,304 +976,18 @@ module average_utils
             !------------------------------------------------------------------------------!
 
 
-
-            patchloop: do ipa = 1,csite%npatches
-               cpatch => csite%patch(ipa)
-
-               !---------------------------------------------------------------------------!
-               !      Reset the patch-level GPP and plant respiration, used to find NEP.   !
-               !---------------------------------------------------------------------------!
-               pss_npp    = 0.0
-               pss_lai    = 0.0
-               !---------------------------------------------------------------------------!
-
-
-
-
-
-               !---------------------------------------------------------------------------!
-               !     The following variables are fluxes that cam from the RK4 and there-   !
-               ! fore hold the integral over time, divide them by the total time to obtain !
-               ! the mean fluxes.                                                          !
-               !---------------------------------------------------------------------------!
-               csite%fmean_rk4step       (ipa) = csite%fmean_rk4step       (ipa) * frqsumi
-               csite%fmean_ustar         (ipa) = csite%fmean_ustar         (ipa) * frqsumi
-               csite%fmean_tstar         (ipa) = csite%fmean_tstar         (ipa) * frqsumi
-               csite%fmean_qstar         (ipa) = csite%fmean_qstar         (ipa) * frqsumi
-               csite%fmean_cstar         (ipa) = csite%fmean_cstar         (ipa) * frqsumi
-               csite%fmean_carbon_ac     (ipa) = csite%fmean_carbon_ac     (ipa) * frqsumi
-               csite%fmean_carbon_st     (ipa) = csite%fmean_carbon_st     (ipa) * frqsumi
-               csite%fmean_vapor_gc      (ipa) = csite%fmean_vapor_gc      (ipa) * frqsumi
-               csite%fmean_vapor_ac      (ipa) = csite%fmean_vapor_ac      (ipa) * frqsumi
-               csite%fmean_throughfall   (ipa) = csite%fmean_throughfall   (ipa) * frqsumi
-               csite%fmean_runoff        (ipa) = csite%fmean_runoff        (ipa) * frqsumi
-               csite%fmean_drainage      (ipa) = csite%fmean_drainage      (ipa) * frqsumi
-               csite%fmean_sensible_gc   (ipa) = csite%fmean_sensible_gc   (ipa) * frqsumi
-               csite%fmean_sensible_ac   (ipa) = csite%fmean_sensible_ac   (ipa) * frqsumi
-               csite%fmean_qthroughfall  (ipa) = csite%fmean_qthroughfall  (ipa) * frqsumi
-               csite%fmean_qrunoff       (ipa) = csite%fmean_qrunoff       (ipa) * frqsumi
-               csite%fmean_qdrainage     (ipa) = csite%fmean_qdrainage     (ipa) * frqsumi
-               !------ Soil flux. ---------------------------------------------------------!
-               do k=lsl,nzg
-                  csite%fmean_sensible_gg(k,ipa) = csite%fmean_sensible_gg   (k,ipa)       &
-                                                 * frqsumi
-                  csite%fmean_smoist_gg  (k,ipa) = csite%fmean_smoist_gg     (k,ipa)       &
-                                                 * frqsumi
-                  csite%fmean_transloss  (k,ipa) = csite%fmean_transloss     (k,ipa)       &
-                                                 * frqsumi
-               end do
-               !---------------------------------------------------------------------------!
-
-
-
-
-               !---------------------------------------------------------------------------!
-               !---------------------------------------------------------------------------!
-               !     Most state variables are already normalised.  All that we need to do  !
-               ! is to find the derived properties.                                        !
-               !---------------------------------------------------------------------------!
-
-               !---------------------------------------------------------------------------!
-               !     Soil matric potential, temperature, and liquid water.                 !
-               !---------------------------------------------------------------------------!
-               do k=lsl,nzg
-                  nsoil = cpoly%ntext_soil(k,isi)
-                  call uextcm2tl( csite%fmean_soil_energy(k,ipa)                           &
-                                , csite%fmean_soil_water (k,ipa) * wdns                    &
-                                , soil(nsoil)%slcpd                                        &
-                                , csite%fmean_soil_temp  (k,ipa)                           &
-                                , csite%fmean_soil_fliq  (k,ipa))
-
-                  csite%fmean_soil_mstpot (k,ipa) =                                        &
-                                     matric_potential(nsoil,csite%fmean_soil_water (k,ipa))
-                  
-               end do
-               !---------------------------------------------------------------------------!
-
-
-
-
-               !---------------------------------------------------------------------------!
-               !      Now we find the derived properties for the canopy air space.         !
-               !---------------------------------------------------------------------------!
-               can_exner                 = press2exner ( csite%fmean_can_prss  (ipa) )
-               csite%fmean_can_temp(ipa) = extheta2temp( can_exner                         &
-                                                       , csite%fmean_can_theta (ipa) )
-               csite%fmean_can_rhos(ipa) = idealdenssh ( csite%fmean_can_prss  (ipa)       &
-                                                       , csite%fmean_can_temp  (ipa)       &
-                                                       , csite%fmean_can_shv   (ipa)       )
-               csite%fmean_can_dmol(ipa) = idealdmolsh ( csite%fmean_can_prss  (ipa)       &
-                                                       , csite%fmean_can_temp  (ipa)       &
-                                                       , csite%fmean_can_shv   (ipa)       )
-               !---------------------------------------------------------------------------!
-
-
-
-
-               !---------------------------------------------------------------------------!
-               !   If the patch had some temporary snow/pounding layer, convert the mean   !
-               ! energy to J/kg, then find the mean temperature and liquid fraction.       !
-               ! Otherwise, set them to either zero or default values.                     !
-               !---------------------------------------------------------------------------!
-               if (csite%fmean_sfcw_mass(ipa) > tiny_sfcwater_mass) then
-                  csite%fmean_sfcw_energy(ipa) = csite%fmean_sfcw_energy(ipa)              &
-                                               / csite%fmean_sfcw_mass(ipa)
-                  call uint2tl(csite%fmean_sfcw_energy(ipa),csite%fmean_sfcw_temp(ipa)     &
-                              ,csite%fmean_sfcw_fliq(ipa))
-               else
-                  csite%fmean_sfcw_mass  (ipa)  = 0.
-                  csite%fmean_sfcw_depth (ipa)  = 0.
-                  csite%fmean_sfcw_energy(ipa)  = 0.
-                  csite%fmean_sfcw_temp  (ipa)  = csite%fmean_soil_temp(nzg,ipa)
-                  csite%fmean_sfcw_fliq  (ipa)  = csite%fmean_soil_fliq(nzg,ipa)
-               end if
-               !---------------------------------------------------------------------------!
-
-
-
-
-               !---------------------------------------------------------------------------!
-               !      Loop over the cohorts and find the mean for derived properties.      !
-               !---------------------------------------------------------------------------!
-               cohortloop: do ico=1,cpatch%ncohorts
-
-                  !------------------------------------------------------------------------!
-                  ! Dead biomass and lai defined for the tower file required by pecan. If  !
-                  ! not working with pecan, just ignore this.                              !
-                  !------------------------------------------------------------------------!
-
-                  cpatch%fmean_bdeada(ico)  =  cpatch%bdeada (ico) * cpatch%nplant  (ico)
-                  cpatch%fmean_bdeadb(ico)  =  cpatch%bdeadb (ico) * cpatch%nplant  (ico)
-                  cpatch%fmean_lai   (ico)  =  cpatch%lai    (ico) * cpatch%nplant  (ico)
-
-                  !------------------------------------------------------------------------!
-                  !    Energy and water fluxes were integrated over the past frqsum        !
-                  ! interval.   Use frqsumi to normalise them.  Energy fluxes will become  !
-                  ! W/m2, and water fluxes will become kg/m2/s (or kg/pl/s, in the case    !
-                  ! of internal water fluxes).                                             !
-                  !------------------------------------------------------------------------!
-                  cpatch%fmean_sensible_lc   (ico) = cpatch%fmean_sensible_lc   (ico)      &
-                                                   * frqsumi
-                  cpatch%fmean_vapor_lc      (ico) = cpatch%fmean_vapor_lc      (ico)      &
-                                                   * frqsumi
-                  cpatch%fmean_transp        (ico) = cpatch%fmean_transp        (ico)      &
-                                                   * frqsumi
-                  cpatch%fmean_intercepted_al(ico) = cpatch%fmean_intercepted_al(ico)      &
-                                                   * frqsumi
-                  cpatch%fmean_wshed_lg      (ico) = cpatch%fmean_wshed_lg      (ico)      &
-                                                   * frqsumi
-                  cpatch%fmean_sensible_wc   (ico) = cpatch%fmean_sensible_wc   (ico)      &
-                                                   * frqsumi
-                  cpatch%fmean_vapor_wc      (ico) = cpatch%fmean_vapor_wc      (ico)      &
-                                                   * frqsumi
-                  cpatch%fmean_intercepted_aw(ico) = cpatch%fmean_intercepted_aw(ico)      &
-                                                   * frqsumi
-                  cpatch%fmean_wshed_wg      (ico) = cpatch%fmean_wshed_wg      (ico)      &
-                                                   * frqsumi
-                  cpatch%fmean_wflux_wl      (ico) = cpatch%fmean_wflux_wl      (ico)      &
-                                                   * frqsumi
-                  cpatch%fmean_wflux_gw      (ico) = cpatch%fmean_wflux_gw      (ico)      &
-                                                   * frqsumi
-                  do k=lsl,nzg
-                     cpatch%fmean_wflux_gw_layer(k,ico) =                                  &
-                                               cpatch%fmean_wflux_gw_layer(k,ico) * frqsumi
-                  end do
-                  !------------------------------------------------------------------------!
-
-
-
-                  !------------------------------------------------------------------------!
-                  !     Find the vegetation temperature and liquid fraction.               !
-                  !------------------------------------------------------------------------!
-                  !----- Leaf. ------------------------------------------------------------!
-                  if (cpatch%fmean_leaf_hcap(ico) > 0.) then
-                     call uextcm2tl( cpatch%fmean_leaf_energy   (ico)                      &
-                                   , cpatch%fmean_leaf_water    (ico)                      &
-                                   + cpatch%fmean_leaf_water_im2(ico)                      &
-                                   , cpatch%fmean_leaf_hcap     (ico)                      &
-                                   , cpatch%fmean_leaf_temp     (ico)                      &
-                                   , cpatch%fmean_leaf_fliq     (ico) )
-                  else
-                     cpatch%fmean_leaf_vpdef(ico) = csite%fmean_can_vpdef(ipa)
-                     cpatch%fmean_leaf_temp (ico) = csite%fmean_can_temp (ipa)
-                     if (csite%fmean_can_temp(ipa) > t00) then
-                        cpatch%fmean_leaf_fliq(ico) = 1.0
-                     elseif (csite%fmean_can_temp(ipa) == t00) then
-                        cpatch%fmean_leaf_fliq(ico) = 0.5
-                     else
-                        cpatch%fmean_leaf_fliq(ico) = 0.0
-                     end if
-                  end if
-                  !----- Wood. ------------------------------------------------------------!
-                  if (cpatch%fmean_wood_hcap(ico) > 0.) then
-                     call uextcm2tl( cpatch%fmean_wood_energy   (ico)                      &
-                                   , cpatch%fmean_wood_water    (ico)                      &
-                                   + cpatch%fmean_wood_water_im2(ico)                      &
-                                   , cpatch%fmean_wood_hcap     (ico)                      &
-                                   , cpatch%fmean_wood_temp     (ico)                      &
-                                   , cpatch%fmean_wood_fliq     (ico) )
-                  else
-                     cpatch%fmean_wood_temp(ico) = csite%fmean_can_temp(ipa)
-                     if (csite%fmean_can_temp(ipa) > t00) then
-                        cpatch%fmean_wood_fliq(ico) = 1.0
-                     elseif (csite%fmean_can_temp(ipa) == t00) then
-                        cpatch%fmean_wood_fliq(ico) = 0.5
-                     else
-                        cpatch%fmean_wood_fliq(ico) = 0.0
-                     end if
-                  end if
-                  !------------------------------------------------------------------------!
-
-
-
-
-                  !------------------------------------------------------------------------!
-                  !      Integrate the total plant respiration and net primary             !
-                  ! productivity.                                                          !
-                  !------------------------------------------------------------------------!
-                  cpatch%fmean_plresp(ico) = cpatch%fmean_leaf_resp         (ico)          &
-                                           + cpatch%fmean_root_resp         (ico)          &
-                                           + cpatch%fmean_stem_resp         (ico)          &
-                                           + cpatch%fmean_leaf_storage_resp (ico)          &
-                                           + cpatch%fmean_root_storage_resp (ico)          &
-                                           + cpatch%fmean_sapa_storage_resp (ico)          &
-                                           + cpatch%fmean_sapb_storage_resp (ico)          &
-                                           + cpatch%fmean_barka_storage_resp(ico)          &
-                                           + cpatch%fmean_barkb_storage_resp(ico)          &
-                                           + cpatch%fmean_leaf_growth_resp  (ico)          &
-                                           + cpatch%fmean_root_growth_resp  (ico)          &
-                                           + cpatch%fmean_sapa_growth_resp  (ico)          &
-                                           + cpatch%fmean_sapb_growth_resp  (ico)          &
-                                           + cpatch%fmean_barka_growth_resp (ico)          &
-                                           + cpatch%fmean_barkb_growth_resp (ico)
-
-                  cpatch%fmean_npp   (ico) = cpatch%fmean_gpp         (ico)                &
-                                           - cpatch%fmean_plresp      (ico)
-                  !------------------------------------------------------------------------!
-
-
-
-                  !----- Add LAI and extensive NPP to compute NEP. ------------------------!
-                  pss_lai    = pss_lai    + cpatch%lai       (ico)
-                  pss_npp    = pss_npp    + cpatch%fmean_npp (ico) * cpatch%nplant(ico)
-                  !------------------------------------------------------------------------!
-               end do cohortloop
-               !---------------------------------------------------------------------------!
-
-
-
-               !---------------------------------------------------------------------------!
-               !     Net Ecosystem Productivity found by combining the cohort-level terms  !
-               ! (gross primary productivity and total plant respiration), with hetero-    !
-               ! trophic respiration, a patch-level variable.                              !
-               !---------------------------------------------------------------------------!
-               csite%fmean_nep(ipa) = pss_npp - csite%fmean_rh(ipa)
-               !---------------------------------------------------------------------------!
-
-
-
-
-               !---------------------------------------------------------------------------!
-               !      Budget variables.  Most of them contain integral values, so we must  !divide   !
-               ! by the elapsed time to get them in flux units.                            !
-               !                                                                           !
-               ! IMPORTANT --- Do NOT include zcaneffect and hcapeffect here.  These       !
-               !               effects are instantaneous values that are incorporated to   !
-               !               the total storage during a single time step.  When they are !
-               !               computed, they already take frqsumi into account.           !
-               !---------------------------------------------------------------------------!
-               csite%co2budget_gpp        (ipa) = csite%co2budget_gpp        (ipa) * frqsumi
-               csite%co2budget_plresp     (ipa) = csite%co2budget_plresp     (ipa) * frqsumi
-               csite%co2budget_rh         (ipa) = csite%co2budget_rh         (ipa) * frqsumi
-               csite%co2budget_loss2atm   (ipa) = csite%co2budget_loss2atm   (ipa) * frqsumi
-               csite%co2budget_denseffect (ipa) = csite%co2budget_denseffect (ipa) * frqsumi
-               csite%co2budget_residual   (ipa) = csite%co2budget_residual   (ipa) * frqsumi
-               csite%cbudget_loss2atm     (ipa) = csite%cbudget_loss2atm     (ipa) * frqsumi
-               csite%cbudget_denseffect   (ipa) = csite%cbudget_denseffect   (ipa) * frqsumi
-               csite%cbudget_residual     (ipa) = csite%cbudget_residual     (ipa) * frqsumi
-               csite%ebudget_precipgain   (ipa) = csite%ebudget_precipgain   (ipa) * frqsumi
-               csite%ebudget_netrad       (ipa) = csite%ebudget_netrad       (ipa) * frqsumi
-               csite%ebudget_denseffect   (ipa) = csite%ebudget_denseffect   (ipa) * frqsumi
-               csite%ebudget_prsseffect   (ipa) = csite%ebudget_prsseffect   (ipa) * frqsumi
-               csite%ebudget_loss2atm     (ipa) = csite%ebudget_loss2atm     (ipa) * frqsumi
-               csite%ebudget_loss2drainage(ipa) = csite%ebudget_loss2drainage(ipa) * frqsumi
-               csite%ebudget_loss2runoff  (ipa) = csite%ebudget_loss2runoff  (ipa) * frqsumi
-               csite%ebudget_residual     (ipa) = csite%ebudget_residual     (ipa) * frqsumi
-               csite%wbudget_precipgain   (ipa) = csite%wbudget_precipgain   (ipa) * frqsumi
-               csite%wbudget_loss2atm     (ipa) = csite%wbudget_loss2atm     (ipa) * frqsumi
-               csite%wbudget_loss2drainage(ipa) = csite%wbudget_loss2drainage(ipa) * frqsumi
-               csite%wbudget_loss2runoff  (ipa) = csite%wbudget_loss2runoff  (ipa) * frqsumi
-               csite%wbudget_denseffect   (ipa) = csite%wbudget_denseffect   (ipa) * frqsumi
-               csite%wbudget_residual     (ipa) = csite%wbudget_residual     (ipa) * frqsumi
-               !---------------------------------------------------------------------------!
-            end do patchloop
+            !------------------------------------------------------------------------------!
+            !   Normalise data for all patches. We call a separate sub-routine to make the !
+            ! sub-routines shorter.                                                        !
+            !------------------------------------------------------------------------------!
+            call normalize_ed_fmean_patches(cpoly,isi)
             !------------------------------------------------------------------------------!
          end do siteloop
          !---------------------------------------------------------------------------------!
       end do polyloop
       !------------------------------------------------------------------------------------!
       return
-   end subroutine normalize_ed_fmean_vars
+   end subroutine normalize_ed_fmean_polygons
    !=======================================================================================!
    !=======================================================================================!
 
@@ -1308,29 +998,402 @@ module average_utils
 
    !=======================================================================================!
    !=======================================================================================!
-   subroutine zero_ed_fmean_vars(cgrid)
+   !  SUBROUTINE: NORMALIZE_ED_FMEAN_PATCHES
+   !> \brief This sub-routine normalises patch-level variables.
+   !---------------------------------------------------------------------------------------!
+   subroutine normalize_ed_fmean_patches(cpoly,isi)
+      use grid_coms    , only : nzg                ! ! intent(in)
+      use ed_misc_coms , only : frqsumi            ! ! intent(in)
+      use ed_state_vars, only : polygontype        & ! structure
+                              , sitetype           ! ! structure
+      use therm_lib    , only : uextcm2tl          & ! subroutine
+                              , uint2tl            & ! subroutine
+                              , idealdenssh        & ! function
+                              , idealdmolsh        & ! function
+                              , press2exner        & ! function
+                              , extheta2temp       ! ! function
+      use consts_coms  , only : wdns               ! ! intent(in)
+      use soil_coms    , only : tiny_sfcwater_mass & ! intent(in)
+                              , soil               & ! intent(in)
+                              , matric_potential   ! ! function
+      implicit none
+      !----- Arguments.  ------------------------------------------------------------------!
+      type(polygontype), target     :: cpoly
+      integer          , intent(in) :: isi
+      !----- Local variables. -------------------------------------------------------------!
+      type(sitetype)   , pointer    :: csite
+      integer                       :: ipa
+      integer                       :: nsoil
+      integer                       :: lsl
+      real                          :: pss_npp
+      real                          :: pss_lai
+      real                          :: can_exner
+      integer                       :: k
+      !------------------------------------------------------------------------------------!
 
-      use ed_state_vars, only : edtype      & ! structure
-                              , polygontype & ! structure
-                              , sitetype    & ! structure
-                              , patchtype   ! ! structure
+
+      !------------------------------------------------------------------------------------!
+      !    Select site and lowest soil level.                                              !
+      !------------------------------------------------------------------------------------!
+      csite => cpoly%site(isi)
+      lsl   = cpoly%lsl(isi)
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !   Main patch loop.                                                                 !
+      !------------------------------------------------------------------------------------!
+      patchloop: do ipa = 1,csite%npatches
+         !---------------------------------------------------------------------------------!
+         !     The following variables are fluxes that cam from the RK4 and therefore hold !
+         ! the integral over time, divide them by the total time to obtain the average     !
+         ! fluxes.                                                                         !
+         !---------------------------------------------------------------------------------!
+         csite%fmean_rk4step       (ipa) = csite%fmean_rk4step       (ipa) * frqsumi
+         csite%fmean_ustar         (ipa) = csite%fmean_ustar         (ipa) * frqsumi
+         csite%fmean_tstar         (ipa) = csite%fmean_tstar         (ipa) * frqsumi
+         csite%fmean_qstar         (ipa) = csite%fmean_qstar         (ipa) * frqsumi
+         csite%fmean_cstar         (ipa) = csite%fmean_cstar         (ipa) * frqsumi
+         csite%fmean_carbon_ac     (ipa) = csite%fmean_carbon_ac     (ipa) * frqsumi
+         csite%fmean_carbon_st     (ipa) = csite%fmean_carbon_st     (ipa) * frqsumi
+         csite%fmean_vapor_gc      (ipa) = csite%fmean_vapor_gc      (ipa) * frqsumi
+         csite%fmean_vapor_ac      (ipa) = csite%fmean_vapor_ac      (ipa) * frqsumi
+         csite%fmean_throughfall   (ipa) = csite%fmean_throughfall   (ipa) * frqsumi
+         csite%fmean_runoff        (ipa) = csite%fmean_runoff        (ipa) * frqsumi
+         csite%fmean_drainage      (ipa) = csite%fmean_drainage      (ipa) * frqsumi
+         csite%fmean_sensible_gc   (ipa) = csite%fmean_sensible_gc   (ipa) * frqsumi
+         csite%fmean_sensible_ac   (ipa) = csite%fmean_sensible_ac   (ipa) * frqsumi
+         csite%fmean_qthroughfall  (ipa) = csite%fmean_qthroughfall  (ipa) * frqsumi
+         csite%fmean_qrunoff       (ipa) = csite%fmean_qrunoff       (ipa) * frqsumi
+         csite%fmean_qdrainage     (ipa) = csite%fmean_qdrainage     (ipa) * frqsumi
+         !------ Soil flux. ---------------------------------------------------------------!
+         do k=lsl,nzg
+            csite%fmean_sensible_gg(k,ipa) = csite%fmean_sensible_gg   (k,ipa) * frqsumi
+            csite%fmean_smoist_gg  (k,ipa) = csite%fmean_smoist_gg     (k,ipa) * frqsumi
+            csite%fmean_transloss  (k,ipa) = csite%fmean_transloss     (k,ipa) * frqsumi
+         end do
+         !---------------------------------------------------------------------------------!
+
+
+
+
+         !---------------------------------------------------------------------------------!
+         !---------------------------------------------------------------------------------!
+         !     Most state variables are already normalised.  All that we need to do is to  !
+         ! find the derived properties.                                                    !
+         !---------------------------------------------------------------------------------!
+
+         !---------------------------------------------------------------------------------!
+         !     Soil matric potential, temperature, and liquid water.                       !
+         !---------------------------------------------------------------------------------!
+         do k=lsl,nzg
+            nsoil = cpoly%ntext_soil(k,isi)
+            call uextcm2tl( csite%fmean_soil_energy(k,ipa)                                 &
+                          , csite%fmean_soil_water (k,ipa) * wdns                          &
+                          , soil(nsoil)%slcpd                                              &
+                          , csite%fmean_soil_temp  (k,ipa)                                 &
+                          , csite%fmean_soil_fliq  (k,ipa))
+
+            csite%fmean_soil_mstpot (k,ipa) =                                              &
+                               matric_potential(nsoil,csite%fmean_soil_water (k,ipa))
+            
+         end do
+         !---------------------------------------------------------------------------------!
+
+
+
+
+         !---------------------------------------------------------------------------------!
+         !      Now we find the derived properties for the canopy air space.               !
+         !---------------------------------------------------------------------------------!
+         can_exner                 = press2exner ( csite%fmean_can_prss  (ipa) )
+         csite%fmean_can_temp(ipa) = extheta2temp( can_exner                               &
+                                                 , csite%fmean_can_theta (ipa) )
+         csite%fmean_can_rhos(ipa) = idealdenssh ( csite%fmean_can_prss  (ipa)             &
+                                                 , csite%fmean_can_temp  (ipa)             &
+                                                 , csite%fmean_can_shv   (ipa)             )
+         csite%fmean_can_dmol(ipa) = idealdmolsh ( csite%fmean_can_prss  (ipa)             &
+                                                 , csite%fmean_can_temp  (ipa)             &
+                                                 , csite%fmean_can_shv   (ipa)             )
+         !---------------------------------------------------------------------------------!
+
+
+
+
+         !---------------------------------------------------------------------------------!
+         !   If the patch had some temporary snow/pounding layer, convert the mean energy  !
+         ! to J/kg, then find the mean temperature and liquid fraction.  Otherwise, set    !
+         ! them to either zero or default values.                                          !
+         !---------------------------------------------------------------------------------!
+         if (csite%fmean_sfcw_mass(ipa) > tiny_sfcwater_mass) then
+            csite%fmean_sfcw_energy(ipa) = csite%fmean_sfcw_energy(ipa)                       &
+                                         / csite%fmean_sfcw_mass(ipa)
+            call uint2tl(csite%fmean_sfcw_energy(ipa),csite%fmean_sfcw_temp(ipa)              &
+                        ,csite%fmean_sfcw_fliq(ipa))
+         else
+            csite%fmean_sfcw_mass  (ipa)  = 0.
+            csite%fmean_sfcw_depth (ipa)  = 0.
+            csite%fmean_sfcw_energy(ipa)  = 0.
+            csite%fmean_sfcw_temp  (ipa)  = csite%fmean_soil_temp(nzg,ipa)
+            csite%fmean_sfcw_fliq  (ipa)  = csite%fmean_soil_fliq(nzg,ipa)
+         end if
+         !---------------------------------------------------------------------------------!
+
+
+
+
+         !---------------------------------------------------------------------------------!
+         !    Normalise cohort-level variables. We call a separate sub-routine to make the !
+         ! sub-routines shorter.                                                           !
+         !---------------------------------------------------------------------------------!
+         call normalize_ed_fmean_cohorts(csite,ipa,lsl,pss_npp,pss_lai)
+         !---------------------------------------------------------------------------------!
+
+
+
+         !---------------------------------------------------------------------------------!
+         !     Net Ecosystem Productivity must be determined by combining the cohort-level !
+         ! terms (gross primary productivity and total plant respiration), with hetero-    !
+         ! trophic respiration, a patch-level variable.                                    !
+         !---------------------------------------------------------------------------------!
+         csite%fmean_nep(ipa) = pss_npp - csite%fmean_rh(ipa)
+         !---------------------------------------------------------------------------------!
+
+
+
+
+         !---------------------------------------------------------------------------------!
+         !      Budget variables.  Most of them contain integral values, so we must divide !
+         ! by the elapsed time to get them in flux units.                                  !
+         !                                                                                 !
+         ! IMPORTANT --- Do NOT include zcaneffect and hcapeffect here.  These effects are !
+         !               instantaneous values that are incorporated to the total storage   !
+         !               during a single time step.  When they are computed, they already  !
+         !               take frqsumi into account.                                        !
+         !---------------------------------------------------------------------------------!
+         csite%co2budget_gpp        (ipa) = csite%co2budget_gpp        (ipa) * frqsumi
+         csite%co2budget_plresp     (ipa) = csite%co2budget_plresp     (ipa) * frqsumi
+         csite%co2budget_rh         (ipa) = csite%co2budget_rh         (ipa) * frqsumi
+         csite%co2budget_loss2atm   (ipa) = csite%co2budget_loss2atm   (ipa) * frqsumi
+         csite%co2budget_denseffect (ipa) = csite%co2budget_denseffect (ipa) * frqsumi
+         csite%co2budget_residual   (ipa) = csite%co2budget_residual   (ipa) * frqsumi
+         csite%cbudget_loss2atm     (ipa) = csite%cbudget_loss2atm     (ipa) * frqsumi
+         csite%cbudget_denseffect   (ipa) = csite%cbudget_denseffect   (ipa) * frqsumi
+         csite%cbudget_residual     (ipa) = csite%cbudget_residual     (ipa) * frqsumi
+         csite%ebudget_precipgain   (ipa) = csite%ebudget_precipgain   (ipa) * frqsumi
+         csite%ebudget_netrad       (ipa) = csite%ebudget_netrad       (ipa) * frqsumi
+         csite%ebudget_denseffect   (ipa) = csite%ebudget_denseffect   (ipa) * frqsumi
+         csite%ebudget_prsseffect   (ipa) = csite%ebudget_prsseffect   (ipa) * frqsumi
+         csite%ebudget_loss2atm     (ipa) = csite%ebudget_loss2atm     (ipa) * frqsumi
+         csite%ebudget_loss2drainage(ipa) = csite%ebudget_loss2drainage(ipa) * frqsumi
+         csite%ebudget_loss2runoff  (ipa) = csite%ebudget_loss2runoff  (ipa) * frqsumi
+         csite%ebudget_residual     (ipa) = csite%ebudget_residual     (ipa) * frqsumi
+         csite%wbudget_precipgain   (ipa) = csite%wbudget_precipgain   (ipa) * frqsumi
+         csite%wbudget_loss2atm     (ipa) = csite%wbudget_loss2atm     (ipa) * frqsumi
+         csite%wbudget_loss2drainage(ipa) = csite%wbudget_loss2drainage(ipa) * frqsumi
+         csite%wbudget_loss2runoff  (ipa) = csite%wbudget_loss2runoff  (ipa) * frqsumi
+         csite%wbudget_denseffect   (ipa) = csite%wbudget_denseffect   (ipa) * frqsumi
+         csite%wbudget_residual     (ipa) = csite%wbudget_residual     (ipa) * frqsumi
+         !---------------------------------------------------------------------------------!
+      end do patchloop
+      !------------------------------------------------------------------------------------!
+
+      return
+   end subroutine normalize_ed_fmean_patches
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !  SUBROUTINE: NORMALIZE_ED_FMEAN_COHORTS
+   !> \brief This sub-routine normalises cohort-level variables.
+   !---------------------------------------------------------------------------------------!
+   subroutine normalize_ed_fmean_cohorts(csite,ipa,lsl,pss_npp,pss_lai)
+      use grid_coms    , only : nzg                ! ! intent(in)
+      use ed_misc_coms , only : frqsumi            ! ! intent(in)
+      use ed_state_vars, only : sitetype           & ! structure
+                              , patchtype          ! ! structure
+      use therm_lib    , only : uextcm2tl          & ! subroutine
+                              , uint2tl            & ! subroutine
+                              , idealdenssh        & ! function
+                              , idealdmolsh        & ! function
+                              , press2exner        & ! function
+                              , extheta2temp       ! ! function
+      use consts_coms  , only : t00                & ! intent(in)
+                              , wdns               ! ! intent(in)
+      implicit none
+      !----- Arguments.  ------------------------------------------------------------------!
+      type(sitetype)    , target      :: csite
+      integer           , intent(in)  :: ipa
+      integer           , intent(in)  :: lsl
+      real              , intent(out) :: pss_npp
+      real              , intent(out) :: pss_lai
+      !----- Local variables. -------------------------------------------------------------!
+      type(patchtype)   , pointer    :: cpatch
+      integer                        :: ico
+      integer                        :: k
+      !------------------------------------------------------------------------------------!
+
+
+      !--- Select patch. ------------------------------------------------------------------!
+      cpatch => csite%patch(ipa)
+      !------------------------------------------------------------------------------------!
+
+
+      !--- Initialise NPP and LAI, which will be integrated across all cohorts. -----------!
+      pss_npp    = 0.0
+      pss_lai    = 0.0
+      !------------------------------------------------------------------------------------!
+
+
+
+
+      !------------------------------------------------------------------------------------!
+      !      Loop over the cohorts and find the mean for derived properties.               !
+      !------------------------------------------------------------------------------------!
+      cohortloop: do ico=1,cpatch%ncohorts
+
+         !---------------------------------------------------------------------------------!
+         !   Dead biomass and lai defined for the tower file required by PEcAN.            !
+         !   MLO - LAI was being incorrectly multiplied by nplant.                         !
+         !---------------------------------------------------------------------------------!
+         cpatch%fmean_bdeada(ico)  =  cpatch%bdeada (ico) * cpatch%nplant  (ico)
+         cpatch%fmean_bdeadb(ico)  =  cpatch%bdeadb (ico) * cpatch%nplant  (ico)
+         cpatch%fmean_lai   (ico)  =  cpatch%lai    (ico)
+         !---------------------------------------------------------------------------------!
+
+
+
+         !---------------------------------------------------------------------------------!
+         !    Energy and water fluxes were integrated over the past frqsum interval.  Use  !
+         ! frqsumi to normalise them.  Energy fluxes will become W/m2, and water fluxes    !
+         ! will become kg/m2/s (or kg/pl/s, in the case of internal water fluxes).         !
+         !---------------------------------------------------------------------------------!
+         cpatch%fmean_sensible_lc   (ico) = cpatch%fmean_sensible_lc   (ico) * frqsumi
+         cpatch%fmean_vapor_lc      (ico) = cpatch%fmean_vapor_lc      (ico) * frqsumi
+         cpatch%fmean_transp        (ico) = cpatch%fmean_transp        (ico) * frqsumi
+         cpatch%fmean_intercepted_al(ico) = cpatch%fmean_intercepted_al(ico) * frqsumi
+         cpatch%fmean_wshed_lg      (ico) = cpatch%fmean_wshed_lg      (ico) * frqsumi
+         cpatch%fmean_sensible_wc   (ico) = cpatch%fmean_sensible_wc   (ico) * frqsumi
+         cpatch%fmean_vapor_wc      (ico) = cpatch%fmean_vapor_wc      (ico) * frqsumi
+         cpatch%fmean_intercepted_aw(ico) = cpatch%fmean_intercepted_aw(ico) * frqsumi
+         cpatch%fmean_wshed_wg      (ico) = cpatch%fmean_wshed_wg      (ico) * frqsumi
+         cpatch%fmean_wflux_wl      (ico) = cpatch%fmean_wflux_wl      (ico) * frqsumi
+         cpatch%fmean_wflux_gw      (ico) = cpatch%fmean_wflux_gw      (ico) * frqsumi
+         do k=lsl,nzg
+            cpatch%fmean_wflux_gw_layer(k,ico) = cpatch%fmean_wflux_gw_layer(k,ico)        &
+                                               * frqsumi
+         end do
+         !---------------------------------------------------------------------------------!
+
+
+
+         !---------------------------------------------------------------------------------!
+         !     Find the vegetation temperature and liquid fraction.                        !
+         !---------------------------------------------------------------------------------!
+         !----- Leaf. ---------------------------------------------------------------------!
+         if (cpatch%fmean_leaf_hcap(ico) > 0.) then
+            call uextcm2tl( cpatch%fmean_leaf_energy   (ico)                               &
+                          , cpatch%fmean_leaf_water    (ico)                               &
+                          + cpatch%fmean_leaf_water_im2(ico)                               &
+                          , cpatch%fmean_leaf_hcap     (ico)                               &
+                          , cpatch%fmean_leaf_temp     (ico)                               &
+                          , cpatch%fmean_leaf_fliq     (ico) )
+         else
+            cpatch%fmean_leaf_vpdef(ico) = csite%fmean_can_vpdef(ipa)
+            cpatch%fmean_leaf_temp (ico) = csite%fmean_can_temp (ipa)
+            if (csite%fmean_can_temp(ipa) > t00) then
+               cpatch%fmean_leaf_fliq(ico) = 1.0
+            elseif (csite%fmean_can_temp(ipa) == t00) then
+               cpatch%fmean_leaf_fliq(ico) = 0.5
+            else
+               cpatch%fmean_leaf_fliq(ico) = 0.0
+            end if
+         end if
+         !----- Wood. ---------------------------------------------------------------------!
+         if (cpatch%fmean_wood_hcap(ico) > 0.) then
+            call uextcm2tl( cpatch%fmean_wood_energy   (ico)                               &
+                          , cpatch%fmean_wood_water    (ico)                               &
+                          + cpatch%fmean_wood_water_im2(ico)                               &
+                          , cpatch%fmean_wood_hcap     (ico)                               &
+                          , cpatch%fmean_wood_temp     (ico)                               &
+                          , cpatch%fmean_wood_fliq     (ico) )
+         else
+            cpatch%fmean_wood_temp(ico) = csite%fmean_can_temp(ipa)
+            if (csite%fmean_can_temp(ipa) > t00) then
+               cpatch%fmean_wood_fliq(ico) = 1.0
+            elseif (csite%fmean_can_temp(ipa) == t00) then
+               cpatch%fmean_wood_fliq(ico) = 0.5
+            else
+               cpatch%fmean_wood_fliq(ico) = 0.0
+            end if
+         end if
+         !---------------------------------------------------------------------------------!
+
+
+
+
+         !---------------------------------------------------------------------------------!
+         !      Integrate the total plant respiration and net primary productivity.        !
+         !---------------------------------------------------------------------------------!
+         cpatch%fmean_plresp(ico) = cpatch%fmean_leaf_resp         (ico)                   &
+                                  + cpatch%fmean_root_resp         (ico)                   &
+                                  + cpatch%fmean_stem_resp         (ico)                   &
+                                  + cpatch%fmean_leaf_storage_resp (ico)                   &
+                                  + cpatch%fmean_root_storage_resp (ico)                   &
+                                  + cpatch%fmean_sapa_storage_resp (ico)                   &
+                                  + cpatch%fmean_sapb_storage_resp (ico)                   &
+                                  + cpatch%fmean_barka_storage_resp(ico)                   &
+                                  + cpatch%fmean_barkb_storage_resp(ico)                   &
+                                  + cpatch%fmean_leaf_growth_resp  (ico)                   &
+                                  + cpatch%fmean_root_growth_resp  (ico)                   &
+                                  + cpatch%fmean_sapa_growth_resp  (ico)                   &
+                                  + cpatch%fmean_sapb_growth_resp  (ico)                   &
+                                  + cpatch%fmean_barka_growth_resp (ico)                   &
+                                  + cpatch%fmean_barkb_growth_resp (ico)
+
+         cpatch%fmean_npp   (ico) = cpatch%fmean_gpp (ico) - cpatch%fmean_plresp(ico)
+         !---------------------------------------------------------------------------------!
+
+
+
+         !----- Add LAI and extensive NPP to compute NEP. ---------------------------------!
+         pss_lai    = pss_lai    + cpatch%lai       (ico)
+         pss_npp    = pss_npp    + cpatch%fmean_npp (ico) * cpatch%nplant(ico)
+         !---------------------------------------------------------------------------------!
+      end do cohortloop
+      !------------------------------------------------------------------------------------!
+
+      return
+   end subroutine normalize_ed_fmean_cohorts
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !  SUBROUTINE: ZERO_ED_FMEAN_POLYGONS
+   !> \brief This sub-routine resets polygon-level variables and nested dimensions.
+   !---------------------------------------------------------------------------------------!
+   subroutine zero_ed_fmean_polygons(cgrid)
+      use ed_state_vars, only : edtype      ! ! structure
       
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       type(edtype)     , target  :: cgrid
-      !----- Local variables. -------------------------------------------------------------!
-      type(polygontype), pointer :: cpoly
-      type(sitetype)   , pointer :: csite
-      type(patchtype)  , pointer :: cpatch
       integer                    :: ipy
-      integer                    :: isi
-      integer                    :: ipa
-      integer                    :: ico
       !------------------------------------------------------------------------------------!
-
       polyloop: do ipy = 1,cgrid%npolygons
-         cpoly => cgrid%polygon(ipy)
-
          cgrid%fmean_gpp               (  ipy) = 0.0
          cgrid%fmean_npp               (  ipy) = 0.0
          cgrid%fmean_leaf_resp         (  ipy) = 0.0
@@ -1486,237 +1549,347 @@ module average_utils
          cgrid%fmean_soil_wetness      (  ipy) = 0.0
          cgrid%fmean_skin_temp         (  ipy) = 0.0
 
-         siteloop: do isi = 1,cpoly%nsites
-            csite => cpoly%site(isi)
-
-            cpoly%fmean_atm_theiv      (isi) = 0.0
-            cpoly%fmean_atm_theta      (isi) = 0.0
-            cpoly%fmean_atm_temp       (isi) = 0.0
-            cpoly%fmean_atm_vpdef      (isi) = 0.0
-            cpoly%fmean_atm_shv        (isi) = 0.0
-            cpoly%fmean_atm_rshort     (isi) = 0.0
-            cpoly%fmean_atm_rshort_diff(isi) = 0.0
-            cpoly%fmean_atm_par        (isi) = 0.0
-            cpoly%fmean_atm_par_diff   (isi) = 0.0
-            cpoly%fmean_atm_rlong      (isi) = 0.0
-            cpoly%fmean_atm_vels       (isi) = 0.0
-            cpoly%fmean_atm_rhos       (isi) = 0.0
-            cpoly%fmean_atm_prss       (isi) = 0.0
-            cpoly%fmean_atm_co2        (isi) = 0.0
-            cpoly%fmean_pcpg           (isi) = 0.0
-            cpoly%fmean_qpcpg          (isi) = 0.0
-            cpoly%fmean_dpcpg          (isi) = 0.0
-
-            patchloop: do ipa = 1,csite%npatches
-               cpatch => csite%patch(ipa)
-
-               !---------------------------------------------------------------------------!
-               ! Budget variables.                                                         !
-               !                                                                           !
-               ! IMPORTANT --- Do NOT include zcaneffect and hcapeffect here.  These       !
-               !               fluxes are instantaneous values that are incorporated to    !
-               !               the total storage during a single time step.  They are      !
-               !               reset to zero as soon as they are used, in compute_budget,  !
-               !               and they shall remain zero unless vegetation dynamics has   !
-               !               just occurred.                                              !
-               !---------------------------------------------------------------------------!
-               csite%co2budget_gpp                 (ipa) = 0.0
-               csite%co2budget_rh                  (ipa) = 0.0
-               csite%co2budget_plresp              (ipa) = 0.0
-               csite%co2budget_residual            (ipa) = 0.0
-               csite%co2budget_loss2atm            (ipa) = 0.0
-               csite%co2budget_denseffect          (ipa) = 0.0
-               csite%cbudget_loss2atm              (ipa) = 0.0
-               csite%cbudget_denseffect            (ipa) = 0.0
-               csite%cbudget_residual              (ipa) = 0.0
-               csite%wbudget_precipgain            (ipa) = 0.0
-               csite%wbudget_loss2atm              (ipa) = 0.0
-               csite%wbudget_loss2runoff           (ipa) = 0.0
-               csite%wbudget_loss2drainage         (ipa) = 0.0
-               csite%wbudget_denseffect            (ipa) = 0.0
-               csite%wbudget_residual              (ipa) = 0.0
-               csite%ebudget_precipgain            (ipa) = 0.0
-               csite%ebudget_netrad                (ipa) = 0.0
-               csite%ebudget_loss2atm              (ipa) = 0.0
-               csite%ebudget_loss2runoff           (ipa) = 0.0
-               csite%ebudget_loss2drainage         (ipa) = 0.0
-               csite%ebudget_denseffect            (ipa) = 0.0
-               csite%ebudget_prsseffect            (ipa) = 0.0
-               csite%ebudget_residual              (ipa) = 0.0
-               !---------------------------------------------------------------------------!
-
-
-
-
-               !----- Fast average variables. ---------------------------------------------!
-               csite%fmean_rh             (  ipa) = 0.0
-               csite%fmean_fgc_rh         (  ipa) = 0.0
-               csite%fmean_fsc_rh         (  ipa) = 0.0
-               csite%fmean_stgc_rh        (  ipa) = 0.0
-               csite%fmean_stsc_rh        (  ipa) = 0.0
-               csite%fmean_msc_rh         (  ipa) = 0.0
-               csite%fmean_ssc_rh         (  ipa) = 0.0
-               csite%fmean_psc_rh         (  ipa) = 0.0
-               csite%fmean_nep            (  ipa) = 0.0
-               csite%fmean_rk4step        (  ipa) = 0.0
-               csite%fmean_available_water(  ipa) = 0.0
-               csite%fmean_veg_displace   (  ipa) = 0.0
-               csite%fmean_rough          (  ipa) = 0.0
-               csite%fmean_can_theiv      (  ipa) = 0.0
-               csite%fmean_can_theta      (  ipa) = 0.0
-               csite%fmean_can_vpdef      (  ipa) = 0.0
-               csite%fmean_can_temp       (  ipa) = 0.0
-               csite%fmean_can_shv        (  ipa) = 0.0
-               csite%fmean_can_co2        (  ipa) = 0.0
-               csite%fmean_can_rhos       (  ipa) = 0.0
-               csite%fmean_can_dmol       (  ipa) = 0.0
-               csite%fmean_can_prss       (  ipa) = 0.0
-               csite%fmean_gnd_temp       (  ipa) = 0.0
-               csite%fmean_gnd_shv        (  ipa) = 0.0
-               csite%fmean_can_ggnd       (  ipa) = 0.0
-               csite%fmean_sfcw_depth     (  ipa) = 0.0
-               csite%fmean_sfcw_energy    (  ipa) = 0.0
-               csite%fmean_sfcw_mass      (  ipa) = 0.0
-               csite%fmean_sfcw_temp      (  ipa) = 0.0
-               csite%fmean_sfcw_fliq      (  ipa) = 0.0
-               csite%fmean_snowfac        (  ipa) = 0.0
-               csite%fmean_soil_energy    (:,ipa) = 0.0
-               csite%fmean_soil_mstpot    (:,ipa) = 0.0
-               csite%fmean_soil_water     (:,ipa) = 0.0
-               csite%fmean_soil_temp      (:,ipa) = 0.0
-               csite%fmean_soil_fliq      (:,ipa) = 0.0
-               csite%fmean_rshort_gnd     (  ipa) = 0.0
-               csite%fmean_par_gnd        (  ipa) = 0.0
-               csite%fmean_rlong_gnd      (  ipa) = 0.0
-               csite%fmean_rlongup        (  ipa) = 0.0
-               csite%fmean_parup          (  ipa) = 0.0
-               csite%fmean_nirup          (  ipa) = 0.0
-               csite%fmean_rshortup       (  ipa) = 0.0
-               csite%fmean_rnet           (  ipa) = 0.0
-               csite%fmean_albedo         (  ipa) = 0.0
-               csite%fmean_albedo_par     (  ipa) = 0.0
-               csite%fmean_albedo_nir     (  ipa) = 0.0
-               csite%fmean_rlong_albedo   (  ipa) = 0.0
-               csite%fmean_ustar          (  ipa) = 0.0
-               csite%fmean_tstar          (  ipa) = 0.0
-               csite%fmean_qstar          (  ipa) = 0.0
-               csite%fmean_cstar          (  ipa) = 0.0
-               csite%fmean_carbon_ac      (  ipa) = 0.0
-               csite%fmean_carbon_st      (  ipa) = 0.0
-               csite%fmean_vapor_gc       (  ipa) = 0.0
-               csite%fmean_vapor_ac       (  ipa) = 0.0
-               csite%fmean_smoist_gg      (:,ipa) = 0.0
-               csite%fmean_throughfall    (  ipa) = 0.0
-               csite%fmean_transloss      (:,ipa) = 0.0
-               csite%fmean_runoff         (  ipa) = 0.0
-               csite%fmean_drainage       (  ipa) = 0.0
-               csite%fmean_sensible_gc    (  ipa) = 0.0
-               csite%fmean_sensible_ac    (  ipa) = 0.0
-               csite%fmean_sensible_gg    (:,ipa) = 0.0
-               csite%fmean_qthroughfall   (  ipa) = 0.0
-               csite%fmean_qrunoff        (  ipa) = 0.0
-               csite%fmean_qdrainage      (  ipa) = 0.0
-               !---------------------------------------------------------------------------!
-
-
-
-
-               !----- Cohort level variables. ---------------------------------------------!
-               cohortloop: do ico=1,cpatch%ncohorts
-                  cpatch%fmean_gpp               (ico) = 0.0
-                  cpatch%fmean_npp               (ico) = 0.0
-                  cpatch%fmean_leaf_resp         (ico) = 0.0
-                  cpatch%fmean_root_resp         (ico) = 0.0
-                  cpatch%fmean_stem_resp         (ico) = 0.0
-                  cpatch%fmean_leaf_growth_resp  (ico) = 0.0
-                  cpatch%fmean_root_growth_resp  (ico) = 0.0
-                  cpatch%fmean_sapa_growth_resp  (ico) = 0.0
-                  cpatch%fmean_sapb_growth_resp  (ico) = 0.0
-                  cpatch%fmean_barka_growth_resp (ico) = 0.0
-                  cpatch%fmean_barkb_growth_resp (ico) = 0.0
-                  cpatch%fmean_leaf_storage_resp (ico) = 0.0
-                  cpatch%fmean_root_storage_resp (ico) = 0.0
-                  cpatch%fmean_sapa_storage_resp (ico) = 0.0
-                  cpatch%fmean_sapb_storage_resp (ico) = 0.0
-                  cpatch%fmean_barka_storage_resp(ico) = 0.0
-                  cpatch%fmean_barkb_storage_resp(ico) = 0.0
-                  cpatch%fmean_plresp            (ico) = 0.0
-                  cpatch%fmean_leaf_energy       (ico) = 0.0
-                  cpatch%fmean_leaf_water        (ico) = 0.0
-                  cpatch%fmean_leaf_hcap         (ico) = 0.0
-                  cpatch%fmean_leaf_vpdef        (ico) = 0.0
-                  cpatch%fmean_leaf_temp         (ico) = 0.0
-                  cpatch%fmean_leaf_fliq         (ico) = 0.0
-                  cpatch%fmean_leaf_gsw          (ico) = 0.0
-                  cpatch%fmean_leaf_gbw          (ico) = 0.0
-                  cpatch%fmean_wood_energy       (ico) = 0.0
-                  cpatch%fmean_wood_water        (ico) = 0.0
-                  cpatch%fmean_wood_hcap         (ico) = 0.0
-                  cpatch%fmean_wood_temp         (ico) = 0.0
-                  cpatch%fmean_wood_fliq         (ico) = 0.0
-                  cpatch%fmean_wood_gbw          (ico) = 0.0
-                  cpatch%fmean_fs_open           (ico) = 0.0
-                  cpatch%fmean_fsw               (ico) = 0.0
-                  cpatch%fmean_fsn               (ico) = 0.0
-                  cpatch%fmean_a_open            (ico) = 0.0
-                  cpatch%fmean_a_closed          (ico) = 0.0
-                  cpatch%fmean_a_net             (ico) = 0.0
-                  cpatch%fmean_a_light           (ico) = 0.0
-                  cpatch%fmean_a_rubp            (ico) = 0.0
-                  cpatch%fmean_a_co2             (ico) = 0.0
-                  cpatch%fmean_psi_open          (ico) = 0.0
-                  cpatch%fmean_psi_closed        (ico) = 0.0
-                  cpatch%fmean_water_supply      (ico) = 0.0
-                  cpatch%fmean_light_level       (ico) = 0.0
-                  cpatch%fmean_light_level_beam  (ico) = 0.0
-                  cpatch%fmean_light_level_diff  (ico) = 0.0
-
-                  cpatch%fmean_par_level_beam    (ico) = 0.0                  
-                  cpatch%fmean_par_level_diffd   (ico) = 0.0                  
-                  cpatch%fmean_par_level_diffu   (ico) = 0.0
-
-                  cpatch%fmean_par_l             (ico) = 0.0
-                  cpatch%fmean_par_l_beam        (ico) = 0.0
-                  cpatch%fmean_par_l_diff        (ico) = 0.0
-                  cpatch%fmean_rshort_l          (ico) = 0.0
-                  cpatch%fmean_rlong_l           (ico) = 0.0
-                  cpatch%fmean_sensible_lc       (ico) = 0.0
-                  cpatch%fmean_vapor_lc          (ico) = 0.0
-                  cpatch%fmean_transp            (ico) = 0.0
-                  cpatch%fmean_intercepted_al    (ico) = 0.0
-                  cpatch%fmean_wshed_lg          (ico) = 0.0
-                  cpatch%fmean_rshort_w          (ico) = 0.0
-                  cpatch%fmean_rlong_w           (ico) = 0.0
-                  cpatch%fmean_rad_profile     (:,ico) = 0.0
-                  cpatch%fmean_sensible_wc       (ico) = 0.0
-                  cpatch%fmean_vapor_wc          (ico) = 0.0
-                  cpatch%fmean_intercepted_aw    (ico) = 0.0
-                  cpatch%fmean_wshed_wg          (ico) = 0.0
-                  cpatch%fmean_lai               (ico) = 0.0
-                  cpatch%fmean_bdeada            (ico) = 0.0
-                  cpatch%fmean_bdeadb            (ico) = 0.0
-
-                  cpatch%fmean_leaf_psi          (ico) = 0.0
-                  cpatch%fmean_wood_psi          (ico) = 0.0
-                  cpatch%fmean_leaf_water_int    (ico) = 0.0
-                  cpatch%fmean_leaf_water_im2    (ico) = 0.0
-                  cpatch%fmean_wood_water_int    (ico) = 0.0
-                  cpatch%fmean_wood_water_im2    (ico) = 0.0
-                  cpatch%fmean_wflux_gw          (ico) = 0.0
-                  cpatch%fmean_wflux_wl          (ico) = 0.0
-                  cpatch%fmean_wflux_gw_layer  (:,ico) = 0.0
-               end do cohortloop
-               !---------------------------------------------------------------------------!
-            end do patchloop
-            !------------------------------------------------------------------------------!
-         end do siteloop
+         !--- Call sub-routine to reset sites (and patches and cohorts). ------------------!
+         call zero_ed_fmean_sites(cgrid,ipy)
          !---------------------------------------------------------------------------------!
       end do polyloop
       !------------------------------------------------------------------------------------!
 
 
       return
-   end subroutine zero_ed_fmean_vars
+   end subroutine zero_ed_fmean_polygons
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !  SUBROUTINE: ZERO_ED_FMEAN_SITES
+   !> \brief This sub-routine resets site-level variables and nested dimensions.
+   !---------------------------------------------------------------------------------------!
+   subroutine zero_ed_fmean_sites(cgrid,ipy)
+
+      use ed_state_vars, only : edtype      & ! structure
+                              , polygontype ! ! structure
+      
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      type(edtype)     , target     :: cgrid
+      integer          , intent(in) :: ipy
+      !----- Local variables. -------------------------------------------------------------!
+      type(polygontype), pointer    :: cpoly
+      integer                       :: isi
+      !------------------------------------------------------------------------------------!
+
+      !------------------------------------------------------------------------------------!
+      !   Select polygon, then loop through sites.                                         !
+      !------------------------------------------------------------------------------------!
+      cpoly => cgrid%polygon(ipy)
+      siteloop: do isi = 1,cpoly%nsites
+         cpoly%fmean_atm_theiv      (isi) = 0.0
+         cpoly%fmean_atm_theta      (isi) = 0.0
+         cpoly%fmean_atm_temp       (isi) = 0.0
+         cpoly%fmean_atm_vpdef      (isi) = 0.0
+         cpoly%fmean_atm_shv        (isi) = 0.0
+         cpoly%fmean_atm_rshort     (isi) = 0.0
+         cpoly%fmean_atm_rshort_diff(isi) = 0.0
+         cpoly%fmean_atm_par        (isi) = 0.0
+         cpoly%fmean_atm_par_diff   (isi) = 0.0
+         cpoly%fmean_atm_rlong      (isi) = 0.0
+         cpoly%fmean_atm_vels       (isi) = 0.0
+         cpoly%fmean_atm_rhos       (isi) = 0.0
+         cpoly%fmean_atm_prss       (isi) = 0.0
+         cpoly%fmean_atm_co2        (isi) = 0.0
+         cpoly%fmean_pcpg           (isi) = 0.0
+         cpoly%fmean_qpcpg          (isi) = 0.0
+         cpoly%fmean_dpcpg          (isi) = 0.0
+
+         !--- Call sub-routine that will reset patches (and cohorts). ---------------------!
+         call zero_ed_fmean_patches(cpoly,isi)
+         !---------------------------------------------------------------------------------!
+      end do siteloop
+      !------------------------------------------------------------------------------------!
+
+
+      return
+   end subroutine zero_ed_fmean_sites
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !  SUBROUTINE: ZERO_ED_FMEAN_PATCHES
+   !> \brief This sub-routine resets patch-level variables and nested dimensions.
+   !---------------------------------------------------------------------------------------!
+   subroutine zero_ed_fmean_patches(cpoly,isi)
+
+      use ed_state_vars, only : polygontype & ! structure
+                              , sitetype    ! ! structure
+      
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      type(polygontype), target     :: cpoly
+      integer          , intent(in) :: isi
+      !----- Local variables. -------------------------------------------------------------!
+      type(sitetype)  , pointer     :: csite
+      integer                       :: ipa
+      !------------------------------------------------------------------------------------!
+
+      !------------------------------------------------------------------------------------!
+      !   Select site, then loop through patches.
+      !------------------------------------------------------------------------------------!
+      csite => cpoly%site(isi)
+      patchloop: do ipa = 1,csite%npatches
+         !---------------------------------------------------------------------------------!
+         ! Budget variables.                                                               !
+         !                                                                                 !
+         ! IMPORTANT --- Do NOT include zcaneffect and hcapeffect here.  These fluxes are  !
+         !               instantaneous values that are incorporated to the total storage   !
+         !               during a single time step.  They are reset to zero as soon as     !
+         !               they are used, in compute_budget, and they shall remain zero      !
+         !               unless vegetation dynamics has just occurred.                     !
+         !---------------------------------------------------------------------------------!
+         csite%co2budget_gpp                 (ipa) = 0.0
+         csite%co2budget_rh                  (ipa) = 0.0
+         csite%co2budget_plresp              (ipa) = 0.0
+         csite%co2budget_residual            (ipa) = 0.0
+         csite%co2budget_loss2atm            (ipa) = 0.0
+         csite%co2budget_denseffect          (ipa) = 0.0
+         csite%cbudget_loss2atm              (ipa) = 0.0
+         csite%cbudget_denseffect            (ipa) = 0.0
+         csite%cbudget_residual              (ipa) = 0.0
+         csite%wbudget_precipgain            (ipa) = 0.0
+         csite%wbudget_loss2atm              (ipa) = 0.0
+         csite%wbudget_loss2runoff           (ipa) = 0.0
+         csite%wbudget_loss2drainage         (ipa) = 0.0
+         csite%wbudget_denseffect            (ipa) = 0.0
+         csite%wbudget_residual              (ipa) = 0.0
+         csite%ebudget_precipgain            (ipa) = 0.0
+         csite%ebudget_netrad                (ipa) = 0.0
+         csite%ebudget_loss2atm              (ipa) = 0.0
+         csite%ebudget_loss2runoff           (ipa) = 0.0
+         csite%ebudget_loss2drainage         (ipa) = 0.0
+         csite%ebudget_denseffect            (ipa) = 0.0
+         csite%ebudget_prsseffect            (ipa) = 0.0
+         csite%ebudget_residual              (ipa) = 0.0
+         !---------------------------------------------------------------------------------!
+
+
+
+
+         !----- Fast average variables. ---------------------------------------------------!
+         csite%fmean_rh             (  ipa) = 0.0
+         csite%fmean_fgc_rh         (  ipa) = 0.0
+         csite%fmean_fsc_rh         (  ipa) = 0.0
+         csite%fmean_stgc_rh        (  ipa) = 0.0
+         csite%fmean_stsc_rh        (  ipa) = 0.0
+         csite%fmean_msc_rh         (  ipa) = 0.0
+         csite%fmean_ssc_rh         (  ipa) = 0.0
+         csite%fmean_psc_rh         (  ipa) = 0.0
+         csite%fmean_nep            (  ipa) = 0.0
+         csite%fmean_rk4step        (  ipa) = 0.0
+         csite%fmean_available_water(  ipa) = 0.0
+         csite%fmean_veg_displace   (  ipa) = 0.0
+         csite%fmean_rough          (  ipa) = 0.0
+         csite%fmean_can_theiv      (  ipa) = 0.0
+         csite%fmean_can_theta      (  ipa) = 0.0
+         csite%fmean_can_vpdef      (  ipa) = 0.0
+         csite%fmean_can_temp       (  ipa) = 0.0
+         csite%fmean_can_shv        (  ipa) = 0.0
+         csite%fmean_can_co2        (  ipa) = 0.0
+         csite%fmean_can_rhos       (  ipa) = 0.0
+         csite%fmean_can_dmol       (  ipa) = 0.0
+         csite%fmean_can_prss       (  ipa) = 0.0
+         csite%fmean_gnd_temp       (  ipa) = 0.0
+         csite%fmean_gnd_shv        (  ipa) = 0.0
+         csite%fmean_can_ggnd       (  ipa) = 0.0
+         csite%fmean_sfcw_depth     (  ipa) = 0.0
+         csite%fmean_sfcw_energy    (  ipa) = 0.0
+         csite%fmean_sfcw_mass      (  ipa) = 0.0
+         csite%fmean_sfcw_temp      (  ipa) = 0.0
+         csite%fmean_sfcw_fliq      (  ipa) = 0.0
+         csite%fmean_snowfac        (  ipa) = 0.0
+         csite%fmean_soil_energy    (:,ipa) = 0.0
+         csite%fmean_soil_mstpot    (:,ipa) = 0.0
+         csite%fmean_soil_water     (:,ipa) = 0.0
+         csite%fmean_soil_temp      (:,ipa) = 0.0
+         csite%fmean_soil_fliq      (:,ipa) = 0.0
+         csite%fmean_rshort_gnd     (  ipa) = 0.0
+         csite%fmean_par_gnd        (  ipa) = 0.0
+         csite%fmean_rlong_gnd      (  ipa) = 0.0
+         csite%fmean_rlongup        (  ipa) = 0.0
+         csite%fmean_parup          (  ipa) = 0.0
+         csite%fmean_nirup          (  ipa) = 0.0
+         csite%fmean_rshortup       (  ipa) = 0.0
+         csite%fmean_rnet           (  ipa) = 0.0
+         csite%fmean_albedo         (  ipa) = 0.0
+         csite%fmean_albedo_par     (  ipa) = 0.0
+         csite%fmean_albedo_nir     (  ipa) = 0.0
+         csite%fmean_rlong_albedo   (  ipa) = 0.0
+         csite%fmean_ustar          (  ipa) = 0.0
+         csite%fmean_tstar          (  ipa) = 0.0
+         csite%fmean_qstar          (  ipa) = 0.0
+         csite%fmean_cstar          (  ipa) = 0.0
+         csite%fmean_carbon_ac      (  ipa) = 0.0
+         csite%fmean_carbon_st      (  ipa) = 0.0
+         csite%fmean_vapor_gc       (  ipa) = 0.0
+         csite%fmean_vapor_ac       (  ipa) = 0.0
+         csite%fmean_smoist_gg      (:,ipa) = 0.0
+         csite%fmean_throughfall    (  ipa) = 0.0
+         csite%fmean_transloss      (:,ipa) = 0.0
+         csite%fmean_runoff         (  ipa) = 0.0
+         csite%fmean_drainage       (  ipa) = 0.0
+         csite%fmean_sensible_gc    (  ipa) = 0.0
+         csite%fmean_sensible_ac    (  ipa) = 0.0
+         csite%fmean_sensible_gg    (:,ipa) = 0.0
+         csite%fmean_qthroughfall   (  ipa) = 0.0
+         csite%fmean_qrunoff        (  ipa) = 0.0
+         csite%fmean_qdrainage      (  ipa) = 0.0
+         !---------------------------------------------------------------------------------!
+
+
+
+
+         !----- Call sub-routine that will reset cohort-level variables. ------------------!
+         call zero_ed_fmean_cohorts(csite,ipa)
+         !---------------------------------------------------------------------------------!
+      end do patchloop
+      !------------------------------------------------------------------------------------!
+
+
+      return
+   end subroutine zero_ed_fmean_patches
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !  SUBROUTINE: ZERO_ED_FMEAN_COHORTS
+   !> \brief This sub-routine resets cohort-level variables.
+   !---------------------------------------------------------------------------------------!
+   subroutine zero_ed_fmean_cohorts(csite,ipa)
+      use ed_state_vars, only : sitetype    & ! structure
+                              , patchtype   ! ! structure
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      type(sitetype), target     :: csite
+      integer       , intent(in) :: ipa
+      !----- Local variables. -------------------------------------------------------------!
+      type(patchtype), pointer   :: cpatch
+      integer                    :: ico
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !   Select patch, then loop through cohorts.
+      !------------------------------------------------------------------------------------!
+      cpatch => csite%patch(ipa)
+      cohortloop: do ico=1,cpatch%ncohorts
+         cpatch%fmean_gpp               (ico) = 0.0
+         cpatch%fmean_npp               (ico) = 0.0
+         cpatch%fmean_leaf_resp         (ico) = 0.0
+         cpatch%fmean_root_resp         (ico) = 0.0
+         cpatch%fmean_stem_resp         (ico) = 0.0
+         cpatch%fmean_leaf_growth_resp  (ico) = 0.0
+         cpatch%fmean_root_growth_resp  (ico) = 0.0
+         cpatch%fmean_sapa_growth_resp  (ico) = 0.0
+         cpatch%fmean_sapb_growth_resp  (ico) = 0.0
+         cpatch%fmean_barka_growth_resp (ico) = 0.0
+         cpatch%fmean_barkb_growth_resp (ico) = 0.0
+         cpatch%fmean_leaf_storage_resp (ico) = 0.0
+         cpatch%fmean_root_storage_resp (ico) = 0.0
+         cpatch%fmean_sapa_storage_resp (ico) = 0.0
+         cpatch%fmean_sapb_storage_resp (ico) = 0.0
+         cpatch%fmean_barka_storage_resp(ico) = 0.0
+         cpatch%fmean_barkb_storage_resp(ico) = 0.0
+         cpatch%fmean_plresp            (ico) = 0.0
+         cpatch%fmean_leaf_energy       (ico) = 0.0
+         cpatch%fmean_leaf_water        (ico) = 0.0
+         cpatch%fmean_leaf_hcap         (ico) = 0.0
+         cpatch%fmean_leaf_vpdef        (ico) = 0.0
+         cpatch%fmean_leaf_temp         (ico) = 0.0
+         cpatch%fmean_leaf_fliq         (ico) = 0.0
+         cpatch%fmean_leaf_gsw          (ico) = 0.0
+         cpatch%fmean_leaf_gbw          (ico) = 0.0
+         cpatch%fmean_wood_energy       (ico) = 0.0
+         cpatch%fmean_wood_water        (ico) = 0.0
+         cpatch%fmean_wood_hcap         (ico) = 0.0
+         cpatch%fmean_wood_temp         (ico) = 0.0
+         cpatch%fmean_wood_fliq         (ico) = 0.0
+         cpatch%fmean_wood_gbw          (ico) = 0.0
+         cpatch%fmean_fs_open           (ico) = 0.0
+         cpatch%fmean_fsw               (ico) = 0.0
+         cpatch%fmean_fsn               (ico) = 0.0
+         cpatch%fmean_a_open            (ico) = 0.0
+         cpatch%fmean_a_closed          (ico) = 0.0
+         cpatch%fmean_a_net             (ico) = 0.0
+         cpatch%fmean_a_light           (ico) = 0.0
+         cpatch%fmean_a_rubp            (ico) = 0.0
+         cpatch%fmean_a_co2             (ico) = 0.0
+         cpatch%fmean_psi_open          (ico) = 0.0
+         cpatch%fmean_psi_closed        (ico) = 0.0
+         cpatch%fmean_water_supply      (ico) = 0.0
+         cpatch%fmean_light_level       (ico) = 0.0
+         cpatch%fmean_light_level_beam  (ico) = 0.0
+         cpatch%fmean_light_level_diff  (ico) = 0.0
+
+         cpatch%fmean_par_level_beam    (ico) = 0.0
+         cpatch%fmean_par_level_diffd   (ico) = 0.0
+         cpatch%fmean_par_level_diffu   (ico) = 0.0
+         cpatch%fmean_par_l             (ico) = 0.0
+         cpatch%fmean_par_l_beam        (ico) = 0.0
+         cpatch%fmean_par_l_diff        (ico) = 0.0
+         cpatch%fmean_rshort_l          (ico) = 0.0
+         cpatch%fmean_rlong_l           (ico) = 0.0
+         cpatch%fmean_sensible_lc       (ico) = 0.0
+         cpatch%fmean_vapor_lc          (ico) = 0.0
+         cpatch%fmean_transp            (ico) = 0.0
+         cpatch%fmean_intercepted_al    (ico) = 0.0
+         cpatch%fmean_wshed_lg          (ico) = 0.0
+         cpatch%fmean_rshort_w          (ico) = 0.0
+         cpatch%fmean_rlong_w           (ico) = 0.0
+         cpatch%fmean_rad_profile     (:,ico) = 0.0
+         cpatch%fmean_sensible_wc       (ico) = 0.0
+         cpatch%fmean_vapor_wc          (ico) = 0.0
+         cpatch%fmean_intercepted_aw    (ico) = 0.0
+         cpatch%fmean_wshed_wg          (ico) = 0.0
+         cpatch%fmean_lai               (ico) = 0.0
+         cpatch%fmean_bdeada            (ico) = 0.0
+         cpatch%fmean_bdeadb            (ico) = 0.0
+
+         cpatch%fmean_leaf_psi          (ico) = 0.0
+         cpatch%fmean_wood_psi          (ico) = 0.0
+         cpatch%fmean_leaf_water_int    (ico) = 0.0
+         cpatch%fmean_leaf_water_im2    (ico) = 0.0
+         cpatch%fmean_wood_water_int    (ico) = 0.0
+         cpatch%fmean_wood_water_im2    (ico) = 0.0
+         cpatch%fmean_wflux_gw          (ico) = 0.0
+         cpatch%fmean_wflux_wl          (ico) = 0.0
+         cpatch%fmean_wflux_gw_layer  (:,ico) = 0.0
+      end do cohortloop
+      !------------------------------------------------------------------------------------!
+
+      return
+   end subroutine zero_ed_fmean_cohorts
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
    !=======================================================================================!
    !=======================================================================================!
    !=======================================================================================!
@@ -1756,38 +1929,33 @@ module average_utils
 
    !=======================================================================================!
    !=======================================================================================!
-   !  SUBROUTINE: INTEGRATE_ED_DMEAN_VARS 
+   !  SUBROUTINE: INTEGRATE_ED_DMEAN_POLYGONS
    !> \brief This subroutine integrates most of the daily averages.  This is called after
-   !> the "fmean" variables are normalised, so we take advantage of these "fmean" variables.    
-   !                                                                                       !
+   !> the "fmean" variables are normalised, so we leverage these "fmean" variables. 
+   !
    !> \details A few variables are _NOT_ integrated here:\n
    !> 1. Variables that should be integrated only during daylight hours\n
    !> 2. The NPP breakdown variables are integrated in a separate routine\n
    !> 3. Variables such as temperature and liquid fraction, which are found after the daily
    !>    means are normalised.
+   !> 
+   !>    We also keep the calculation for polygon-level variables in here, and call
+   !> separate sub-routines for sites, patches and cohorts. This makes compilation faster
+   !> and avoids memory crashes with Intel Fortran. 
    !---------------------------------------------------------------------------------------!
-   subroutine integrate_ed_dmean_vars(cgrid)
-      use ed_state_vars        , only : edtype              & ! structure
-                                      , polygontype         & ! structure
-                                      , sitetype            & ! structure
-                                      , patchtype           ! ! structure
+   subroutine integrate_ed_dmean_polygons(cgrid)
+      use ed_state_vars        , only : edtype              ! ! structure
       use ed_misc_coms         , only : frqsum              ! ! intent(in)
       use consts_coms          , only : day_sec             ! ! intent(in)
       implicit none
 
       !----- Argument ---------------------------------------------------------------------!
-      type(edtype)      , target  :: cgrid
+      type(edtype), target  :: cgrid
       !----- Local variables --------------------------------------------------------------!
-      type(polygontype) , pointer :: cpoly
-      type(sitetype)    , pointer :: csite
-      type(patchtype)   , pointer :: cpatch
-      integer                     :: ipy
-      integer                     :: isi
-      integer                     :: ipa
-      integer                     :: ico
+      integer               :: ipy
       !----- Locally saved variables. -----------------------------------------------------!
-      logical                            , save       :: find_factors    = .true.
-      real                               , save       :: frqsum_o_daysec = 1.e34
+      logical, save         :: find_factors    = .true.
+      real   , save         :: frqsum_o_daysec = 1.e34
       !------------------------------------------------------------------------------------!
 
 
@@ -1803,8 +1971,6 @@ module average_utils
       !      Use the variables that have been already aggregated.                          !
       !------------------------------------------------------------------------------------!
       polyloop: do ipy=1,cgrid%npolygons
-         cpoly => cgrid%polygon(ipy)
-
          !---------------------------------------------------------------------------------!
          !    Integrate polygon-level variables.                                           !
          !---------------------------------------------------------------------------------!
@@ -2212,482 +2378,605 @@ module average_utils
 
 
          !---------------------------------------------------------------------------------!
-         !      Site loop.                                                                 !
+         !   Call sub-routine that will integrate site-level variables (and patch- and     !
+         ! cohort-level variables).                                                        !
          !---------------------------------------------------------------------------------!
-         siteloop: do isi=1,cpoly%nsites
-            csite => cpoly%site(isi)
-
-
-            !------------------------------------------------------------------------------!
-            !    Integrate site-level variables.                                           !
-            !------------------------------------------------------------------------------!
-            cpoly%dmean_atm_theiv      (isi) = cpoly%dmean_atm_theiv      (isi)            &
-                                             + cpoly%fmean_atm_theiv      (isi)            &
-                                             * frqsum_o_daysec
-            cpoly%dmean_atm_theta      (isi) = cpoly%dmean_atm_theta      (isi)            &
-                                             + cpoly%fmean_atm_theta      (isi)            &
-                                             * frqsum_o_daysec
-            cpoly%dmean_atm_temp       (isi) = cpoly%dmean_atm_temp       (isi)            &
-                                             + cpoly%fmean_atm_temp       (isi)            &
-                                             * frqsum_o_daysec
-            cpoly%dmean_atm_vpdef      (isi) = cpoly%dmean_atm_vpdef      (isi)            &
-                                             + cpoly%fmean_atm_vpdef      (isi)            &
-                                             * frqsum_o_daysec
-            cpoly%dmean_atm_shv        (isi) = cpoly%dmean_atm_shv        (isi)            &
-                                             + cpoly%fmean_atm_shv        (isi)            &
-                                             * frqsum_o_daysec
-            cpoly%dmean_atm_rshort     (isi) = cpoly%dmean_atm_rshort     (isi)            &
-                                             + cpoly%fmean_atm_rshort     (isi)            &
-                                             * frqsum_o_daysec
-            cpoly%dmean_atm_rshort_diff(isi) = cpoly%dmean_atm_rshort_diff(isi)            &
-                                             + cpoly%fmean_atm_rshort_diff(isi)            &
-                                             * frqsum_o_daysec
-            cpoly%dmean_atm_par        (isi) = cpoly%dmean_atm_par        (isi)            &
-                                             + cpoly%fmean_atm_par        (isi)            &
-                                             * frqsum_o_daysec
-            cpoly%dmean_atm_par_diff   (isi) = cpoly%dmean_atm_par_diff   (isi)            &
-                                             + cpoly%fmean_atm_par_diff   (isi)            &
-                                             * frqsum_o_daysec
-            cpoly%dmean_atm_rlong      (isi) = cpoly%dmean_atm_rlong      (isi)            &
-                                             + cpoly%fmean_atm_rlong      (isi)            &
-                                             * frqsum_o_daysec
-            cpoly%dmean_atm_vels       (isi) = cpoly%dmean_atm_vels       (isi)            &
-                                             + cpoly%fmean_atm_vels       (isi)            &
-                                             * frqsum_o_daysec
-            cpoly%dmean_atm_rhos       (isi) = cpoly%dmean_atm_rhos       (isi)            &
-                                             + cpoly%fmean_atm_rhos       (isi)            &
-                                             * frqsum_o_daysec
-            cpoly%dmean_atm_prss       (isi) = cpoly%dmean_atm_prss       (isi)            &
-                                             + cpoly%fmean_atm_prss       (isi)            &
-                                             * frqsum_o_daysec
-            cpoly%dmean_atm_co2        (isi) = cpoly%dmean_atm_co2        (isi)            &
-                                             + cpoly%fmean_atm_co2        (isi)            &
-                                             * frqsum_o_daysec
-            cpoly%dmean_pcpg           (isi) = cpoly%dmean_pcpg           (isi)            &
-                                             + cpoly%fmean_pcpg           (isi)            &
-                                             * frqsum_o_daysec
-            cpoly%dmean_qpcpg          (isi) = cpoly%dmean_qpcpg          (isi)            &
-                                             + cpoly%fmean_qpcpg          (isi)            &
-                                             * frqsum_o_daysec
-            cpoly%dmean_dpcpg          (isi) = cpoly%dmean_dpcpg          (isi)            &
-                                             + cpoly%fmean_dpcpg          (isi)            &
-                                             * frqsum_o_daysec
-            !------------------------------------------------------------------------------!
-
-
-
-            !------------------------------------------------------------------------------!
-            !      Patch loop.                                                             !
-            !------------------------------------------------------------------------------!
-            patchloop: do ipa=1,csite%npatches
-               cpatch => csite%patch(ipa) 
-
-
-               !---------------------------------------------------------------------------!
-               !      Integrate patch-level variables.                                     !
-               !---------------------------------------------------------------------------!
-               csite%dmean_co2_residual      (ipa) = csite%dmean_co2_residual      (ipa)   &
-                                                   + csite%co2budget_residual      (ipa)   &
-                                                   * frqsum_o_daysec
-               csite%dmean_energy_residual   (ipa) = csite%dmean_energy_residual   (ipa)   &
-                                                   + csite%ebudget_residual        (ipa)   &
-                                                   * frqsum_o_daysec
-               csite%dmean_water_residual    (ipa) = csite%dmean_water_residual    (ipa)   &
-                                                   + csite%wbudget_residual        (ipa)   &
-                                                   * frqsum_o_daysec
-               csite%dmean_rh                (ipa) = csite%dmean_rh                (ipa)   &
-                                                   + csite%fmean_rh                (ipa)   &
-                                                   * frqsum_o_daysec
-               csite%dmean_fgc_rh            (ipa) = csite%dmean_fgc_rh            (ipa)   &
-                                                   + csite%fmean_fgc_rh            (ipa)   &
-                                                   * frqsum_o_daysec
-               csite%dmean_fsc_rh            (ipa) = csite%dmean_fsc_rh            (ipa)   &
-                                                   + csite%fmean_fsc_rh            (ipa)   &
-                                                   * frqsum_o_daysec
-               csite%dmean_stgc_rh           (ipa) = csite%dmean_stgc_rh           (ipa)   &
-                                                   + csite%fmean_stgc_rh           (ipa)   &
-                                                   * frqsum_o_daysec
-               csite%dmean_stsc_rh           (ipa) = csite%dmean_stsc_rh           (ipa)   &
-                                                   + csite%fmean_stsc_rh           (ipa)   &
-                                                   * frqsum_o_daysec
-               csite%dmean_msc_rh            (ipa) = csite%dmean_msc_rh            (ipa)   &
-                                                   + csite%fmean_msc_rh            (ipa)   &
-                                                   * frqsum_o_daysec
-               csite%dmean_ssc_rh            (ipa) = csite%dmean_ssc_rh            (ipa)   &
-                                                   + csite%fmean_ssc_rh            (ipa)   &
-                                                   * frqsum_o_daysec
-               csite%dmean_psc_rh            (ipa) = csite%dmean_psc_rh            (ipa)   &
-                                                   + csite%fmean_psc_rh            (ipa)   &
-                                                   * frqsum_o_daysec
-               csite%dmean_nep               (ipa) = csite%dmean_nep               (ipa)   &
-                                                   + csite%fmean_nep               (ipa)   &
-                                                   * frqsum_o_daysec
-               csite%dmean_rk4step           (ipa) = csite%dmean_rk4step           (ipa)   &
-                                                   + csite%fmean_rk4step           (ipa)   &
-                                                   * frqsum_o_daysec
-               csite%dmean_available_water   (ipa) = csite%dmean_available_water   (ipa)   &
-                                                   + csite%fmean_available_water   (ipa)   &
-                                                   * frqsum_o_daysec
-               csite%dmean_veg_displace      (ipa) = csite%dmean_veg_displace      (ipa)   &
-                                                   + csite%fmean_veg_displace      (ipa)   &
-                                                   * frqsum_o_daysec
-               csite%dmean_rough             (ipa) = csite%dmean_rough             (ipa)   &
-                                                   + csite%fmean_rough             (ipa)   &
-                                                   * frqsum_o_daysec
-               csite%dmean_can_theiv         (ipa) = csite%dmean_can_theiv         (ipa)   &
-                                                   + csite%fmean_can_theiv         (ipa)   &
-                                                   * frqsum_o_daysec
-               csite%dmean_can_theta         (ipa) = csite%dmean_can_theta         (ipa)   &
-                                                   + csite%fmean_can_theta         (ipa)   &
-                                                   * frqsum_o_daysec
-               csite%dmean_can_vpdef         (ipa) = csite%dmean_can_vpdef         (ipa)   &
-                                                   + csite%fmean_can_vpdef         (ipa)   &
-                                                   * frqsum_o_daysec
-               csite%dmean_can_shv           (ipa) = csite%dmean_can_shv           (ipa)   &
-                                                   + csite%fmean_can_shv           (ipa)   &
-                                                   * frqsum_o_daysec
-               csite%dmean_can_co2           (ipa) = csite%dmean_can_co2           (ipa)   &
-                                                   + csite%fmean_can_co2           (ipa)   &
-                                                   * frqsum_o_daysec
-               csite%dmean_can_prss          (ipa) = csite%dmean_can_prss          (ipa)   &
-                                                   + csite%fmean_can_prss          (ipa)   &
-                                                   * frqsum_o_daysec
-               csite%dmean_gnd_temp          (ipa) = csite%dmean_gnd_temp          (ipa)   &
-                                                   + csite%fmean_gnd_temp          (ipa)   &
-                                                   * frqsum_o_daysec
-               csite%dmean_gnd_shv           (ipa) = csite%dmean_gnd_shv           (ipa)   &
-                                                   + csite%fmean_gnd_shv           (ipa)   &
-                                                   * frqsum_o_daysec
-               csite%dmean_can_ggnd          (ipa) = csite%dmean_can_ggnd          (ipa)   &
-                                                   + csite%fmean_can_ggnd          (ipa)   &
-                                                   * frqsum_o_daysec
-               csite%dmean_sfcw_depth        (ipa) = csite%dmean_sfcw_depth        (ipa)   &
-                                                   + csite%fmean_sfcw_depth        (ipa)   &
-                                                   * frqsum_o_daysec
-               !----- Temporarily make the pounding internal energy extensive [J/m2]. -----!
-               csite%dmean_sfcw_energy       (ipa) = csite%dmean_sfcw_energy       (ipa)   &
-                                                   + csite%fmean_sfcw_energy       (ipa)   &
-                                                   * csite%fmean_sfcw_mass         (ipa)   &
-                                                   * frqsum_o_daysec
-               csite%dmean_sfcw_mass         (ipa) = csite%dmean_sfcw_mass         (ipa)   &
-                                                   + csite%fmean_sfcw_mass         (ipa)   &
-                                                   * frqsum_o_daysec
-               csite%dmean_snowfac           (ipa) = csite%dmean_snowfac           (ipa)   &
-                                                   + csite%fmean_snowfac           (ipa)   &
-                                                   * frqsum_o_daysec
-               csite%dmean_rshort_gnd        (ipa) = csite%dmean_rshort_gnd        (ipa)   &
-                                                   + csite%fmean_rshort_gnd        (ipa)   &
-                                                   * frqsum_o_daysec
-               csite%dmean_par_gnd           (ipa) = csite%dmean_par_gnd           (ipa)   &
-                                                   + csite%fmean_par_gnd           (ipa)   &
-                                                   * frqsum_o_daysec
-               csite%dmean_rlong_gnd         (ipa) = csite%dmean_rlong_gnd         (ipa)   &
-                                                   + csite%fmean_rlong_gnd         (ipa)   &
-                                                   * frqsum_o_daysec
-               csite%dmean_rlongup           (ipa) = csite%dmean_rlongup           (ipa)   &
-                                                   + csite%fmean_rlongup           (ipa)   &
-                                                   * frqsum_o_daysec
-               csite%dmean_parup             (ipa) = csite%dmean_parup             (ipa)   &
-                                                   + csite%fmean_parup             (ipa)   &
-                                                   * frqsum_o_daysec
-               csite%dmean_nirup             (ipa) = csite%dmean_nirup             (ipa)   &
-                                                   + csite%fmean_nirup             (ipa)   &
-                                                   * frqsum_o_daysec
-               csite%dmean_rshortup          (ipa) = csite%dmean_rshortup          (ipa)   &
-                                                   + csite%fmean_rshortup          (ipa)   &
-                                                   * frqsum_o_daysec
-               csite%dmean_rnet              (ipa) = csite%dmean_rnet              (ipa)   &
-                                                   + csite%fmean_rnet              (ipa)   &
-                                                   * frqsum_o_daysec
-               csite%dmean_rlong_albedo      (ipa) = csite%dmean_rlong_albedo      (ipa)   &
-                                                   + csite%fmean_rlong_albedo      (ipa)   &
-                                                   * frqsum_o_daysec
-               csite%dmean_ustar             (ipa) = csite%dmean_ustar             (ipa)   &
-                                                   + csite%fmean_ustar             (ipa)   &
-                                                   * frqsum_o_daysec
-               csite%dmean_tstar             (ipa) = csite%dmean_tstar             (ipa)   &
-                                                   + csite%fmean_tstar             (ipa)   &
-                                                   * frqsum_o_daysec
-               csite%dmean_qstar             (ipa) = csite%dmean_qstar             (ipa)   &
-                                                   + csite%fmean_qstar             (ipa)   &
-                                                   * frqsum_o_daysec
-               csite%dmean_cstar             (ipa) = csite%dmean_cstar             (ipa)   &
-                                                   + csite%fmean_cstar             (ipa)   &
-                                                   * frqsum_o_daysec
-               csite%dmean_carbon_ac         (ipa) = csite%dmean_carbon_ac         (ipa)   &
-                                                   + csite%fmean_carbon_ac         (ipa)   &
-                                                   * frqsum_o_daysec
-               csite%dmean_carbon_st         (ipa) = csite%dmean_carbon_st         (ipa)   &
-                                                   + csite%fmean_carbon_st         (ipa)   &
-                                                   * frqsum_o_daysec
-               csite%dmean_vapor_gc          (ipa) = csite%dmean_vapor_gc          (ipa)   &
-                                                   + csite%fmean_vapor_gc          (ipa)   &
-                                                   * frqsum_o_daysec
-               csite%dmean_vapor_ac          (ipa) = csite%dmean_vapor_ac          (ipa)   &
-                                                   + csite%fmean_vapor_ac          (ipa)   &
-                                                   * frqsum_o_daysec
-               csite%dmean_throughfall       (ipa) = csite%dmean_throughfall       (ipa)   &
-                                                   + csite%fmean_throughfall       (ipa)   &
-                                                   * frqsum_o_daysec
-               csite%dmean_runoff            (ipa) = csite%dmean_runoff            (ipa)   &
-                                                   + csite%fmean_runoff            (ipa)   &
-                                                   * frqsum_o_daysec
-               csite%dmean_drainage          (ipa) = csite%dmean_drainage          (ipa)   &
-                                                   + csite%fmean_drainage          (ipa)   &
-                                                   * frqsum_o_daysec
-               csite%dmean_sensible_gc       (ipa) = csite%dmean_sensible_gc       (ipa)   &
-                                                   + csite%fmean_sensible_gc       (ipa)   &
-                                                   * frqsum_o_daysec
-               csite%dmean_sensible_ac       (ipa) = csite%dmean_sensible_ac       (ipa)   &
-                                                   + csite%fmean_sensible_ac       (ipa)   &
-                                                   * frqsum_o_daysec
-               csite%dmean_sensible_gg     (:,ipa) = csite%dmean_sensible_gg     (:,ipa)   &
-                                                   + csite%fmean_sensible_gg     (:,ipa)   &
-                                                   * frqsum_o_daysec
-               csite%dmean_qthroughfall      (ipa) = csite%dmean_qthroughfall      (ipa)   &
-                                                   + csite%fmean_qthroughfall      (ipa)   &
-                                                   * frqsum_o_daysec
-               csite%dmean_qrunoff           (ipa) = csite%dmean_qrunoff           (ipa)   &
-                                                   + csite%fmean_qrunoff           (ipa)   &
-                                                   * frqsum_o_daysec
-               csite%dmean_qdrainage         (ipa) = csite%dmean_qdrainage         (ipa)   &
-                                                   + csite%fmean_qdrainage         (ipa)   &
-                                                   * frqsum_o_daysec
-               csite%dmean_soil_energy     (:,ipa) = csite%dmean_soil_energy     (:,ipa)   &
-                                                   + csite%fmean_soil_energy     (:,ipa)   &
-                                                   * frqsum_o_daysec
-               csite%dmean_soil_mstpot     (:,ipa) = csite%dmean_soil_mstpot     (:,ipa)   &
-                                                   + csite%fmean_soil_mstpot     (:,ipa)   &
-                                                   * frqsum_o_daysec
-               csite%dmean_soil_water      (:,ipa) = csite%dmean_soil_water      (:,ipa)   &
-                                                   + csite%fmean_soil_water      (:,ipa)   &
-                                                   * frqsum_o_daysec
-               csite%dmean_smoist_gg       (:,ipa) = csite%dmean_smoist_gg       (:,ipa)   &
-                                                   + csite%fmean_smoist_gg       (:,ipa)   &
-                                                   * frqsum_o_daysec
-               csite%dmean_transloss       (:,ipa) = csite%dmean_transloss       (:,ipa)   &
-                                                   + csite%fmean_transloss       (:,ipa)   &
-                                                   * frqsum_o_daysec
-               !---------------------------------------------------------------------------!
-
-
-
-               !---------------------------------------------------------------------------!
-               !      Patch loop.                                                          !
-               !---------------------------------------------------------------------------!
-               cohortloop: do ico=1,cpatch%ncohorts
-                  !------------------------------------------------------------------------!
-                  !      Integrate cohort-level variables.                                 !
-                  !------------------------------------------------------------------------!
-                  cpatch%dmean_gpp           (ico) = cpatch%dmean_gpp           (ico)      &
-                                                   + cpatch%fmean_gpp           (ico)      &
-                                                   * frqsum_o_daysec
-                  cpatch%dmean_npp           (ico) = cpatch%dmean_npp           (ico)      &
-                                                   + cpatch%fmean_npp           (ico)      &
-                                                   * frqsum_o_daysec
-                  cpatch%dmean_leaf_resp     (ico) = cpatch%dmean_leaf_resp     (ico)      &
-                                                   + cpatch%fmean_leaf_resp     (ico)      &
-                                                   * frqsum_o_daysec
-                  cpatch%dmean_root_resp     (ico) = cpatch%dmean_root_resp     (ico)      &
-                                                   + cpatch%fmean_root_resp     (ico)      &
-                                                   * frqsum_o_daysec
-                  cpatch%dmean_stem_resp     (ico) = cpatch%dmean_stem_resp     (ico)      &
-                                                   + cpatch%fmean_stem_resp     (ico)      &
-                                                   * frqsum_o_daysec
-                  cpatch%dmean_leaf_growth_resp(ico) = cpatch%dmean_leaf_growth_resp (ico) &
-                                                     + cpatch%fmean_leaf_growth_resp (ico) &
-                                                     * frqsum_o_daysec
-                  cpatch%dmean_root_growth_resp(ico) = cpatch%dmean_root_growth_resp (ico) &
-                                                     + cpatch%fmean_root_growth_resp (ico) &
-                                                     * frqsum_o_daysec
-                  cpatch%dmean_sapa_growth_resp(ico) = cpatch%dmean_sapa_growth_resp (ico) &
-                                                     + cpatch%fmean_sapa_growth_resp (ico) &
-                                                     * frqsum_o_daysec
-                  cpatch%dmean_sapb_growth_resp(ico) = cpatch%dmean_sapb_growth_resp (ico) &
-                                                     + cpatch%fmean_sapb_growth_resp (ico) &
-                                                     * frqsum_o_daysec
-                  cpatch%dmean_barka_growth_resp(ico) =                                    &
-                                                      cpatch%dmean_barka_growth_resp (ico) &
-                                                    + cpatch%fmean_barka_growth_resp (ico) &
-                                                    * frqsum_o_daysec
-                  cpatch%dmean_barkb_growth_resp(ico) =                                    &
-                                                      cpatch%dmean_barkb_growth_resp (ico) &
-                                                    + cpatch%fmean_barkb_growth_resp (ico) &
-                                                    * frqsum_o_daysec
-                  cpatch%dmean_leaf_storage_resp(ico)= cpatch%dmean_leaf_storage_resp(ico) &
-                                                     + cpatch%fmean_leaf_storage_resp(ico) &
-                                                     * frqsum_o_daysec
-                  cpatch%dmean_root_storage_resp(ico)= cpatch%dmean_root_storage_resp(ico) &
-                                                     + cpatch%fmean_root_storage_resp(ico) &
-                                                     * frqsum_o_daysec
-                  cpatch%dmean_sapa_storage_resp(ico)= cpatch%dmean_sapa_storage_resp(ico) &
-                                                     + cpatch%fmean_sapa_storage_resp(ico) &
-                                                     * frqsum_o_daysec
-                  cpatch%dmean_sapb_storage_resp(ico)= cpatch%dmean_sapb_storage_resp(ico) &
-                                                     + cpatch%fmean_sapb_storage_resp(ico) &
-                                                     * frqsum_o_daysec
-                  cpatch%dmean_barka_storage_resp(ico)=                                    &
-                                                      cpatch%dmean_barka_storage_resp(ico) &
-                                                    + cpatch%fmean_barka_storage_resp(ico) &
-                                                    * frqsum_o_daysec
-                  cpatch%dmean_barkb_storage_resp(ico)=                                    &
-                                                      cpatch%dmean_barkb_storage_resp(ico) &
-                                                    + cpatch%fmean_barkb_storage_resp(ico) &
-                                                    * frqsum_o_daysec
-                  cpatch%dmean_plresp        (ico) = cpatch%dmean_plresp        (ico)      &
-                                                   + cpatch%fmean_plresp        (ico)      &
-                                                   * frqsum_o_daysec
-                  cpatch%dmean_a_open        (ico) = cpatch%dmean_a_open        (ico)      &
-                                                   + cpatch%fmean_a_open        (ico)      &
-                                                   * frqsum_o_daysec
-                  cpatch%dmean_a_closed      (ico) = cpatch%dmean_a_closed      (ico)      &
-                                                   + cpatch%fmean_a_closed      (ico)      &
-                                                   * frqsum_o_daysec
-                  cpatch%dmean_a_net         (ico) = cpatch%dmean_a_net         (ico)      &
-                                                   + cpatch%fmean_a_net         (ico)      &
-                                                   * frqsum_o_daysec
-                  cpatch%dmean_a_light       (ico) = cpatch%dmean_a_light       (ico)      &
-                                                   + cpatch%fmean_a_light       (ico)      &
-                                                   * frqsum_o_daysec
-                  cpatch%dmean_a_rubp        (ico) = cpatch%dmean_a_rubp        (ico)      &
-                                                   + cpatch%fmean_a_rubp        (ico)      &
-                                                   * frqsum_o_daysec
-                  cpatch%dmean_a_co2         (ico) = cpatch%dmean_a_co2         (ico)      &
-                                                   + cpatch%fmean_a_co2         (ico)      &
-                                                   * frqsum_o_daysec
-                  cpatch%dmean_leaf_energy   (ico) = cpatch%dmean_leaf_energy   (ico)      &
-                                                   + cpatch%fmean_leaf_energy   (ico)      &
-                                                   * frqsum_o_daysec
-                  cpatch%dmean_leaf_water    (ico) = cpatch%dmean_leaf_water    (ico)      &
-                                                   + cpatch%fmean_leaf_water    (ico)      &
-                                                   * frqsum_o_daysec
-                  cpatch%dmean_leaf_hcap     (ico) = cpatch%dmean_leaf_hcap     (ico)      &
-                                                   + cpatch%fmean_leaf_hcap     (ico)      &
-                                                   * frqsum_o_daysec
-                  cpatch%dmean_leaf_vpdef    (ico) = cpatch%dmean_leaf_vpdef    (ico)      &
-                                                   + cpatch%fmean_leaf_vpdef    (ico)      &
-                                                   * frqsum_o_daysec
-                  cpatch%dmean_leaf_gsw      (ico) = cpatch%dmean_leaf_gsw      (ico)      &
-                                                   + cpatch%fmean_leaf_gsw      (ico)      &
-                                                   * frqsum_o_daysec
-                  cpatch%dmean_leaf_gbw      (ico) = cpatch%dmean_leaf_gbw      (ico)      &
-                                                   + cpatch%fmean_leaf_gbw      (ico)      &
-                                                   * frqsum_o_daysec
-                  cpatch%dmean_wood_energy   (ico) = cpatch%dmean_wood_energy   (ico)      &
-                                                   + cpatch%fmean_wood_energy   (ico)      &
-                                                   * frqsum_o_daysec
-                  cpatch%dmean_wood_water    (ico) = cpatch%dmean_wood_water    (ico)      &
-                                                   + cpatch%fmean_wood_water    (ico)      &
-                                                   * frqsum_o_daysec
-                  cpatch%dmean_wood_hcap     (ico) = cpatch%dmean_wood_hcap     (ico)      &
-                                                   + cpatch%fmean_wood_hcap     (ico)      &
-                                                   * frqsum_o_daysec
-                  cpatch%dmean_wood_gbw      (ico) = cpatch%dmean_wood_gbw      (ico)      &
-                                                   + cpatch%fmean_wood_gbw      (ico)      &
-                                                   * frqsum_o_daysec
-                  cpatch%dmean_psi_open      (ico) = cpatch%dmean_psi_open      (ico)      &
-                                                   + cpatch%fmean_psi_open      (ico)      &
-                                                   * frqsum_o_daysec
-                  cpatch%dmean_psi_closed    (ico) = cpatch%dmean_psi_closed    (ico)      &
-                                                   + cpatch%fmean_psi_closed    (ico)      &
-                                                   * frqsum_o_daysec
-                  cpatch%dmean_water_supply  (ico) = cpatch%dmean_water_supply  (ico)      &
-                                                   + cpatch%fmean_water_supply  (ico)      &
-                                                   * frqsum_o_daysec
-                  cpatch%dmean_par_l         (ico) = cpatch%dmean_par_l         (ico)      &
-                                                   + cpatch%fmean_par_l         (ico)      &
-                                                   * frqsum_o_daysec
-                  cpatch%dmean_par_l_beam    (ico) = cpatch%dmean_par_l_beam    (ico)      &
-                                                   + cpatch%fmean_par_l_beam    (ico)      &
-                                                   * frqsum_o_daysec
-                  cpatch%dmean_par_l_diff    (ico) = cpatch%dmean_par_l_diff    (ico)      &
-                                                   + cpatch%fmean_par_l_diff    (ico)      &
-                                                   * frqsum_o_daysec
-
-                  cpatch%dmean_par_level_beam(ico) = cpatch%dmean_par_level_beam(ico)      &
-                                                   + cpatch%fmean_par_level_beam(ico)      &
-                                                   * frqsum_o_daysec
-                  cpatch%dmean_par_level_diffd(ico)= cpatch%dmean_par_level_diffd(ico)     &
-                                                   + cpatch%fmean_par_level_diffd(ico)     &
-                                                   * frqsum_o_daysec
-                  cpatch%dmean_par_level_diffu(ico) = cpatch%dmean_par_level_diffu(ico)    &
-                                                   + cpatch%fmean_par_level_diffu(ico)     &
-                                                   * frqsum_o_daysec
-
-                  cpatch%dmean_rshort_l      (ico) = cpatch%dmean_rshort_l      (ico)      &
-                                                   + cpatch%fmean_rshort_l      (ico)      &
-                                                   * frqsum_o_daysec
-                  cpatch%dmean_rlong_l       (ico) = cpatch%dmean_rlong_l       (ico)      &
-                                                   + cpatch%fmean_rlong_l       (ico)      &
-                                                   * frqsum_o_daysec
-                  cpatch%dmean_sensible_lc   (ico) = cpatch%dmean_sensible_lc   (ico)      &
-                                                   + cpatch%fmean_sensible_lc   (ico)      &
-                                                   * frqsum_o_daysec
-                  cpatch%dmean_vapor_lc      (ico) = cpatch%dmean_vapor_lc      (ico)      &
-                                                   + cpatch%fmean_vapor_lc      (ico)      &
-                                                   * frqsum_o_daysec
-                  cpatch%dmean_transp        (ico) = cpatch%dmean_transp        (ico)      &
-                                                   + cpatch%fmean_transp        (ico)      &
-                                                   * frqsum_o_daysec
-                  cpatch%dmean_intercepted_al(ico) = cpatch%dmean_intercepted_al(ico)      &
-                                                   + cpatch%fmean_intercepted_al(ico)      &
-                                                   * frqsum_o_daysec
-                  cpatch%dmean_wshed_lg      (ico) = cpatch%dmean_wshed_lg      (ico)      &
-                                                   + cpatch%fmean_wshed_lg      (ico)      &
-                                                   * frqsum_o_daysec
-                  cpatch%dmean_rshort_w      (ico) = cpatch%dmean_rshort_w      (ico)      &
-                                                   + cpatch%fmean_rshort_w      (ico)      &
-                                                   * frqsum_o_daysec
-                  cpatch%dmean_rlong_w       (ico) = cpatch%dmean_rlong_w       (ico)      &
-                                                   + cpatch%fmean_rlong_w       (ico)      &
-                                                   * frqsum_o_daysec
-                  cpatch%dmean_rad_profile (:,ico) = cpatch%dmean_rad_profile (:,ico)      &
-                                                   + cpatch%fmean_rad_profile (:,ico)      &
-                                                   * frqsum_o_daysec
-                  cpatch%dmean_sensible_wc   (ico) = cpatch%dmean_sensible_wc   (ico)      &
-                                                   + cpatch%fmean_sensible_wc   (ico)      &
-                                                   * frqsum_o_daysec
-                  cpatch%dmean_vapor_wc      (ico) = cpatch%dmean_vapor_wc      (ico)      &
-                                                   + cpatch%fmean_vapor_wc      (ico)      &
-                                                   * frqsum_o_daysec
-                  cpatch%dmean_intercepted_aw(ico) = cpatch%dmean_intercepted_aw(ico)      &
-                                                   + cpatch%fmean_intercepted_aw(ico)      &
-                                                   * frqsum_o_daysec
-                  cpatch%dmean_wshed_wg      (ico) = cpatch%dmean_wshed_wg      (ico)      &
-                                                   + cpatch%fmean_wshed_wg      (ico)      &
-                                                   * frqsum_o_daysec
-                  cpatch%dmean_leaf_water_int(ico) = cpatch%dmean_leaf_water_int(ico)      &
-                                                   + cpatch%fmean_leaf_water_int(ico)      &
-                                                   * frqsum_o_daysec
-                  cpatch%dmean_leaf_water_im2(ico) = cpatch%dmean_leaf_water_im2(ico)      &
-                                                   + cpatch%fmean_leaf_water_im2(ico)      &
-                                                   * frqsum_o_daysec
-                  cpatch%dmean_wood_water_int(ico) = cpatch%dmean_wood_water_int(ico)      &
-                                                   + cpatch%fmean_wood_water_int(ico)      &
-                                                   * frqsum_o_daysec
-                  cpatch%dmean_wood_water_im2(ico) = cpatch%dmean_wood_water_im2(ico)      &
-                                                   + cpatch%fmean_wood_water_im2(ico)      &
-                                                   * frqsum_o_daysec
-                  cpatch%dmean_wflux_wl      (ico) = cpatch%dmean_wflux_wl      (ico)      &
-                                                   + cpatch%fmean_wflux_wl      (ico)      &
-                                                   * frqsum_o_daysec
-                  cpatch%dmean_wflux_gw      (ico) = cpatch%dmean_wflux_gw      (ico)      &
-                                                   + cpatch%fmean_wflux_gw      (ico)      &
-                                                   * frqsum_o_daysec
-                  cpatch%dmean_wflux_gw_layer(:,ico)=cpatch%dmean_wflux_gw_layer(:,ico)    &
-                                                   + cpatch%fmean_wflux_gw_layer(:,ico)    &
-                                                   * frqsum_o_daysec
-                  !------------------------------------------------------------------------!
-               end do cohortloop
-               !---------------------------------------------------------------------------!
-            end do patchloop
-            !------------------------------------------------------------------------------!
-         end do siteloop
+         call integrate_ed_dmean_sites(cgrid,ipy,frqsum_o_daysec)
          !---------------------------------------------------------------------------------!
       end do polyloop
       !------------------------------------------------------------------------------------!
       return
-   end subroutine integrate_ed_dmean_vars
+   end subroutine integrate_ed_dmean_polygons
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !  SUBROUTINE: INTEGRATE_ED_DMEAN_SITES
+   !> \brief This subroutine integrates the site-level averages, and calls separate 
+   !> sub-routines for patches and cohorts. 
+   !
+   !> \details A few variables are _NOT_ integrated here:\n
+   !> 1. Variables that should be integrated only during daylight hours\n
+   !> 2. The NPP breakdown variables are integrated in a separate routine\n
+   !> 3. Variables such as temperature and liquid fraction, which are found after the daily
+   !>    means are normalised.
+   !---------------------------------------------------------------------------------------!
+   subroutine integrate_ed_dmean_sites(cgrid,ipy,frqsum_o_daysec)
+      use ed_state_vars        , only : edtype      & ! structure
+                                      , polygontype ! ! structure
+      implicit none
+
+      !----- Argument ---------------------------------------------------------------------!
+      type(edtype)      , target     :: cgrid
+      integer           , intent(in) :: ipy
+      real              , intent(in) :: frqsum_o_daysec
+      !----- Local variables --------------------------------------------------------------!
+      type(polygontype) , pointer    :: cpoly
+      integer                        :: isi
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !   Select polygon then loop through sites.
+      !------------------------------------------------------------------------------------!
+      cpoly => cgrid%polygon(ipy)
+      siteloop: do isi=1,cpoly%nsites
+         !---------------------------------------------------------------------------------!
+         !    Integrate site-level variables.                                              !
+         !---------------------------------------------------------------------------------!
+         cpoly%dmean_atm_theiv      (isi) = cpoly%dmean_atm_theiv      (isi)               &
+                                          + cpoly%fmean_atm_theiv      (isi)               &
+                                          * frqsum_o_daysec
+         cpoly%dmean_atm_theta      (isi) = cpoly%dmean_atm_theta      (isi)               &
+                                          + cpoly%fmean_atm_theta      (isi)               &
+                                          * frqsum_o_daysec
+         cpoly%dmean_atm_temp       (isi) = cpoly%dmean_atm_temp       (isi)               &
+                                          + cpoly%fmean_atm_temp       (isi)               &
+                                          * frqsum_o_daysec
+         cpoly%dmean_atm_vpdef      (isi) = cpoly%dmean_atm_vpdef      (isi)               &
+                                          + cpoly%fmean_atm_vpdef      (isi)               &
+                                          * frqsum_o_daysec
+         cpoly%dmean_atm_shv        (isi) = cpoly%dmean_atm_shv        (isi)               &
+                                          + cpoly%fmean_atm_shv        (isi)               &
+                                          * frqsum_o_daysec
+         cpoly%dmean_atm_rshort     (isi) = cpoly%dmean_atm_rshort     (isi)               &
+                                          + cpoly%fmean_atm_rshort     (isi)               &
+                                          * frqsum_o_daysec
+         cpoly%dmean_atm_rshort_diff(isi) = cpoly%dmean_atm_rshort_diff(isi)               &
+                                          + cpoly%fmean_atm_rshort_diff(isi)               &
+                                          * frqsum_o_daysec
+         cpoly%dmean_atm_par        (isi) = cpoly%dmean_atm_par        (isi)               &
+                                          + cpoly%fmean_atm_par        (isi)               &
+                                          * frqsum_o_daysec
+         cpoly%dmean_atm_par_diff   (isi) = cpoly%dmean_atm_par_diff   (isi)               &
+                                          + cpoly%fmean_atm_par_diff   (isi)               &
+                                          * frqsum_o_daysec
+         cpoly%dmean_atm_rlong      (isi) = cpoly%dmean_atm_rlong      (isi)               &
+                                          + cpoly%fmean_atm_rlong      (isi)               &
+                                          * frqsum_o_daysec
+         cpoly%dmean_atm_vels       (isi) = cpoly%dmean_atm_vels       (isi)               &
+                                          + cpoly%fmean_atm_vels       (isi)               &
+                                          * frqsum_o_daysec
+         cpoly%dmean_atm_rhos       (isi) = cpoly%dmean_atm_rhos       (isi)               &
+                                          + cpoly%fmean_atm_rhos       (isi)               &
+                                          * frqsum_o_daysec
+         cpoly%dmean_atm_prss       (isi) = cpoly%dmean_atm_prss       (isi)               &
+                                          + cpoly%fmean_atm_prss       (isi)               &
+                                          * frqsum_o_daysec
+         cpoly%dmean_atm_co2        (isi) = cpoly%dmean_atm_co2        (isi)               &
+                                          + cpoly%fmean_atm_co2        (isi)               &
+                                          * frqsum_o_daysec
+         cpoly%dmean_pcpg           (isi) = cpoly%dmean_pcpg           (isi)               &
+                                          + cpoly%fmean_pcpg           (isi)               &
+                                          * frqsum_o_daysec
+         cpoly%dmean_qpcpg          (isi) = cpoly%dmean_qpcpg          (isi)               &
+                                          + cpoly%fmean_qpcpg          (isi)               &
+                                          * frqsum_o_daysec
+         cpoly%dmean_dpcpg          (isi) = cpoly%dmean_dpcpg          (isi)               &
+                                          + cpoly%fmean_dpcpg          (isi)               &
+                                          * frqsum_o_daysec
+         !---------------------------------------------------------------------------------!
+
+
+
+         !---------------------------------------------------------------------------------!
+         !   Call sub-routine that  integrates patch-level (and cohort-level) variables.   !
+         !---------------------------------------------------------------------------------!
+         call integrate_ed_dmean_patches(cpoly,isi,frqsum_o_daysec)
+         !---------------------------------------------------------------------------------!
+      end do siteloop
+      !------------------------------------------------------------------------------------!
+      return
+   end subroutine integrate_ed_dmean_sites
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !  SUBROUTINE: INTEGRATE_ED_DMEAN_PATCHES
+   !> \brief This subroutine integrates the patch-level averages, and calls a separate 
+   !> sub-routine for cohort-level averages. 
+   !
+   !> \details A few variables are _NOT_ integrated here:\n
+   !> 1. Variables that should be integrated only during daylight hours\n
+   !> 2. The NPP breakdown variables are integrated in a separate routine\n
+   !> 3. Variables such as temperature and liquid fraction, which are found after the daily
+   !>    means are normalised.
+   !---------------------------------------------------------------------------------------!
+   subroutine integrate_ed_dmean_patches(cpoly,isi,frqsum_o_daysec)
+      use ed_state_vars        , only : polygontype & ! structure
+                                      , sitetype    ! ! structure
+      implicit none
+
+      !----- Argument ---------------------------------------------------------------------!
+      type(polygontype), target     :: cpoly
+      integer          , intent(in) :: isi
+      real             , intent(in) :: frqsum_o_daysec
+      !----- Local variables --------------------------------------------------------------!
+      type(sitetype)   , pointer    :: csite
+      integer                       :: ipa
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !   Select site then loop through patches.                                           !
+      !------------------------------------------------------------------------------------!
+      csite => cpoly%site(isi)
+      patchloop: do ipa=1,csite%npatches
+         !---------------------------------------------------------------------------------!
+         !      Integrate patch-level variables.                                           !
+         !---------------------------------------------------------------------------------!
+         csite%dmean_co2_residual      (ipa) = csite%dmean_co2_residual      (ipa)         &
+                                             + csite%co2budget_residual      (ipa)         &
+                                             * frqsum_o_daysec
+         csite%dmean_energy_residual   (ipa) = csite%dmean_energy_residual   (ipa)         &
+                                             + csite%ebudget_residual        (ipa)         &
+                                             * frqsum_o_daysec
+         csite%dmean_water_residual    (ipa) = csite%dmean_water_residual    (ipa)         &
+                                             + csite%wbudget_residual        (ipa)         &
+                                             * frqsum_o_daysec
+         csite%dmean_rh                (ipa) = csite%dmean_rh                (ipa)         &
+                                             + csite%fmean_rh                (ipa)         &
+                                             * frqsum_o_daysec
+         csite%dmean_fgc_rh            (ipa) = csite%dmean_fgc_rh            (ipa)         &
+                                             + csite%fmean_fgc_rh            (ipa)         &
+                                             * frqsum_o_daysec
+         csite%dmean_fsc_rh            (ipa) = csite%dmean_fsc_rh            (ipa)         &
+                                             + csite%fmean_fsc_rh            (ipa)         &
+                                             * frqsum_o_daysec
+         csite%dmean_stgc_rh           (ipa) = csite%dmean_stgc_rh           (ipa)         &
+                                             + csite%fmean_stgc_rh           (ipa)         &
+                                             * frqsum_o_daysec
+         csite%dmean_stsc_rh           (ipa) = csite%dmean_stsc_rh           (ipa)         &
+                                             + csite%fmean_stsc_rh           (ipa)         &
+                                             * frqsum_o_daysec
+         csite%dmean_msc_rh            (ipa) = csite%dmean_msc_rh            (ipa)         &
+                                             + csite%fmean_msc_rh            (ipa)         &
+                                             * frqsum_o_daysec
+         csite%dmean_ssc_rh            (ipa) = csite%dmean_ssc_rh            (ipa)         &
+                                             + csite%fmean_ssc_rh            (ipa)         &
+                                             * frqsum_o_daysec
+         csite%dmean_psc_rh            (ipa) = csite%dmean_psc_rh            (ipa)         &
+                                             + csite%fmean_psc_rh            (ipa)         &
+                                             * frqsum_o_daysec
+         csite%dmean_nep               (ipa) = csite%dmean_nep               (ipa)         &
+                                             + csite%fmean_nep               (ipa)         &
+                                             * frqsum_o_daysec
+         csite%dmean_rk4step           (ipa) = csite%dmean_rk4step           (ipa)         &
+                                             + csite%fmean_rk4step           (ipa)         &
+                                             * frqsum_o_daysec
+         csite%dmean_available_water   (ipa) = csite%dmean_available_water   (ipa)         &
+                                             + csite%fmean_available_water   (ipa)         &
+                                             * frqsum_o_daysec
+         csite%dmean_veg_displace      (ipa) = csite%dmean_veg_displace      (ipa)         &
+                                             + csite%fmean_veg_displace      (ipa)         &
+                                             * frqsum_o_daysec
+         csite%dmean_rough             (ipa) = csite%dmean_rough             (ipa)         &
+                                             + csite%fmean_rough             (ipa)         &
+                                             * frqsum_o_daysec
+         csite%dmean_can_theiv         (ipa) = csite%dmean_can_theiv         (ipa)         &
+                                             + csite%fmean_can_theiv         (ipa)         &
+                                             * frqsum_o_daysec
+         csite%dmean_can_theta         (ipa) = csite%dmean_can_theta         (ipa)         &
+                                             + csite%fmean_can_theta         (ipa)         &
+                                             * frqsum_o_daysec
+         csite%dmean_can_vpdef         (ipa) = csite%dmean_can_vpdef         (ipa)         &
+                                             + csite%fmean_can_vpdef         (ipa)         &
+                                             * frqsum_o_daysec
+         csite%dmean_can_shv           (ipa) = csite%dmean_can_shv           (ipa)         &
+                                             + csite%fmean_can_shv           (ipa)         &
+                                             * frqsum_o_daysec
+         csite%dmean_can_co2           (ipa) = csite%dmean_can_co2           (ipa)         &
+                                             + csite%fmean_can_co2           (ipa)         &
+                                             * frqsum_o_daysec
+         csite%dmean_can_prss          (ipa) = csite%dmean_can_prss          (ipa)         &
+                                             + csite%fmean_can_prss          (ipa)         &
+                                             * frqsum_o_daysec
+         csite%dmean_gnd_temp          (ipa) = csite%dmean_gnd_temp          (ipa)         &
+                                             + csite%fmean_gnd_temp          (ipa)         &
+                                             * frqsum_o_daysec
+         csite%dmean_gnd_shv           (ipa) = csite%dmean_gnd_shv           (ipa)         &
+                                             + csite%fmean_gnd_shv           (ipa)         &
+                                             * frqsum_o_daysec
+         csite%dmean_can_ggnd          (ipa) = csite%dmean_can_ggnd          (ipa)         &
+                                             + csite%fmean_can_ggnd          (ipa)         &
+                                             * frqsum_o_daysec
+         csite%dmean_sfcw_depth        (ipa) = csite%dmean_sfcw_depth        (ipa)         &
+                                             + csite%fmean_sfcw_depth        (ipa)         &
+                                             * frqsum_o_daysec
+         !----- Temporarily make the pounding internal energy extensive [J/m2]. -----------!
+         csite%dmean_sfcw_energy       (ipa) = csite%dmean_sfcw_energy       (ipa)         &
+                                             + csite%fmean_sfcw_energy       (ipa)         &
+                                             * csite%fmean_sfcw_mass         (ipa)         &
+                                             * frqsum_o_daysec
+         csite%dmean_sfcw_mass         (ipa) = csite%dmean_sfcw_mass         (ipa)         &
+                                             + csite%fmean_sfcw_mass         (ipa)         &
+                                             * frqsum_o_daysec
+         csite%dmean_snowfac           (ipa) = csite%dmean_snowfac           (ipa)         &
+                                             + csite%fmean_snowfac           (ipa)         &
+                                             * frqsum_o_daysec
+         csite%dmean_rshort_gnd        (ipa) = csite%dmean_rshort_gnd        (ipa)         &
+                                             + csite%fmean_rshort_gnd        (ipa)         &
+                                             * frqsum_o_daysec
+         csite%dmean_par_gnd           (ipa) = csite%dmean_par_gnd           (ipa)         &
+                                             + csite%fmean_par_gnd           (ipa)         &
+                                             * frqsum_o_daysec
+         csite%dmean_rlong_gnd         (ipa) = csite%dmean_rlong_gnd         (ipa)         &
+                                             + csite%fmean_rlong_gnd         (ipa)         &
+                                             * frqsum_o_daysec
+         csite%dmean_rlongup           (ipa) = csite%dmean_rlongup           (ipa)         &
+                                             + csite%fmean_rlongup           (ipa)         &
+                                             * frqsum_o_daysec
+         csite%dmean_parup             (ipa) = csite%dmean_parup             (ipa)         &
+                                             + csite%fmean_parup             (ipa)         &
+                                             * frqsum_o_daysec
+         csite%dmean_nirup             (ipa) = csite%dmean_nirup             (ipa)         &
+                                             + csite%fmean_nirup             (ipa)         &
+                                             * frqsum_o_daysec
+         csite%dmean_rshortup          (ipa) = csite%dmean_rshortup          (ipa)         &
+                                             + csite%fmean_rshortup          (ipa)         &
+                                             * frqsum_o_daysec
+         csite%dmean_rnet              (ipa) = csite%dmean_rnet              (ipa)         &
+                                             + csite%fmean_rnet              (ipa)         &
+                                             * frqsum_o_daysec
+         csite%dmean_rlong_albedo      (ipa) = csite%dmean_rlong_albedo      (ipa)         &
+                                             + csite%fmean_rlong_albedo      (ipa)         &
+                                             * frqsum_o_daysec
+         csite%dmean_ustar             (ipa) = csite%dmean_ustar             (ipa)         &
+                                             + csite%fmean_ustar             (ipa)         &
+                                             * frqsum_o_daysec
+         csite%dmean_tstar             (ipa) = csite%dmean_tstar             (ipa)         &
+                                             + csite%fmean_tstar             (ipa)         &
+                                             * frqsum_o_daysec
+         csite%dmean_qstar             (ipa) = csite%dmean_qstar             (ipa)         &
+                                             + csite%fmean_qstar             (ipa)         &
+                                             * frqsum_o_daysec
+         csite%dmean_cstar             (ipa) = csite%dmean_cstar             (ipa)         &
+                                             + csite%fmean_cstar             (ipa)         &
+                                             * frqsum_o_daysec
+         csite%dmean_carbon_ac         (ipa) = csite%dmean_carbon_ac         (ipa)         &
+                                             + csite%fmean_carbon_ac         (ipa)         &
+                                             * frqsum_o_daysec
+         csite%dmean_carbon_st         (ipa) = csite%dmean_carbon_st         (ipa)         &
+                                             + csite%fmean_carbon_st         (ipa)         &
+                                             * frqsum_o_daysec
+         csite%dmean_vapor_gc          (ipa) = csite%dmean_vapor_gc          (ipa)         &
+                                             + csite%fmean_vapor_gc          (ipa)         &
+                                             * frqsum_o_daysec
+         csite%dmean_vapor_ac          (ipa) = csite%dmean_vapor_ac          (ipa)         &
+                                             + csite%fmean_vapor_ac          (ipa)         &
+                                             * frqsum_o_daysec
+         csite%dmean_throughfall       (ipa) = csite%dmean_throughfall       (ipa)         &
+                                             + csite%fmean_throughfall       (ipa)         &
+                                             * frqsum_o_daysec
+         csite%dmean_runoff            (ipa) = csite%dmean_runoff            (ipa)         &
+                                             + csite%fmean_runoff            (ipa)         &
+                                             * frqsum_o_daysec
+         csite%dmean_drainage          (ipa) = csite%dmean_drainage          (ipa)         &
+                                             + csite%fmean_drainage          (ipa)         &
+                                             * frqsum_o_daysec
+         csite%dmean_sensible_gc       (ipa) = csite%dmean_sensible_gc       (ipa)         &
+                                             + csite%fmean_sensible_gc       (ipa)         &
+                                             * frqsum_o_daysec
+         csite%dmean_sensible_ac       (ipa) = csite%dmean_sensible_ac       (ipa)         &
+                                             + csite%fmean_sensible_ac       (ipa)         &
+                                             * frqsum_o_daysec
+         csite%dmean_sensible_gg     (:,ipa) = csite%dmean_sensible_gg     (:,ipa)         &
+                                             + csite%fmean_sensible_gg     (:,ipa)         &
+                                             * frqsum_o_daysec
+         csite%dmean_qthroughfall      (ipa) = csite%dmean_qthroughfall      (ipa)         &
+                                             + csite%fmean_qthroughfall      (ipa)         &
+                                             * frqsum_o_daysec
+         csite%dmean_qrunoff           (ipa) = csite%dmean_qrunoff           (ipa)         &
+                                             + csite%fmean_qrunoff           (ipa)         &
+                                             * frqsum_o_daysec
+         csite%dmean_qdrainage         (ipa) = csite%dmean_qdrainage         (ipa)         &
+                                             + csite%fmean_qdrainage         (ipa)         &
+                                             * frqsum_o_daysec
+         csite%dmean_soil_energy     (:,ipa) = csite%dmean_soil_energy     (:,ipa)         &
+                                             + csite%fmean_soil_energy     (:,ipa)         &
+                                             * frqsum_o_daysec
+         csite%dmean_soil_mstpot     (:,ipa) = csite%dmean_soil_mstpot     (:,ipa)         &
+                                             + csite%fmean_soil_mstpot     (:,ipa)         &
+                                             * frqsum_o_daysec
+         csite%dmean_soil_water      (:,ipa) = csite%dmean_soil_water      (:,ipa)         &
+                                             + csite%fmean_soil_water      (:,ipa)         &
+                                             * frqsum_o_daysec
+         csite%dmean_smoist_gg       (:,ipa) = csite%dmean_smoist_gg       (:,ipa)         &
+                                             + csite%fmean_smoist_gg       (:,ipa)         &
+                                             * frqsum_o_daysec
+         csite%dmean_transloss       (:,ipa) = csite%dmean_transloss       (:,ipa)         &
+                                             + csite%fmean_transloss       (:,ipa)         &
+                                             * frqsum_o_daysec
+         !---------------------------------------------------------------------------------!
+
+
+
+         !---------------------------------------------------------------------------------!
+         !   Call sub-routine that integrates cohort-level variables.                      !
+         !---------------------------------------------------------------------------------!
+         call integrate_ed_dmean_cohorts(csite,ipa,frqsum_o_daysec)
+         !---------------------------------------------------------------------------------!
+      end do patchloop
+      !------------------------------------------------------------------------------------!
+      return
+   end subroutine integrate_ed_dmean_patches
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !  SUBROUTINE: INTEGRATE_ED_DMEAN_COHORTS
+   !> \brief This subroutine integrates the patch-level averages, and calls a separate 
+   !> sub-routine for cohort-level averages. 
+   !
+   !> \details A few variables are _NOT_ integrated here:\n
+   !> 1. Variables that should be integrated only during daylight hours\n
+   !> 2. The NPP breakdown variables are integrated in a separate routine\n
+   !> 3. Variables such as temperature and liquid fraction, which are found after the daily
+   !>    means are normalised.
+   !---------------------------------------------------------------------------------------!
+   subroutine integrate_ed_dmean_cohorts(csite,ipa,frqsum_o_daysec)
+      use ed_state_vars        , only : sitetype  & ! structure
+                                      , patchtype ! ! structure
+      implicit none
+
+      !----- Argument ---------------------------------------------------------------------!
+      type(sitetype) , target     :: csite
+      integer        , intent(in) :: ipa
+      real           , intent(in) :: frqsum_o_daysec
+      !----- Local variables --------------------------------------------------------------!
+      type(patchtype), pointer    :: cpatch
+      integer                     :: ico
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !   Select patch then loop through cohorts.                                          !
+      !------------------------------------------------------------------------------------!
+      cpatch => csite%patch(ipa) 
+      cohortloop: do ico=1,cpatch%ncohorts
+         !---------------------------------------------------------------------------------!
+         !      Integrate cohort-level variables.                                          !
+         !---------------------------------------------------------------------------------!
+         cpatch%dmean_gpp               (ico) = cpatch%dmean_gpp               (ico)       &
+                                              + cpatch%fmean_gpp               (ico)       &
+                                              * frqsum_o_daysec
+         cpatch%dmean_npp               (ico) = cpatch%dmean_npp               (ico)       &
+                                              + cpatch%fmean_npp               (ico)       &
+                                              * frqsum_o_daysec
+         cpatch%dmean_leaf_resp         (ico) = cpatch%dmean_leaf_resp         (ico)       &
+                                              + cpatch%fmean_leaf_resp         (ico)       &
+                                              * frqsum_o_daysec
+         cpatch%dmean_root_resp         (ico) = cpatch%dmean_root_resp         (ico)       &
+                                              + cpatch%fmean_root_resp         (ico)       &
+                                              * frqsum_o_daysec
+         cpatch%dmean_stem_resp         (ico) = cpatch%dmean_stem_resp         (ico)       &
+                                              + cpatch%fmean_stem_resp         (ico)       &
+                                              * frqsum_o_daysec
+         cpatch%dmean_leaf_growth_resp  (ico) = cpatch%dmean_leaf_growth_resp  (ico)       &
+                                              + cpatch%fmean_leaf_growth_resp  (ico)       &
+                                              * frqsum_o_daysec
+         cpatch%dmean_root_growth_resp  (ico) = cpatch%dmean_root_growth_resp  (ico)       &
+                                              + cpatch%fmean_root_growth_resp  (ico)       &
+                                              * frqsum_o_daysec
+         cpatch%dmean_sapa_growth_resp  (ico) = cpatch%dmean_sapa_growth_resp  (ico)       &
+                                              + cpatch%fmean_sapa_growth_resp  (ico)       &
+                                              * frqsum_o_daysec
+         cpatch%dmean_sapb_growth_resp  (ico) = cpatch%dmean_sapb_growth_resp  (ico)       &
+                                              + cpatch%fmean_sapb_growth_resp  (ico)       &
+                                              * frqsum_o_daysec
+         cpatch%dmean_barka_growth_resp (ico) = cpatch%dmean_barka_growth_resp (ico)       &
+                                              + cpatch%fmean_barka_growth_resp (ico)       &
+                                              * frqsum_o_daysec
+         cpatch%dmean_barkb_growth_resp (ico) = cpatch%dmean_barkb_growth_resp (ico)       &
+                                              + cpatch%fmean_barkb_growth_resp (ico)       &
+                                              * frqsum_o_daysec
+         cpatch%dmean_leaf_storage_resp (ico) = cpatch%dmean_leaf_storage_resp (ico)       &
+                                              + cpatch%fmean_leaf_storage_resp (ico)       &
+                                              * frqsum_o_daysec
+         cpatch%dmean_root_storage_resp (ico) = cpatch%dmean_root_storage_resp (ico)       &
+                                              + cpatch%fmean_root_storage_resp (ico)       &
+                                              * frqsum_o_daysec
+         cpatch%dmean_sapa_storage_resp (ico) = cpatch%dmean_sapa_storage_resp (ico)       &
+                                              + cpatch%fmean_sapa_storage_resp (ico)       &
+                                              * frqsum_o_daysec
+         cpatch%dmean_sapb_storage_resp (ico) = cpatch%dmean_sapb_storage_resp (ico)       &
+                                              + cpatch%fmean_sapb_storage_resp (ico)       &
+                                              * frqsum_o_daysec
+         cpatch%dmean_barka_storage_resp(ico) = cpatch%dmean_barka_storage_resp(ico)       &
+                                              + cpatch%fmean_barka_storage_resp(ico)       &
+                                              * frqsum_o_daysec
+         cpatch%dmean_barkb_storage_resp(ico) = cpatch%dmean_barkb_storage_resp(ico)       &
+                                              + cpatch%fmean_barkb_storage_resp(ico)       &
+                                              * frqsum_o_daysec
+         cpatch%dmean_plresp            (ico) = cpatch%dmean_plresp            (ico)       &
+                                              + cpatch%fmean_plresp            (ico)       &
+                                              * frqsum_o_daysec
+         cpatch%dmean_a_open            (ico) = cpatch%dmean_a_open            (ico)       &
+                                              + cpatch%fmean_a_open            (ico)       &
+                                              * frqsum_o_daysec
+         cpatch%dmean_a_closed          (ico) = cpatch%dmean_a_closed          (ico)       &
+                                              + cpatch%fmean_a_closed          (ico)       &
+                                              * frqsum_o_daysec
+         cpatch%dmean_a_net             (ico) = cpatch%dmean_a_net             (ico)       &
+                                              + cpatch%fmean_a_net             (ico)       &
+                                              * frqsum_o_daysec
+         cpatch%dmean_a_light           (ico) = cpatch%dmean_a_light           (ico)       &
+                                              + cpatch%fmean_a_light           (ico)       &
+                                              * frqsum_o_daysec
+         cpatch%dmean_a_rubp            (ico) = cpatch%dmean_a_rubp            (ico)       &
+                                              + cpatch%fmean_a_rubp            (ico)       &
+                                              * frqsum_o_daysec
+         cpatch%dmean_a_co2             (ico) = cpatch%dmean_a_co2             (ico)       &
+                                              + cpatch%fmean_a_co2             (ico)       &
+                                              * frqsum_o_daysec
+         cpatch%dmean_leaf_energy       (ico) = cpatch%dmean_leaf_energy       (ico)       &
+                                              + cpatch%fmean_leaf_energy       (ico)       &
+                                              * frqsum_o_daysec
+         cpatch%dmean_leaf_water        (ico) = cpatch%dmean_leaf_water        (ico)       &
+                                              + cpatch%fmean_leaf_water        (ico)       &
+                                              * frqsum_o_daysec
+         cpatch%dmean_leaf_hcap         (ico) = cpatch%dmean_leaf_hcap         (ico)       &
+                                              + cpatch%fmean_leaf_hcap         (ico)       &
+                                              * frqsum_o_daysec
+         cpatch%dmean_leaf_vpdef        (ico) = cpatch%dmean_leaf_vpdef        (ico)       &
+                                              + cpatch%fmean_leaf_vpdef        (ico)       &
+                                              * frqsum_o_daysec
+         cpatch%dmean_leaf_gsw          (ico) = cpatch%dmean_leaf_gsw          (ico)       &
+                                              + cpatch%fmean_leaf_gsw          (ico)       &
+                                              * frqsum_o_daysec
+         cpatch%dmean_leaf_gbw          (ico) = cpatch%dmean_leaf_gbw          (ico)       &
+                                              + cpatch%fmean_leaf_gbw          (ico)       &
+                                              * frqsum_o_daysec
+         cpatch%dmean_wood_energy       (ico) = cpatch%dmean_wood_energy       (ico)       &
+                                              + cpatch%fmean_wood_energy       (ico)       &
+                                              * frqsum_o_daysec
+         cpatch%dmean_wood_water        (ico) = cpatch%dmean_wood_water        (ico)       &
+                                              + cpatch%fmean_wood_water        (ico)       &
+                                              * frqsum_o_daysec
+         cpatch%dmean_wood_hcap         (ico) = cpatch%dmean_wood_hcap         (ico)       &
+                                              + cpatch%fmean_wood_hcap         (ico)       &
+                                              * frqsum_o_daysec
+         cpatch%dmean_wood_gbw          (ico) = cpatch%dmean_wood_gbw          (ico)       &
+                                              + cpatch%fmean_wood_gbw          (ico)       &
+                                              * frqsum_o_daysec
+         cpatch%dmean_psi_open          (ico) = cpatch%dmean_psi_open          (ico)       &
+                                              + cpatch%fmean_psi_open          (ico)       &
+                                              * frqsum_o_daysec
+         cpatch%dmean_psi_closed        (ico) = cpatch%dmean_psi_closed        (ico)       &
+                                              + cpatch%fmean_psi_closed        (ico)       &
+                                              * frqsum_o_daysec
+         cpatch%dmean_water_supply      (ico) = cpatch%dmean_water_supply      (ico)       &
+                                              + cpatch%fmean_water_supply      (ico)       &
+                                              * frqsum_o_daysec
+         cpatch%dmean_par_l             (ico) = cpatch%dmean_par_l             (ico)       &
+                                              + cpatch%fmean_par_l             (ico)       &
+                                              * frqsum_o_daysec
+         cpatch%dmean_par_l_beam        (ico) = cpatch%dmean_par_l_beam        (ico)       &
+                                              + cpatch%fmean_par_l_beam        (ico)       &
+                                              * frqsum_o_daysec
+         cpatch%dmean_par_l_diff        (ico) = cpatch%dmean_par_l_diff        (ico)       &
+                                              + cpatch%fmean_par_l_diff        (ico)       &
+                                              * frqsum_o_daysec
+         cpatch%dmean_par_level_beam    (ico) = cpatch%dmean_par_level_beam    (ico)       &
+                                              + cpatch%fmean_par_level_beam    (ico)       &
+                                              * frqsum_o_daysec
+         cpatch%dmean_par_level_diffd   (ico) = cpatch%dmean_par_level_diffd   (ico)       &
+                                              + cpatch%fmean_par_level_diffd   (ico)       &
+                                              * frqsum_o_daysec
+         cpatch%dmean_par_level_diffu   (ico) = cpatch%dmean_par_level_diffu   (ico)       &
+                                              + cpatch%fmean_par_level_diffu   (ico)       &
+                                              * frqsum_o_daysec
+         cpatch%dmean_rshort_l          (ico) = cpatch%dmean_rshort_l          (ico)       &
+                                              + cpatch%fmean_rshort_l          (ico)       &
+                                              * frqsum_o_daysec
+         cpatch%dmean_rlong_l           (ico) = cpatch%dmean_rlong_l           (ico)       &
+                                              + cpatch%fmean_rlong_l           (ico)       &
+                                              * frqsum_o_daysec
+         cpatch%dmean_sensible_lc       (ico) = cpatch%dmean_sensible_lc       (ico)       &
+                                              + cpatch%fmean_sensible_lc       (ico)       &
+                                              * frqsum_o_daysec
+         cpatch%dmean_vapor_lc          (ico) = cpatch%dmean_vapor_lc          (ico)       &
+                                              + cpatch%fmean_vapor_lc          (ico)       &
+                                              * frqsum_o_daysec
+         cpatch%dmean_transp            (ico) = cpatch%dmean_transp            (ico)       &
+                                              + cpatch%fmean_transp            (ico)       &
+                                              * frqsum_o_daysec
+         cpatch%dmean_intercepted_al    (ico) = cpatch%dmean_intercepted_al    (ico)       &
+                                              + cpatch%fmean_intercepted_al    (ico)       &
+                                              * frqsum_o_daysec
+         cpatch%dmean_wshed_lg          (ico) = cpatch%dmean_wshed_lg          (ico)       &
+                                              + cpatch%fmean_wshed_lg          (ico)       &
+                                              * frqsum_o_daysec
+         cpatch%dmean_rshort_w          (ico) = cpatch%dmean_rshort_w          (ico)       &
+                                              + cpatch%fmean_rshort_w          (ico)       &
+                                              * frqsum_o_daysec
+         cpatch%dmean_rlong_w           (ico) = cpatch%dmean_rlong_w           (ico)       &
+                                              + cpatch%fmean_rlong_w           (ico)       &
+                                              * frqsum_o_daysec
+         cpatch%dmean_rad_profile     (:,ico) = cpatch%dmean_rad_profile     (:,ico)       &
+                                              + cpatch%fmean_rad_profile     (:,ico)       &
+                                              * frqsum_o_daysec
+         cpatch%dmean_sensible_wc       (ico) = cpatch%dmean_sensible_wc       (ico)       &
+                                              + cpatch%fmean_sensible_wc       (ico)       &
+                                              * frqsum_o_daysec
+         cpatch%dmean_vapor_wc          (ico) = cpatch%dmean_vapor_wc          (ico)       &
+                                              + cpatch%fmean_vapor_wc          (ico)       &
+                                              * frqsum_o_daysec
+         cpatch%dmean_intercepted_aw    (ico) = cpatch%dmean_intercepted_aw    (ico)       &
+                                              + cpatch%fmean_intercepted_aw    (ico)       &
+                                              * frqsum_o_daysec
+         cpatch%dmean_wshed_wg          (ico) = cpatch%dmean_wshed_wg          (ico)       &
+                                              + cpatch%fmean_wshed_wg          (ico)       &
+                                              * frqsum_o_daysec
+         cpatch%dmean_leaf_water_int    (ico) = cpatch%dmean_leaf_water_int    (ico)       &
+                                              + cpatch%fmean_leaf_water_int    (ico)       &
+                                              * frqsum_o_daysec
+         cpatch%dmean_leaf_water_im2    (ico) = cpatch%dmean_leaf_water_im2    (ico)       &
+                                              + cpatch%fmean_leaf_water_im2    (ico)       &
+                                              * frqsum_o_daysec
+         cpatch%dmean_wood_water_int    (ico) = cpatch%dmean_wood_water_int    (ico)       &
+                                              + cpatch%fmean_wood_water_int    (ico)       &
+                                              * frqsum_o_daysec
+         cpatch%dmean_wood_water_im2    (ico) = cpatch%dmean_wood_water_im2    (ico)       &
+                                              + cpatch%fmean_wood_water_im2    (ico)       &
+                                              * frqsum_o_daysec
+         cpatch%dmean_wflux_wl          (ico) = cpatch%dmean_wflux_wl          (ico)       &
+                                              + cpatch%fmean_wflux_wl          (ico)       &
+                                              * frqsum_o_daysec
+         cpatch%dmean_wflux_gw          (ico) = cpatch%dmean_wflux_gw          (ico)       &
+                                              + cpatch%fmean_wflux_gw          (ico)       &
+                                              * frqsum_o_daysec
+         cpatch%dmean_wflux_gw_layer  (:,ico) = cpatch%dmean_wflux_gw_layer  (:,ico)       &
+                                              + cpatch%fmean_wflux_gw_layer  (:,ico)       &
+                                              * frqsum_o_daysec
+         !---------------------------------------------------------------------------------!
+      end do cohortloop
+      !------------------------------------------------------------------------------------!
+      return
+   end subroutine integrate_ed_dmean_cohorts
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
    !=======================================================================================!
    !=======================================================================================!
    !=======================================================================================!
@@ -2702,14 +2991,14 @@ module average_utils
 
    !=======================================================================================!
    !=======================================================================================!
-   !  SUBROUTINE: NORMALIZE_ED_TODAY_VARS 
+   !  SUBROUTINE: NORMALIZE_ED_TODAY_POLYGONS
    !> \brief This subroutine will scale the daily averages of GPP and some respiration
    !> variables to normal units.  These variables are not for output, so they are done
    !> separatedly.  There are also some output variables here, because these depend on the
    !> average of the gpp, and leaf and root respiration and would need to be calculated
    !> again otherwise.                                                                      !
    !---------------------------------------------------------------------------------------!
-   subroutine normalize_ed_today_vars(cgrid)
+   subroutine normalize_ed_today_polygons(cgrid)
       use ed_state_vars , only : edtype        & ! structure
                                , polygontype   & ! structure
                                , sitetype      & ! structure
@@ -2813,7 +3102,7 @@ module average_utils
       !------------------------------------------------------------------------------------!
 
       return
-   end subroutine normalize_ed_today_vars
+   end subroutine normalize_ed_today_polygons
    !=======================================================================================!
    !=======================================================================================!
 
@@ -2828,7 +3117,7 @@ module average_utils
    !> \brief This subroutine scales the daily NPP allocation terms and transfer today 
    !! variables to dmean.
    !---------------------------------------------------------------------------------------!
-   subroutine copy_today_to_dmean_vars(cgrid)
+   subroutine copy_today_to_dmean_polygons(cgrid)
       use ed_state_vars , only : edtype        & ! structure
                                , polygontype   & ! structure
                                , sitetype      & ! structure
@@ -2909,7 +3198,7 @@ module average_utils
       !------------------------------------------------------------------------------------!
 
       return
-   end subroutine copy_today_to_dmean_vars
+   end subroutine copy_today_to_dmean_polygons
    !=======================================================================================!
    !=======================================================================================!
 
@@ -2920,12 +3209,15 @@ module average_utils
 
    !=======================================================================================!
    !=======================================================================================!
-   !  SUBROUTINE: NORMALIZE_ED_DMEAN_VARS   
+   !  SUBROUTINE: NORMALIZE_ED_DMEAN_POLYGONS 
    !> \brief This subroutine normalises the daily mean variables of those variables that
-   !> could not be integrated directly.  This includes temperatures, polygon-level budget
-   !> variables, and variables that are defined during daytime only.
+   !> could not be integrated directly.  
+   !> \details This includes temperatures, polygon-level budget variables, and variables
+   !> that are defined during daytime only. Unlike other sub-routines, we do not split 
+   !> this one into smaller sub-routines for now because of the interdependency between
+   !> variables of different hierarchical levels.
    !---------------------------------------------------------------------------------------!
-   subroutine normalize_ed_dmean_vars(cgrid)
+   subroutine normalize_ed_dmean_polygons(cgrid)
       use ed_state_vars        , only : edtype             & ! structure
                                       , polygontype        & ! structure
                                       , sitetype           & ! structure
@@ -3428,7 +3720,7 @@ module average_utils
       !------------------------------------------------------------------------------------!
 
       return
-    end subroutine normalize_ed_dmean_vars
+    end subroutine normalize_ed_dmean_polygons
    !=======================================================================================!
    !=======================================================================================!
 
@@ -3439,11 +3731,11 @@ module average_utils
 
    !=======================================================================================!
    !=======================================================================================!
-   !  SUBROUTINE: ZERO_ED_TODAY_VARS        
+   !  SUBROUTINE: ZERO_ED_TODAY_POLYGONS
    !> \brief This subroutine resets the daily_averages for variables actually used in the
    !> integration.
    !---------------------------------------------------------------------------------------!
-   subroutine zero_ed_today_vars(cgrid)
+   subroutine zero_ed_today_polygons(cgrid)
       use ed_state_vars, only : edtype       & ! structure
                               , polygontype  & ! structure
                               , sitetype     & ! structure
@@ -3518,7 +3810,7 @@ module average_utils
       end do
       !------------------------------------------------------------------------------------!
       return
-   end subroutine zero_ed_today_vars
+   end subroutine zero_ed_today_polygons
    !=======================================================================================!
    !=======================================================================================!
 
@@ -3529,12 +3821,12 @@ module average_utils
 
    !=======================================================================================!
    !=======================================================================================!
-   !  SUBROUTINE: ZERO_ED_DX_VARS        
+   !  SUBROUTINE: ZERO_ED_DX_VARS
    !> \brief This subroutine resets the daily eXtreme (maximum,minimum) variables, once the
    !> variables have been used. Current only dmin/dmax water potentials are included. 
    !> \author Xiangtao Xu
    !---------------------------------------------------------------------------------------!
-   subroutine zero_ed_dx_vars(cgrid)
+   subroutine zero_ed_dx_polygons(cgrid)
       use ed_state_vars, only : edtype        & ! structure
                               , polygontype   & ! structure
                               , sitetype      & ! structure
@@ -3589,7 +3881,7 @@ module average_utils
       !------------------------------------------------------------------------------------!
 
       return
-   end subroutine zero_ed_dx_vars
+   end subroutine zero_ed_dx_polygons
    !=======================================================================================!
    !=======================================================================================!
 
@@ -3600,25 +3892,20 @@ module average_utils
 
    !=======================================================================================!
    !=======================================================================================!
-   !    This subroutine resets the daily averages once the daily average file has been     !
-   ! written and used to compute the monthly mean (in case the latter was requested).      !
+   ! SUBROUTINE ZERO_ED_DMEAN_POLYGONS
+   !> \brief This subroutine resets most daily averages.
+   !> \author Marcos Longo
+   !> \details This is called ahead of a new day. To keep compilation more manageable, we 
+   !> adopt a hierarchical approach. The main sub-routine resets polygon-level variables,
+   !> then calls a sub-routine to handle site-, patch-, and cohort-level variables.
    !---------------------------------------------------------------------------------------!
-   subroutine zero_ed_dmean_vars(cgrid)
-      use ed_state_vars, only : edtype        & ! structure
-                              , polygontype   & ! structure
-                              , sitetype      & ! structure
-                              , patchtype     ! ! structure
+   subroutine zero_ed_dmean_polygons(cgrid)
+      use ed_state_vars, only : edtype        ! ! structure
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       type(edtype)     , target  :: cgrid
       !----- Local variables. -------------------------------------------------------------!
-      type(polygontype), pointer :: cpoly
-      type(sitetype)   , pointer :: csite
-      type(patchtype)  , pointer :: cpatch
       integer                    :: ipy
-      integer                    :: isi
-      integer                    :: ipa
-      integer                    :: ico
       !------------------------------------------------------------------------------------!
 
 
@@ -3626,9 +3913,6 @@ module average_utils
       !       Loop over polygons.                                                          !
       !------------------------------------------------------------------------------------!
       polyloop: do ipy = 1,cgrid%npolygons
-         cpoly => cgrid%polygon(ipy)
-         
-         !----- Variables stored in edtype. -----------------------------------------------!
          cgrid%dmean_nppleaf            (ipy) = 0.0
          cgrid%dmean_nppfroot           (ipy) = 0.0
          cgrid%dmean_nppsapwood         (ipy) = 0.0
@@ -3794,213 +4078,345 @@ module average_utils
          cgrid%dmean_dpcpg              (ipy) = 0.0
 
          !---------------------------------------------------------------------------------!
-         !       Loop over sites.                                                          !
+         !   Call sub-routine that will reset site- (and patch- and cohort-) level daily   !
+         ! averages.                                                                       !
          !---------------------------------------------------------------------------------!
-         siteloop: do isi=1,cpoly%nsites
-            csite => cpoly%site(isi)
-
-            cpoly%daylight             (isi) = 0.0
-            cpoly%dmean_atm_theiv      (isi) = 0.0
-            cpoly%dmean_atm_theta      (isi) = 0.0
-            cpoly%dmean_atm_temp       (isi) = 0.0
-            cpoly%dmean_atm_vpdef      (isi) = 0.0
-            cpoly%dmean_atm_shv        (isi) = 0.0
-            cpoly%dmean_atm_rshort     (isi) = 0.0
-            cpoly%dmean_atm_rshort_diff(isi) = 0.0
-            cpoly%dmean_atm_par        (isi) = 0.0
-            cpoly%dmean_atm_par_diff   (isi) = 0.0
-            cpoly%dmean_atm_rlong      (isi) = 0.0
-            cpoly%dmean_atm_vels       (isi) = 0.0
-            cpoly%dmean_atm_rhos       (isi) = 0.0
-            cpoly%dmean_atm_prss       (isi) = 0.0
-            cpoly%dmean_atm_co2        (isi) = 0.0
-            cpoly%dmean_pcpg           (isi) = 0.0
-            cpoly%dmean_qpcpg          (isi) = 0.0
-            cpoly%dmean_dpcpg          (isi) = 0.0
-
-            !------------------------------------------------------------------------------!
-            !       Loop over sites.                                                       !
-            !------------------------------------------------------------------------------!
-            patchloop: do ipa=1,csite%npatches
-               cpatch => csite%patch(ipa)
-
-               csite%dmean_A_decomp         (ipa) = 0.0
-               csite%dmean_B_decomp         (ipa) = 0.0
-               csite%dmean_Af_decomp        (ipa) = 0.0
-               csite%dmean_Bf_decomp        (ipa) = 0.0
-               csite%dmean_co2_residual     (ipa) = 0.0
-               csite%dmean_energy_residual  (ipa) = 0.0
-               csite%dmean_water_residual   (ipa) = 0.0
-               csite%dmean_rh               (ipa) = 0.0
-               csite%dmean_fgc_rh           (ipa) = 0.0
-               csite%dmean_fsc_rh           (ipa) = 0.0
-               csite%dmean_stgc_rh          (ipa) = 0.0
-               csite%dmean_stsc_rh          (ipa) = 0.0
-               csite%dmean_msc_rh           (ipa) = 0.0
-               csite%dmean_ssc_rh           (ipa) = 0.0
-               csite%dmean_psc_rh           (ipa) = 0.0
-               csite%dmean_nep              (ipa) = 0.0
-               csite%dmean_rk4step          (ipa) = 0.0
-               csite%dmean_available_water  (ipa) = 0.0
-               csite%dmean_veg_displace     (ipa) = 0.0
-               csite%dmean_rough            (ipa) = 0.0
-               csite%dmean_can_theiv        (ipa) = 0.0
-               csite%dmean_can_theta        (ipa) = 0.0
-               csite%dmean_can_vpdef        (ipa) = 0.0
-               csite%dmean_can_temp         (ipa) = 0.0
-               csite%dmean_can_shv          (ipa) = 0.0
-               csite%dmean_can_co2          (ipa) = 0.0
-               csite%dmean_can_rhos         (ipa) = 0.0
-               csite%dmean_can_dmol         (ipa) = 0.0
-               csite%dmean_can_prss         (ipa) = 0.0
-               csite%dmean_gnd_temp         (ipa) = 0.0
-               csite%dmean_gnd_shv          (ipa) = 0.0
-               csite%dmean_can_ggnd         (ipa) = 0.0
-               csite%dmean_sfcw_depth       (ipa) = 0.0
-               csite%dmean_sfcw_energy      (ipa) = 0.0
-               csite%dmean_sfcw_mass        (ipa) = 0.0
-               csite%dmean_sfcw_temp        (ipa) = 0.0
-               csite%dmean_sfcw_fliq        (ipa) = 0.0
-               csite%dmean_snowfac          (ipa) = 0.0
-               csite%dmean_soil_energy    (:,ipa) = 0.0
-               csite%dmean_soil_mstpot    (:,ipa) = 0.0
-               csite%dmean_soil_water     (:,ipa) = 0.0
-               csite%dmean_soil_temp      (:,ipa) = 0.0
-               csite%dmean_soil_fliq      (:,ipa) = 0.0
-               csite%dmean_rshort_gnd       (ipa) = 0.0
-               csite%dmean_par_gnd          (ipa) = 0.0
-               csite%dmean_rlong_gnd        (ipa) = 0.0
-               csite%dmean_rlongup          (ipa) = 0.0
-               csite%dmean_parup            (ipa) = 0.0
-               csite%dmean_nirup            (ipa) = 0.0
-               csite%dmean_rshortup         (ipa) = 0.0
-               csite%dmean_rnet             (ipa) = 0.0
-               csite%dmean_albedo           (ipa) = 0.0
-               csite%dmean_albedo_par       (ipa) = 0.0
-               csite%dmean_albedo_nir       (ipa) = 0.0
-               csite%dmean_rlong_albedo     (ipa) = 0.0
-               csite%dmean_ustar            (ipa) = 0.0
-               csite%dmean_tstar            (ipa) = 0.0
-               csite%dmean_qstar            (ipa) = 0.0
-               csite%dmean_cstar            (ipa) = 0.0
-               csite%dmean_carbon_ac        (ipa) = 0.0
-               csite%dmean_carbon_st        (ipa) = 0.0
-               csite%dmean_vapor_gc         (ipa) = 0.0
-               csite%dmean_vapor_ac         (ipa) = 0.0
-               csite%dmean_smoist_gg      (:,ipa) = 0.0
-               csite%dmean_throughfall      (ipa) = 0.0
-               csite%dmean_transloss      (:,ipa) = 0.0
-               csite%dmean_runoff           (ipa) = 0.0
-               csite%dmean_drainage         (ipa) = 0.0
-               csite%dmean_sensible_gc      (ipa) = 0.0
-               csite%dmean_sensible_ac      (ipa) = 0.0
-               csite%dmean_sensible_gg    (:,ipa) = 0.0
-               csite%dmean_qthroughfall     (ipa) = 0.0
-               csite%dmean_qrunoff          (ipa) = 0.0
-               csite%dmean_qdrainage        (ipa) = 0.0
-
-
-
-               !---------------------------------------------------------------------------!
-               !       Loop over cohorts.                                                  !
-               !---------------------------------------------------------------------------!
-               cohortloop: do ico=1, cpatch%ncohorts
-                  cpatch%dmean_nppleaf           (ico) = 0.0
-                  cpatch%dmean_nppfroot          (ico) = 0.0
-                  cpatch%dmean_nppsapwood        (ico) = 0.0
-                  cpatch%dmean_nppbark           (ico) = 0.0
-                  cpatch%dmean_nppcroot          (ico) = 0.0
-                  cpatch%dmean_nppseeds          (ico) = 0.0
-                  cpatch%dmean_nppwood           (ico) = 0.0
-                  cpatch%dmean_nppdaily          (ico) = 0.0
-                  cpatch%dmean_gpp               (ico) = 0.0
-                  cpatch%dmean_npp               (ico) = 0.0
-                  cpatch%dmean_leaf_resp         (ico) = 0.0
-                  cpatch%dmean_root_resp         (ico) = 0.0
-                  cpatch%dmean_stem_resp         (ico) = 0.0
-                  cpatch%dmean_leaf_growth_resp  (ico) = 0.0
-                  cpatch%dmean_root_growth_resp  (ico) = 0.0
-                  cpatch%dmean_sapa_growth_resp  (ico) = 0.0
-                  cpatch%dmean_sapb_growth_resp  (ico) = 0.0
-                  cpatch%dmean_barka_growth_resp (ico) = 0.0
-                  cpatch%dmean_barkb_growth_resp (ico) = 0.0
-                  cpatch%dmean_leaf_storage_resp (ico) = 0.0
-                  cpatch%dmean_root_storage_resp (ico) = 0.0
-                  cpatch%dmean_sapa_storage_resp (ico) = 0.0
-                  cpatch%dmean_sapb_storage_resp (ico) = 0.0
-                  cpatch%dmean_barka_storage_resp(ico) = 0.0
-                  cpatch%dmean_barkb_storage_resp(ico) = 0.0
-                  cpatch%dmean_plresp            (ico) = 0.0
-                  cpatch%dmean_leaf_energy       (ico) = 0.0
-                  cpatch%dmean_leaf_water        (ico) = 0.0
-                  cpatch%dmean_leaf_hcap         (ico) = 0.0
-                  cpatch%dmean_leaf_vpdef        (ico) = 0.0
-                  cpatch%dmean_leaf_temp         (ico) = 0.0
-                  cpatch%dmean_leaf_fliq         (ico) = 0.0
-                  cpatch%dmean_leaf_gsw          (ico) = 0.0
-                  cpatch%dmean_leaf_gbw          (ico) = 0.0
-                  cpatch%dmean_wood_energy       (ico) = 0.0
-                  cpatch%dmean_wood_water        (ico) = 0.0
-                  cpatch%dmean_wood_hcap         (ico) = 0.0
-                  cpatch%dmean_wood_temp         (ico) = 0.0
-                  cpatch%dmean_wood_fliq         (ico) = 0.0
-                  cpatch%dmean_wood_gbw          (ico) = 0.0
-                  cpatch%dmean_fs_open           (ico) = 0.0
-                  cpatch%dmean_fsw               (ico) = 0.0
-                  cpatch%dmean_fsn               (ico) = 0.0
-                  cpatch%dmean_a_open            (ico) = 0.0
-                  cpatch%dmean_a_closed          (ico) = 0.0
-                  cpatch%dmean_a_net             (ico) = 0.0
-                  cpatch%dmean_a_light           (ico) = 0.0
-                  cpatch%dmean_a_rubp            (ico) = 0.0
-                  cpatch%dmean_a_co2             (ico) = 0.0
-                  cpatch%dmean_psi_open          (ico) = 0.0
-                  cpatch%dmean_psi_closed        (ico) = 0.0
-                  cpatch%dmean_water_supply      (ico) = 0.0
-                  cpatch%dmean_light_level       (ico) = 0.0
-                  cpatch%dmean_light_level_beam  (ico) = 0.0
-                  cpatch%dmean_light_level_diff  (ico) = 0.0
-
-                  cpatch%dmean_par_level_beam    (ico) = 0.0
-                  cpatch%dmean_par_level_diffd   (ico) = 0.0
-                  cpatch%dmean_par_level_diffu   (ico) = 0.0
-
-                  cpatch%dmean_par_l             (ico) = 0.0
-                  cpatch%dmean_par_l_beam        (ico) = 0.0
-                  cpatch%dmean_par_l_diff        (ico) = 0.0
-                  cpatch%dmean_rshort_l          (ico) = 0.0
-                  cpatch%dmean_rlong_l           (ico) = 0.0
-                  cpatch%dmean_sensible_lc       (ico) = 0.0
-                  cpatch%dmean_vapor_lc          (ico) = 0.0
-                  cpatch%dmean_transp            (ico) = 0.0
-                  cpatch%dmean_intercepted_al    (ico) = 0.0
-                  cpatch%dmean_wshed_lg          (ico) = 0.0
-                  cpatch%dmean_rshort_w          (ico) = 0.0
-                  cpatch%dmean_rlong_w           (ico) = 0.0
-                  cpatch%dmean_rad_profile     (:,ico) = 0.0
-                  cpatch%dmean_sensible_wc       (ico) = 0.0
-                  cpatch%dmean_vapor_wc          (ico) = 0.0
-                  cpatch%dmean_intercepted_aw    (ico) = 0.0
-                  cpatch%dmean_wshed_wg          (ico) = 0.0
-
-                  cpatch%dmean_leaf_water_int    (ico) = 0.0
-                  cpatch%dmean_leaf_water_im2    (ico) = 0.0
-                  cpatch%dmean_wood_water_int    (ico) = 0.0
-                  cpatch%dmean_wood_water_im2    (ico) = 0.0
-                  cpatch%dmean_wflux_wl          (ico) = 0.0
-                  cpatch%dmean_wflux_gw          (ico) = 0.0
-                  cpatch%dmean_wflux_gw_layer  (:,ico) = 0.0
-               end do cohortloop
-               !---------------------------------------------------------------------------!
-            end do patchloop
-            !------------------------------------------------------------------------------!
-         end do siteloop
+         call zero_ed_dmean_sites(cgrid,ipy)
          !---------------------------------------------------------------------------------!
       end do polyloop
       !------------------------------------------------------------------------------------!
 
       return
-   end subroutine zero_ed_dmean_vars
+   end subroutine zero_ed_dmean_polygons
+   !=======================================================================================!
+   !=======================================================================================!
+   !=======================================================================================!
+   !=======================================================================================!
+   !=======================================================================================!
+   !=======================================================================================!
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   ! SUBROUTINE ZERO_ED_DMEAN_SITES
+   !> \brief This subroutine resets most daily averages.
+   !> \author Marcos Longo
+   !> \details This is called ahead of a new day. To keep compilation more manageable, we 
+   !> adopt a hierarchical approach. This sub-routine resets site-level variables, then 
+   !> calls a sub-routine to handle patch-, and cohort-level variables.
+   !---------------------------------------------------------------------------------------!
+   subroutine zero_ed_dmean_sites(cgrid,ipy)
+      use ed_state_vars, only : edtype        & ! structure
+                              , polygontype   ! ! structure
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      type(edtype)     , target     :: cgrid
+      integer          , intent(in) :: ipy
+      !----- Local variables. -------------------------------------------------------------!
+      type(polygontype), pointer    :: cpoly
+      integer                       :: isi
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !    Select polygon then loop through sites.                                         !
+      !------------------------------------------------------------------------------------!
+      cpoly => cgrid%polygon(ipy)
+      siteloop: do isi=1,cpoly%nsites
+         cpoly%daylight             (isi) = 0.0
+         cpoly%dmean_atm_theiv      (isi) = 0.0
+         cpoly%dmean_atm_theta      (isi) = 0.0
+         cpoly%dmean_atm_temp       (isi) = 0.0
+         cpoly%dmean_atm_vpdef      (isi) = 0.0
+         cpoly%dmean_atm_shv        (isi) = 0.0
+         cpoly%dmean_atm_rshort     (isi) = 0.0
+         cpoly%dmean_atm_rshort_diff(isi) = 0.0
+         cpoly%dmean_atm_par        (isi) = 0.0
+         cpoly%dmean_atm_par_diff   (isi) = 0.0
+         cpoly%dmean_atm_rlong      (isi) = 0.0
+         cpoly%dmean_atm_vels       (isi) = 0.0
+         cpoly%dmean_atm_rhos       (isi) = 0.0
+         cpoly%dmean_atm_prss       (isi) = 0.0
+         cpoly%dmean_atm_co2        (isi) = 0.0
+         cpoly%dmean_pcpg           (isi) = 0.0
+         cpoly%dmean_qpcpg          (isi) = 0.0
+         cpoly%dmean_dpcpg          (isi) = 0.0
+
+
+         !---------------------------------------------------------------------------------!
+         !   Call sub-routine that will reset patch- (and cohort-) level variables.        !
+         !---------------------------------------------------------------------------------!
+         call zero_ed_dmean_patches(cpoly,isi)
+         !---------------------------------------------------------------------------------!
+      end do siteloop
+      !------------------------------------------------------------------------------------!
+
+      return
+   end subroutine zero_ed_dmean_sites
+   !=======================================================================================!
+   !=======================================================================================!
+   !=======================================================================================!
+   !=======================================================================================!
+   !=======================================================================================!
+   !=======================================================================================!
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   ! SUBROUTINE ZERO_ED_DMEAN_PATCHES
+   !> \brief This subroutine resets most daily averages.
+   !> \author Marcos Longo
+   !> \details This is called ahead of a new day. To keep compilation more manageable, we 
+   !> adopt a hierarchical approach. This sub-routine resets patch-level variables, then
+   !> calls a sub-routine to handle cohort-level variables.
+   !---------------------------------------------------------------------------------------!
+   subroutine zero_ed_dmean_patches(cpoly,isi)
+      use ed_state_vars, only : polygontype   & ! structure
+                              , sitetype      ! ! structure
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      type(polygontype), target     :: cpoly
+      integer          , intent(in) :: isi
+      !----- Local variables. -------------------------------------------------------------!
+      type(sitetype)   , pointer :: csite
+      integer                    :: ipa
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !   Select site then loop through patches.                                           !
+      !------------------------------------------------------------------------------------!
+      csite => cpoly%site(isi)
+      patchloop: do ipa=1,csite%npatches
+
+         csite%dmean_A_decomp         (ipa) = 0.0
+         csite%dmean_B_decomp         (ipa) = 0.0
+         csite%dmean_Af_decomp        (ipa) = 0.0
+         csite%dmean_Bf_decomp        (ipa) = 0.0
+         csite%dmean_co2_residual     (ipa) = 0.0
+         csite%dmean_energy_residual  (ipa) = 0.0
+         csite%dmean_water_residual   (ipa) = 0.0
+         csite%dmean_rh               (ipa) = 0.0
+         csite%dmean_fgc_rh           (ipa) = 0.0
+         csite%dmean_fsc_rh           (ipa) = 0.0
+         csite%dmean_stgc_rh          (ipa) = 0.0
+         csite%dmean_stsc_rh          (ipa) = 0.0
+         csite%dmean_msc_rh           (ipa) = 0.0
+         csite%dmean_ssc_rh           (ipa) = 0.0
+         csite%dmean_psc_rh           (ipa) = 0.0
+         csite%dmean_nep              (ipa) = 0.0
+         csite%dmean_rk4step          (ipa) = 0.0
+         csite%dmean_available_water  (ipa) = 0.0
+         csite%dmean_veg_displace     (ipa) = 0.0
+         csite%dmean_rough            (ipa) = 0.0
+         csite%dmean_can_theiv        (ipa) = 0.0
+         csite%dmean_can_theta        (ipa) = 0.0
+         csite%dmean_can_vpdef        (ipa) = 0.0
+         csite%dmean_can_temp         (ipa) = 0.0
+         csite%dmean_can_shv          (ipa) = 0.0
+         csite%dmean_can_co2          (ipa) = 0.0
+         csite%dmean_can_rhos         (ipa) = 0.0
+         csite%dmean_can_dmol         (ipa) = 0.0
+         csite%dmean_can_prss         (ipa) = 0.0
+         csite%dmean_gnd_temp         (ipa) = 0.0
+         csite%dmean_gnd_shv          (ipa) = 0.0
+         csite%dmean_can_ggnd         (ipa) = 0.0
+         csite%dmean_sfcw_depth       (ipa) = 0.0
+         csite%dmean_sfcw_energy      (ipa) = 0.0
+         csite%dmean_sfcw_mass        (ipa) = 0.0
+         csite%dmean_sfcw_temp        (ipa) = 0.0
+         csite%dmean_sfcw_fliq        (ipa) = 0.0
+         csite%dmean_snowfac          (ipa) = 0.0
+         csite%dmean_soil_energy    (:,ipa) = 0.0
+         csite%dmean_soil_mstpot    (:,ipa) = 0.0
+         csite%dmean_soil_water     (:,ipa) = 0.0
+         csite%dmean_soil_temp      (:,ipa) = 0.0
+         csite%dmean_soil_fliq      (:,ipa) = 0.0
+         csite%dmean_rshort_gnd       (ipa) = 0.0
+         csite%dmean_par_gnd          (ipa) = 0.0
+         csite%dmean_rlong_gnd        (ipa) = 0.0
+         csite%dmean_rlongup          (ipa) = 0.0
+         csite%dmean_parup            (ipa) = 0.0
+         csite%dmean_nirup            (ipa) = 0.0
+         csite%dmean_rshortup         (ipa) = 0.0
+         csite%dmean_rnet             (ipa) = 0.0
+         csite%dmean_albedo           (ipa) = 0.0
+         csite%dmean_albedo_par       (ipa) = 0.0
+         csite%dmean_albedo_nir       (ipa) = 0.0
+         csite%dmean_rlong_albedo     (ipa) = 0.0
+         csite%dmean_ustar            (ipa) = 0.0
+         csite%dmean_tstar            (ipa) = 0.0
+         csite%dmean_qstar            (ipa) = 0.0
+         csite%dmean_cstar            (ipa) = 0.0
+         csite%dmean_carbon_ac        (ipa) = 0.0
+         csite%dmean_carbon_st        (ipa) = 0.0
+         csite%dmean_vapor_gc         (ipa) = 0.0
+         csite%dmean_vapor_ac         (ipa) = 0.0
+         csite%dmean_smoist_gg      (:,ipa) = 0.0
+         csite%dmean_throughfall      (ipa) = 0.0
+         csite%dmean_transloss      (:,ipa) = 0.0
+         csite%dmean_runoff           (ipa) = 0.0
+         csite%dmean_drainage         (ipa) = 0.0
+         csite%dmean_sensible_gc      (ipa) = 0.0
+         csite%dmean_sensible_ac      (ipa) = 0.0
+         csite%dmean_sensible_gg    (:,ipa) = 0.0
+         csite%dmean_qthroughfall     (ipa) = 0.0
+         csite%dmean_qrunoff          (ipa) = 0.0
+         csite%dmean_qdrainage        (ipa) = 0.0
+
+
+         !---------------------------------------------------------------------------------!
+         !   Call sub-routine that will reset cohort-level variables.                      !
+         !---------------------------------------------------------------------------------!
+         call zero_ed_dmean_cohorts(csite,ipa)
+         !---------------------------------------------------------------------------------!
+      end do patchloop
+      !------------------------------------------------------------------------------------!
+
+      return
+   end subroutine zero_ed_dmean_patches
+   !=======================================================================================!
+   !=======================================================================================!
+   !=======================================================================================!
+   !=======================================================================================!
+   !=======================================================================================!
+   !=======================================================================================!
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   ! SUBROUTINE ZERO_ED_DMEAN_COHORTS
+   !> \brief This subroutine resets most daily averages.
+   !> \author Marcos Longo
+   !> \details This is called ahead of a new day. To keep compilation more manageable, we 
+   !> adopt a hierarchical approach.
+   !---------------------------------------------------------------------------------------!
+   subroutine zero_ed_dmean_cohorts(csite,ipa)
+      use ed_state_vars, only : sitetype      & ! structure
+                              , patchtype     ! ! structure
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      type(sitetype)   , target     :: csite
+      integer          , intent(in) :: ipa
+      !----- Local variables. -------------------------------------------------------------!
+      type(patchtype)  , pointer    :: cpatch
+      integer                       :: ico
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !   Select patch, then loop through cohorts.                                         !
+      !------------------------------------------------------------------------------------!
+      cpatch => csite%patch(ipa)
+      cohortloop: do ico=1, cpatch%ncohorts
+         cpatch%dmean_nppleaf           (ico) = 0.0
+         cpatch%dmean_nppfroot          (ico) = 0.0
+         cpatch%dmean_nppsapwood        (ico) = 0.0
+         cpatch%dmean_nppbark           (ico) = 0.0
+         cpatch%dmean_nppcroot          (ico) = 0.0
+         cpatch%dmean_nppseeds          (ico) = 0.0
+         cpatch%dmean_nppwood           (ico) = 0.0
+         cpatch%dmean_nppdaily          (ico) = 0.0
+         cpatch%dmean_gpp               (ico) = 0.0
+         cpatch%dmean_npp               (ico) = 0.0
+         cpatch%dmean_leaf_resp         (ico) = 0.0
+         cpatch%dmean_root_resp         (ico) = 0.0
+         cpatch%dmean_stem_resp         (ico) = 0.0
+         cpatch%dmean_leaf_growth_resp  (ico) = 0.0
+         cpatch%dmean_root_growth_resp  (ico) = 0.0
+         cpatch%dmean_sapa_growth_resp  (ico) = 0.0
+         cpatch%dmean_sapb_growth_resp  (ico) = 0.0
+         cpatch%dmean_barka_growth_resp (ico) = 0.0
+         cpatch%dmean_barkb_growth_resp (ico) = 0.0
+         cpatch%dmean_leaf_storage_resp (ico) = 0.0
+         cpatch%dmean_root_storage_resp (ico) = 0.0
+         cpatch%dmean_sapa_storage_resp (ico) = 0.0
+         cpatch%dmean_sapb_storage_resp (ico) = 0.0
+         cpatch%dmean_barka_storage_resp(ico) = 0.0
+         cpatch%dmean_barkb_storage_resp(ico) = 0.0
+         cpatch%dmean_plresp            (ico) = 0.0
+         cpatch%dmean_leaf_energy       (ico) = 0.0
+         cpatch%dmean_leaf_water        (ico) = 0.0
+         cpatch%dmean_leaf_hcap         (ico) = 0.0
+         cpatch%dmean_leaf_vpdef        (ico) = 0.0
+         cpatch%dmean_leaf_temp         (ico) = 0.0
+         cpatch%dmean_leaf_fliq         (ico) = 0.0
+         cpatch%dmean_leaf_gsw          (ico) = 0.0
+         cpatch%dmean_leaf_gbw          (ico) = 0.0
+         cpatch%dmean_wood_energy       (ico) = 0.0
+         cpatch%dmean_wood_water        (ico) = 0.0
+         cpatch%dmean_wood_hcap         (ico) = 0.0
+         cpatch%dmean_wood_temp         (ico) = 0.0
+         cpatch%dmean_wood_fliq         (ico) = 0.0
+         cpatch%dmean_wood_gbw          (ico) = 0.0
+         cpatch%dmean_fs_open           (ico) = 0.0
+         cpatch%dmean_fsw               (ico) = 0.0
+         cpatch%dmean_fsn               (ico) = 0.0
+         cpatch%dmean_a_open            (ico) = 0.0
+         cpatch%dmean_a_closed          (ico) = 0.0
+         cpatch%dmean_a_net             (ico) = 0.0
+         cpatch%dmean_a_light           (ico) = 0.0
+         cpatch%dmean_a_rubp            (ico) = 0.0
+         cpatch%dmean_a_co2             (ico) = 0.0
+         cpatch%dmean_psi_open          (ico) = 0.0
+         cpatch%dmean_psi_closed        (ico) = 0.0
+         cpatch%dmean_water_supply      (ico) = 0.0
+         cpatch%dmean_light_level       (ico) = 0.0
+         cpatch%dmean_light_level_beam  (ico) = 0.0
+         cpatch%dmean_light_level_diff  (ico) = 0.0
+
+         cpatch%dmean_par_level_beam    (ico) = 0.0
+         cpatch%dmean_par_level_diffd   (ico) = 0.0
+         cpatch%dmean_par_level_diffu   (ico) = 0.0
+
+         cpatch%dmean_par_l             (ico) = 0.0
+         cpatch%dmean_par_l_beam        (ico) = 0.0
+         cpatch%dmean_par_l_diff        (ico) = 0.0
+         cpatch%dmean_rshort_l          (ico) = 0.0
+         cpatch%dmean_rlong_l           (ico) = 0.0
+         cpatch%dmean_sensible_lc       (ico) = 0.0
+         cpatch%dmean_vapor_lc          (ico) = 0.0
+         cpatch%dmean_transp            (ico) = 0.0
+         cpatch%dmean_intercepted_al    (ico) = 0.0
+         cpatch%dmean_wshed_lg          (ico) = 0.0
+         cpatch%dmean_rshort_w          (ico) = 0.0
+         cpatch%dmean_rlong_w           (ico) = 0.0
+         cpatch%dmean_rad_profile     (:,ico) = 0.0
+         cpatch%dmean_sensible_wc       (ico) = 0.0
+         cpatch%dmean_vapor_wc          (ico) = 0.0
+         cpatch%dmean_intercepted_aw    (ico) = 0.0
+         cpatch%dmean_wshed_wg          (ico) = 0.0
+
+         cpatch%dmean_leaf_water_int    (ico) = 0.0
+         cpatch%dmean_leaf_water_im2    (ico) = 0.0
+         cpatch%dmean_wood_water_int    (ico) = 0.0
+         cpatch%dmean_wood_water_im2    (ico) = 0.0
+         cpatch%dmean_wflux_wl          (ico) = 0.0
+         cpatch%dmean_wflux_gw          (ico) = 0.0
+         cpatch%dmean_wflux_gw_layer  (:,ico) = 0.0
+      end do cohortloop
+      !------------------------------------------------------------------------------------!
+
+      return
+   end subroutine zero_ed_dmean_cohorts
    !=======================================================================================!
    !=======================================================================================!
    !=======================================================================================!
@@ -4038,23 +4454,18 @@ module average_utils
 
    !=======================================================================================!
    !=======================================================================================!
-   !  SUBROUTINE: INTEGRATE_ED_MMEAN_VARS   
+   !  SUBROUTINE: INTEGRATE_ED_MMEAN_POLYGONS  
    !> \brief This subroutine integrates most of the monthly mean variables. This sub-routine   
-   !> is called after the dmean variables have been normalised, so we can take advantage of
-   !> their values.\n
+   !> is called after the dmean variables have been normalised.\n
    !> \details A few variables are _NOT_ integrated here: quantities such as temperature and
    !> liquid fraction are found after the monthly mean of the extensive quantities have
    !> been normalised. Also, polygon-level variables that were not integrated to the daily
    !> means are not integrated here, they are found after the monthly mean at the native
-   !> level has been found.
+   !> level has been found. This subroutine will integrate polygon-level variables, then
+   !> call sub-routines that will handle site- (and patch- and cohort-) level variables.
    !---------------------------------------------------------------------------------------!
-   subroutine integrate_ed_mmean_vars(cgrid)
-      use ed_state_vars, only : edtype       & ! structure
-                              , polygontype  & ! structure
-                              , sitetype     & ! structure
-                              , patchtype    ! ! structure
-      use ed_max_dims  , only : n_dbh        & ! intent(in)
-                              , n_pft        ! ! intent(in)
+   subroutine integrate_ed_mmean_polygons(cgrid)
+      use ed_state_vars, only : edtype       ! ! structure
       use consts_coms  , only : yr_day       ! ! intent(in)
       use ed_misc_coms , only : current_time & ! intent(in)
                               , simtime      ! ! structure
@@ -4062,21 +4473,10 @@ module average_utils
       !----- Argument. --------------------------------------------------------------------!
       type(edtype)      , target    :: cgrid
       !----- Local variables. -------------------------------------------------------------!
-      type(polygontype) , pointer   :: cpoly
-      type(sitetype)    , pointer   :: csite
-      type(patchtype)   , pointer   :: cpatch
       type(simtime)                 :: daybefore
       integer                       :: ipy
-      integer                       :: isi
-      integer                       :: ipa
-      integer                       :: ico
-      integer                       :: ipft
       integer                       :: ndays
       real                          :: ndaysi
-      !----- Local constants. -------------------------------------------------------------!
-      character(len=10), parameter :: fmti='(a,1x,i14)'
-      character(len=13), parameter :: fmtf='(a,1x,es14.7)'
-      character(len=27), parameter :: fmtt='(a,i4.4,2(1x,i2.2),1x,f6.0)'
       !------------------------------------------------------------------------------------!
 
 
@@ -4093,8 +4493,6 @@ module average_utils
       !      Loop over polygons.                                                           !
       !------------------------------------------------------------------------------------!
       polyloop: do ipy=1,cgrid%npolygons
-         cpoly => cgrid%polygon(ipy)
-
          !---------------------------------------------------------------------------------!
          !    The following variables don't have daily means, but the instantaneous value  !
          ! is fine because they are updated only once a day.                               !
@@ -4765,832 +5163,16 @@ module average_utils
 
 
          !---------------------------------------------------------------------------------!
-         !      Site loop.                                                                 !
+         !   Call the sub-routine that will integrate site- (and patch- and cohort-) level !
+         ! variables.                                                                      !
          !---------------------------------------------------------------------------------!
-         siteloop: do isi=1,cpoly%nsites
-            csite => cpoly%site(isi)
-
-            !------------------------------------------------------------------------------!
-            !    Integrate site-level variables.                                           !
-            !------------------------------------------------------------------------------!
-            cpoly%mmean_atm_theiv      (isi) = cpoly%mmean_atm_theiv      (isi)            &
-                                             + cpoly%dmean_atm_theiv      (isi)            &
-                                             * ndaysi
-            cpoly%mmean_atm_theta      (isi) = cpoly%mmean_atm_theta      (isi)            &
-                                             + cpoly%dmean_atm_theta      (isi)            &
-                                             * ndaysi
-            cpoly%mmean_atm_vpdef      (isi) = cpoly%mmean_atm_vpdef      (isi)            &
-                                             + cpoly%dmean_atm_vpdef      (isi)            &
-                                             * ndaysi
-            cpoly%mmean_atm_shv        (isi) = cpoly%mmean_atm_shv        (isi)            &
-                                             + cpoly%dmean_atm_shv        (isi)            &
-                                             * ndaysi
-            cpoly%mmean_atm_rshort     (isi) = cpoly%mmean_atm_rshort     (isi)            &
-                                             + cpoly%dmean_atm_rshort     (isi)            &
-                                             * ndaysi
-            cpoly%mmean_atm_rshort_diff(isi) = cpoly%mmean_atm_rshort_diff(isi)            &
-                                             + cpoly%dmean_atm_rshort_diff(isi)            &
-                                             * ndaysi
-            cpoly%mmean_atm_par        (isi) = cpoly%mmean_atm_par        (isi)            &
-                                             + cpoly%dmean_atm_par        (isi)            &
-                                             * ndaysi
-            cpoly%mmean_atm_par_diff   (isi) = cpoly%mmean_atm_par_diff   (isi)            &
-                                             + cpoly%dmean_atm_par_diff   (isi)            &
-                                             * ndaysi
-            cpoly%mmean_atm_rlong      (isi) = cpoly%mmean_atm_rlong      (isi)            &
-                                             + cpoly%dmean_atm_rlong      (isi)            &
-                                             * ndaysi
-            cpoly%mmean_atm_vels       (isi) = cpoly%mmean_atm_vels       (isi)            &
-                                             + cpoly%dmean_atm_vels       (isi)            &
-                                             * ndaysi
-            cpoly%mmean_atm_prss       (isi) = cpoly%mmean_atm_prss       (isi)            &
-                                             + cpoly%dmean_atm_prss       (isi)            &
-                                             * ndaysi
-            cpoly%mmean_atm_co2        (isi) = cpoly%mmean_atm_co2        (isi)            &
-                                             + cpoly%dmean_atm_co2        (isi)            &
-                                             * ndaysi
-            cpoly%mmean_pcpg           (isi) = cpoly%mmean_pcpg           (isi)            &
-                                             + cpoly%dmean_pcpg           (isi)            &
-                                             * ndaysi
-            cpoly%mmean_qpcpg          (isi) = cpoly%mmean_qpcpg          (isi)            &
-                                             + cpoly%dmean_qpcpg          (isi)            &
-                                             * ndaysi
-            cpoly%mmean_dpcpg          (isi) = cpoly%mmean_dpcpg          (isi)            &
-                                             + cpoly%dmean_dpcpg          (isi)            &
-                                             * ndaysi
-            !------------------------------------------------------------------------------!
-
-
-
-            !------------------------------------------------------------------------------!
-            !      Patch loop.                                                             !
-            !------------------------------------------------------------------------------!
-            patchloop: do ipa=1,csite%npatches
-               cpatch => csite%patch(ipa)
-
-               !---------------------------------------------------------------------------!
-               !      Integrate the variables that don't have daily means because their    !
-               ! time step is one day.                                                     !
-               !---------------------------------------------------------------------------!
-               csite%mmean_fast_grnd_c      (ipa) = csite%mmean_fast_grnd_c      (ipa)     &
-                                                  + csite%fast_grnd_c            (ipa)     &
-                                                  * ndaysi
-               csite%mmean_fast_soil_c      (ipa) = csite%mmean_fast_soil_c      (ipa)     &
-                                                  + csite%fast_soil_c            (ipa)     &
-                                                  * ndaysi
-               csite%mmean_struct_grnd_c    (ipa) = csite%mmean_struct_grnd_c    (ipa)     &
-                                                  + csite%structural_grnd_c      (ipa)     &
-                                                  * ndaysi
-               csite%mmean_struct_soil_c    (ipa) = csite%mmean_struct_soil_c    (ipa)     &
-                                                  + csite%structural_soil_c      (ipa)     &
-                                                  * ndaysi
-               csite%mmean_struct_grnd_l    (ipa) = csite%mmean_struct_grnd_l    (ipa)     &
-                                                  + csite%structural_grnd_l      (ipa)     &
-                                                  * ndaysi
-               csite%mmean_struct_soil_l    (ipa) = csite%mmean_struct_soil_l    (ipa)     &
-                                                  + csite%structural_soil_l      (ipa)     &
-                                                  * ndaysi
-               csite%mmean_microbe_soil_c   (ipa) = csite%mmean_microbe_soil_c   (ipa)     &
-                                                  + csite%microbial_soil_c       (ipa)     &
-                                                  * ndaysi
-               csite%mmean_slow_soil_c      (ipa) = csite%mmean_slow_soil_c      (ipa)     &
-                                                  + csite%slow_soil_c            (ipa)     &
-                                                  * ndaysi
-               csite%mmean_passive_soil_c   (ipa) = csite%mmean_passive_soil_c   (ipa)     &
-                                                  + csite%passive_soil_c         (ipa)     &
-                                                  * ndaysi
-               csite%mmean_fast_grnd_n      (ipa) = csite%mmean_fast_grnd_n      (ipa)     &
-                                                  + csite%fast_grnd_n            (ipa)     &
-                                                  * ndaysi
-               csite%mmean_fast_soil_n      (ipa) = csite%mmean_fast_soil_n      (ipa)     &
-                                                  + csite%fast_soil_n            (ipa)     &
-                                                  * ndaysi
-               csite%mmean_struct_grnd_n    (ipa) = csite%mmean_struct_grnd_n    (ipa)     &
-                                                  + csite%structural_grnd_n      (ipa)     &
-                                                  * ndaysi
-               csite%mmean_struct_soil_n    (ipa) = csite%mmean_struct_soil_n    (ipa)     &
-                                                  + csite%structural_soil_n      (ipa)     &
-                                                  * ndaysi
-               csite%mmean_mineral_soil_n   (ipa) = csite%mmean_mineral_soil_n   (ipa)     &
-                                                  + csite%mineralized_soil_n     (ipa)     &
-                                                  * ndaysi
-               csite%mmean_fgc_in           (ipa) = csite%mmean_fgc_in           (ipa)     &
-                                                  + csite%fgc_in                 (ipa)     &
-                                                  * ndaysi * yr_day
-               csite%mmean_fsc_in           (ipa) = csite%mmean_fsc_in           (ipa)     &
-                                                  + csite%fsc_in                 (ipa)     &
-                                                  * ndaysi * yr_day
-               csite%mmean_stgc_in          (ipa) = csite%mmean_stgc_in          (ipa)     &
-                                                  + csite%stgc_in                (ipa)     &
-                                                  * ndaysi * yr_day
-               csite%mmean_stsc_in          (ipa) = csite%mmean_stsc_in          (ipa)     &
-                                                  + csite%stsc_in                (ipa)     &
-                                                  * ndaysi * yr_day
-               !---------------------------------------------------------------------------!
-
-
-
-
-               !---------------------------------------------------------------------------!
-               !      Integrate patch-level variables.                                     !
-               !---------------------------------------------------------------------------!
-               csite%mmean_co2_residual     (ipa) = csite%mmean_co2_residual     (ipa)     &
-                                                  + csite%dmean_co2_residual     (ipa)     &
-                                                  * ndaysi
-               csite%mmean_energy_residual  (ipa) = csite%mmean_energy_residual  (ipa)     &
-                                                  + csite%dmean_energy_residual  (ipa)     &
-                                                  * ndaysi
-               csite%mmean_water_residual   (ipa) = csite%mmean_water_residual   (ipa)     &
-                                                  + csite%dmean_water_residual   (ipa)     &
-                                                  * ndaysi
-               csite%mmean_rh               (ipa) = csite%mmean_rh               (ipa)     &
-                                                  + csite%dmean_rh               (ipa)     &
-                                                  * ndaysi
-               csite%mmean_fgc_rh           (ipa) = csite%mmean_fgc_rh           (ipa)     &
-                                                  + csite%dmean_fgc_rh           (ipa)     &
-                                                  * ndaysi
-               csite%mmean_fsc_rh           (ipa) = csite%mmean_fsc_rh           (ipa)     &
-                                                  + csite%dmean_fsc_rh           (ipa)     &
-                                                  * ndaysi
-               csite%mmean_stgc_rh          (ipa) = csite%mmean_stgc_rh          (ipa)     &
-                                                  + csite%dmean_stgc_rh          (ipa)     &
-                                                  * ndaysi
-               csite%mmean_stsc_rh          (ipa) = csite%mmean_stsc_rh          (ipa)     &
-                                                  + csite%dmean_stsc_rh          (ipa)     &
-                                                  * ndaysi
-               csite%mmean_msc_rh           (ipa) = csite%mmean_msc_rh           (ipa)     &
-                                                  + csite%dmean_msc_rh           (ipa)     &
-                                                  * ndaysi
-               csite%mmean_ssc_rh           (ipa) = csite%mmean_ssc_rh           (ipa)     &
-                                                  + csite%dmean_ssc_rh           (ipa)     &
-                                                  * ndaysi
-               csite%mmean_psc_rh           (ipa) = csite%mmean_psc_rh           (ipa)     &
-                                                  + csite%dmean_psc_rh           (ipa)     &
-                                                  * ndaysi
-               csite%mmean_nep              (ipa) = csite%mmean_nep              (ipa)     &
-                                                  + csite%dmean_nep              (ipa)     &
-                                                  * ndaysi
-               csite%mmean_A_decomp         (ipa) = csite%mmean_A_decomp         (ipa)     &
-                                                  + csite%dmean_A_decomp         (ipa)     &
-                                                  * ndaysi
-               csite%mmean_B_decomp         (ipa) = csite%mmean_B_decomp         (ipa)     &
-                                                  + csite%dmean_B_decomp         (ipa)     &
-                                                  * ndaysi
-               csite%mmean_Af_decomp        (ipa) = csite%mmean_Af_decomp        (ipa)     &
-                                                  + csite%dmean_Af_decomp        (ipa)     &
-                                                  * ndaysi
-               csite%mmean_Bf_decomp        (ipa) = csite%mmean_Bf_decomp        (ipa)     &
-                                                  + csite%dmean_Bf_decomp        (ipa)     &
-                                                  * ndaysi
-               csite%mmean_rk4step          (ipa) = csite%mmean_rk4step          (ipa)     &
-                                                  + csite%dmean_rk4step          (ipa)     &
-                                                  * ndaysi
-               csite%mmean_available_water  (ipa) = csite%mmean_available_water  (ipa)     &
-                                                  + csite%dmean_available_water  (ipa)     &
-                                                  * ndaysi
-               csite%mmean_veg_displace     (ipa) = csite%mmean_veg_displace     (ipa)     &
-                                                  + csite%dmean_veg_displace     (ipa)     &
-                                                  * ndaysi
-               csite%mmean_rough            (ipa) = csite%mmean_rough            (ipa)     &
-                                                  + csite%dmean_rough            (ipa)     &
-                                                  * ndaysi
-               csite%mmean_can_theiv        (ipa) = csite%mmean_can_theiv        (ipa)     &
-                                                  + csite%dmean_can_theiv        (ipa)     &
-                                                  * ndaysi
-               csite%mmean_can_theta        (ipa) = csite%mmean_can_theta        (ipa)     &
-                                                  + csite%dmean_can_theta        (ipa)     &
-                                                  * ndaysi
-               csite%mmean_can_vpdef        (ipa) = csite%mmean_can_vpdef        (ipa)     &
-                                                  + csite%dmean_can_vpdef        (ipa)     &
-                                                  * ndaysi
-               csite%mmean_can_shv          (ipa) = csite%mmean_can_shv          (ipa)     &
-                                                  + csite%dmean_can_shv          (ipa)     &
-                                                  * ndaysi
-               csite%mmean_can_co2          (ipa) = csite%mmean_can_co2          (ipa)     &
-                                                  + csite%dmean_can_co2          (ipa)     &
-                                                  * ndaysi
-               csite%mmean_can_prss         (ipa) = csite%mmean_can_prss         (ipa)     &
-                                                  + csite%dmean_can_prss         (ipa)     &
-                                                  * ndaysi
-               csite%mmean_gnd_temp         (ipa) = csite%mmean_gnd_temp         (ipa)     &
-                                                  + csite%dmean_gnd_temp         (ipa)     &
-                                                  * ndaysi
-               csite%mmean_gnd_shv          (ipa) = csite%mmean_gnd_shv          (ipa)     &
-                                                  + csite%dmean_gnd_shv          (ipa)     &
-                                                  * ndaysi
-               csite%mmean_can_ggnd         (ipa) = csite%mmean_can_ggnd         (ipa)     &
-                                                  + csite%dmean_can_ggnd         (ipa)     &
-                                                  * ndaysi
-               csite%mmean_sfcw_depth       (ipa) = csite%mmean_sfcw_depth       (ipa)     &
-                                                  + csite%dmean_sfcw_depth       (ipa)     &
-                                                  * ndaysi
-               !----- Temporarily make pounding energy extensive [J/m2]. ------------------!
-               csite%mmean_sfcw_energy      (ipa) = csite%mmean_sfcw_energy      (ipa)     &
-                                                  + csite%dmean_sfcw_energy      (ipa)     &
-                                                  * csite%dmean_sfcw_mass        (ipa)     &
-                                                  * ndaysi
-               csite%mmean_sfcw_mass        (ipa) = csite%mmean_sfcw_mass        (ipa)     &
-                                                  + csite%dmean_sfcw_mass        (ipa)     &
-                                                  * ndaysi
-               csite%mmean_snowfac          (ipa) = csite%mmean_snowfac          (ipa)     &
-                                                  + csite%dmean_snowfac          (ipa)     &
-                                                  * ndaysi
-               csite%mmean_soil_energy    (:,ipa) = csite%mmean_soil_energy    (:,ipa)     &
-                                                  + csite%dmean_soil_energy    (:,ipa)     &
-                                                  * ndaysi
-               csite%mmean_soil_mstpot    (:,ipa) = csite%mmean_soil_mstpot    (:,ipa)     &
-                                                  + csite%dmean_soil_mstpot    (:,ipa)     &
-                                                  * ndaysi
-               csite%mmean_soil_water     (:,ipa) = csite%mmean_soil_water     (:,ipa)     &
-                                                  + csite%dmean_soil_water     (:,ipa)     &
-                                                  * ndaysi
-               csite%mmean_rshort_gnd       (ipa) = csite%mmean_rshort_gnd       (ipa)     &
-                                                  + csite%dmean_rshort_gnd       (ipa)     &
-                                                  * ndaysi
-               csite%mmean_par_gnd          (ipa) = csite%mmean_par_gnd          (ipa)     &
-                                                  + csite%dmean_par_gnd          (ipa)     &
-                                                  * ndaysi
-               csite%mmean_rlong_gnd        (ipa) = csite%mmean_rlong_gnd        (ipa)     &
-                                                  + csite%dmean_rlong_gnd        (ipa)     &
-                                                  * ndaysi
-               csite%mmean_rlongup          (ipa) = csite%mmean_rlongup          (ipa)     &
-                                                  + csite%dmean_rlongup          (ipa)     &
-                                                  * ndaysi
-               csite%mmean_parup            (ipa) = csite%mmean_parup            (ipa)     &
-                                                  + csite%dmean_parup            (ipa)     &
-                                                  * ndaysi
-               csite%mmean_nirup            (ipa) = csite%mmean_nirup            (ipa)     &
-                                                  + csite%dmean_nirup            (ipa)     &
-                                                  * ndaysi
-               csite%mmean_rshortup         (ipa) = csite%mmean_rshortup         (ipa)     &
-                                                  + csite%dmean_rshortup         (ipa)     &
-                                                  * ndaysi
-               csite%mmean_rnet             (ipa) = csite%mmean_rnet             (ipa)     &
-                                                  + csite%dmean_rnet             (ipa)     &
-                                                  * ndaysi
-               csite%mmean_albedo           (ipa) = csite%mmean_albedo           (ipa)     &
-                                                  + csite%dmean_albedo           (ipa)     &
-                                                  * ndaysi
-               csite%mmean_albedo_par       (ipa) = csite%mmean_albedo_par       (ipa)     &
-                                                  + csite%dmean_albedo_par       (ipa)     &
-                                                  * ndaysi
-               csite%mmean_albedo_nir       (ipa) = csite%mmean_albedo_nir       (ipa)     &
-                                                  + csite%dmean_albedo_nir       (ipa)     &
-                                                  * ndaysi
-               csite%mmean_rlong_albedo     (ipa) = csite%mmean_rlong_albedo     (ipa)     &
-                                                  + csite%dmean_rlong_albedo     (ipa)     &
-                                                  * ndaysi
-               csite%mmean_ustar            (ipa) = csite%mmean_ustar            (ipa)     &
-                                                  + csite%dmean_ustar            (ipa)     &
-                                                  * ndaysi
-               csite%mmean_tstar            (ipa) = csite%mmean_tstar            (ipa)     &
-                                                  + csite%dmean_tstar            (ipa)     &
-                                                  * ndaysi
-               csite%mmean_qstar            (ipa) = csite%mmean_qstar            (ipa)     &
-                                                  + csite%dmean_qstar            (ipa)     &
-                                                  * ndaysi
-               csite%mmean_cstar            (ipa) = csite%mmean_cstar            (ipa)     &
-                                                  + csite%dmean_cstar            (ipa)     &
-                                                  * ndaysi
-               csite%mmean_carbon_ac        (ipa) = csite%mmean_carbon_ac        (ipa)     &
-                                                  + csite%dmean_carbon_ac        (ipa)     &
-                                                  * ndaysi
-               csite%mmean_carbon_st        (ipa) = csite%mmean_carbon_st        (ipa)     &
-                                                  + csite%dmean_carbon_st        (ipa)     &
-                                                  * ndaysi
-               csite%mmean_vapor_gc         (ipa) = csite%mmean_vapor_gc         (ipa)     &
-                                                  + csite%dmean_vapor_gc         (ipa)     &
-                                                  * ndaysi
-               csite%mmean_vapor_ac         (ipa) = csite%mmean_vapor_ac         (ipa)     &
-                                                  + csite%dmean_vapor_ac         (ipa)     &
-                                                  * ndaysi
-               csite%mmean_smoist_gg      (:,ipa) = csite%mmean_smoist_gg      (:,ipa)     &
-                                                  + csite%dmean_smoist_gg      (:,ipa)     &
-                                                  * ndaysi
-               csite%mmean_throughfall      (ipa) = csite%mmean_throughfall      (ipa)     &
-                                                  + csite%dmean_throughfall      (ipa)     &
-                                                  * ndaysi
-               csite%mmean_transloss      (:,ipa) = csite%mmean_transloss      (:,ipa)     &
-                                                  + csite%dmean_transloss      (:,ipa)     &
-                                                  * ndaysi
-               csite%mmean_runoff           (ipa) = csite%mmean_runoff           (ipa)     &
-                                                  + csite%dmean_runoff           (ipa)     &
-                                                  * ndaysi
-               csite%mmean_drainage         (ipa) = csite%mmean_drainage         (ipa)     &
-                                                  + csite%dmean_drainage         (ipa)     &
-                                                  * ndaysi
-               csite%mmean_sensible_gc      (ipa) = csite%mmean_sensible_gc      (ipa)     &
-                                                  + csite%dmean_sensible_gc      (ipa)     &
-                                                  * ndaysi
-               csite%mmean_sensible_ac      (ipa) = csite%mmean_sensible_ac      (ipa)     &
-                                                  + csite%dmean_sensible_ac      (ipa)     &
-                                                  * ndaysi
-               csite%mmean_sensible_gg    (:,ipa) = csite%mmean_sensible_gg    (:,ipa)     &
-                                                  + csite%dmean_sensible_gg    (:,ipa)     &
-                                                  * ndaysi
-               csite%mmean_qthroughfall     (ipa) = csite%mmean_qthroughfall     (ipa)     &
-                                                  + csite%dmean_qthroughfall     (ipa)     &
-                                                  * ndaysi
-               csite%mmean_qrunoff          (ipa) = csite%mmean_qrunoff          (ipa)     &
-                                                  + csite%dmean_qrunoff          (ipa)     &
-                                                  * ndaysi
-               csite%mmean_qdrainage        (ipa) = csite%mmean_qdrainage        (ipa)     &
-                                                  + csite%dmean_qdrainage        (ipa)     &
-                                                  * ndaysi
-               csite%mmean_A_decomp         (ipa) = csite%mmean_A_decomp         (ipa)     &
-                                                  + csite%dmean_A_decomp         (ipa)     &
-                                                  * ndaysi
-               csite%mmean_B_decomp         (ipa) = csite%mmean_B_decomp         (ipa)     &
-                                                  + csite%dmean_B_decomp         (ipa)     &
-                                                  * ndaysi
-               csite%mmean_Af_decomp        (ipa) = csite%mmean_Af_decomp        (ipa)     &
-                                                  + csite%dmean_Af_decomp        (ipa)     &
-                                                  * ndaysi
-               csite%mmean_Bf_decomp        (ipa) = csite%mmean_Bf_decomp        (ipa)     &
-                                                  + csite%dmean_Bf_decomp        (ipa)     &
-                                                  * ndaysi
-               csite%mmean_co2_residual     (ipa) = csite%mmean_co2_residual     (ipa)     &
-                                                  + csite%dmean_co2_residual     (ipa)     &
-                                                  * ndaysi
-               csite%mmean_energy_residual  (ipa) = csite%mmean_energy_residual  (ipa)     &
-                                                  + csite%dmean_energy_residual  (ipa)     &
-                                                  * ndaysi
-               csite%mmean_water_residual   (ipa) = csite%mmean_water_residual   (ipa)     &
-                                                  + csite%dmean_water_residual   (ipa)     &
-                                                  * ndaysi
-               !---------------------------------------------------------------------------!
-               !     Integrate the sum of squares.                                         !
-               !---------------------------------------------------------------------------!
-               csite%mmsqu_rh               (ipa) = csite%mmsqu_rh                  (ipa)  &
-                                                  + isqu_ftz(csite%dmean_rh         (ipa)) &
-                                                  * ndaysi
-               csite%mmsqu_fgc_rh           (ipa) = csite%mmsqu_fgc_rh              (ipa)  &
-                                                  + isqu_ftz(csite%dmean_fgc_rh     (ipa)) &
-                                                  * ndaysi
-               csite%mmsqu_fsc_rh           (ipa) = csite%mmsqu_fsc_rh              (ipa)  &
-                                                  + isqu_ftz(csite%dmean_fsc_rh     (ipa)) &
-                                                  * ndaysi
-               csite%mmsqu_stgc_rh          (ipa) = csite%mmsqu_stgc_rh             (ipa)  &
-                                                  + isqu_ftz(csite%dmean_stgc_rh    (ipa)) &
-                                                  * ndaysi
-               csite%mmsqu_stsc_rh          (ipa) = csite%mmsqu_stsc_rh             (ipa)  &
-                                                  + isqu_ftz(csite%dmean_stsc_rh    (ipa)) &
-                                                  * ndaysi
-               csite%mmsqu_msc_rh           (ipa) = csite%mmsqu_msc_rh              (ipa)  &
-                                                  + isqu_ftz(csite%dmean_msc_rh     (ipa)) &
-                                                  * ndaysi
-               csite%mmsqu_ssc_rh           (ipa) = csite%mmsqu_ssc_rh              (ipa)  &
-                                                  + isqu_ftz(csite%dmean_ssc_rh     (ipa)) &
-                                                  * ndaysi
-               csite%mmsqu_psc_rh           (ipa) = csite%mmsqu_psc_rh              (ipa)  &
-                                                  + isqu_ftz(csite%dmean_psc_rh     (ipa)) &
-                                                  * ndaysi
-               csite%mmsqu_nep              (ipa) = csite%mmsqu_nep                 (ipa)  &
-                                                  + isqu_ftz(csite%dmean_nep        (ipa)) &
-                                                  * ndaysi
-               csite%mmsqu_rlongup          (ipa) = csite%mmsqu_rlongup             (ipa)  &
-                                                  + isqu_ftz(csite%dmean_rlongup    (ipa)) &
-                                                  * ndaysi
-               csite%mmsqu_parup            (ipa) = csite%mmsqu_parup               (ipa)  &
-                                                  + isqu_ftz(csite%dmean_parup      (ipa)) &
-                                                  * ndaysi
-               csite%mmsqu_nirup            (ipa) = csite%mmsqu_nirup               (ipa)  &
-                                                  + isqu_ftz(csite%dmean_nirup      (ipa)) &
-                                                  * ndaysi
-               csite%mmsqu_rshortup         (ipa) = csite%mmsqu_rshortup            (ipa)  &
-                                                  + isqu_ftz(csite%dmean_rshortup   (ipa)) &
-                                                  * ndaysi
-               csite%mmsqu_rnet             (ipa) = csite%mmsqu_rnet                (ipa)  &
-                                                  + isqu_ftz(csite%dmean_rnet       (ipa)  &
-                                                  * csite%dmean_rnet                (ipa)) &
-                                                  * ndaysi
-               csite%mmsqu_albedo           (ipa) = csite%mmsqu_albedo              (ipa)  &
-                                                  + isqu_ftz(csite%dmean_albedo     (ipa)  &
-                                                  * csite%dmean_albedo              (ipa)) &
-                                                  * ndaysi
-               csite%mmsqu_ustar            (ipa) = csite%mmsqu_ustar               (ipa)  &
-                                                  + isqu_ftz(csite%dmean_ustar      (ipa)  &
-                                                  * csite%dmean_ustar               (ipa)) &
-                                                  * ndaysi
-               csite%mmsqu_carbon_ac        (ipa) = csite%mmsqu_carbon_ac           (ipa)  &
-                                                  + isqu_ftz(csite%dmean_carbon_ac  (ipa)) &
-                                                  * ndaysi
-               csite%mmsqu_carbon_st        (ipa) = csite%mmsqu_carbon_st           (ipa)  &
-                                                  + isqu_ftz(csite%dmean_carbon_st  (ipa)) &
-                                                  * ndaysi
-               csite%mmsqu_vapor_gc         (ipa) = csite%mmsqu_vapor_gc            (ipa)  &
-                                                  + isqu_ftz(csite%dmean_vapor_gc   (ipa)) &
-                                                  * ndaysi
-               csite%mmsqu_vapor_ac         (ipa) = csite%mmsqu_vapor_ac            (ipa)  &
-                                                  + isqu_ftz(csite%dmean_vapor_ac   (ipa)) &
-                                                  * ndaysi
-               csite%mmsqu_sensible_gc      (ipa) = csite%mmsqu_sensible_gc         (ipa)  &
-                                                  + isqu_ftz(csite%dmean_sensible_gc(ipa)) &
-                                                  * ndaysi
-               csite%mmsqu_sensible_ac      (ipa) = csite%mmsqu_sensible_ac         (ipa)  &
-                                                  + isqu_ftz(csite%dmean_sensible_ac(ipa)) &
-                                                  * ndaysi
-               !---------------------------------------------------------------------------!
-
-
-
-               !---------------------------------------------------------------------------!
-               !      Patch loop.                                                          !
-               !---------------------------------------------------------------------------!
-               cohortloop: do ico=1,cpatch%ncohorts
-                  ipft = cpatch%pft(ico)
-
-
-                  !------------------------------------------------------------------------!
-                  !      Integrate the cohort-level variables that have no daily means     !
-                  ! because their time step is one day.                                    !
-                  !------------------------------------------------------------------------!
-                  cpatch%mmean_thbark          (ico) = cpatch%mmean_thbark          (ico)  &
-                                                     + cpatch%thbark                (ico)  &
-                                                     * ndaysi
-                  cpatch%mmean_vm_bar          (ico) = cpatch%mmean_vm_bar          (ico)  &
-                                                     + cpatch%vm_bar                (ico)  &
-                                                     * ndaysi
-                  cpatch%mmean_rd_bar          (ico) = cpatch%mmean_rd_bar          (ico)  &
-                                                     + cpatch%rd_bar                (ico)  &
-                                                     * ndaysi
-                  cpatch%mmean_sla             (ico) = cpatch%mmean_sla             (ico)  &
-                                                     + cpatch%sla                   (ico)  &
-                                                     * ndaysi
-                  cpatch%mmean_llspan          (ico) = cpatch%mmean_llspan          (ico)  &
-                                                     + cpatch%llspan                (ico)  &
-                                                     * ndaysi
-                  cpatch%mmean_lai             (ico) = cpatch%mmean_lai             (ico)  &
-                                                     + cpatch%lai                   (ico)  &
-                                                     * ndaysi
-                  cpatch%mmean_bleaf           (ico) = cpatch%mmean_bleaf           (ico)  &
-                                                     + cpatch%bleaf                 (ico)  &
-                                                     * ndaysi
-                  cpatch%mmean_broot           (ico) = cpatch%mmean_broot           (ico)  &
-                                                     + cpatch%broot                 (ico)  &
-                                                     * ndaysi
-                  cpatch%mmean_bbarka          (ico) = cpatch%mmean_bbarka          (ico)  &
-                                                     + cpatch%bbarka                (ico)  &
-                                                     * ndaysi
-                  cpatch%mmean_bbarkb          (ico) = cpatch%mmean_bbarkb          (ico)  &
-                                                     + cpatch%bbarkb                (ico)  &
-                                                     * ndaysi
-                  cpatch%mmean_balive          (ico) = cpatch%mmean_balive          (ico)  &
-                                                     + cpatch%balive                (ico)  &
-                                                     * ndaysi
-                  cpatch%mmean_bstorage        (ico) = cpatch%mmean_bstorage        (ico)  &
-                                                     + cpatch%bstorage              (ico)  &
-                                                     * ndaysi
-                  cpatch%mmean_mort_rate     (:,ico) = cpatch%mmean_mort_rate     (:,ico)  &
-                                                     + cpatch%mort_rate           (:,ico)  &
-                                                     * ndaysi
-                  cpatch%mmean_leaf_maintenance(ico) = cpatch%mmean_leaf_maintenance(ico)  &
-                                                     + cpatch%leaf_maintenance      (ico)  &
-                                                     * ndaysi
-                  cpatch%mmean_root_maintenance(ico) = cpatch%mmean_root_maintenance(ico)  &
-                                                     + cpatch%root_maintenance      (ico)  &
-                                                     * ndaysi
-                  cpatch%mmean_barka_maintenance(ico) =                                    &
-                                                      cpatch%mmean_barka_maintenance(ico)  &
-                                                    + cpatch%barka_maintenance      (ico)  &
-                                                    * ndaysi
-                  cpatch%mmean_barkb_maintenance(ico) =                                    &
-                                                      cpatch%mmean_barkb_maintenance(ico)  &
-                                                    + cpatch%barkb_maintenance      (ico)  &
-                                                    * ndaysi
-                  cpatch%mmean_leaf_drop       (ico) = cpatch%mmean_leaf_drop       (ico)  &
-                                                     + cpatch%leaf_drop             (ico)  &
-                                                     * ndaysi
-                  cpatch%mmean_root_drop       (ico) = cpatch%mmean_root_drop       (ico)  &
-                                                     + cpatch%root_drop             (ico)  &
-                                                     * ndaysi
-                  cpatch%mmean_cb              (ico) = cpatch%mmean_cb              (ico)  &
-                                                     + ( cpatch%dmean_gpp           (ico)  &
-                                                       - cpatch%dmean_plresp        (ico)  &
-                                                       - cpatch%leaf_maintenance    (ico)  &
-                                                       - cpatch%root_maintenance    (ico)  &
-                                                       - cpatch%barka_maintenance   (ico)  &
-                                                       - cpatch%barkb_maintenance   (ico)  &
-                                                       - cpatch%leaf_drop           (ico)  &
-                                                       - cpatch%root_drop           (ico)  &
-                                                       ) / yr_day * ndaysi
-                  !------------------------------------------------------------------------!
-
-
-
-                  !------------------------------------------------------------------------!
-                  !      Integrate the other cohort-level variables.                       !
-                  !------------------------------------------------------------------------!
-                  cpatch%mmean_gpp             (ico) = cpatch%mmean_gpp             (ico)  &
-                                                     + cpatch%dmean_gpp             (ico)  &
-                                                     * ndaysi
-                  cpatch%mmean_npp             (ico) = cpatch%mmean_npp             (ico)  &
-                                                     + cpatch%dmean_npp             (ico)  &
-                                                     * ndaysi
-                  cpatch%mmean_leaf_resp       (ico) = cpatch%mmean_leaf_resp       (ico)  &
-                                                     + cpatch%dmean_leaf_resp       (ico)  &
-                                                     * ndaysi
-                  cpatch%mmean_root_resp       (ico) = cpatch%mmean_root_resp       (ico)  &
-                                                     + cpatch%dmean_root_resp       (ico)  &
-                                                     * ndaysi
-                  cpatch%mmean_stem_resp       (ico) = cpatch%mmean_stem_resp       (ico)  &
-                                                     + cpatch%dmean_stem_resp       (ico)  &
-                                                     * ndaysi
-                  cpatch%mmean_leaf_growth_resp(ico) = cpatch%mmean_leaf_growth_resp(ico)  &
-                                                     + cpatch%dmean_leaf_growth_resp(ico)  &
-                                                     * ndaysi
-                  cpatch%mmean_root_growth_resp(ico) = cpatch%mmean_root_growth_resp(ico)  &
-                                                     + cpatch%dmean_root_growth_resp(ico)  &
-                                                     * ndaysi
-                  cpatch%mmean_sapa_growth_resp(ico) = cpatch%mmean_sapa_growth_resp(ico)  &
-                                                     + cpatch%dmean_sapa_growth_resp(ico)  &
-                                                     * ndaysi
-                  cpatch%mmean_sapb_growth_resp(ico) = cpatch%mmean_sapb_growth_resp(ico)  &
-                                                     + cpatch%dmean_sapb_growth_resp(ico)  &
-                                                     * ndaysi
-                  cpatch%mmean_barka_growth_resp(ico)= cpatch%mmean_barka_growth_resp(ico) &
-                                                     + cpatch%dmean_barka_growth_resp(ico) &
-                                                     * ndaysi
-                  cpatch%mmean_barkb_growth_resp(ico)= cpatch%mmean_barkb_growth_resp(ico) &
-                                                     + cpatch%dmean_barkb_growth_resp(ico) &
-                                                     * ndaysi
-                  cpatch%mmean_leaf_storage_resp(ico)= cpatch%mmean_leaf_storage_resp(ico) &
-                                                     + cpatch%dmean_leaf_storage_resp(ico) &
-                                                     * ndaysi
-                  cpatch%mmean_root_storage_resp(ico)= cpatch%mmean_root_storage_resp(ico) &
-                                                     + cpatch%dmean_root_storage_resp(ico) &
-                                                     * ndaysi
-                  cpatch%mmean_sapa_storage_resp(ico)= cpatch%mmean_sapa_storage_resp(ico) &
-                                                     + cpatch%dmean_sapa_storage_resp(ico) &
-                                                     * ndaysi
-                  cpatch%mmean_sapb_storage_resp(ico)= cpatch%mmean_sapb_storage_resp(ico) &
-                                                     + cpatch%dmean_sapb_storage_resp(ico) &
-                                                     * ndaysi
-                  cpatch%mmean_barka_storage_resp(ico)=                                    &
-                                                      cpatch%mmean_barka_storage_resp(ico) &
-                                                    + cpatch%dmean_barka_storage_resp(ico) &
-                                                    * ndaysi
-                  cpatch%mmean_barkb_storage_resp(ico)=                                    &
-                                                      cpatch%mmean_barkb_storage_resp(ico) &
-                                                    + cpatch%dmean_barkb_storage_resp(ico) &
-                                                    * ndaysi
-                  cpatch%mmean_plresp          (ico) = cpatch%mmean_plresp          (ico)  &
-                                                     + cpatch%dmean_plresp          (ico)  &
-                                                     * ndaysi
-                  cpatch%mmean_leaf_energy     (ico) = cpatch%mmean_leaf_energy     (ico)  &
-                                                     + cpatch%dmean_leaf_energy     (ico)  &
-                                                     * ndaysi
-                  cpatch%mmean_leaf_water      (ico) = cpatch%mmean_leaf_water      (ico)  &
-                                                     + cpatch%dmean_leaf_water      (ico)  &
-                                                     * ndaysi
-                  cpatch%mmean_leaf_hcap       (ico) = cpatch%mmean_leaf_hcap       (ico)  &
-                                                     + cpatch%dmean_leaf_hcap       (ico)  &
-                                                     * ndaysi
-                  cpatch%mmean_leaf_vpdef      (ico) = cpatch%mmean_leaf_vpdef      (ico)  &
-                                                     + cpatch%dmean_leaf_vpdef      (ico)  &
-                                                     * ndaysi
-                  cpatch%mmean_leaf_temp       (ico) = cpatch%mmean_leaf_temp       (ico)  &
-                                                     + cpatch%dmean_leaf_temp       (ico)  &
-                                                     * ndaysi
-                  cpatch%mmean_leaf_fliq       (ico) = cpatch%mmean_leaf_fliq       (ico)  &
-                                                     + cpatch%dmean_leaf_fliq       (ico)  &
-                                                     * ndaysi
-                  cpatch%mmean_leaf_gsw        (ico) = cpatch%mmean_leaf_gsw        (ico)  &
-                                                     + cpatch%dmean_leaf_gsw        (ico)  &
-                                                     * ndaysi
-                  cpatch%mmean_leaf_gbw        (ico) = cpatch%mmean_leaf_gbw        (ico)  &
-                                                     + cpatch%dmean_leaf_gbw        (ico)  &
-                                                     * ndaysi
-                  cpatch%mmean_wood_energy     (ico) = cpatch%mmean_wood_energy     (ico)  &
-                                                     + cpatch%dmean_wood_energy     (ico)  &
-                                                     * ndaysi
-                  cpatch%mmean_wood_water      (ico) = cpatch%mmean_wood_water      (ico)  &
-                                                     + cpatch%dmean_wood_water      (ico)  &
-                                                     * ndaysi
-                  cpatch%mmean_wood_hcap       (ico) = cpatch%mmean_wood_hcap       (ico)  &
-                                                     + cpatch%dmean_wood_hcap       (ico)  &
-                                                     * ndaysi
-                  cpatch%mmean_wood_temp       (ico) = cpatch%mmean_wood_temp       (ico)  &
-                                                     + cpatch%dmean_wood_temp       (ico)  &
-                                                     * ndaysi
-                  cpatch%mmean_wood_fliq       (ico) = cpatch%mmean_wood_fliq       (ico)  &
-                                                     + cpatch%dmean_wood_fliq       (ico)  &
-                                                     * ndaysi
-                  cpatch%mmean_wood_gbw        (ico) = cpatch%mmean_wood_gbw        (ico)  &
-                                                     + cpatch%dmean_wood_gbw        (ico)  &
-                                                     * ndaysi
-                  cpatch%mmean_fs_open         (ico) = cpatch%mmean_fs_open         (ico)  &
-                                                     + cpatch%dmean_fs_open         (ico)  &
-                                                     * ndaysi
-                  cpatch%mmean_fsw             (ico) = cpatch%mmean_fsw             (ico)  &
-                                                     + cpatch%dmean_fsw             (ico)  &
-                                                     * ndaysi
-                  cpatch%mmean_fsn             (ico) = cpatch%mmean_fsn             (ico)  &
-                                                     + cpatch%dmean_fsn             (ico)  &
-                                                     * ndaysi
-                  cpatch%mmean_a_open          (ico) = cpatch%mmean_a_open          (ico)  &
-                                                     + cpatch%dmean_a_open          (ico)  &
-                                                     * ndaysi
-                  cpatch%mmean_a_closed        (ico) = cpatch%mmean_a_closed        (ico)  &
-                                                     + cpatch%dmean_a_closed        (ico)  &
-                                                     * ndaysi
-                  cpatch%mmean_a_net           (ico) = cpatch%mmean_a_net           (ico)  &
-                                                     + cpatch%dmean_a_net           (ico)  &
-                                                     * ndaysi
-                  cpatch%mmean_a_light         (ico) = cpatch%mmean_a_light         (ico)  &
-                                                     + cpatch%dmean_a_light         (ico)  &
-                                                     * ndaysi
-                  cpatch%mmean_a_rubp          (ico) = cpatch%mmean_a_rubp          (ico)  &
-                                                     + cpatch%dmean_a_rubp          (ico)  &
-                                                     * ndaysi
-                  cpatch%mmean_a_co2           (ico) = cpatch%mmean_a_co2           (ico)  &
-                                                     + cpatch%dmean_a_co2           (ico)  &
-                                                     * ndaysi
-                  cpatch%mmean_psi_open        (ico) = cpatch%mmean_psi_open        (ico)  &
-                                                     + cpatch%dmean_psi_open        (ico)  &
-                                                     * ndaysi
-                  cpatch%mmean_psi_closed      (ico) = cpatch%mmean_psi_closed      (ico)  &
-                                                     + cpatch%dmean_psi_closed      (ico)  &
-                                                     * ndaysi
-                  cpatch%mmean_water_supply    (ico) = cpatch%mmean_water_supply    (ico)  &
-                                                     + cpatch%dmean_water_supply    (ico)  &
-                                                     * ndaysi
-
-                  cpatch%mmean_par_level_beam  (ico) = cpatch%mmean_par_level_beam  (ico)  &
-                                                     + cpatch%dmean_par_level_beam  (ico)  &
-                                                     * ndaysi
-
-                  cpatch%mmean_par_level_diffd (ico) = cpatch%mmean_par_level_diffd  (ico)  &
-                                                     + cpatch%dmean_par_level_diffd  (ico)  &
-                                                     * ndaysi
-
-                  cpatch%mmean_par_level_diffu (ico) = cpatch%mmean_par_level_diffu  (ico)  &
-                                                     + cpatch%dmean_par_level_diffu  (ico)  &
-                                                     * ndaysi
-
-                  cpatch%mmean_light_level     (ico) = cpatch%mmean_light_level     (ico)  &
-                                                     + cpatch%dmean_light_level     (ico)  &
-                                                     * ndaysi
-                  cpatch%mmean_light_level_beam(ico) = cpatch%mmean_light_level_beam(ico)  &
-                                                     + cpatch%dmean_light_level_beam(ico)  &
-                                                     * ndaysi
-                  cpatch%mmean_light_level_diff(ico) = cpatch%mmean_light_level_diff(ico)  &
-                                                     + cpatch%dmean_light_level_diff(ico)  &
-                                                     * ndaysi
-
-
-                  cpatch%mmean_par_l           (ico) = cpatch%mmean_par_l           (ico)  &
-                                                     + cpatch%dmean_par_l           (ico)  &
-                                                     * ndaysi
-                  cpatch%mmean_par_l_beam      (ico) = cpatch%mmean_par_l_beam      (ico)  &
-                                                     + cpatch%dmean_par_l_beam      (ico)  &
-                                                     * ndaysi
-                  cpatch%mmean_par_l_diff      (ico) = cpatch%mmean_par_l_diff      (ico)  &
-                                                     + cpatch%dmean_par_l_diff      (ico)  &
-                                                     * ndaysi
-                  cpatch%mmean_rshort_l        (ico) = cpatch%mmean_rshort_l        (ico)  &
-                                                     + cpatch%dmean_rshort_l        (ico)  &
-                                                     * ndaysi
-                  cpatch%mmean_rlong_l         (ico) = cpatch%mmean_rlong_l         (ico)  &
-                                                     + cpatch%dmean_rlong_l         (ico)  &
-                                                     * ndaysi
-                  cpatch%mmean_sensible_lc     (ico) = cpatch%mmean_sensible_lc     (ico)  &
-                                                     + cpatch%dmean_sensible_lc     (ico)  &
-                                                     * ndaysi
-                  cpatch%mmean_vapor_lc        (ico) = cpatch%mmean_vapor_lc        (ico)  &
-                                                     + cpatch%dmean_vapor_lc        (ico)  &
-                                                     * ndaysi
-                  cpatch%mmean_transp          (ico) = cpatch%mmean_transp          (ico)  &
-                                                     + cpatch%dmean_transp          (ico)  &
-                                                     * ndaysi
-                  cpatch%mmean_intercepted_al  (ico) = cpatch%mmean_intercepted_al  (ico)  &
-                                                     + cpatch%dmean_intercepted_al  (ico)  &
-                                                     * ndaysi
-                  cpatch%mmean_wshed_lg        (ico) = cpatch%mmean_wshed_lg        (ico)  &
-                                                     + cpatch%dmean_wshed_lg        (ico)  &
-                                                     * ndaysi
-                  cpatch%mmean_rshort_w        (ico) = cpatch%mmean_rshort_w        (ico)  &
-                                                     + cpatch%dmean_rshort_w        (ico)  &
-                                                     * ndaysi
-                  cpatch%mmean_rlong_w         (ico) = cpatch%mmean_rlong_w         (ico)  &
-                                                     + cpatch%dmean_rlong_w         (ico)  &
-                                                     * ndaysi
-                  cpatch%mmean_rad_profile   (:,ico) = cpatch%mmean_rad_profile   (:,ico)  &
-                                                     + cpatch%dmean_rad_profile   (:,ico)  &
-                                                     * ndaysi
-                  cpatch%mmean_sensible_wc     (ico) = cpatch%mmean_sensible_wc     (ico)  &
-                                                     + cpatch%dmean_sensible_wc     (ico)  &
-                                                     * ndaysi
-                  cpatch%mmean_vapor_wc        (ico) = cpatch%mmean_vapor_wc        (ico)  &
-                                                     + cpatch%dmean_vapor_wc        (ico)  &
-                                                     * ndaysi
-                  cpatch%mmean_intercepted_aw  (ico) = cpatch%mmean_intercepted_aw  (ico)  &
-                                                     + cpatch%dmean_intercepted_aw  (ico)  &
-                                                     * ndaysi
-                  cpatch%mmean_wshed_wg        (ico) = cpatch%mmean_wshed_wg        (ico)  &
-                                                     + cpatch%dmean_wshed_wg        (ico)  &
-                                                     * ndaysi
-                  cpatch%mmean_nppleaf         (ico) = cpatch%mmean_nppleaf         (ico)  &
-                                                     + cpatch%dmean_nppleaf         (ico)  &
-                                                     * ndaysi
-                  cpatch%mmean_nppfroot        (ico) = cpatch%mmean_nppfroot        (ico)  &
-                                                     + cpatch%dmean_nppfroot        (ico)  &
-                                                     * ndaysi
-                  cpatch%mmean_nppsapwood      (ico) = cpatch%mmean_nppsapwood      (ico)  &
-                                                     + cpatch%dmean_nppsapwood      (ico)  &
-                                                     * ndaysi
-                  cpatch%mmean_nppbark         (ico) = cpatch%mmean_nppbark         (ico)  &
-                                                     + cpatch%dmean_nppbark         (ico)  &
-                                                     * ndaysi
-                  cpatch%mmean_nppcroot        (ico) = cpatch%mmean_nppcroot        (ico)  &
-                                                     + cpatch%dmean_nppcroot        (ico)  &
-                                                     * ndaysi
-                  cpatch%mmean_nppseeds        (ico) = cpatch%mmean_nppseeds        (ico)  &
-                                                     + cpatch%dmean_nppseeds        (ico)  &
-                                                     * ndaysi
-                  cpatch%mmean_nppwood         (ico) = cpatch%mmean_nppwood         (ico)  &
-                                                     + cpatch%dmean_nppwood         (ico)  &
-                                                     * ndaysi
-                  cpatch%mmean_nppdaily        (ico) = cpatch%mmean_nppdaily        (ico)  &
-                                                     + cpatch%dmean_nppdaily        (ico)  &
-                                                     * ndaysi
-
-                  cpatch%mmean_dmax_leaf_psi   (ico) = cpatch%mmean_dmax_leaf_psi   (ico)  &
-                                                     + cpatch%dmax_leaf_psi         (ico)  &
-                                                     * ndaysi
-                  cpatch%mmean_dmin_leaf_psi   (ico) = cpatch%mmean_dmin_leaf_psi   (ico)  &
-                                                     + cpatch%dmin_leaf_psi         (ico)  &
-                                                     * ndaysi
-                  cpatch%mmean_dmax_wood_psi   (ico) = cpatch%mmean_dmax_wood_psi   (ico)  &
-                                                     + cpatch%dmax_wood_psi         (ico)  &
-                                                     * ndaysi
-                  cpatch%mmean_dmin_wood_psi   (ico) = cpatch%mmean_dmin_wood_psi   (ico)  &
-                                                     + cpatch%dmin_wood_psi         (ico)  &
-                                                     * ndaysi
-                  cpatch%mmean_leaf_water_int  (ico) = cpatch%mmean_leaf_water_int  (ico)  &
-                                                     + cpatch%dmean_leaf_water_int  (ico)  &
-                                                     * ndaysi
-                  cpatch%mmean_leaf_water_im2  (ico) = cpatch%mmean_leaf_water_im2  (ico)  &
-                                                     + cpatch%dmean_leaf_water_im2  (ico)  &
-                                                     * ndaysi
-                  cpatch%mmean_wood_water_int  (ico) = cpatch%mmean_wood_water_int  (ico)  &
-                                                     + cpatch%dmean_wood_water_int  (ico)  &
-                                                     * ndaysi
-                  cpatch%mmean_wood_water_im2  (ico) = cpatch%mmean_wood_water_im2  (ico)  &
-                                                     + cpatch%dmean_wood_water_im2  (ico)  &
-                                                     * ndaysi
-                  cpatch%mmean_wflux_wl        (ico) = cpatch%mmean_wflux_wl        (ico)  &
-                                                     + cpatch%dmean_wflux_wl        (ico)  &
-                                                     * ndaysi
-                  cpatch%mmean_wflux_gw        (ico) = cpatch%mmean_wflux_gw        (ico)  &
-                                                     + cpatch%dmean_wflux_gw        (ico)  &
-                                                     * ndaysi
-                  cpatch%mmean_wflux_gw_layer(:,ico) = cpatch%mmean_wflux_gw_layer(:,ico)  &
-                                                     + cpatch%dmean_wflux_gw_layer(:,ico)  &
-                                                     * ndaysi
-                  !----- Integrate mean sum of squares. -----------------------------------!
-                  cpatch%mmsqu_gpp        (ico) = cpatch%mmsqu_gpp                  (ico)  &
-                                                + isqu_ftz(cpatch%dmean_gpp         (ico)) &
-                                                * ndaysi
-                  cpatch%mmsqu_npp        (ico) = cpatch%mmsqu_npp                  (ico)  &
-                                                + isqu_ftz(cpatch%dmean_npp         (ico)) &
-                                                * ndaysi
-                  cpatch%mmsqu_plresp     (ico) = cpatch%mmsqu_plresp               (ico)  &
-                                                + isqu_ftz(cpatch%dmean_plresp      (ico)) &
-                                                * ndaysi
-                  cpatch%mmsqu_sensible_lc(ico) = cpatch%mmsqu_sensible_lc          (ico)  &
-                                                + isqu_ftz(cpatch%dmean_sensible_lc (ico)) &
-                                                * ndaysi
-                  cpatch%mmsqu_vapor_lc   (ico) = cpatch%mmsqu_vapor_lc             (ico)  &
-                                                + isqu_ftz(cpatch%dmean_vapor_lc    (ico)) &
-                                                * ndaysi
-                  cpatch%mmsqu_transp     (ico) = cpatch%mmsqu_transp               (ico)  &
-                                                + isqu_ftz(cpatch%dmean_transp      (ico)) &
-                                                * ndaysi
-                  cpatch%mmsqu_wflux_wl   (ico) = cpatch%mmsqu_wflux_wl             (ico)  &
-                                                + isqu_ftz(cpatch%dmean_wflux_wl    (ico)) &
-                                                * ndaysi
-                  cpatch%mmsqu_wflux_gw   (ico) = cpatch%mmsqu_wflux_gw             (ico)  &
-                                                + isqu_ftz(cpatch%dmean_wflux_gw    (ico)) &
-                                                * ndaysi
-                  cpatch%mmsqu_sensible_wc(ico) = cpatch%mmsqu_sensible_wc          (ico)  &
-                                                + isqu_ftz(cpatch%dmean_sensible_wc (ico)) &
-                                                * ndaysi
-                  cpatch%mmsqu_vapor_wc   (ico) = cpatch%mmsqu_vapor_wc             (ico)  &
-                                                + isqu_ftz(cpatch%dmean_vapor_wc    (ico)) &
-                                                * ndaysi
-                  !------------------------------------------------------------------------!
-               end do cohortloop
-               !---------------------------------------------------------------------------!
-            end do patchloop
-            !------------------------------------------------------------------------------!
-         end do siteloop
+         call integrate_ed_mmean_sites(cgrid,ipy,ndaysi)
          !---------------------------------------------------------------------------------!
       end do polyloop
       !------------------------------------------------------------------------------------!
 
       return
-   end subroutine integrate_ed_mmean_vars
+   end subroutine integrate_ed_mmean_polygons
    !=======================================================================================!
    !=======================================================================================!
 
@@ -5601,12 +5183,941 @@ module average_utils
 
    !=======================================================================================!
    !=======================================================================================!
-   !  SUBROUTINE: NORMALIZE_ED_MMEAN_VARS   
-   !> \brief This subroutine normalises the daily mean variables of those variables that
-   !> could not be integrated directly.  This includes temperatures, liquid fraction, and
-   !> soil matric potential.
+   !  SUBROUTINE: INTEGRATE_ED_MMEAN_SITES  
+   !> \brief This subroutine integrates most of the monthly mean variables. This sub-routine   
+   !> is called after the dmean variables have been normalised.\n
+   !> \details A few variables are _NOT_ integrated here: quantities such as temperature and
+   !> liquid fraction are found after the monthly mean of the extensive quantities have
+   !> been normalised. Also, polygon-level variables that were not integrated to the daily
+   !> means are not integrated here, they are found after the monthly mean at the native
+   !> level has been found. This subroutine will integrate site-level variables, then
+   !> call sub-routines that will handle patch- (and cohort-) level variables.
    !---------------------------------------------------------------------------------------!
-   subroutine normalize_ed_mmean_vars(cgrid)
+   subroutine integrate_ed_mmean_sites(cgrid,ipy,ndaysi)
+      use ed_state_vars, only : edtype       & ! structure
+                              , polygontype  ! ! structure
+      implicit none
+      !----- Argument. --------------------------------------------------------------------!
+      type(edtype)      , target     :: cgrid
+      integer           , intent(in) :: ipy
+      real              , intent(in) :: ndaysi
+      !----- Local variables. -------------------------------------------------------------!
+      type(polygontype) , pointer   :: cpoly
+      integer                       :: isi
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !   Select polygon, then loop through sites.                                         !
+      !------------------------------------------------------------------------------------!
+      cpoly => cgrid%polygon(ipy)
+      siteloop: do isi=1,cpoly%nsites
+         cpoly%mmean_atm_theiv      (isi) = cpoly%mmean_atm_theiv      (isi)               &
+                                          + cpoly%dmean_atm_theiv      (isi)               &
+                                          * ndaysi
+         cpoly%mmean_atm_theta      (isi) = cpoly%mmean_atm_theta      (isi)               &
+                                          + cpoly%dmean_atm_theta      (isi)               &
+                                          * ndaysi
+         cpoly%mmean_atm_vpdef      (isi) = cpoly%mmean_atm_vpdef      (isi)               &
+                                          + cpoly%dmean_atm_vpdef      (isi)               &
+                                          * ndaysi
+         cpoly%mmean_atm_shv        (isi) = cpoly%mmean_atm_shv        (isi)               &
+                                          + cpoly%dmean_atm_shv        (isi)               &
+                                          * ndaysi
+         cpoly%mmean_atm_rshort     (isi) = cpoly%mmean_atm_rshort     (isi)               &
+                                          + cpoly%dmean_atm_rshort     (isi)               &
+                                          * ndaysi
+         cpoly%mmean_atm_rshort_diff(isi) = cpoly%mmean_atm_rshort_diff(isi)               &
+                                          + cpoly%dmean_atm_rshort_diff(isi)               &
+                                          * ndaysi
+         cpoly%mmean_atm_par        (isi) = cpoly%mmean_atm_par        (isi)               &
+                                          + cpoly%dmean_atm_par        (isi)               &
+                                          * ndaysi
+         cpoly%mmean_atm_par_diff   (isi) = cpoly%mmean_atm_par_diff   (isi)               &
+                                          + cpoly%dmean_atm_par_diff   (isi)               &
+                                          * ndaysi
+         cpoly%mmean_atm_rlong      (isi) = cpoly%mmean_atm_rlong      (isi)               &
+                                          + cpoly%dmean_atm_rlong      (isi)               &
+                                          * ndaysi
+         cpoly%mmean_atm_vels       (isi) = cpoly%mmean_atm_vels       (isi)               &
+                                          + cpoly%dmean_atm_vels       (isi)               &
+                                          * ndaysi
+         cpoly%mmean_atm_prss       (isi) = cpoly%mmean_atm_prss       (isi)               &
+                                          + cpoly%dmean_atm_prss       (isi)               &
+                                          * ndaysi
+         cpoly%mmean_atm_co2        (isi) = cpoly%mmean_atm_co2        (isi)               &
+                                          + cpoly%dmean_atm_co2        (isi)               &
+                                          * ndaysi
+         cpoly%mmean_pcpg           (isi) = cpoly%mmean_pcpg           (isi)               &
+                                          + cpoly%dmean_pcpg           (isi)               &
+                                          * ndaysi
+         cpoly%mmean_qpcpg          (isi) = cpoly%mmean_qpcpg          (isi)               &
+                                          + cpoly%dmean_qpcpg          (isi)               &
+                                          * ndaysi
+         cpoly%mmean_dpcpg          (isi) = cpoly%mmean_dpcpg          (isi)               &
+                                          + cpoly%dmean_dpcpg          (isi)               &
+                                          * ndaysi
+
+         !---------------------------------------------------------------------------------!
+         !   Call sub-routine that will integrate patch- (and cohort-) level variables.    !
+         !---------------------------------------------------------------------------------!
+         call integrate_ed_mmean_patches(cpoly,isi,ndaysi)
+         !---------------------------------------------------------------------------------!
+      end do siteloop
+      !------------------------------------------------------------------------------------!
+
+      return
+   end subroutine integrate_ed_mmean_sites
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !  SUBROUTINE: INTEGRATE_ED_MMEAN_PATCHES 
+   !> \brief This subroutine integrates most of the monthly mean variables. This sub-routine   
+   !> is called after the dmean variables have been normalised.\n
+   !> \details A few variables are _NOT_ integrated here: quantities such as temperature and
+   !> liquid fraction are found after the monthly mean of the extensive quantities have
+   !> been normalised. Also, polygon-level variables that were not integrated to the daily
+   !> means are not integrated here, they are found after the monthly mean at the native
+   !> level has been found. This subroutine will integrate patch-level variables, then
+   !> call sub-routines that will handle cohort-level variables.
+   !---------------------------------------------------------------------------------------!
+   subroutine integrate_ed_mmean_patches(cpoly,isi,ndaysi)
+      use ed_state_vars, only : polygontype  & ! structure
+                              , sitetype     ! ! structure
+      use consts_coms  , only : yr_day       ! ! intent(in)
+      implicit none
+      !----- Argument. --------------------------------------------------------------------!
+      type(polygontype) , target     :: cpoly
+      integer           , intent(in) :: isi
+      real              , intent(in) :: ndaysi
+      !----- Local variables. -------------------------------------------------------------!
+      type(sitetype)    , pointer    :: csite
+      integer                        :: ipa
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !   Select site, then loop through patches.                                          !
+      !------------------------------------------------------------------------------------!
+      csite => cpoly%site(isi)
+      patchloop: do ipa=1,csite%npatches
+         !---------------------------------------------------------------------------------!
+         !      Integrate the variables that don't have daily means because their time     !
+         ! step is one day.                                                                !
+         !---------------------------------------------------------------------------------!
+         csite%mmean_fast_grnd_c      (ipa) = csite%mmean_fast_grnd_c      (ipa)           &
+                                            + csite%fast_grnd_c            (ipa)           &
+                                            * ndaysi
+         csite%mmean_fast_soil_c      (ipa) = csite%mmean_fast_soil_c      (ipa)           &
+                                            + csite%fast_soil_c            (ipa)           &
+                                            * ndaysi
+         csite%mmean_struct_grnd_c    (ipa) = csite%mmean_struct_grnd_c    (ipa)           &
+                                            + csite%structural_grnd_c      (ipa)           &
+                                            * ndaysi
+         csite%mmean_struct_soil_c    (ipa) = csite%mmean_struct_soil_c    (ipa)           &
+                                            + csite%structural_soil_c      (ipa)           &
+                                            * ndaysi
+         csite%mmean_struct_grnd_l    (ipa) = csite%mmean_struct_grnd_l    (ipa)           &
+                                            + csite%structural_grnd_l      (ipa)           &
+                                            * ndaysi
+         csite%mmean_struct_soil_l    (ipa) = csite%mmean_struct_soil_l    (ipa)           &
+                                            + csite%structural_soil_l      (ipa)           &
+                                            * ndaysi
+         csite%mmean_microbe_soil_c   (ipa) = csite%mmean_microbe_soil_c   (ipa)           &
+                                            + csite%microbial_soil_c       (ipa)           &
+                                            * ndaysi
+         csite%mmean_slow_soil_c      (ipa) = csite%mmean_slow_soil_c      (ipa)           &
+                                            + csite%slow_soil_c            (ipa)           &
+                                            * ndaysi
+         csite%mmean_passive_soil_c   (ipa) = csite%mmean_passive_soil_c   (ipa)           &
+                                            + csite%passive_soil_c         (ipa)           &
+                                            * ndaysi
+         csite%mmean_fast_grnd_n      (ipa) = csite%mmean_fast_grnd_n      (ipa)           &
+                                            + csite%fast_grnd_n            (ipa)           &
+                                            * ndaysi
+         csite%mmean_fast_soil_n      (ipa) = csite%mmean_fast_soil_n      (ipa)           &
+                                            + csite%fast_soil_n            (ipa)           &
+                                            * ndaysi
+         csite%mmean_struct_grnd_n    (ipa) = csite%mmean_struct_grnd_n    (ipa)           &
+                                            + csite%structural_grnd_n      (ipa)           &
+                                            * ndaysi
+         csite%mmean_struct_soil_n    (ipa) = csite%mmean_struct_soil_n    (ipa)           &
+                                            + csite%structural_soil_n      (ipa)           &
+                                            * ndaysi
+         csite%mmean_mineral_soil_n   (ipa) = csite%mmean_mineral_soil_n   (ipa)           &
+                                            + csite%mineralized_soil_n     (ipa)           &
+                                            * ndaysi
+         csite%mmean_fgc_in           (ipa) = csite%mmean_fgc_in           (ipa)           &
+                                            + csite%fgc_in                 (ipa)           &
+                                            * ndaysi * yr_day
+         csite%mmean_fsc_in           (ipa) = csite%mmean_fsc_in           (ipa)           &
+                                            + csite%fsc_in                 (ipa)           &
+                                            * ndaysi * yr_day
+         csite%mmean_stgc_in          (ipa) = csite%mmean_stgc_in          (ipa)           &
+                                            + csite%stgc_in                (ipa)           &
+                                            * ndaysi * yr_day
+         csite%mmean_stsc_in          (ipa) = csite%mmean_stsc_in          (ipa)           &
+                                            + csite%stsc_in                (ipa)           &
+                                            * ndaysi * yr_day
+         !---------------------------------------------------------------------------------!
+
+
+
+
+         !---------------------------------------------------------------------------------!
+         !      Integrate patch-level variables.                                           !
+         !---------------------------------------------------------------------------------!
+         csite%mmean_co2_residual     (ipa) = csite%mmean_co2_residual     (ipa)           &
+                                            + csite%dmean_co2_residual     (ipa)           &
+                                            * ndaysi
+         csite%mmean_energy_residual  (ipa) = csite%mmean_energy_residual  (ipa)           &
+                                            + csite%dmean_energy_residual  (ipa)           &
+                                            * ndaysi
+         csite%mmean_water_residual   (ipa) = csite%mmean_water_residual   (ipa)           &
+                                            + csite%dmean_water_residual   (ipa)           &
+                                            * ndaysi
+         csite%mmean_rh               (ipa) = csite%mmean_rh               (ipa)           &
+                                            + csite%dmean_rh               (ipa)           &
+                                            * ndaysi
+         csite%mmean_fgc_rh           (ipa) = csite%mmean_fgc_rh           (ipa)           &
+                                            + csite%dmean_fgc_rh           (ipa)           &
+                                            * ndaysi
+         csite%mmean_fsc_rh           (ipa) = csite%mmean_fsc_rh           (ipa)           &
+                                            + csite%dmean_fsc_rh           (ipa)           &
+                                            * ndaysi
+         csite%mmean_stgc_rh          (ipa) = csite%mmean_stgc_rh          (ipa)           &
+                                            + csite%dmean_stgc_rh          (ipa)           &
+                                            * ndaysi
+         csite%mmean_stsc_rh          (ipa) = csite%mmean_stsc_rh          (ipa)           &
+                                            + csite%dmean_stsc_rh          (ipa)           &
+                                            * ndaysi
+         csite%mmean_msc_rh           (ipa) = csite%mmean_msc_rh           (ipa)           &
+                                            + csite%dmean_msc_rh           (ipa)           &
+                                            * ndaysi
+         csite%mmean_ssc_rh           (ipa) = csite%mmean_ssc_rh           (ipa)           &
+                                            + csite%dmean_ssc_rh           (ipa)           &
+                                            * ndaysi
+         csite%mmean_psc_rh           (ipa) = csite%mmean_psc_rh           (ipa)           &
+                                            + csite%dmean_psc_rh           (ipa)           &
+                                            * ndaysi
+         csite%mmean_nep              (ipa) = csite%mmean_nep              (ipa)           &
+                                            + csite%dmean_nep              (ipa)           &
+                                            * ndaysi
+         csite%mmean_A_decomp         (ipa) = csite%mmean_A_decomp         (ipa)           &
+                                            + csite%dmean_A_decomp         (ipa)           &
+                                            * ndaysi
+         csite%mmean_B_decomp         (ipa) = csite%mmean_B_decomp         (ipa)           &
+                                            + csite%dmean_B_decomp         (ipa)           &
+                                            * ndaysi
+         csite%mmean_Af_decomp        (ipa) = csite%mmean_Af_decomp        (ipa)           &
+                                            + csite%dmean_Af_decomp        (ipa)           &
+                                            * ndaysi
+         csite%mmean_Bf_decomp        (ipa) = csite%mmean_Bf_decomp        (ipa)           &
+                                            + csite%dmean_Bf_decomp        (ipa)           &
+                                            * ndaysi
+         csite%mmean_rk4step          (ipa) = csite%mmean_rk4step          (ipa)           &
+                                            + csite%dmean_rk4step          (ipa)           &
+                                            * ndaysi
+         csite%mmean_available_water  (ipa) = csite%mmean_available_water  (ipa)           &
+                                            + csite%dmean_available_water  (ipa)           &
+                                            * ndaysi
+         csite%mmean_veg_displace     (ipa) = csite%mmean_veg_displace     (ipa)           &
+                                            + csite%dmean_veg_displace     (ipa)           &
+                                            * ndaysi
+         csite%mmean_rough            (ipa) = csite%mmean_rough            (ipa)           &
+                                            + csite%dmean_rough            (ipa)           &
+                                            * ndaysi
+         csite%mmean_can_theiv        (ipa) = csite%mmean_can_theiv        (ipa)           &
+                                            + csite%dmean_can_theiv        (ipa)           &
+                                            * ndaysi
+         csite%mmean_can_theta        (ipa) = csite%mmean_can_theta        (ipa)           &
+                                            + csite%dmean_can_theta        (ipa)           &
+                                            * ndaysi
+         csite%mmean_can_vpdef        (ipa) = csite%mmean_can_vpdef        (ipa)           &
+                                            + csite%dmean_can_vpdef        (ipa)           &
+                                            * ndaysi
+         csite%mmean_can_shv          (ipa) = csite%mmean_can_shv          (ipa)           &
+                                            + csite%dmean_can_shv          (ipa)           &
+                                            * ndaysi
+         csite%mmean_can_co2          (ipa) = csite%mmean_can_co2          (ipa)           &
+                                            + csite%dmean_can_co2          (ipa)           &
+                                            * ndaysi
+         csite%mmean_can_prss         (ipa) = csite%mmean_can_prss         (ipa)           &
+                                            + csite%dmean_can_prss         (ipa)           &
+                                            * ndaysi
+         csite%mmean_gnd_temp         (ipa) = csite%mmean_gnd_temp         (ipa)           &
+                                            + csite%dmean_gnd_temp         (ipa)           &
+                                            * ndaysi
+         csite%mmean_gnd_shv          (ipa) = csite%mmean_gnd_shv          (ipa)           &
+                                            + csite%dmean_gnd_shv          (ipa)           &
+                                            * ndaysi
+         csite%mmean_can_ggnd         (ipa) = csite%mmean_can_ggnd         (ipa)           &
+                                            + csite%dmean_can_ggnd         (ipa)           &
+                                            * ndaysi
+         csite%mmean_sfcw_depth       (ipa) = csite%mmean_sfcw_depth       (ipa)           &
+                                            + csite%dmean_sfcw_depth       (ipa)           &
+                                            * ndaysi
+         !----- Temporarily make pounding energy extensive [J/m2]. ------------------------!
+         csite%mmean_sfcw_energy      (ipa) = csite%mmean_sfcw_energy      (ipa)           &
+                                            + csite%dmean_sfcw_energy      (ipa)           &
+                                            * csite%dmean_sfcw_mass        (ipa)           &
+                                            * ndaysi
+         csite%mmean_sfcw_mass        (ipa) = csite%mmean_sfcw_mass        (ipa)           &
+                                            + csite%dmean_sfcw_mass        (ipa)           &
+                                            * ndaysi
+         csite%mmean_snowfac          (ipa) = csite%mmean_snowfac          (ipa)           &
+                                            + csite%dmean_snowfac          (ipa)           &
+                                            * ndaysi
+         csite%mmean_soil_energy    (:,ipa) = csite%mmean_soil_energy    (:,ipa)           &
+                                            + csite%dmean_soil_energy    (:,ipa)           &
+                                            * ndaysi
+         csite%mmean_soil_mstpot    (:,ipa) = csite%mmean_soil_mstpot    (:,ipa)           &
+                                            + csite%dmean_soil_mstpot    (:,ipa)           &
+                                            * ndaysi
+         csite%mmean_soil_water     (:,ipa) = csite%mmean_soil_water     (:,ipa)           &
+                                            + csite%dmean_soil_water     (:,ipa)           &
+                                            * ndaysi
+         csite%mmean_rshort_gnd       (ipa) = csite%mmean_rshort_gnd       (ipa)           &
+                                            + csite%dmean_rshort_gnd       (ipa)           &
+                                            * ndaysi
+         csite%mmean_par_gnd          (ipa) = csite%mmean_par_gnd          (ipa)           &
+                                            + csite%dmean_par_gnd          (ipa)           &
+                                            * ndaysi
+         csite%mmean_rlong_gnd        (ipa) = csite%mmean_rlong_gnd        (ipa)           &
+                                            + csite%dmean_rlong_gnd        (ipa)           &
+                                            * ndaysi
+         csite%mmean_rlongup          (ipa) = csite%mmean_rlongup          (ipa)           &
+                                            + csite%dmean_rlongup          (ipa)           &
+                                            * ndaysi
+         csite%mmean_parup            (ipa) = csite%mmean_parup            (ipa)           &
+                                            + csite%dmean_parup            (ipa)           &
+                                            * ndaysi
+         csite%mmean_nirup            (ipa) = csite%mmean_nirup            (ipa)           &
+                                            + csite%dmean_nirup            (ipa)           &
+                                            * ndaysi
+         csite%mmean_rshortup         (ipa) = csite%mmean_rshortup         (ipa)           &
+                                            + csite%dmean_rshortup         (ipa)           &
+                                            * ndaysi
+         csite%mmean_rnet             (ipa) = csite%mmean_rnet             (ipa)           &
+                                            + csite%dmean_rnet             (ipa)           &
+                                            * ndaysi
+         csite%mmean_albedo           (ipa) = csite%mmean_albedo           (ipa)           &
+                                            + csite%dmean_albedo           (ipa)           &
+                                            * ndaysi
+         csite%mmean_albedo_par       (ipa) = csite%mmean_albedo_par       (ipa)           &
+                                            + csite%dmean_albedo_par       (ipa)           &
+                                            * ndaysi
+         csite%mmean_albedo_nir       (ipa) = csite%mmean_albedo_nir       (ipa)           &
+                                            + csite%dmean_albedo_nir       (ipa)           &
+                                            * ndaysi
+         csite%mmean_rlong_albedo     (ipa) = csite%mmean_rlong_albedo     (ipa)           &
+                                            + csite%dmean_rlong_albedo     (ipa)           &
+                                            * ndaysi
+         csite%mmean_ustar            (ipa) = csite%mmean_ustar            (ipa)           &
+                                            + csite%dmean_ustar            (ipa)           &
+                                            * ndaysi
+         csite%mmean_tstar            (ipa) = csite%mmean_tstar            (ipa)           &
+                                            + csite%dmean_tstar            (ipa)           &
+                                            * ndaysi
+         csite%mmean_qstar            (ipa) = csite%mmean_qstar            (ipa)           &
+                                            + csite%dmean_qstar            (ipa)           &
+                                            * ndaysi
+         csite%mmean_cstar            (ipa) = csite%mmean_cstar            (ipa)           &
+                                            + csite%dmean_cstar            (ipa)           &
+                                            * ndaysi
+         csite%mmean_carbon_ac        (ipa) = csite%mmean_carbon_ac        (ipa)           &
+                                            + csite%dmean_carbon_ac        (ipa)           &
+                                            * ndaysi
+         csite%mmean_carbon_st        (ipa) = csite%mmean_carbon_st        (ipa)           &
+                                            + csite%dmean_carbon_st        (ipa)           &
+                                            * ndaysi
+         csite%mmean_vapor_gc         (ipa) = csite%mmean_vapor_gc         (ipa)           &
+                                            + csite%dmean_vapor_gc         (ipa)           &
+                                            * ndaysi
+         csite%mmean_vapor_ac         (ipa) = csite%mmean_vapor_ac         (ipa)           &
+                                            + csite%dmean_vapor_ac         (ipa)           &
+                                            * ndaysi
+         csite%mmean_smoist_gg      (:,ipa) = csite%mmean_smoist_gg      (:,ipa)           &
+                                            + csite%dmean_smoist_gg      (:,ipa)           &
+                                            * ndaysi
+         csite%mmean_throughfall      (ipa) = csite%mmean_throughfall      (ipa)           &
+                                            + csite%dmean_throughfall      (ipa)           &
+                                            * ndaysi
+         csite%mmean_transloss      (:,ipa) = csite%mmean_transloss      (:,ipa)           &
+                                            + csite%dmean_transloss      (:,ipa)           &
+                                            * ndaysi
+         csite%mmean_runoff           (ipa) = csite%mmean_runoff           (ipa)           &
+                                            + csite%dmean_runoff           (ipa)           &
+                                            * ndaysi
+         csite%mmean_drainage         (ipa) = csite%mmean_drainage         (ipa)           &
+                                            + csite%dmean_drainage         (ipa)           &
+                                            * ndaysi
+         csite%mmean_sensible_gc      (ipa) = csite%mmean_sensible_gc      (ipa)           &
+                                            + csite%dmean_sensible_gc      (ipa)           &
+                                            * ndaysi
+         csite%mmean_sensible_ac      (ipa) = csite%mmean_sensible_ac      (ipa)           &
+                                            + csite%dmean_sensible_ac      (ipa)           &
+                                            * ndaysi
+         csite%mmean_sensible_gg    (:,ipa) = csite%mmean_sensible_gg    (:,ipa)           &
+                                            + csite%dmean_sensible_gg    (:,ipa)           &
+                                            * ndaysi
+         csite%mmean_qthroughfall     (ipa) = csite%mmean_qthroughfall     (ipa)           &
+                                            + csite%dmean_qthroughfall     (ipa)           &
+                                            * ndaysi
+         csite%mmean_qrunoff          (ipa) = csite%mmean_qrunoff          (ipa)           &
+                                            + csite%dmean_qrunoff          (ipa)           &
+                                            * ndaysi
+         csite%mmean_qdrainage        (ipa) = csite%mmean_qdrainage        (ipa)           &
+                                            + csite%dmean_qdrainage        (ipa)           &
+                                            * ndaysi
+         csite%mmean_A_decomp         (ipa) = csite%mmean_A_decomp         (ipa)           &
+                                            + csite%dmean_A_decomp         (ipa)           &
+                                            * ndaysi
+         csite%mmean_B_decomp         (ipa) = csite%mmean_B_decomp         (ipa)           &
+                                            + csite%dmean_B_decomp         (ipa)           &
+                                            * ndaysi
+         csite%mmean_Af_decomp        (ipa) = csite%mmean_Af_decomp        (ipa)           &
+                                            + csite%dmean_Af_decomp        (ipa)           &
+                                            * ndaysi
+         csite%mmean_Bf_decomp        (ipa) = csite%mmean_Bf_decomp        (ipa)           &
+                                            + csite%dmean_Bf_decomp        (ipa)           &
+                                            * ndaysi
+         csite%mmean_co2_residual     (ipa) = csite%mmean_co2_residual     (ipa)           &
+                                            + csite%dmean_co2_residual     (ipa)           &
+                                            * ndaysi
+         csite%mmean_energy_residual  (ipa) = csite%mmean_energy_residual  (ipa)           &
+                                            + csite%dmean_energy_residual  (ipa)           &
+                                            * ndaysi
+         csite%mmean_water_residual   (ipa) = csite%mmean_water_residual   (ipa)           &
+                                            + csite%dmean_water_residual   (ipa)           &
+                                            * ndaysi
+         !---------------------------------------------------------------------------------!
+         !     Integrate the sum of squares.                                               !
+         !---------------------------------------------------------------------------------!
+         csite%mmsqu_rh               (ipa) = csite%mmsqu_rh                  (ipa)        &
+                                            + isqu_ftz(csite%dmean_rh         (ipa))       &
+                                            * ndaysi
+         csite%mmsqu_fgc_rh           (ipa) = csite%mmsqu_fgc_rh              (ipa)        &
+                                            + isqu_ftz(csite%dmean_fgc_rh     (ipa))       &
+                                            * ndaysi
+         csite%mmsqu_fsc_rh           (ipa) = csite%mmsqu_fsc_rh              (ipa)        &
+                                            + isqu_ftz(csite%dmean_fsc_rh     (ipa))       &
+                                            * ndaysi
+         csite%mmsqu_stgc_rh          (ipa) = csite%mmsqu_stgc_rh             (ipa)        &
+                                            + isqu_ftz(csite%dmean_stgc_rh    (ipa))       &
+                                            * ndaysi
+         csite%mmsqu_stsc_rh          (ipa) = csite%mmsqu_stsc_rh             (ipa)        &
+                                            + isqu_ftz(csite%dmean_stsc_rh    (ipa))       &
+                                            * ndaysi
+         csite%mmsqu_msc_rh           (ipa) = csite%mmsqu_msc_rh              (ipa)        &
+                                            + isqu_ftz(csite%dmean_msc_rh     (ipa))       &
+                                            * ndaysi
+         csite%mmsqu_ssc_rh           (ipa) = csite%mmsqu_ssc_rh              (ipa)        &
+                                            + isqu_ftz(csite%dmean_ssc_rh     (ipa))       &
+                                            * ndaysi
+         csite%mmsqu_psc_rh           (ipa) = csite%mmsqu_psc_rh              (ipa)        &
+                                            + isqu_ftz(csite%dmean_psc_rh     (ipa))       &
+                                            * ndaysi
+         csite%mmsqu_nep              (ipa) = csite%mmsqu_nep                 (ipa)        &
+                                            + isqu_ftz(csite%dmean_nep        (ipa))       &
+                                            * ndaysi
+         csite%mmsqu_rlongup          (ipa) = csite%mmsqu_rlongup             (ipa)        &
+                                            + isqu_ftz(csite%dmean_rlongup    (ipa))       &
+                                            * ndaysi
+         csite%mmsqu_parup            (ipa) = csite%mmsqu_parup               (ipa)        &
+                                            + isqu_ftz(csite%dmean_parup      (ipa))       &
+                                            * ndaysi
+         csite%mmsqu_nirup            (ipa) = csite%mmsqu_nirup               (ipa)        &
+                                            + isqu_ftz(csite%dmean_nirup      (ipa))       &
+                                            * ndaysi
+         csite%mmsqu_rshortup         (ipa) = csite%mmsqu_rshortup            (ipa)        &
+                                            + isqu_ftz(csite%dmean_rshortup   (ipa))       &
+                                            * ndaysi
+         csite%mmsqu_rnet             (ipa) = csite%mmsqu_rnet                (ipa)        &
+                                            + isqu_ftz(csite%dmean_rnet       (ipa)        &
+                                            * csite%dmean_rnet                (ipa))       &
+                                            * ndaysi
+         csite%mmsqu_albedo           (ipa) = csite%mmsqu_albedo              (ipa)        &
+                                            + isqu_ftz(csite%dmean_albedo     (ipa)        &
+                                            * csite%dmean_albedo              (ipa))       &
+                                            * ndaysi
+         csite%mmsqu_ustar            (ipa) = csite%mmsqu_ustar               (ipa)        &
+                                            + isqu_ftz(csite%dmean_ustar      (ipa)        &
+                                            * csite%dmean_ustar               (ipa))       &
+                                            * ndaysi
+         csite%mmsqu_carbon_ac        (ipa) = csite%mmsqu_carbon_ac           (ipa)        &
+                                            + isqu_ftz(csite%dmean_carbon_ac  (ipa))       &
+                                            * ndaysi
+         csite%mmsqu_carbon_st        (ipa) = csite%mmsqu_carbon_st           (ipa)        &
+                                            + isqu_ftz(csite%dmean_carbon_st  (ipa))       &
+                                            * ndaysi
+         csite%mmsqu_vapor_gc         (ipa) = csite%mmsqu_vapor_gc            (ipa)        &
+                                            + isqu_ftz(csite%dmean_vapor_gc   (ipa))       &
+                                            * ndaysi
+         csite%mmsqu_vapor_ac         (ipa) = csite%mmsqu_vapor_ac            (ipa)        &
+                                            + isqu_ftz(csite%dmean_vapor_ac   (ipa))       &
+                                            * ndaysi
+         csite%mmsqu_sensible_gc      (ipa) = csite%mmsqu_sensible_gc         (ipa)        &
+                                            + isqu_ftz(csite%dmean_sensible_gc(ipa))       &
+                                            * ndaysi
+         csite%mmsqu_sensible_ac      (ipa) = csite%mmsqu_sensible_ac         (ipa)        &
+                                            + isqu_ftz(csite%dmean_sensible_ac(ipa))       &
+                                            * ndaysi
+         !---------------------------------------------------------------------------------!
+
+         !---------------------------------------------------------------------------------!
+         !   Call sub-routine that will integrate cohort-level variables.                  !
+         !---------------------------------------------------------------------------------!
+         call integrate_ed_mmean_cohorts(csite,ipa,ndaysi)
+         !---------------------------------------------------------------------------------!
+      end do patchloop
+      !------------------------------------------------------------------------------------!
+
+      return
+   end subroutine integrate_ed_mmean_patches
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !  SUBROUTINE: INTEGRATE_ED_MMEAN_COHORTS 
+   !> \brief This subroutine integrates most of the monthly mean variables. This sub-routine   
+   !> is called after the dmean variables have been normalised.\n
+   !> \details A few variables are _NOT_ integrated here: quantities such as temperature and
+   !> liquid fraction are found after the monthly mean of the extensive quantities have
+   !> been normalised. Also, polygon-level variables that were not integrated to the daily
+   !> means are not integrated here, they are found after the monthly mean at the native
+   !> level has been found. This subroutine will integrate cohort-level variables.
+   !---------------------------------------------------------------------------------------!
+   subroutine integrate_ed_mmean_cohorts(csite,ipa,ndaysi)
+      use ed_state_vars, only : sitetype     & ! structure
+                              , patchtype    ! ! structure
+      use consts_coms  , only : yr_day       ! ! intent(in)
+      implicit none
+      !----- Argument. --------------------------------------------------------------------!
+      type(sitetype)    , target     :: csite
+      integer           , intent(in) :: ipa
+      real              , intent(in) :: ndaysi
+      !----- Local variables. -------------------------------------------------------------!
+      type(patchtype)   , pointer   :: cpatch
+      integer                       :: ico
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !   Select patch, then loop through cohorts.                                         !
+      !------------------------------------------------------------------------------------!
+      cpatch => csite%patch(ipa)
+      cohortloop: do ico=1,cpatch%ncohorts
+
+
+         !---------------------------------------------------------------------------------!
+         !      Integrate the cohort-level variables that have no daily means because      !
+         ! their time step is one day.                                                     !
+         !--------------------------------------------------------------------------------!-
+         cpatch%mmean_thbark          (ico) = cpatch%mmean_thbark          (ico)           &
+                                            + cpatch%thbark                (ico)           &
+                                            * ndaysi
+         cpatch%mmean_vm_bar          (ico) = cpatch%mmean_vm_bar          (ico)           &
+                                            + cpatch%vm_bar                (ico)           &
+                                            * ndaysi
+         cpatch%mmean_rd_bar          (ico) = cpatch%mmean_rd_bar          (ico)           &
+                                            + cpatch%rd_bar                (ico)           &
+                                            * ndaysi
+         cpatch%mmean_sla             (ico) = cpatch%mmean_sla             (ico)           &
+                                            + cpatch%sla                   (ico)           &
+                                            * ndaysi
+         cpatch%mmean_llspan          (ico) = cpatch%mmean_llspan          (ico)           &
+                                            + cpatch%llspan                (ico)           &
+                                            * ndaysi
+         cpatch%mmean_lai             (ico) = cpatch%mmean_lai             (ico)           &
+                                            + cpatch%lai                   (ico)           &
+                                            * ndaysi
+         cpatch%mmean_bleaf           (ico) = cpatch%mmean_bleaf           (ico)           &
+                                            + cpatch%bleaf                 (ico)           &
+                                            * ndaysi
+         cpatch%mmean_broot           (ico) = cpatch%mmean_broot           (ico)           &
+                                            + cpatch%broot                 (ico)           &
+                                            * ndaysi
+         cpatch%mmean_bbarka          (ico) = cpatch%mmean_bbarka          (ico)           &
+                                            + cpatch%bbarka                (ico)           &
+                                            * ndaysi
+         cpatch%mmean_bbarkb          (ico) = cpatch%mmean_bbarkb          (ico)           &
+                                            + cpatch%bbarkb                (ico)           &
+                                            * ndaysi
+         cpatch%mmean_balive          (ico) = cpatch%mmean_balive          (ico)           &
+                                            + cpatch%balive                (ico)           &
+                                            * ndaysi
+         cpatch%mmean_bstorage        (ico) = cpatch%mmean_bstorage        (ico)           &
+                                            + cpatch%bstorage              (ico)           &
+                                            * ndaysi
+         cpatch%mmean_mort_rate     (:,ico) = cpatch%mmean_mort_rate     (:,ico)           &
+                                            + cpatch%mort_rate           (:,ico)           &
+                                            * ndaysi
+         cpatch%mmean_leaf_maintenance(ico) = cpatch%mmean_leaf_maintenance(ico)           &
+                                            + cpatch%leaf_maintenance      (ico)           &
+                                            * ndaysi
+         cpatch%mmean_root_maintenance(ico) = cpatch%mmean_root_maintenance(ico)           &
+                                            + cpatch%root_maintenance      (ico)           &
+                                            * ndaysi
+         cpatch%mmean_barka_maintenance(ico) =                                             &
+                                             cpatch%mmean_barka_maintenance(ico)           &
+                                           + cpatch%barka_maintenance      (ico)           &
+                                           * ndaysi
+         cpatch%mmean_barkb_maintenance(ico) =                                             &
+                                             cpatch%mmean_barkb_maintenance(ico)           &
+                                           + cpatch%barkb_maintenance      (ico)           &
+                                           * ndaysi
+         cpatch%mmean_leaf_drop       (ico) = cpatch%mmean_leaf_drop       (ico)           &
+                                            + cpatch%leaf_drop             (ico)           &
+                                            * ndaysi
+         cpatch%mmean_root_drop       (ico) = cpatch%mmean_root_drop       (ico)           &
+                                            + cpatch%root_drop             (ico)           &
+                                            * ndaysi
+         cpatch%mmean_cb              (ico) = cpatch%mmean_cb              (ico)           &
+                                            + ( cpatch%dmean_gpp           (ico)           &
+                                              - cpatch%dmean_plresp        (ico)           &
+                                              - cpatch%leaf_maintenance    (ico)           &
+                                              - cpatch%root_maintenance    (ico)           &
+                                              - cpatch%barka_maintenance   (ico)           &
+                                              - cpatch%barkb_maintenance   (ico)           &
+                                              - cpatch%leaf_drop           (ico)           &
+                                              - cpatch%root_drop           (ico)           &
+                                              ) / yr_day * ndaysi
+         !---------------------------------------------------------------------------------!
+
+
+
+         !---------------------------------------------------------------------------------!
+         !      Integrate the other cohort-level variables.                                !
+         !---------------------------------------------------------------------------------!
+         cpatch%mmean_gpp               (ico) = cpatch%mmean_gpp               (ico)       &
+                                              + cpatch%dmean_gpp               (ico)       &
+                                              * ndaysi
+         cpatch%mmean_npp               (ico) = cpatch%mmean_npp               (ico)       &
+                                              + cpatch%dmean_npp               (ico)       &
+                                              * ndaysi
+         cpatch%mmean_leaf_resp         (ico) = cpatch%mmean_leaf_resp         (ico)       &
+                                              + cpatch%dmean_leaf_resp         (ico)       &
+                                              * ndaysi
+         cpatch%mmean_root_resp         (ico) = cpatch%mmean_root_resp         (ico)       &
+                                              + cpatch%dmean_root_resp         (ico)       &
+                                              * ndaysi
+         cpatch%mmean_stem_resp         (ico) = cpatch%mmean_stem_resp         (ico)       &
+                                              + cpatch%dmean_stem_resp         (ico)       &
+                                              * ndaysi
+         cpatch%mmean_leaf_growth_resp  (ico) = cpatch%mmean_leaf_growth_resp  (ico)       &
+                                              + cpatch%dmean_leaf_growth_resp  (ico)       &
+                                              * ndaysi
+         cpatch%mmean_root_growth_resp  (ico) = cpatch%mmean_root_growth_resp  (ico)       &
+                                              + cpatch%dmean_root_growth_resp  (ico)       &
+                                              * ndaysi
+         cpatch%mmean_sapa_growth_resp  (ico) = cpatch%mmean_sapa_growth_resp  (ico)       &
+                                              + cpatch%dmean_sapa_growth_resp  (ico)       &
+                                              * ndaysi
+         cpatch%mmean_sapb_growth_resp  (ico) = cpatch%mmean_sapb_growth_resp  (ico)       &
+                                              + cpatch%dmean_sapb_growth_resp  (ico)       &
+                                              * ndaysi
+         cpatch%mmean_barka_growth_resp (ico) = cpatch%mmean_barka_growth_resp (ico)       &
+                                              + cpatch%dmean_barka_growth_resp (ico)       &
+                                              * ndaysi
+         cpatch%mmean_barkb_growth_resp (ico) = cpatch%mmean_barkb_growth_resp (ico)       &
+                                              + cpatch%dmean_barkb_growth_resp (ico)       &
+                                              * ndaysi
+         cpatch%mmean_leaf_storage_resp (ico) = cpatch%mmean_leaf_storage_resp (ico)       &
+                                              + cpatch%dmean_leaf_storage_resp (ico)       &
+                                              * ndaysi
+         cpatch%mmean_root_storage_resp (ico) = cpatch%mmean_root_storage_resp (ico)       &
+                                              + cpatch%dmean_root_storage_resp (ico)       &
+                                              * ndaysi
+         cpatch%mmean_sapa_storage_resp (ico) = cpatch%mmean_sapa_storage_resp (ico)       &
+                                              + cpatch%dmean_sapa_storage_resp (ico)       &
+                                              * ndaysi
+         cpatch%mmean_sapb_storage_resp (ico) = cpatch%mmean_sapb_storage_resp (ico)       &
+                                              + cpatch%dmean_sapb_storage_resp (ico)       &
+                                              * ndaysi
+         cpatch%mmean_barka_storage_resp(ico) = cpatch%mmean_barka_storage_resp(ico)       &
+                                              + cpatch%dmean_barka_storage_resp(ico)       &
+                                              * ndaysi
+         cpatch%mmean_barkb_storage_resp(ico) = cpatch%mmean_barkb_storage_resp(ico)       &
+                                              + cpatch%dmean_barkb_storage_resp(ico)       &
+                                              * ndaysi
+         cpatch%mmean_plresp            (ico) = cpatch%mmean_plresp            (ico)       &
+                                              + cpatch%dmean_plresp            (ico)       &
+                                              * ndaysi
+         cpatch%mmean_leaf_energy       (ico) = cpatch%mmean_leaf_energy       (ico)       &
+                                              + cpatch%dmean_leaf_energy       (ico)       &
+                                              * ndaysi
+         cpatch%mmean_leaf_water        (ico) = cpatch%mmean_leaf_water        (ico)       &
+                                              + cpatch%dmean_leaf_water        (ico)       &
+                                              * ndaysi
+         cpatch%mmean_leaf_hcap         (ico) = cpatch%mmean_leaf_hcap         (ico)       &
+                                              + cpatch%dmean_leaf_hcap         (ico)       &
+                                              * ndaysi
+         cpatch%mmean_leaf_vpdef        (ico) = cpatch%mmean_leaf_vpdef        (ico)       &
+                                              + cpatch%dmean_leaf_vpdef        (ico)       &
+                                              * ndaysi
+         cpatch%mmean_leaf_temp         (ico) = cpatch%mmean_leaf_temp         (ico)       &
+                                              + cpatch%dmean_leaf_temp         (ico)       &
+                                              * ndaysi
+         cpatch%mmean_leaf_fliq         (ico) = cpatch%mmean_leaf_fliq         (ico)       &
+                                              + cpatch%dmean_leaf_fliq         (ico)       &
+                                              * ndaysi
+         cpatch%mmean_leaf_gsw          (ico) = cpatch%mmean_leaf_gsw          (ico)       &
+                                              + cpatch%dmean_leaf_gsw          (ico)       &
+                                              * ndaysi
+         cpatch%mmean_leaf_gbw          (ico) = cpatch%mmean_leaf_gbw          (ico)       &
+                                              + cpatch%dmean_leaf_gbw          (ico)       &
+                                              * ndaysi
+         cpatch%mmean_wood_energy       (ico) = cpatch%mmean_wood_energy       (ico)       &
+                                              + cpatch%dmean_wood_energy       (ico)       &
+                                              * ndaysi
+         cpatch%mmean_wood_water        (ico) = cpatch%mmean_wood_water        (ico)       &
+                                              + cpatch%dmean_wood_water        (ico)       &
+                                              * ndaysi
+         cpatch%mmean_wood_hcap         (ico) = cpatch%mmean_wood_hcap         (ico)       &
+                                              + cpatch%dmean_wood_hcap         (ico)       &
+                                              * ndaysi
+         cpatch%mmean_wood_temp         (ico) = cpatch%mmean_wood_temp         (ico)       &
+                                              + cpatch%dmean_wood_temp         (ico)       &
+                                              * ndaysi
+         cpatch%mmean_wood_fliq         (ico) = cpatch%mmean_wood_fliq         (ico)       &
+                                              + cpatch%dmean_wood_fliq         (ico)       &
+                                              * ndaysi
+         cpatch%mmean_wood_gbw          (ico) = cpatch%mmean_wood_gbw          (ico)       &
+                                              + cpatch%dmean_wood_gbw          (ico)       &
+                                              * ndaysi
+         cpatch%mmean_fs_open           (ico) = cpatch%mmean_fs_open           (ico)       &
+                                              + cpatch%dmean_fs_open           (ico)       &
+                                              * ndaysi
+         cpatch%mmean_fsw               (ico) = cpatch%mmean_fsw               (ico)       &
+                                              + cpatch%dmean_fsw               (ico)       &
+                                              * ndaysi
+         cpatch%mmean_fsn               (ico) = cpatch%mmean_fsn               (ico)       &
+                                              + cpatch%dmean_fsn               (ico)       &
+                                              * ndaysi
+         cpatch%mmean_a_open            (ico) = cpatch%mmean_a_open            (ico)       &
+                                              + cpatch%dmean_a_open            (ico)       &
+                                              * ndaysi
+         cpatch%mmean_a_closed          (ico) = cpatch%mmean_a_closed          (ico)       &
+                                              + cpatch%dmean_a_closed          (ico)       &
+                                              * ndaysi
+         cpatch%mmean_a_net             (ico) = cpatch%mmean_a_net             (ico)       &
+                                              + cpatch%dmean_a_net             (ico)       &
+                                              * ndaysi
+         cpatch%mmean_a_light           (ico) = cpatch%mmean_a_light           (ico)       &
+                                              + cpatch%dmean_a_light           (ico)       &
+                                              * ndaysi
+         cpatch%mmean_a_rubp            (ico) = cpatch%mmean_a_rubp            (ico)       &
+                                              + cpatch%dmean_a_rubp            (ico)       &
+                                              * ndaysi
+         cpatch%mmean_a_co2             (ico) = cpatch%mmean_a_co2             (ico)       &
+                                              + cpatch%dmean_a_co2             (ico)       &
+                                              * ndaysi
+         cpatch%mmean_psi_open          (ico) = cpatch%mmean_psi_open          (ico)       &
+                                              + cpatch%dmean_psi_open          (ico)       &
+                                              * ndaysi
+         cpatch%mmean_psi_closed        (ico) = cpatch%mmean_psi_closed        (ico)       &
+                                              + cpatch%dmean_psi_closed        (ico)       &
+                                              * ndaysi
+         cpatch%mmean_water_supply      (ico) = cpatch%mmean_water_supply      (ico)       &
+                                              + cpatch%dmean_water_supply      (ico)       &
+                                              * ndaysi
+         cpatch%mmean_par_level_beam    (ico) = cpatch%mmean_par_level_beam    (ico)       &
+                                              + cpatch%dmean_par_level_beam    (ico)       &
+                                              * ndaysi
+         cpatch%mmean_par_level_diffd   (ico) = cpatch%mmean_par_level_diffd   (ico)       &
+                                              + cpatch%dmean_par_level_diffd   (ico)       &
+                                              * ndaysi
+         cpatch%mmean_par_level_diffu   (ico) = cpatch%mmean_par_level_diffu   (ico)       &
+                                              + cpatch%dmean_par_level_diffu   (ico)       &
+                                              * ndaysi
+         cpatch%mmean_light_level       (ico) = cpatch%mmean_light_level       (ico)       &
+                                              + cpatch%dmean_light_level       (ico)       &
+                                              * ndaysi
+         cpatch%mmean_light_level_beam  (ico) = cpatch%mmean_light_level_beam  (ico)       &
+                                              + cpatch%dmean_light_level_beam  (ico)       &
+                                              * ndaysi
+         cpatch%mmean_light_level_diff  (ico) = cpatch%mmean_light_level_diff  (ico)       &
+                                              + cpatch%dmean_light_level_diff  (ico)       &
+                                              * ndaysi
+         cpatch%mmean_par_l             (ico) = cpatch%mmean_par_l             (ico)       &
+                                              + cpatch%dmean_par_l             (ico)       &
+                                              * ndaysi
+         cpatch%mmean_par_l_beam        (ico) = cpatch%mmean_par_l_beam        (ico)       &
+                                              + cpatch%dmean_par_l_beam        (ico)       &
+                                              * ndaysi
+         cpatch%mmean_par_l_diff        (ico) = cpatch%mmean_par_l_diff        (ico)       &
+                                              + cpatch%dmean_par_l_diff        (ico)       &
+                                              * ndaysi
+         cpatch%mmean_rshort_l          (ico) = cpatch%mmean_rshort_l          (ico)       &
+                                              + cpatch%dmean_rshort_l          (ico)       &
+                                              * ndaysi
+         cpatch%mmean_rlong_l           (ico) = cpatch%mmean_rlong_l           (ico)       &
+                                              + cpatch%dmean_rlong_l           (ico)       &
+                                              * ndaysi
+         cpatch%mmean_sensible_lc       (ico) = cpatch%mmean_sensible_lc       (ico)       &
+                                              + cpatch%dmean_sensible_lc       (ico)       &
+                                              * ndaysi
+         cpatch%mmean_vapor_lc          (ico) = cpatch%mmean_vapor_lc          (ico)       &
+                                              + cpatch%dmean_vapor_lc          (ico)       &
+                                              * ndaysi
+         cpatch%mmean_transp            (ico) = cpatch%mmean_transp            (ico)       &
+                                              + cpatch%dmean_transp            (ico)       &
+                                              * ndaysi
+         cpatch%mmean_intercepted_al    (ico) = cpatch%mmean_intercepted_al    (ico)       &
+                                              + cpatch%dmean_intercepted_al    (ico)       &
+                                              * ndaysi
+         cpatch%mmean_wshed_lg          (ico) = cpatch%mmean_wshed_lg          (ico)       &
+                                              + cpatch%dmean_wshed_lg          (ico)       &
+                                              * ndaysi
+         cpatch%mmean_rshort_w          (ico) = cpatch%mmean_rshort_w          (ico)       &
+                                              + cpatch%dmean_rshort_w          (ico)       &
+                                              * ndaysi
+         cpatch%mmean_rlong_w           (ico) = cpatch%mmean_rlong_w           (ico)       &
+                                              + cpatch%dmean_rlong_w           (ico)       &
+                                              * ndaysi
+         cpatch%mmean_rad_profile     (:,ico) = cpatch%mmean_rad_profile     (:,ico)       &
+                                              + cpatch%dmean_rad_profile     (:,ico)       &
+                                              * ndaysi
+         cpatch%mmean_sensible_wc       (ico) = cpatch%mmean_sensible_wc       (ico)       &
+                                              + cpatch%dmean_sensible_wc       (ico)       &
+                                              * ndaysi
+         cpatch%mmean_vapor_wc          (ico) = cpatch%mmean_vapor_wc          (ico)       &
+                                              + cpatch%dmean_vapor_wc          (ico)       &
+                                              * ndaysi
+         cpatch%mmean_intercepted_aw    (ico) = cpatch%mmean_intercepted_aw    (ico)       &
+                                              + cpatch%dmean_intercepted_aw    (ico)       &
+                                              * ndaysi
+         cpatch%mmean_wshed_wg          (ico) = cpatch%mmean_wshed_wg          (ico)       &
+                                              + cpatch%dmean_wshed_wg          (ico)       &
+                                              * ndaysi
+         cpatch%mmean_nppleaf           (ico) = cpatch%mmean_nppleaf           (ico)       &
+                                              + cpatch%dmean_nppleaf           (ico)       &
+                                              * ndaysi
+         cpatch%mmean_nppfroot          (ico) = cpatch%mmean_nppfroot          (ico)       &
+                                              + cpatch%dmean_nppfroot          (ico)       &
+                                              * ndaysi
+         cpatch%mmean_nppsapwood        (ico) = cpatch%mmean_nppsapwood        (ico)       &
+                                              + cpatch%dmean_nppsapwood        (ico)       &
+                                              * ndaysi
+         cpatch%mmean_nppbark           (ico) = cpatch%mmean_nppbark           (ico)       &
+                                              + cpatch%dmean_nppbark           (ico)       &
+                                              * ndaysi
+         cpatch%mmean_nppcroot          (ico) = cpatch%mmean_nppcroot          (ico)       &
+                                              + cpatch%dmean_nppcroot          (ico)       &
+                                              * ndaysi
+         cpatch%mmean_nppseeds          (ico) = cpatch%mmean_nppseeds          (ico)       &
+                                              + cpatch%dmean_nppseeds          (ico)       &
+                                              * ndaysi
+         cpatch%mmean_nppwood           (ico) = cpatch%mmean_nppwood           (ico)       &
+                                              + cpatch%dmean_nppwood           (ico)       &
+                                              * ndaysi
+         cpatch%mmean_nppdaily          (ico) = cpatch%mmean_nppdaily          (ico)       &
+                                              + cpatch%dmean_nppdaily          (ico)       &
+                                              * ndaysi
+
+         cpatch%mmean_dmax_leaf_psi     (ico) = cpatch%mmean_dmax_leaf_psi     (ico)       &
+                                              + cpatch%dmax_leaf_psi           (ico)       &
+                                              * ndaysi
+         cpatch%mmean_dmin_leaf_psi     (ico) = cpatch%mmean_dmin_leaf_psi     (ico)       &
+                                              + cpatch%dmin_leaf_psi           (ico)       &
+                                              * ndaysi
+         cpatch%mmean_dmax_wood_psi     (ico) = cpatch%mmean_dmax_wood_psi     (ico)       &
+                                              + cpatch%dmax_wood_psi           (ico)       &
+                                              * ndaysi
+         cpatch%mmean_dmin_wood_psi     (ico) = cpatch%mmean_dmin_wood_psi     (ico)       &
+                                              + cpatch%dmin_wood_psi           (ico)       &
+                                              * ndaysi
+         cpatch%mmean_leaf_water_int    (ico) = cpatch%mmean_leaf_water_int    (ico)       &
+                                              + cpatch%dmean_leaf_water_int    (ico)       &
+                                              * ndaysi
+         cpatch%mmean_leaf_water_im2    (ico) = cpatch%mmean_leaf_water_im2    (ico)       &
+                                              + cpatch%dmean_leaf_water_im2    (ico)       &
+                                              * ndaysi
+         cpatch%mmean_wood_water_int    (ico) = cpatch%mmean_wood_water_int    (ico)       &
+                                              + cpatch%dmean_wood_water_int    (ico)       &
+                                              * ndaysi
+         cpatch%mmean_wood_water_im2    (ico) = cpatch%mmean_wood_water_im2    (ico)       &
+                                              + cpatch%dmean_wood_water_im2    (ico)       &
+                                              * ndaysi
+         cpatch%mmean_wflux_wl          (ico) = cpatch%mmean_wflux_wl          (ico)       &
+                                              + cpatch%dmean_wflux_wl          (ico)       &
+                                              * ndaysi
+         cpatch%mmean_wflux_gw          (ico) = cpatch%mmean_wflux_gw          (ico)       &
+                                              + cpatch%dmean_wflux_gw          (ico)       &
+                                              * ndaysi
+         cpatch%mmean_wflux_gw_layer  (:,ico) = cpatch%mmean_wflux_gw_layer  (:,ico)       &
+                                              + cpatch%dmean_wflux_gw_layer  (:,ico)       &
+                                              * ndaysi
+         !----- Integrate mean sum of squares. --------------------------------------------!
+         cpatch%mmsqu_gpp               (ico) = cpatch%mmsqu_gpp                  (ico)    &
+                                              + isqu_ftz(cpatch%dmean_gpp         (ico))   &
+                                              * ndaysi
+         cpatch%mmsqu_npp               (ico) = cpatch%mmsqu_npp                  (ico)    &
+                                              + isqu_ftz(cpatch%dmean_npp         (ico))   &
+                                              * ndaysi
+         cpatch%mmsqu_plresp            (ico) = cpatch%mmsqu_plresp               (ico)    &
+                                              + isqu_ftz(cpatch%dmean_plresp      (ico))   &
+                                              * ndaysi
+         cpatch%mmsqu_sensible_lc       (ico) = cpatch%mmsqu_sensible_lc          (ico)    &
+                                              + isqu_ftz(cpatch%dmean_sensible_lc (ico))   &
+                                              * ndaysi
+         cpatch%mmsqu_vapor_lc          (ico) = cpatch%mmsqu_vapor_lc             (ico)    &
+                                              + isqu_ftz(cpatch%dmean_vapor_lc    (ico))   &
+                                              * ndaysi
+         cpatch%mmsqu_transp            (ico) = cpatch%mmsqu_transp               (ico)    &
+                                              + isqu_ftz(cpatch%dmean_transp      (ico))   &
+                                              * ndaysi
+         cpatch%mmsqu_wflux_wl          (ico) = cpatch%mmsqu_wflux_wl             (ico)    &
+                                              + isqu_ftz(cpatch%dmean_wflux_wl    (ico))   &
+                                              * ndaysi
+         cpatch%mmsqu_wflux_gw          (ico) = cpatch%mmsqu_wflux_gw             (ico)    &
+                                              + isqu_ftz(cpatch%dmean_wflux_gw    (ico))   &
+                                              * ndaysi
+         cpatch%mmsqu_sensible_wc       (ico) = cpatch%mmsqu_sensible_wc          (ico)    &
+                                              + isqu_ftz(cpatch%dmean_sensible_wc (ico))   &
+                                              * ndaysi
+         cpatch%mmsqu_vapor_wc          (ico) = cpatch%mmsqu_vapor_wc             (ico)    &
+                                              + isqu_ftz(cpatch%dmean_vapor_wc    (ico))   &
+                                              * ndaysi
+      end do cohortloop
+      !------------------------------------------------------------------------------------!
+
+      return
+   end subroutine integrate_ed_mmean_cohorts
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !  SUBROUTINE: NORMALIZE_ED_MMEAN_POLYGONS
+   !> \brief This subroutine normalises monthly averages that are not time-integrated.
+   !> \author Marcos Longo
+   !> \details Derived quantitites such as temperature, liquid fraction and soil matric
+   !> potential cannot be integrated, because otherwise thew would become detached from
+   !> the extensive quantitites. And unlike other sub-routines, we do not split this one
+   !> into smaller sub-routines for now because of the interdependency between variables 
+   !> of different hierarchical levels.
+   !---------------------------------------------------------------------------------------!
+   subroutine normalize_ed_mmean_polygons(cgrid)
       use ed_state_vars        , only : edtype             & ! structure
                                       , polygontype        & ! structure
                                       , sitetype           & ! structure
@@ -5957,7 +6468,7 @@ module average_utils
       !------------------------------------------------------------------------------------!
 
       return
-   end subroutine normalize_ed_mmean_vars
+   end subroutine normalize_ed_mmean_polygons
    !=======================================================================================!
    !=======================================================================================!
 
@@ -5968,27 +6479,21 @@ module average_utils
 
    !=======================================================================================!
    !=======================================================================================!
-   !  SUBROUTINE: ZERO_ED_MMEAN_VARS        
+   !  SUBROUTINE: ZERO_ED_MMEAN_POLYGONS
    !> \brief This subroutine resets the monthly averages for variables actually used in the
    !> integration.
+   !> \author Marcos Longo
+   !> \details This is called ahead of a new month. To keep compilation more manageable, we 
+   !> adopt a hierarchical approach. The main sub-routine resets polygon-level variables,
+   !> then calls a sub-routine to handle site-, patch-, and cohort-level variables.
    !---------------------------------------------------------------------------------------!
-   subroutine zero_ed_mmean_vars(cgrid)
-      use ed_state_vars  , only : edtype         & ! structure
-                                , polygontype    & ! structure
-                                , sitetype       & ! structure
-                                , patchtype      ! ! structure
-      use physiology_coms, only : iddmort_scheme ! ! intent(in)
+   subroutine zero_ed_mmean_polygons(cgrid)
+      use ed_state_vars  , only : edtype         ! ! structure
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       type(edtype)     , target  :: cgrid
       !----- Local variables. -------------------------------------------------------------!
-      type(polygontype), pointer :: cpoly
-      type(sitetype)   , pointer :: csite
-      type(patchtype)  , pointer :: cpatch
       integer                    :: ipy
-      integer                    :: isi
-      integer                    :: ipa
-      integer                    :: ico
       !------------------------------------------------------------------------------------!
 
 
@@ -5996,8 +6501,6 @@ module average_utils
       !       Loop over polygons.                                                          !
       !------------------------------------------------------------------------------------!
       polyloop: do ipy=1,cgrid%npolygons
-         cpoly => cgrid%polygon(ipy)
-
          cgrid%mmean_thbark           (:,:,ipy) = 0.0
          cgrid%mmean_lai              (:,:,ipy) = 0.0
          cgrid%mmean_bleaf            (:,:,ipy) = 0.0
@@ -6234,299 +6737,415 @@ module average_utils
 
 
          !---------------------------------------------------------------------------------!
-         !       Loop over sites.                                                          !
+         !   Call sub-routine that will reset site- (and patch- and cohort-) level monthly !
+         ! averages.                                                                       !
          !---------------------------------------------------------------------------------!
-         siteloop: do isi=1,cpoly%nsites
-            csite => cpoly%site(isi)
-
-            cpoly%mmean_atm_theiv      (isi) = 0.0
-            cpoly%mmean_atm_theta      (isi) = 0.0
-            cpoly%mmean_atm_temp       (isi) = 0.0
-            cpoly%mmean_atm_vpdef      (isi) = 0.0
-            cpoly%mmean_atm_shv        (isi) = 0.0
-            cpoly%mmean_atm_rshort     (isi) = 0.0
-            cpoly%mmean_atm_rshort_diff(isi) = 0.0
-            cpoly%mmean_atm_par        (isi) = 0.0
-            cpoly%mmean_atm_par_diff   (isi) = 0.0
-            cpoly%mmean_atm_rlong      (isi) = 0.0
-            cpoly%mmean_atm_vels       (isi) = 0.0
-            cpoly%mmean_atm_rhos       (isi) = 0.0
-            cpoly%mmean_atm_prss       (isi) = 0.0
-            cpoly%mmean_atm_co2        (isi) = 0.0
-            cpoly%mmean_pcpg           (isi) = 0.0
-            cpoly%mmean_qpcpg          (isi) = 0.0
-            cpoly%mmean_dpcpg          (isi) = 0.0
-
-
-            !------------------------------------------------------------------------------!
-            !       Loop over sites.                                                       !
-            !------------------------------------------------------------------------------!
-            patchloop: do ipa=1,csite%npatches
-               cpatch=> csite%patch(ipa)
-
-               csite%mmean_fast_grnd_c      (ipa) = 0.0
-               csite%mmean_fast_soil_c      (ipa) = 0.0
-               csite%mmean_struct_grnd_c    (ipa) = 0.0
-               csite%mmean_struct_soil_c    (ipa) = 0.0
-               csite%mmean_struct_grnd_l    (ipa) = 0.0
-               csite%mmean_struct_soil_l    (ipa) = 0.0
-               csite%mmean_microbe_soil_c   (ipa) = 0.0
-               csite%mmean_slow_soil_c      (ipa) = 0.0
-               csite%mmean_passive_soil_c   (ipa) = 0.0
-               csite%mmean_fast_grnd_n      (ipa) = 0.0
-               csite%mmean_fast_soil_n      (ipa) = 0.0
-               csite%mmean_struct_grnd_n    (ipa) = 0.0
-               csite%mmean_struct_soil_n    (ipa) = 0.0
-               csite%mmean_mineral_soil_n   (ipa) = 0.0
-               csite%mmean_fgc_in           (ipa) = 0.0
-               csite%mmean_fsc_in           (ipa) = 0.0
-               csite%mmean_stgc_in          (ipa) = 0.0
-               csite%mmean_stsc_in          (ipa) = 0.0
-               csite%mmean_co2_residual     (ipa) = 0.0
-               csite%mmean_energy_residual  (ipa) = 0.0
-               csite%mmean_water_residual   (ipa) = 0.0
-               csite%mmean_rh               (ipa) = 0.0
-               csite%mmean_fgc_rh           (ipa) = 0.0
-               csite%mmean_fsc_rh           (ipa) = 0.0
-               csite%mmean_stgc_rh          (ipa) = 0.0
-               csite%mmean_stsc_rh          (ipa) = 0.0
-               csite%mmean_msc_rh           (ipa) = 0.0
-               csite%mmean_ssc_rh           (ipa) = 0.0
-               csite%mmean_psc_rh           (ipa) = 0.0
-               csite%mmean_nep              (ipa) = 0.0
-               csite%mmean_A_decomp         (ipa) = 0.0
-               csite%mmean_B_decomp         (ipa) = 0.0
-               csite%mmean_Af_decomp        (ipa) = 0.0
-               csite%mmean_Bf_decomp        (ipa) = 0.0
-               csite%mmean_rk4step          (ipa) = 0.0
-               csite%mmean_available_water  (ipa) = 0.0
-               csite%mmean_veg_displace     (ipa) = 0.0
-               csite%mmean_rough            (ipa) = 0.0
-               csite%mmean_can_theiv        (ipa) = 0.0
-               csite%mmean_can_theta        (ipa) = 0.0
-               csite%mmean_can_vpdef        (ipa) = 0.0
-               csite%mmean_can_temp         (ipa) = 0.0
-               csite%mmean_can_shv          (ipa) = 0.0
-               csite%mmean_can_co2          (ipa) = 0.0
-               csite%mmean_can_rhos         (ipa) = 0.0
-               csite%mmean_can_dmol         (ipa) = 0.0
-               csite%mmean_can_prss         (ipa) = 0.0
-               csite%mmean_gnd_temp         (ipa) = 0.0
-               csite%mmean_gnd_shv          (ipa) = 0.0
-               csite%mmean_can_ggnd         (ipa) = 0.0
-               csite%mmean_sfcw_depth       (ipa) = 0.0
-               csite%mmean_sfcw_energy      (ipa) = 0.0
-               csite%mmean_sfcw_mass        (ipa) = 0.0
-               csite%mmean_sfcw_temp        (ipa) = 0.0
-               csite%mmean_sfcw_fliq        (ipa) = 0.0
-               csite%mmean_snowfac          (ipa) = 0.0
-               csite%mmean_soil_energy    (:,ipa) = 0.0
-               csite%mmean_soil_mstpot    (:,ipa) = 0.0
-               csite%mmean_soil_water     (:,ipa) = 0.0
-               csite%mmean_soil_temp      (:,ipa) = 0.0
-               csite%mmean_soil_fliq      (:,ipa) = 0.0
-               csite%mmean_rshort_gnd       (ipa) = 0.0
-               csite%mmean_par_gnd          (ipa) = 0.0
-               csite%mmean_rlong_gnd        (ipa) = 0.0
-               csite%mmean_rlongup          (ipa) = 0.0
-               csite%mmean_parup            (ipa) = 0.0
-               csite%mmean_nirup            (ipa) = 0.0
-               csite%mmean_rshortup         (ipa) = 0.0
-               csite%mmean_rnet             (ipa) = 0.0
-               csite%mmean_albedo           (ipa) = 0.0
-               csite%mmean_albedo_par       (ipa) = 0.0
-               csite%mmean_albedo_nir       (ipa) = 0.0
-               csite%mmean_rlong_albedo     (ipa) = 0.0
-               csite%mmean_ustar            (ipa) = 0.0
-               csite%mmean_tstar            (ipa) = 0.0
-               csite%mmean_qstar            (ipa) = 0.0
-               csite%mmean_cstar            (ipa) = 0.0
-               csite%mmean_carbon_ac        (ipa) = 0.0
-               csite%mmean_carbon_st        (ipa) = 0.0
-               csite%mmean_vapor_gc         (ipa) = 0.0
-               csite%mmean_vapor_ac         (ipa) = 0.0
-               csite%mmean_smoist_gg      (:,ipa) = 0.0
-               csite%mmean_throughfall      (ipa) = 0.0
-               csite%mmean_transloss      (:,ipa) = 0.0
-               csite%mmean_runoff           (ipa) = 0.0
-               csite%mmean_drainage         (ipa) = 0.0
-               csite%mmean_sensible_gc      (ipa) = 0.0
-               csite%mmean_sensible_ac      (ipa) = 0.0
-               csite%mmean_sensible_gg    (:,ipa) = 0.0
-               csite%mmean_qthroughfall     (ipa) = 0.0
-               csite%mmean_qrunoff          (ipa) = 0.0
-               csite%mmean_qdrainage        (ipa) = 0.0
-               csite%mmean_A_decomp         (ipa) = 0.0
-               csite%mmean_B_decomp         (ipa) = 0.0
-               csite%mmean_Af_decomp        (ipa) = 0.0
-               csite%mmean_Bf_decomp        (ipa) = 0.0
-               csite%mmean_co2_residual     (ipa) = 0.0
-               csite%mmean_energy_residual  (ipa) = 0.0
-               csite%mmean_water_residual   (ipa) = 0.0
-               csite%mmsqu_rh               (ipa) = 0.0
-               csite%mmsqu_fgc_rh           (ipa) = 0.0
-               csite%mmsqu_fsc_rh           (ipa) = 0.0
-               csite%mmsqu_stgc_rh          (ipa) = 0.0
-               csite%mmsqu_stsc_rh          (ipa) = 0.0
-               csite%mmsqu_msc_rh           (ipa) = 0.0
-               csite%mmsqu_ssc_rh           (ipa) = 0.0
-               csite%mmsqu_psc_rh           (ipa) = 0.0
-               csite%mmsqu_nep              (ipa) = 0.0
-               csite%mmsqu_rlongup          (ipa) = 0.0
-               csite%mmsqu_parup            (ipa) = 0.0
-               csite%mmsqu_nirup            (ipa) = 0.0
-               csite%mmsqu_rshortup         (ipa) = 0.0
-               csite%mmsqu_rnet             (ipa) = 0.0
-               csite%mmsqu_albedo           (ipa) = 0.0
-               csite%mmsqu_ustar            (ipa) = 0.0
-               csite%mmsqu_carbon_ac        (ipa) = 0.0
-               csite%mmsqu_carbon_st        (ipa) = 0.0
-               csite%mmsqu_vapor_gc         (ipa) = 0.0
-               csite%mmsqu_vapor_ac         (ipa) = 0.0
-               csite%mmsqu_sensible_gc      (ipa) = 0.0
-               csite%mmsqu_sensible_ac      (ipa) = 0.0
-
-
-               !---------------------------------------------------------------------------!
-               !       Loop over cohorts.                                                  !
-               !---------------------------------------------------------------------------!
-               cohortloop: do ico=1,cpatch%ncohorts
-                  cpatch%mmean_thbark             (ico) = 0.0
-                  cpatch%mmean_vm_bar             (ico) = 0.0
-                  cpatch%mmean_rd_bar             (ico) = 0.0
-                  cpatch%mmean_sla                (ico) = 0.0
-                  cpatch%mmean_llspan             (ico) = 0.0
-                  cpatch%mmean_lai                (ico) = 0.0
-                  cpatch%mmean_bleaf              (ico) = 0.0
-                  cpatch%mmean_broot              (ico) = 0.0
-                  cpatch%mmean_bbarka             (ico) = 0.0
-                  cpatch%mmean_bbarkb             (ico) = 0.0
-                  cpatch%mmean_balive             (ico) = 0.0
-                  cpatch%mmean_bstorage           (ico) = 0.0
-                  cpatch%mmean_mort_rate        (:,ico) = 0.0
-                  cpatch%mmean_leaf_maintenance   (ico) = 0.0
-                  cpatch%mmean_root_maintenance   (ico) = 0.0
-                  cpatch%mmean_barka_maintenance  (ico) = 0.0
-                  cpatch%mmean_barkb_maintenance  (ico) = 0.0
-                  cpatch%mmean_leaf_drop          (ico) = 0.0
-                  cpatch%mmean_root_drop          (ico) = 0.0
-                  select case (iddmort_scheme)
-                  case (0)
-                     cpatch%mmean_cb              (ico) = 0.0
-                  case (1)
-                     cpatch%mmean_cb              (ico) = cpatch%bstorage(ico)
-                  end select
-                  cpatch%mmean_gpp                (ico) = 0.0
-                  cpatch%mmean_npp                (ico) = 0.0
-                  cpatch%mmean_leaf_resp          (ico) = 0.0
-                  cpatch%mmean_root_resp          (ico) = 0.0
-                  cpatch%mmean_stem_resp          (ico) = 0.0
-                  cpatch%mmean_leaf_growth_resp   (ico) = 0.0
-                  cpatch%mmean_root_growth_resp   (ico) = 0.0
-                  cpatch%mmean_sapa_growth_resp   (ico) = 0.0
-                  cpatch%mmean_sapb_growth_resp   (ico) = 0.0
-                  cpatch%mmean_barka_growth_resp  (ico) = 0.0
-                  cpatch%mmean_barkb_growth_resp  (ico) = 0.0
-                  cpatch%mmean_leaf_storage_resp  (ico) = 0.0
-                  cpatch%mmean_root_storage_resp  (ico) = 0.0
-                  cpatch%mmean_sapa_storage_resp  (ico) = 0.0
-                  cpatch%mmean_sapb_storage_resp  (ico) = 0.0
-                  cpatch%mmean_barka_storage_resp (ico) = 0.0
-                  cpatch%mmean_barkb_storage_resp (ico) = 0.0
-                  cpatch%mmean_plresp             (ico) = 0.0
-                  cpatch%mmean_leaf_energy        (ico) = 0.0
-                  cpatch%mmean_leaf_water         (ico) = 0.0
-                  cpatch%mmean_leaf_hcap          (ico) = 0.0
-                  cpatch%mmean_leaf_vpdef         (ico) = 0.0
-                  cpatch%mmean_leaf_temp          (ico) = 0.0
-                  cpatch%mmean_leaf_fliq          (ico) = 0.0
-                  cpatch%mmean_leaf_gsw           (ico) = 0.0
-                  cpatch%mmean_leaf_gbw           (ico) = 0.0
-                  cpatch%mmean_wood_energy        (ico) = 0.0
-                  cpatch%mmean_wood_water         (ico) = 0.0
-                  cpatch%mmean_wood_hcap          (ico) = 0.0
-                  cpatch%mmean_wood_temp          (ico) = 0.0
-                  cpatch%mmean_wood_fliq          (ico) = 0.0
-                  cpatch%mmean_wood_gbw           (ico) = 0.0
-                  cpatch%mmean_fs_open            (ico) = 0.0
-                  cpatch%mmean_fsw                (ico) = 0.0
-                  cpatch%mmean_fsn                (ico) = 0.0
-                  cpatch%mmean_a_open             (ico) = 0.0
-                  cpatch%mmean_a_closed           (ico) = 0.0
-                  cpatch%mmean_a_net              (ico) = 0.0
-                  cpatch%mmean_a_light            (ico) = 0.0
-                  cpatch%mmean_a_rubp             (ico) = 0.0
-                  cpatch%mmean_a_co2              (ico) = 0.0
-                  cpatch%mmean_psi_open           (ico) = 0.0
-                  cpatch%mmean_psi_closed         (ico) = 0.0
-                  cpatch%mmean_water_supply       (ico) = 0.0
-                  cpatch%mmean_light_level        (ico) = 0.0
-                  cpatch%mmean_light_level_beam   (ico) = 0.0
-                  cpatch%mmean_light_level_diff   (ico) = 0.0
-
-                  cpatch%mmean_par_level_beam     (ico) = 0.0
-                  cpatch%mmean_par_level_diffd    (ico) = 0.0
-                  cpatch%mmean_par_level_diffu    (ico) = 0.0
-
-                  cpatch%mmean_par_l              (ico) = 0.0
-                  cpatch%mmean_par_l_beam         (ico) = 0.0
-                  cpatch%mmean_par_l_diff         (ico) = 0.0
-                  cpatch%mmean_rshort_l           (ico) = 0.0
-                  cpatch%mmean_rlong_l            (ico) = 0.0
-                  cpatch%mmean_sensible_lc        (ico) = 0.0
-                  cpatch%mmean_vapor_lc           (ico) = 0.0
-                  cpatch%mmean_transp             (ico) = 0.0
-                  cpatch%mmean_intercepted_al     (ico) = 0.0
-                  cpatch%mmean_wshed_lg           (ico) = 0.0
-                  cpatch%mmean_rshort_w           (ico) = 0.0
-                  cpatch%mmean_rlong_w            (ico) = 0.0
-                  cpatch%mmean_rad_profile      (:,ico) = 0.0
-                  cpatch%mmean_sensible_wc        (ico) = 0.0
-                  cpatch%mmean_vapor_wc           (ico) = 0.0
-                  cpatch%mmean_intercepted_aw     (ico) = 0.0
-                  cpatch%mmean_wshed_wg           (ico) = 0.0
-                  cpatch%mmean_nppleaf            (ico) = 0.0
-                  cpatch%mmean_nppfroot           (ico) = 0.0
-                  cpatch%mmean_nppsapwood         (ico) = 0.0
-                  cpatch%mmean_nppbark            (ico) = 0.0
-                  cpatch%mmean_nppcroot           (ico) = 0.0
-                  cpatch%mmean_nppseeds           (ico) = 0.0
-                  cpatch%mmean_nppwood            (ico) = 0.0
-                  cpatch%mmean_nppdaily           (ico) = 0.0
-
-                  cpatch%mmean_dmax_leaf_psi      (ico) = 0.0
-                  cpatch%mmean_dmax_wood_psi      (ico) = 0.0
-                  cpatch%mmean_dmin_leaf_psi      (ico) = 0.0
-                  cpatch%mmean_dmin_wood_psi      (ico) = 0.0
-                  cpatch%mmean_leaf_water_int     (ico) = 0.0
-                  cpatch%mmean_leaf_water_im2     (ico) = 0.0
-                  cpatch%mmean_wood_water_int     (ico) = 0.0
-                  cpatch%mmean_wood_water_im2     (ico) = 0.0
-                  cpatch%mmean_wflux_wl           (ico) = 0.0
-                  cpatch%mmean_wflux_gw           (ico) = 0.0
-                  cpatch%mmean_wflux_gw_layer   (:,ico) = 0.0
-
-                  cpatch%mmsqu_gpp                (ico) = 0.0
-                  cpatch%mmsqu_npp                (ico) = 0.0
-                  cpatch%mmsqu_plresp             (ico) = 0.0
-                  cpatch%mmsqu_sensible_lc        (ico) = 0.0
-                  cpatch%mmsqu_vapor_lc           (ico) = 0.0
-                  cpatch%mmsqu_transp             (ico) = 0.0
-                  cpatch%mmsqu_wflux_wl           (ico) = 0.0
-                  cpatch%mmsqu_wflux_gw           (ico) = 0.0
-                  cpatch%mmsqu_sensible_wc        (ico) = 0.0
-                  cpatch%mmsqu_vapor_wc           (ico) = 0.0
-               end do cohortloop
-               !---------------------------------------------------------------------------!
-            end do patchloop
-            !------------------------------------------------------------------------------!
-         end do siteloop
+         call zero_ed_mmean_sites(cgrid,ipy)
          !---------------------------------------------------------------------------------!
       end do polyloop
       !------------------------------------------------------------------------------------!
 
       return
-   end subroutine zero_ed_mmean_vars
+   end subroutine zero_ed_mmean_polygons
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !  SUBROUTINE: ZERO_ED_MMEAN_SITES
+   !> \brief This subroutine resets the monthly averages for variables actually used in the
+   !> integration.
+   !> \author Marcos Longo
+   !> \details This is called ahead of a new month. To keep compilation more manageable, we 
+   !> adopt a hierarchical approach. This sub-routine resets site-level variables, then
+   !> calls a sub-routine to handle patch-, and cohort-level variables.
+   !---------------------------------------------------------------------------------------!
+   subroutine zero_ed_mmean_sites(cgrid,ipy)
+      use ed_state_vars  , only : edtype         & ! structure
+                                , polygontype    ! ! structure
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      type(edtype)     , target     :: cgrid
+      integer          , intent(in) :: ipy
+      !----- Local variables. -------------------------------------------------------------!
+      type(polygontype), pointer    :: cpoly
+      integer                       :: isi
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !   Select polygon, then loop through sites.                                         !
+      !------------------------------------------------------------------------------------!
+      cpoly => cgrid%polygon(ipy)
+      siteloop: do isi=1,cpoly%nsites
+         cpoly%mmean_atm_theiv      (isi) = 0.0
+         cpoly%mmean_atm_theta      (isi) = 0.0
+         cpoly%mmean_atm_temp       (isi) = 0.0
+         cpoly%mmean_atm_vpdef      (isi) = 0.0
+         cpoly%mmean_atm_shv        (isi) = 0.0
+         cpoly%mmean_atm_rshort     (isi) = 0.0
+         cpoly%mmean_atm_rshort_diff(isi) = 0.0
+         cpoly%mmean_atm_par        (isi) = 0.0
+         cpoly%mmean_atm_par_diff   (isi) = 0.0
+         cpoly%mmean_atm_rlong      (isi) = 0.0
+         cpoly%mmean_atm_vels       (isi) = 0.0
+         cpoly%mmean_atm_rhos       (isi) = 0.0
+         cpoly%mmean_atm_prss       (isi) = 0.0
+         cpoly%mmean_atm_co2        (isi) = 0.0
+         cpoly%mmean_pcpg           (isi) = 0.0
+         cpoly%mmean_qpcpg          (isi) = 0.0
+         cpoly%mmean_dpcpg          (isi) = 0.0
+
+         !---------------------------------------------------------------------------------!
+         !   Call sub-routine that will reset site- (and patch- and cohort-) level monthly !
+         ! averages.                                                                       !
+         !---------------------------------------------------------------------------------!
+         call zero_ed_mmean_patches(cpoly,isi)
+         !---------------------------------------------------------------------------------!
+      end do siteloop
+      !------------------------------------------------------------------------------------!
+
+      return
+   end subroutine zero_ed_mmean_sites
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !  SUBROUTINE: ZERO_ED_MMEAN_PATCHES
+   !> \brief This subroutine resets the monthly averages for variables actually used in the
+   !> integration.
+   !> \author Marcos Longo
+   !> \details This is called ahead of a new month. To keep compilation more manageable, we 
+   !> adopt a hierarchical approach. This sub-routine resets patch-level variables, then
+   !> calls a sub-routine to handle cohort-level variables.
+   !---------------------------------------------------------------------------------------!
+   subroutine zero_ed_mmean_patches(cpoly,isi)
+      use ed_state_vars  , only : polygontype    & ! structure
+                                , sitetype       ! ! structure
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      type(polygontype), target     :: cpoly
+      integer          , intent(in) :: isi
+      !----- Local variables. -------------------------------------------------------------!
+      type(sitetype)   , pointer :: csite
+      integer                    :: ipa
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !   Select site, then loop through patches.                                          !
+      !------------------------------------------------------------------------------------!
+      csite => cpoly%site(isi)
+      patchloop: do ipa=1,csite%npatches
+         csite%mmean_fast_grnd_c      (ipa) = 0.0
+         csite%mmean_fast_soil_c      (ipa) = 0.0
+         csite%mmean_struct_grnd_c    (ipa) = 0.0
+         csite%mmean_struct_soil_c    (ipa) = 0.0
+         csite%mmean_struct_grnd_l    (ipa) = 0.0
+         csite%mmean_struct_soil_l    (ipa) = 0.0
+         csite%mmean_microbe_soil_c   (ipa) = 0.0
+         csite%mmean_slow_soil_c      (ipa) = 0.0
+         csite%mmean_passive_soil_c   (ipa) = 0.0
+         csite%mmean_fast_grnd_n      (ipa) = 0.0
+         csite%mmean_fast_soil_n      (ipa) = 0.0
+         csite%mmean_struct_grnd_n    (ipa) = 0.0
+         csite%mmean_struct_soil_n    (ipa) = 0.0
+         csite%mmean_mineral_soil_n   (ipa) = 0.0
+         csite%mmean_fgc_in           (ipa) = 0.0
+         csite%mmean_fsc_in           (ipa) = 0.0
+         csite%mmean_stgc_in          (ipa) = 0.0
+         csite%mmean_stsc_in          (ipa) = 0.0
+         csite%mmean_co2_residual     (ipa) = 0.0
+         csite%mmean_energy_residual  (ipa) = 0.0
+         csite%mmean_water_residual   (ipa) = 0.0
+         csite%mmean_rh               (ipa) = 0.0
+         csite%mmean_fgc_rh           (ipa) = 0.0
+         csite%mmean_fsc_rh           (ipa) = 0.0
+         csite%mmean_stgc_rh          (ipa) = 0.0
+         csite%mmean_stsc_rh          (ipa) = 0.0
+         csite%mmean_msc_rh           (ipa) = 0.0
+         csite%mmean_ssc_rh           (ipa) = 0.0
+         csite%mmean_psc_rh           (ipa) = 0.0
+         csite%mmean_nep              (ipa) = 0.0
+         csite%mmean_A_decomp         (ipa) = 0.0
+         csite%mmean_B_decomp         (ipa) = 0.0
+         csite%mmean_Af_decomp        (ipa) = 0.0
+         csite%mmean_Bf_decomp        (ipa) = 0.0
+         csite%mmean_rk4step          (ipa) = 0.0
+         csite%mmean_available_water  (ipa) = 0.0
+         csite%mmean_veg_displace     (ipa) = 0.0
+         csite%mmean_rough            (ipa) = 0.0
+         csite%mmean_can_theiv        (ipa) = 0.0
+         csite%mmean_can_theta        (ipa) = 0.0
+         csite%mmean_can_vpdef        (ipa) = 0.0
+         csite%mmean_can_temp         (ipa) = 0.0
+         csite%mmean_can_shv          (ipa) = 0.0
+         csite%mmean_can_co2          (ipa) = 0.0
+         csite%mmean_can_rhos         (ipa) = 0.0
+         csite%mmean_can_dmol         (ipa) = 0.0
+         csite%mmean_can_prss         (ipa) = 0.0
+         csite%mmean_gnd_temp         (ipa) = 0.0
+         csite%mmean_gnd_shv          (ipa) = 0.0
+         csite%mmean_can_ggnd         (ipa) = 0.0
+         csite%mmean_sfcw_depth       (ipa) = 0.0
+         csite%mmean_sfcw_energy      (ipa) = 0.0
+         csite%mmean_sfcw_mass        (ipa) = 0.0
+         csite%mmean_sfcw_temp        (ipa) = 0.0
+         csite%mmean_sfcw_fliq        (ipa) = 0.0
+         csite%mmean_snowfac          (ipa) = 0.0
+         csite%mmean_soil_energy    (:,ipa) = 0.0
+         csite%mmean_soil_mstpot    (:,ipa) = 0.0
+         csite%mmean_soil_water     (:,ipa) = 0.0
+         csite%mmean_soil_temp      (:,ipa) = 0.0
+         csite%mmean_soil_fliq      (:,ipa) = 0.0
+         csite%mmean_rshort_gnd       (ipa) = 0.0
+         csite%mmean_par_gnd          (ipa) = 0.0
+         csite%mmean_rlong_gnd        (ipa) = 0.0
+         csite%mmean_rlongup          (ipa) = 0.0
+         csite%mmean_parup            (ipa) = 0.0
+         csite%mmean_nirup            (ipa) = 0.0
+         csite%mmean_rshortup         (ipa) = 0.0
+         csite%mmean_rnet             (ipa) = 0.0
+         csite%mmean_albedo           (ipa) = 0.0
+         csite%mmean_albedo_par       (ipa) = 0.0
+         csite%mmean_albedo_nir       (ipa) = 0.0
+         csite%mmean_rlong_albedo     (ipa) = 0.0
+         csite%mmean_ustar            (ipa) = 0.0
+         csite%mmean_tstar            (ipa) = 0.0
+         csite%mmean_qstar            (ipa) = 0.0
+         csite%mmean_cstar            (ipa) = 0.0
+         csite%mmean_carbon_ac        (ipa) = 0.0
+         csite%mmean_carbon_st        (ipa) = 0.0
+         csite%mmean_vapor_gc         (ipa) = 0.0
+         csite%mmean_vapor_ac         (ipa) = 0.0
+         csite%mmean_smoist_gg      (:,ipa) = 0.0
+         csite%mmean_throughfall      (ipa) = 0.0
+         csite%mmean_transloss      (:,ipa) = 0.0
+         csite%mmean_runoff           (ipa) = 0.0
+         csite%mmean_drainage         (ipa) = 0.0
+         csite%mmean_sensible_gc      (ipa) = 0.0
+         csite%mmean_sensible_ac      (ipa) = 0.0
+         csite%mmean_sensible_gg    (:,ipa) = 0.0
+         csite%mmean_qthroughfall     (ipa) = 0.0
+         csite%mmean_qrunoff          (ipa) = 0.0
+         csite%mmean_qdrainage        (ipa) = 0.0
+         csite%mmean_A_decomp         (ipa) = 0.0
+         csite%mmean_B_decomp         (ipa) = 0.0
+         csite%mmean_Af_decomp        (ipa) = 0.0
+         csite%mmean_Bf_decomp        (ipa) = 0.0
+         csite%mmean_co2_residual     (ipa) = 0.0
+         csite%mmean_energy_residual  (ipa) = 0.0
+         csite%mmean_water_residual   (ipa) = 0.0
+         csite%mmsqu_rh               (ipa) = 0.0
+         csite%mmsqu_fgc_rh           (ipa) = 0.0
+         csite%mmsqu_fsc_rh           (ipa) = 0.0
+         csite%mmsqu_stgc_rh          (ipa) = 0.0
+         csite%mmsqu_stsc_rh          (ipa) = 0.0
+         csite%mmsqu_msc_rh           (ipa) = 0.0
+         csite%mmsqu_ssc_rh           (ipa) = 0.0
+         csite%mmsqu_psc_rh           (ipa) = 0.0
+         csite%mmsqu_nep              (ipa) = 0.0
+         csite%mmsqu_rlongup          (ipa) = 0.0
+         csite%mmsqu_parup            (ipa) = 0.0
+         csite%mmsqu_nirup            (ipa) = 0.0
+         csite%mmsqu_rshortup         (ipa) = 0.0
+         csite%mmsqu_rnet             (ipa) = 0.0
+         csite%mmsqu_albedo           (ipa) = 0.0
+         csite%mmsqu_ustar            (ipa) = 0.0
+         csite%mmsqu_carbon_ac        (ipa) = 0.0
+         csite%mmsqu_carbon_st        (ipa) = 0.0
+         csite%mmsqu_vapor_gc         (ipa) = 0.0
+         csite%mmsqu_vapor_ac         (ipa) = 0.0
+         csite%mmsqu_sensible_gc      (ipa) = 0.0
+         csite%mmsqu_sensible_ac      (ipa) = 0.0
+
+         !---------------------------------------------------------------------------------!
+         !   Call sub-routine that will reset cohort-level monthly averages.               !
+         !---------------------------------------------------------------------------------!
+         call zero_ed_mmean_cohorts(csite,ipa)
+         !---------------------------------------------------------------------------------!
+      end do patchloop
+      !------------------------------------------------------------------------------------!
+
+      return
+   end subroutine zero_ed_mmean_patches
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !  SUBROUTINE: ZERO_ED_MMEAN_COHORTS
+   !> \brief This subroutine resets the monthly averages for variables actually used in the
+   !> integration.
+   !> \author Marcos Longo
+   !> \details This is called ahead of a new month. To keep compilation more manageable, we 
+   !> adopt a hierarchical approach. This sub-routine resets cohort-level variables.
+   !---------------------------------------------------------------------------------------!
+   subroutine zero_ed_mmean_cohorts(csite,ipa)
+      use ed_state_vars  , only : sitetype       & ! structure
+                                , patchtype      ! ! structure
+      use physiology_coms, only : iddmort_scheme ! ! intent(in)
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      type(sitetype)   , target     :: csite
+      integer          , intent(in) :: ipa
+      !----- Local variables. -------------------------------------------------------------!
+      type(patchtype)  , pointer    :: cpatch
+      integer                       :: ico
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !   Select patch, then loop through cohorts.                                         !
+      !------------------------------------------------------------------------------------!
+      cpatch=> csite%patch(ipa)
+      cohortloop: do ico=1,cpatch%ncohorts
+         cpatch%mmean_thbark             (ico) = 0.0
+         cpatch%mmean_vm_bar             (ico) = 0.0
+         cpatch%mmean_rd_bar             (ico) = 0.0
+         cpatch%mmean_sla                (ico) = 0.0
+         cpatch%mmean_llspan             (ico) = 0.0
+         cpatch%mmean_lai                (ico) = 0.0
+         cpatch%mmean_bleaf              (ico) = 0.0
+         cpatch%mmean_broot              (ico) = 0.0
+         cpatch%mmean_bbarka             (ico) = 0.0
+         cpatch%mmean_bbarkb             (ico) = 0.0
+         cpatch%mmean_balive             (ico) = 0.0
+         cpatch%mmean_bstorage           (ico) = 0.0
+         cpatch%mmean_mort_rate        (:,ico) = 0.0
+         cpatch%mmean_leaf_maintenance   (ico) = 0.0
+         cpatch%mmean_root_maintenance   (ico) = 0.0
+         cpatch%mmean_barka_maintenance  (ico) = 0.0
+         cpatch%mmean_barkb_maintenance  (ico) = 0.0
+         cpatch%mmean_leaf_drop          (ico) = 0.0
+         cpatch%mmean_root_drop          (ico) = 0.0
+         select case (iddmort_scheme)
+         case (0)
+            cpatch%mmean_cb              (ico) = 0.0
+         case (1)
+            cpatch%mmean_cb              (ico) = cpatch%bstorage(ico)
+         end select
+         cpatch%mmean_gpp                (ico) = 0.0
+         cpatch%mmean_npp                (ico) = 0.0
+         cpatch%mmean_leaf_resp          (ico) = 0.0
+         cpatch%mmean_root_resp          (ico) = 0.0
+         cpatch%mmean_stem_resp          (ico) = 0.0
+         cpatch%mmean_leaf_growth_resp   (ico) = 0.0
+         cpatch%mmean_root_growth_resp   (ico) = 0.0
+         cpatch%mmean_sapa_growth_resp   (ico) = 0.0
+         cpatch%mmean_sapb_growth_resp   (ico) = 0.0
+         cpatch%mmean_barka_growth_resp  (ico) = 0.0
+         cpatch%mmean_barkb_growth_resp  (ico) = 0.0
+         cpatch%mmean_leaf_storage_resp  (ico) = 0.0
+         cpatch%mmean_root_storage_resp  (ico) = 0.0
+         cpatch%mmean_sapa_storage_resp  (ico) = 0.0
+         cpatch%mmean_sapb_storage_resp  (ico) = 0.0
+         cpatch%mmean_barka_storage_resp (ico) = 0.0
+         cpatch%mmean_barkb_storage_resp (ico) = 0.0
+         cpatch%mmean_plresp             (ico) = 0.0
+         cpatch%mmean_leaf_energy        (ico) = 0.0
+         cpatch%mmean_leaf_water         (ico) = 0.0
+         cpatch%mmean_leaf_hcap          (ico) = 0.0
+         cpatch%mmean_leaf_vpdef         (ico) = 0.0
+         cpatch%mmean_leaf_temp          (ico) = 0.0
+         cpatch%mmean_leaf_fliq          (ico) = 0.0
+         cpatch%mmean_leaf_gsw           (ico) = 0.0
+         cpatch%mmean_leaf_gbw           (ico) = 0.0
+         cpatch%mmean_wood_energy        (ico) = 0.0
+         cpatch%mmean_wood_water         (ico) = 0.0
+         cpatch%mmean_wood_hcap          (ico) = 0.0
+         cpatch%mmean_wood_temp          (ico) = 0.0
+         cpatch%mmean_wood_fliq          (ico) = 0.0
+         cpatch%mmean_wood_gbw           (ico) = 0.0
+         cpatch%mmean_fs_open            (ico) = 0.0
+         cpatch%mmean_fsw                (ico) = 0.0
+         cpatch%mmean_fsn                (ico) = 0.0
+         cpatch%mmean_a_open             (ico) = 0.0
+         cpatch%mmean_a_closed           (ico) = 0.0
+         cpatch%mmean_a_net              (ico) = 0.0
+         cpatch%mmean_a_light            (ico) = 0.0
+         cpatch%mmean_a_rubp             (ico) = 0.0
+         cpatch%mmean_a_co2              (ico) = 0.0
+         cpatch%mmean_psi_open           (ico) = 0.0
+         cpatch%mmean_psi_closed         (ico) = 0.0
+         cpatch%mmean_water_supply       (ico) = 0.0
+         cpatch%mmean_light_level        (ico) = 0.0
+         cpatch%mmean_light_level_beam   (ico) = 0.0
+         cpatch%mmean_light_level_diff   (ico) = 0.0
+
+         cpatch%mmean_par_level_beam     (ico) = 0.0
+         cpatch%mmean_par_level_diffd    (ico) = 0.0
+         cpatch%mmean_par_level_diffu    (ico) = 0.0
+
+         cpatch%mmean_par_l              (ico) = 0.0
+         cpatch%mmean_par_l_beam         (ico) = 0.0
+         cpatch%mmean_par_l_diff         (ico) = 0.0
+         cpatch%mmean_rshort_l           (ico) = 0.0
+         cpatch%mmean_rlong_l            (ico) = 0.0
+         cpatch%mmean_sensible_lc        (ico) = 0.0
+         cpatch%mmean_vapor_lc           (ico) = 0.0
+         cpatch%mmean_transp             (ico) = 0.0
+         cpatch%mmean_intercepted_al     (ico) = 0.0
+         cpatch%mmean_wshed_lg           (ico) = 0.0
+         cpatch%mmean_rshort_w           (ico) = 0.0
+         cpatch%mmean_rlong_w            (ico) = 0.0
+         cpatch%mmean_rad_profile      (:,ico) = 0.0
+         cpatch%mmean_sensible_wc        (ico) = 0.0
+         cpatch%mmean_vapor_wc           (ico) = 0.0
+         cpatch%mmean_intercepted_aw     (ico) = 0.0
+         cpatch%mmean_wshed_wg           (ico) = 0.0
+         cpatch%mmean_nppleaf            (ico) = 0.0
+         cpatch%mmean_nppfroot           (ico) = 0.0
+         cpatch%mmean_nppsapwood         (ico) = 0.0
+         cpatch%mmean_nppbark            (ico) = 0.0
+         cpatch%mmean_nppcroot           (ico) = 0.0
+         cpatch%mmean_nppseeds           (ico) = 0.0
+         cpatch%mmean_nppwood            (ico) = 0.0
+         cpatch%mmean_nppdaily           (ico) = 0.0
+
+         cpatch%mmean_dmax_leaf_psi      (ico) = 0.0
+         cpatch%mmean_dmax_wood_psi      (ico) = 0.0
+         cpatch%mmean_dmin_leaf_psi      (ico) = 0.0
+         cpatch%mmean_dmin_wood_psi      (ico) = 0.0
+         cpatch%mmean_leaf_water_int     (ico) = 0.0
+         cpatch%mmean_leaf_water_im2     (ico) = 0.0
+         cpatch%mmean_wood_water_int     (ico) = 0.0
+         cpatch%mmean_wood_water_im2     (ico) = 0.0
+         cpatch%mmean_wflux_wl           (ico) = 0.0
+         cpatch%mmean_wflux_gw           (ico) = 0.0
+         cpatch%mmean_wflux_gw_layer   (:,ico) = 0.0
+
+         cpatch%mmsqu_gpp                (ico) = 0.0
+         cpatch%mmsqu_npp                (ico) = 0.0
+         cpatch%mmsqu_plresp             (ico) = 0.0
+         cpatch%mmsqu_sensible_lc        (ico) = 0.0
+         cpatch%mmsqu_vapor_lc           (ico) = 0.0
+         cpatch%mmsqu_transp             (ico) = 0.0
+         cpatch%mmsqu_wflux_wl           (ico) = 0.0
+         cpatch%mmsqu_wflux_gw           (ico) = 0.0
+         cpatch%mmsqu_sensible_wc        (ico) = 0.0
+         cpatch%mmsqu_vapor_wc           (ico) = 0.0
+      end do cohortloop
+      !------------------------------------------------------------------------------------!
+
+      return
+   end subroutine zero_ed_mmean_cohorts
    !=======================================================================================!
    !=======================================================================================!
 
@@ -6562,20 +7181,19 @@ module average_utils
 
    !=======================================================================================!
    !=======================================================================================!
-   !  SUBROUTINE: INTEGRATE_ED_QMEAN_VARS   
+   !  SUBROUTINE: INTEGRATE_ED_QMEAN_POLYGONS   
    !> \brief This subroutine integrates most of the mean diel variables.  This subroutine is
-   !> called after the fmean variables have been normalised, so we can take advantage of
-   !> their values.
-   !                                                                                       !
+   !> called after the fmean variables have been normalised, so we can leverage these 
+   !> averages.
+   !> \author Marcos Longo
    !> \brief A few variables are _NOT_ integrated here: quantities such as temperature and
    !> liquid fraction are found after the mean diel of the extensive variables have been
-   !> normalised.
+   !> normalised. We use a hierarchical approach and call separate sub-routines for site-,
+   !> patch- and cohort-level variables. This reduces the length of these sub-routines,
+   !> which reduces the risk of compilation errors (especially with intel compilers).
    !---------------------------------------------------------------------------------------!
-   subroutine integrate_ed_qmean_vars(cgrid)
-      use ed_state_vars, only : edtype              & ! structure
-                              , polygontype         & ! structure
-                              , sitetype            & ! structure
-                              , patchtype           ! ! structure
+   subroutine integrate_ed_qmean_polygons(cgrid)
+      use ed_state_vars, only : edtype              ! ! structure
       use ed_misc_coms , only : frqfast             & ! intent(in)
                               , current_time        & ! intent(in)
                               , simtime             ! ! structure
@@ -6584,14 +7202,8 @@ module average_utils
       !----- Argument ---------------------------------------------------------------------!
       type(edtype)      , target  :: cgrid
       !----- Local variables --------------------------------------------------------------!
-      type(polygontype) , pointer :: cpoly
-      type(sitetype)    , pointer :: csite
-      type(patchtype)   , pointer :: cpatch
       type(simtime)               :: daybefore
       integer                     :: ipy
-      integer                     :: isi
-      integer                     :: ipa
-      integer                     :: ico
       integer                     :: t
       integer                     :: ndays
       real                        :: ndaysi
@@ -6621,12 +7233,6 @@ module average_utils
       !      Use the variables that have been already aggregated.                          !
       !------------------------------------------------------------------------------------!
       polyloop: do ipy=1,cgrid%npolygons
-         cpoly => cgrid%polygon(ipy)
-
-
-         !---------------------------------------------------------------------------------!
-         !    Integrate polygon-level variables.                                           !
-         !---------------------------------------------------------------------------------!
          cgrid%qmean_gpp               (t,ipy) = cgrid%qmean_gpp               (t,ipy)     &
                                                + cgrid%fmean_gpp                 (ipy)     &
                                                * ndaysi
@@ -7133,599 +7739,16 @@ module average_utils
                                               * ndaysi
          !---------------------------------------------------------------------------------!
 
-
-
          !---------------------------------------------------------------------------------!
-         !      Site loop.                                                                 !
+         !   Call the sub-routine that will integrate site- (and patch- and cohort-) level !
+         ! averages.                                                                       !
          !---------------------------------------------------------------------------------!
-         siteloop: do isi=1,cpoly%nsites
-            csite => cpoly%site(isi)
-
-            !------------------------------------------------------------------------------!
-            !    Integrate site-level variables.                                           !
-            !------------------------------------------------------------------------------!
-            cpoly%qmean_atm_theiv      (t,isi) = cpoly%qmean_atm_theiv      (t,isi)        &
-                                               + cpoly%fmean_atm_theiv        (isi)        &
-                                               * ndaysi
-            cpoly%qmean_atm_theta      (t,isi) = cpoly%qmean_atm_theta      (t,isi)        &
-                                               + cpoly%fmean_atm_theta        (isi)        &
-                                               * ndaysi
-            cpoly%qmean_atm_vpdef      (t,isi) = cpoly%qmean_atm_vpdef      (t,isi)        &
-                                               + cpoly%fmean_atm_vpdef        (isi)        &
-                                               * ndaysi
-            cpoly%qmean_atm_shv        (t,isi) = cpoly%qmean_atm_shv        (t,isi)        &
-                                               + cpoly%fmean_atm_shv          (isi)        &
-                                               * ndaysi
-            cpoly%qmean_atm_rshort     (t,isi) = cpoly%qmean_atm_rshort     (t,isi)        &
-                                               + cpoly%fmean_atm_rshort       (isi)        &
-                                               * ndaysi
-            cpoly%qmean_atm_rshort_diff(t,isi) = cpoly%qmean_atm_rshort_diff(t,isi)        &
-                                               + cpoly%fmean_atm_rshort_diff  (isi)        &
-                                               * ndaysi
-            cpoly%qmean_atm_par        (t,isi) = cpoly%qmean_atm_par        (t,isi)        &
-                                               + cpoly%fmean_atm_par          (isi)        &
-                                               * ndaysi
-            cpoly%qmean_atm_par_diff   (t,isi) = cpoly%qmean_atm_par_diff   (t,isi)        &
-                                               + cpoly%fmean_atm_par_diff     (isi)        &
-                                               * ndaysi
-            cpoly%qmean_atm_rlong      (t,isi) = cpoly%qmean_atm_rlong      (t,isi)        &
-                                               + cpoly%fmean_atm_rlong        (isi)        &
-                                               * ndaysi
-            cpoly%qmean_atm_vels       (t,isi) = cpoly%qmean_atm_vels       (t,isi)        &
-                                               + cpoly%fmean_atm_vels         (isi)        &
-                                               * ndaysi
-            cpoly%qmean_atm_prss       (t,isi) = cpoly%qmean_atm_prss       (t,isi)        &
-                                               + cpoly%fmean_atm_prss         (isi)        &
-                                               * ndaysi
-            cpoly%qmean_atm_co2        (t,isi) = cpoly%qmean_atm_co2        (t,isi)        &
-                                               + cpoly%fmean_atm_co2          (isi)        &
-                                               * ndaysi
-            cpoly%qmean_pcpg           (t,isi) = cpoly%qmean_pcpg           (t,isi)        &
-                                               + cpoly%fmean_pcpg             (isi)        &
-                                               * ndaysi
-            cpoly%qmean_qpcpg          (t,isi) = cpoly%qmean_qpcpg          (t,isi)        &
-                                               + cpoly%fmean_qpcpg            (isi)        &
-                                               * ndaysi
-            cpoly%qmean_dpcpg          (t,isi) = cpoly%qmean_dpcpg          (t,isi)        &
-                                               + cpoly%fmean_dpcpg            (isi)        &
-                                               * ndaysi
-            !------------------------------------------------------------------------------!
-
-
-
-            !------------------------------------------------------------------------------!
-            !      Patch loop.                                                             !
-            !------------------------------------------------------------------------------!
-            patchloop: do ipa=1,csite%npatches
-               cpatch => csite%patch(ipa)
-
-               !---------------------------------------------------------------------------!
-               !      Integrate patch-level variables.                                     !
-               !---------------------------------------------------------------------------!
-               csite%qmean_rh               (t,ipa) = csite%qmean_rh               (t,ipa) &
-                                                    + csite%fmean_rh                 (ipa) &
-                                                    * ndaysi
-               csite%qmean_fgc_rh           (t,ipa) = csite%qmean_fgc_rh           (t,ipa) &
-                                                    + csite%fmean_fgc_rh             (ipa) &
-                                                    * ndaysi
-               csite%qmean_fsc_rh           (t,ipa) = csite%qmean_fsc_rh           (t,ipa) &
-                                                    + csite%fmean_fsc_rh             (ipa) &
-                                                    * ndaysi
-               csite%qmean_stgc_rh          (t,ipa) = csite%qmean_stgc_rh          (t,ipa) &
-                                                    + csite%fmean_stgc_rh            (ipa) &
-                                                    * ndaysi
-               csite%qmean_stsc_rh          (t,ipa) = csite%qmean_stsc_rh          (t,ipa) &
-                                                    + csite%fmean_stsc_rh            (ipa) &
-                                                    * ndaysi
-               csite%qmean_msc_rh           (t,ipa) = csite%qmean_msc_rh           (t,ipa) &
-                                                    + csite%fmean_msc_rh             (ipa) &
-                                                    * ndaysi
-               csite%qmean_ssc_rh           (t,ipa) = csite%qmean_ssc_rh           (t,ipa) &
-                                                    + csite%fmean_ssc_rh             (ipa) &
-                                                    * ndaysi
-               csite%qmean_psc_rh           (t,ipa) = csite%qmean_psc_rh           (t,ipa) &
-                                                    + csite%fmean_psc_rh             (ipa) &
-                                                    * ndaysi
-               csite%qmean_nep              (t,ipa) = csite%qmean_nep              (t,ipa) &
-                                                    + csite%fmean_nep                (ipa) &
-                                                    * ndaysi
-               csite%qmean_rk4step          (t,ipa) = csite%qmean_rk4step          (t,ipa) &
-                                                    + csite%fmean_rk4step            (ipa) &
-                                                    * ndaysi
-               csite%qmean_available_water  (t,ipa) = csite%qmean_available_water  (t,ipa) &
-                                                    + csite%fmean_available_water    (ipa) &
-                                                    * ndaysi
-               csite%qmean_veg_displace     (t,ipa) = csite%qmean_veg_displace     (t,ipa) &
-                                                    + csite%fmean_veg_displace       (ipa) &
-                                                    * ndaysi
-               csite%qmean_rough            (t,ipa) = csite%qmean_rough            (t,ipa) &
-                                                    + csite%fmean_rough              (ipa) &
-                                                    * ndaysi
-               csite%qmean_can_theiv        (t,ipa) = csite%qmean_can_theiv        (t,ipa) &
-                                                    + csite%fmean_can_theiv          (ipa) &
-                                                    * ndaysi
-               csite%qmean_can_theta        (t,ipa) = csite%qmean_can_theta        (t,ipa) &
-                                                    + csite%fmean_can_theta          (ipa) &
-                                                    * ndaysi
-               csite%qmean_can_vpdef        (t,ipa) = csite%qmean_can_vpdef        (t,ipa) &
-                                                    + csite%fmean_can_vpdef          (ipa) &
-                                                    * ndaysi
-               csite%qmean_can_shv          (t,ipa) = csite%qmean_can_shv          (t,ipa) &
-                                                    + csite%fmean_can_shv            (ipa) &
-                                                    * ndaysi
-               csite%qmean_can_co2          (t,ipa) = csite%qmean_can_co2          (t,ipa) &
-                                                    + csite%fmean_can_co2            (ipa) &
-                                                    * ndaysi
-               csite%qmean_can_prss         (t,ipa) = csite%qmean_can_prss         (t,ipa) &
-                                                    + csite%fmean_can_prss           (ipa) &
-                                                    * ndaysi
-               csite%qmean_gnd_temp         (t,ipa) = csite%qmean_gnd_temp         (t,ipa) &
-                                                    + csite%fmean_gnd_temp           (ipa) &
-                                                    * ndaysi
-               csite%qmean_gnd_shv          (t,ipa) = csite%qmean_gnd_shv          (t,ipa) &
-                                                    + csite%fmean_gnd_shv            (ipa) &
-                                                    * ndaysi
-               csite%qmean_can_ggnd         (t,ipa) = csite%qmean_can_ggnd         (t,ipa) &
-                                                    + csite%fmean_can_ggnd           (ipa) &
-                                                    * ndaysi
-               csite%qmean_sfcw_depth       (t,ipa) = csite%qmean_sfcw_depth       (t,ipa) &
-                                                    + csite%fmean_sfcw_depth         (ipa) &
-                                                    * ndaysi
-               !------ Integrate pounding internal energy in extensive format [J/m2]. -----!
-               csite%qmean_sfcw_energy      (t,ipa) = csite%qmean_sfcw_energy      (t,ipa) &
-                                                    + csite%fmean_sfcw_energy        (ipa) &
-                                                    * csite%fmean_sfcw_mass          (ipa) &
-                                                    * ndaysi
-               csite%qmean_sfcw_mass        (t,ipa) = csite%qmean_sfcw_mass        (t,ipa) &
-                                                    + csite%fmean_sfcw_mass          (ipa) &
-                                                    * ndaysi
-               csite%qmean_snowfac          (t,ipa) = csite%qmean_snowfac          (t,ipa) &
-                                                    + csite%fmean_snowfac            (ipa) &
-                                                    * ndaysi
-               csite%qmean_soil_energy    (:,t,ipa) = csite%qmean_soil_energy    (:,t,ipa) &
-                                                    + csite%fmean_soil_energy      (:,ipa) &
-                                                    * ndaysi
-               csite%qmean_soil_mstpot    (:,t,ipa) = csite%qmean_soil_mstpot    (:,t,ipa) &
-                                                    + csite%fmean_soil_mstpot      (:,ipa) &
-                                                    * ndaysi
-               csite%qmean_soil_water     (:,t,ipa) = csite%qmean_soil_water     (:,t,ipa) &
-                                                    + csite%fmean_soil_water       (:,ipa) &
-                                                    * ndaysi
-               csite%qmean_rshort_gnd       (t,ipa) = csite%qmean_rshort_gnd       (t,ipa) &
-                                                    + csite%fmean_rshort_gnd         (ipa) &
-                                                    * ndaysi
-               csite%qmean_par_gnd          (t,ipa) = csite%qmean_par_gnd          (t,ipa) &
-                                                    + csite%fmean_par_gnd            (ipa) &
-                                                    * ndaysi
-               csite%qmean_rlong_gnd        (t,ipa) = csite%qmean_rlong_gnd        (t,ipa) &
-                                                    + csite%fmean_rlong_gnd          (ipa) &
-                                                    * ndaysi
-               csite%qmean_rlongup          (t,ipa) = csite%qmean_rlongup          (t,ipa) &
-                                                    + csite%fmean_rlongup            (ipa) &
-                                                    * ndaysi
-               csite%qmean_parup            (t,ipa) = csite%qmean_parup            (t,ipa) &
-                                                    + csite%fmean_parup              (ipa) &
-                                                    * ndaysi
-               csite%qmean_nirup            (t,ipa) = csite%qmean_nirup            (t,ipa) &
-                                                    + csite%fmean_nirup              (ipa) &
-                                                    * ndaysi
-               csite%qmean_rshortup         (t,ipa) = csite%qmean_rshortup         (t,ipa) &
-                                                    + csite%fmean_rshortup           (ipa) &
-                                                    * ndaysi
-               csite%qmean_rnet             (t,ipa) = csite%qmean_rnet             (t,ipa) &
-                                                    + csite%fmean_rnet               (ipa) &
-                                                    * ndaysi
-               csite%qmean_albedo           (t,ipa) = csite%qmean_albedo           (t,ipa) &
-                                                    + csite%fmean_albedo             (ipa) &
-                                                    * ndaysi
-               csite%qmean_albedo_par       (t,ipa) = csite%qmean_albedo_par       (t,ipa) &
-                                                    + csite%fmean_albedo_par         (ipa) &
-                                                    * ndaysi
-               csite%qmean_albedo_nir       (t,ipa) = csite%qmean_albedo_nir       (t,ipa) &
-                                                    + csite%fmean_albedo_nir         (ipa) &
-                                                    * ndaysi
-               csite%qmean_rlong_albedo     (t,ipa) = csite%qmean_rlong_albedo     (t,ipa) &
-                                                    + csite%fmean_rlong_albedo       (ipa) &
-                                                    * ndaysi
-               csite%qmean_ustar            (t,ipa) = csite%qmean_ustar            (t,ipa) &
-                                                    + csite%fmean_ustar              (ipa) &
-                                                    * ndaysi
-               csite%qmean_tstar            (t,ipa) = csite%qmean_tstar            (t,ipa) &
-                                                    + csite%fmean_tstar              (ipa) &
-                                                    * ndaysi
-               csite%qmean_qstar            (t,ipa) = csite%qmean_qstar            (t,ipa) &
-                                                    + csite%fmean_qstar              (ipa) &
-                                                    * ndaysi
-               csite%qmean_cstar            (t,ipa) = csite%qmean_cstar            (t,ipa) &
-                                                    + csite%fmean_cstar              (ipa) &
-                                                    * ndaysi
-               csite%qmean_carbon_ac        (t,ipa) = csite%qmean_carbon_ac        (t,ipa) &
-                                                    + csite%fmean_carbon_ac          (ipa) &
-                                                    * ndaysi
-               csite%qmean_carbon_st        (t,ipa) = csite%qmean_carbon_st        (t,ipa) &
-                                                    + csite%fmean_carbon_st          (ipa) &
-                                                    * ndaysi
-               csite%qmean_vapor_gc         (t,ipa) = csite%qmean_vapor_gc         (t,ipa) &
-                                                    + csite%fmean_vapor_gc           (ipa) &
-                                                    * ndaysi
-               csite%qmean_vapor_ac         (t,ipa) = csite%qmean_vapor_ac         (t,ipa) &
-                                                    + csite%fmean_vapor_ac           (ipa) &
-                                                    * ndaysi
-               csite%qmean_smoist_gg      (:,t,ipa) = csite%qmean_smoist_gg      (:,t,ipa) &
-                                                    + csite%fmean_smoist_gg        (:,ipa) &
-                                                    * ndaysi
-               csite%qmean_throughfall      (t,ipa) = csite%qmean_throughfall      (t,ipa) &
-                                                    + csite%fmean_throughfall        (ipa) &
-                                                    * ndaysi
-               csite%qmean_transloss      (:,t,ipa) = csite%qmean_transloss      (:,t,ipa) &
-                                                    + csite%fmean_transloss        (:,ipa) &
-                                                    * ndaysi
-               csite%qmean_runoff           (t,ipa) = csite%qmean_runoff           (t,ipa) &
-                                                    + csite%fmean_runoff             (ipa) &
-                                                    * ndaysi
-               csite%qmean_drainage         (t,ipa) = csite%qmean_drainage         (t,ipa) &
-                                                    + csite%fmean_drainage           (ipa) &
-                                                    * ndaysi
-               csite%qmean_sensible_gc      (t,ipa) = csite%qmean_sensible_gc      (t,ipa) &
-                                                    + csite%fmean_sensible_gc        (ipa) &
-                                                    * ndaysi
-               csite%qmean_sensible_ac      (t,ipa) = csite%qmean_sensible_ac      (t,ipa) &
-                                                    + csite%fmean_sensible_ac        (ipa) &
-                                                    * ndaysi
-               csite%qmean_sensible_gg    (:,t,ipa) = csite%qmean_sensible_gg    (:,t,ipa) &
-                                                    + csite%fmean_sensible_gg      (:,ipa) &
-                                                    * ndaysi
-               csite%qmean_qthroughfall     (t,ipa) = csite%qmean_qthroughfall     (t,ipa) &
-                                                    + csite%fmean_qthroughfall       (ipa) &
-                                                    * ndaysi
-               csite%qmean_qrunoff          (t,ipa) = csite%qmean_qrunoff          (t,ipa) &
-                                                    + csite%fmean_qrunoff            (ipa) &
-                                                    * ndaysi
-               csite%qmean_qdrainage        (t,ipa) = csite%qmean_qdrainage        (t,ipa) &
-                                                    + csite%fmean_qdrainage          (ipa) &
-                                                    * ndaysi
-               !------ Integrate the mean sum of squares. ---------------------------------!
-               csite%qmsqu_rh           (t,ipa) = csite%qmsqu_rh                  (t,ipa)  &
-                                                + isqu_ftz(csite%fmean_rh           (ipa)) &
-                                                * ndaysi                                 
-               csite%qmsqu_fgc_rh       (t,ipa) = csite%qmsqu_fgc_rh              (t,ipa)  &
-                                                + isqu_ftz(csite%fmean_fgc_rh       (ipa)) &
-                                                * ndaysi
-               csite%qmsqu_fsc_rh       (t,ipa) = csite%qmsqu_fsc_rh              (t,ipa)  &
-                                                + isqu_ftz(csite%fmean_fsc_rh       (ipa)) &
-                                                * ndaysi
-               csite%qmsqu_stgc_rh      (t,ipa) = csite%qmsqu_stgc_rh             (t,ipa)  &
-                                                + isqu_ftz(csite%fmean_stgc_rh      (ipa)) &
-                                                * ndaysi
-               csite%qmsqu_stsc_rh      (t,ipa) = csite%qmsqu_stsc_rh             (t,ipa)  &
-                                                + isqu_ftz(csite%fmean_stsc_rh      (ipa)) &
-                                                * ndaysi
-               csite%qmsqu_msc_rh       (t,ipa) = csite%qmsqu_msc_rh              (t,ipa)  &
-                                                + isqu_ftz(csite%fmean_msc_rh       (ipa)) &
-                                                * ndaysi
-               csite%qmsqu_ssc_rh       (t,ipa) = csite%qmsqu_ssc_rh              (t,ipa)  &
-                                                + isqu_ftz(csite%fmean_ssc_rh       (ipa)) &
-                                                * ndaysi
-               csite%qmsqu_psc_rh       (t,ipa) = csite%qmsqu_psc_rh              (t,ipa)  &
-                                                + isqu_ftz(csite%fmean_psc_rh       (ipa)) &
-                                                * ndaysi
-               csite%qmsqu_nep          (t,ipa) = csite%qmsqu_nep                 (t,ipa)  &
-                                                + isqu_ftz(csite%fmean_nep          (ipa)) &
-                                                * ndaysi
-               csite%qmsqu_rlongup      (t,ipa) = csite%qmsqu_rlongup             (t,ipa)  &
-                                                + isqu_ftz(csite%fmean_rlongup      (ipa)) &
-                                                * ndaysi
-               csite%qmsqu_parup        (t,ipa) = csite%qmsqu_parup               (t,ipa)  &
-                                                + isqu_ftz(csite%fmean_parup        (ipa)) &
-                                                * ndaysi
-               csite%qmsqu_nirup        (t,ipa) = csite%qmsqu_nirup               (t,ipa)  &
-                                                + isqu_ftz(csite%fmean_nirup        (ipa)) &
-                                                * ndaysi                                 
-               csite%qmsqu_rshortup     (t,ipa) = csite%qmsqu_rshortup            (t,ipa)  &
-                                                + isqu_ftz(csite%fmean_rshortup     (ipa)) &
-                                                * ndaysi
-               csite%qmsqu_rnet         (t,ipa) = csite%qmsqu_rnet                (t,ipa)  &
-                                                + isqu_ftz(csite%fmean_rnet         (ipa)) &
-                                                * ndaysi
-               csite%qmsqu_albedo       (t,ipa) = csite%qmsqu_albedo              (t,ipa)  &
-                                                + isqu_ftz(csite%fmean_albedo       (ipa)) &
-                                                * ndaysi
-               csite%qmsqu_ustar        (t,ipa) = csite%qmsqu_ustar               (t,ipa)  &
-                                                + isqu_ftz(csite%fmean_ustar        (ipa)) &
-                                                * ndaysi
-               csite%qmsqu_carbon_ac    (t,ipa) = csite%qmsqu_carbon_ac           (t,ipa)  &
-                                                + isqu_ftz(csite%fmean_carbon_ac    (ipa)) &
-                                                * ndaysi
-               csite%qmsqu_carbon_st    (t,ipa) = csite%qmsqu_carbon_st           (t,ipa)  &
-                                                + isqu_ftz(csite%fmean_carbon_st    (ipa)) &
-                                                * ndaysi
-               csite%qmsqu_vapor_gc     (t,ipa) = csite%qmsqu_vapor_gc            (t,ipa)  &
-                                                + isqu_ftz(csite%fmean_vapor_gc     (ipa)) &
-                                                * ndaysi
-               csite%qmsqu_vapor_ac     (t,ipa) = csite%qmsqu_vapor_ac            (t,ipa)  &
-                                                + isqu_ftz(csite%fmean_vapor_ac     (ipa)) &
-                                                * ndaysi
-               csite%qmsqu_sensible_gc  (t,ipa) = csite%qmsqu_sensible_gc         (t,ipa)  &
-                                                + isqu_ftz(csite%fmean_sensible_gc  (ipa)) &
-                                                * ndaysi
-               csite%qmsqu_sensible_ac  (t,ipa) = csite%qmsqu_sensible_ac         (t,ipa)  &
-                                                + isqu_ftz(csite%fmean_sensible_ac  (ipa)) &
-                                                * ndaysi
-               !---------------------------------------------------------------------------!
-
-
-
-               !---------------------------------------------------------------------------!
-               !      Patch loop.                                                          !
-               !---------------------------------------------------------------------------!
-               cohortloop: do ico=1,cpatch%ncohorts
-                  !------------------------------------------------------------------------!
-                  !      Integrate cohort-level variables.                                 !
-                  !------------------------------------------------------------------------!
-                  cpatch%qmean_gpp           (t,ico) = cpatch%qmean_gpp           (t,ico)  &
-                                                     + cpatch%fmean_gpp             (ico)  &
-                                                     * ndaysi
-                  cpatch%qmean_npp           (t,ico) = cpatch%qmean_npp           (t,ico)  &
-                                                     + cpatch%fmean_npp             (ico)  &
-                                                     * ndaysi
-                  cpatch%qmean_leaf_resp     (t,ico) = cpatch%qmean_leaf_resp     (t,ico)  &
-                                                     + cpatch%fmean_leaf_resp       (ico)  &
-                                                     * ndaysi
-                  cpatch%qmean_root_resp     (t,ico) = cpatch%qmean_root_resp     (t,ico)  &
-                                                     + cpatch%fmean_root_resp       (ico)  &
-                                                     * ndaysi
-                  cpatch%qmean_stem_resp     (t,ico) = cpatch%qmean_stem_resp     (t,ico)  &
-                                                     + cpatch%fmean_stem_resp       (ico)  &
-                                                     * ndaysi
-                  cpatch%qmean_leaf_growth_resp  (t,ico) = cpatch%qmean_leaf_growth_resp  (t,ico) &
-                                                         + cpatch%fmean_leaf_growth_resp    (ico) &
-                                                         * ndaysi
-                  cpatch%qmean_root_growth_resp  (t,ico) = cpatch%qmean_root_growth_resp  (t,ico) &
-                                                         + cpatch%fmean_root_growth_resp    (ico) &
-                                                         * ndaysi
-                  cpatch%qmean_sapa_growth_resp  (t,ico) = cpatch%qmean_sapa_growth_resp  (t,ico) &
-                                                         + cpatch%fmean_sapa_growth_resp    (ico) &
-                                                         * ndaysi
-                  cpatch%qmean_sapb_growth_resp  (t,ico) = cpatch%qmean_sapb_growth_resp  (t,ico) &
-                                                         + cpatch%fmean_sapb_growth_resp    (ico) &
-                                                         * ndaysi
-                  cpatch%qmean_barka_growth_resp (t,ico) = cpatch%qmean_barka_growth_resp (t,ico) &
-                                                         + cpatch%fmean_barka_growth_resp   (ico) &
-                                                         * ndaysi
-                  cpatch%qmean_barkb_growth_resp (t,ico) = cpatch%qmean_barkb_growth_resp (t,ico) &
-                                                         + cpatch%fmean_barkb_growth_resp   (ico) &
-                                                         * ndaysi
-                  cpatch%qmean_leaf_storage_resp (t,ico) = cpatch%qmean_leaf_storage_resp (t,ico) &
-                                                         + cpatch%fmean_leaf_storage_resp   (ico) &
-                                                         * ndaysi
-                  cpatch%qmean_root_storage_resp (t,ico) = cpatch%qmean_root_storage_resp (t,ico) &
-                                                         + cpatch%fmean_root_storage_resp   (ico) &
-                                                         * ndaysi
-                  cpatch%qmean_sapa_storage_resp (t,ico) = cpatch%qmean_sapa_storage_resp (t,ico) &
-                                                         + cpatch%fmean_sapa_storage_resp   (ico) &
-                                                         * ndaysi
-                  cpatch%qmean_sapb_storage_resp (t,ico) = cpatch%qmean_sapb_storage_resp (t,ico) &
-                                                         + cpatch%fmean_sapb_storage_resp   (ico) &
-                                                         * ndaysi
-                  cpatch%qmean_barka_storage_resp(t,ico) = cpatch%qmean_barka_storage_resp(t,ico) &
-                                                         + cpatch%fmean_barka_storage_resp  (ico) &
-                                                         * ndaysi
-                  cpatch%qmean_barkb_storage_resp(t,ico) = cpatch%qmean_barkb_storage_resp(t,ico) &
-                                                         + cpatch%fmean_barkb_storage_resp  (ico) &
-                                                         * ndaysi
-                  cpatch%qmean_plresp        (t,ico) = cpatch%qmean_plresp        (t,ico)  &
-                                                     + cpatch%fmean_plresp          (ico)  &
-                                                     * ndaysi
-                  cpatch%qmean_leaf_energy   (t,ico) = cpatch%qmean_leaf_energy   (t,ico)  &
-                                                     + cpatch%fmean_leaf_energy     (ico)  &
-                                                     * ndaysi
-                  cpatch%qmean_leaf_water    (t,ico) = cpatch%qmean_leaf_water    (t,ico)  &
-                                                     + cpatch%fmean_leaf_water      (ico)  &
-                                                     * ndaysi
-                  cpatch%qmean_leaf_hcap     (t,ico) = cpatch%qmean_leaf_hcap     (t,ico)  &
-                                                     + cpatch%fmean_leaf_hcap       (ico)  &
-                                                     * ndaysi
-                  cpatch%qmean_leaf_vpdef    (t,ico) = cpatch%qmean_leaf_vpdef    (t,ico)  &
-                                                     + cpatch%fmean_leaf_vpdef      (ico)  &
-                                                     * ndaysi
-                  cpatch%qmean_leaf_gsw      (t,ico) = cpatch%qmean_leaf_gsw      (t,ico)  &
-                                                     + cpatch%fmean_leaf_gsw        (ico)  &
-                                                     * ndaysi
-                  cpatch%qmean_leaf_gbw      (t,ico) = cpatch%qmean_leaf_gbw      (t,ico)  &
-                                                     + cpatch%fmean_leaf_gbw        (ico)  &
-                                                     * ndaysi
-                  cpatch%qmean_wood_energy   (t,ico) = cpatch%qmean_wood_energy   (t,ico)  &
-                                                     + cpatch%fmean_wood_energy     (ico)  &
-                                                     * ndaysi
-                  cpatch%qmean_wood_water    (t,ico) = cpatch%qmean_wood_water    (t,ico)  &
-                                                     + cpatch%fmean_wood_water      (ico)  &
-                                                     * ndaysi
-                  cpatch%qmean_wood_hcap     (t,ico) = cpatch%qmean_wood_hcap     (t,ico)  &
-                                                     + cpatch%fmean_wood_hcap       (ico)  &
-                                                     * ndaysi
-                  cpatch%qmean_wood_gbw      (t,ico) = cpatch%qmean_wood_gbw      (t,ico)  &
-                                                     + cpatch%fmean_wood_gbw        (ico)  &
-                                                     * ndaysi
-                  cpatch%qmean_fs_open       (t,ico) = cpatch%qmean_fs_open       (t,ico)  &
-                                                     + cpatch%fmean_fs_open         (ico)  &
-                                                     * ndaysi
-                  cpatch%qmean_fsw           (t,ico) = cpatch%qmean_fsw           (t,ico)  &
-                                                     + cpatch%fmean_fsw             (ico)  &
-                                                     * ndaysi
-                  cpatch%qmean_fsn           (t,ico) = cpatch%qmean_fsn           (t,ico)  &
-                                                     + cpatch%fmean_fsn             (ico)  &
-                                                     * ndaysi
-                  cpatch%qmean_a_open        (t,ico) = cpatch%qmean_a_open        (t,ico)  &
-                                                     + cpatch%fmean_a_open          (ico)  &
-                                                     * ndaysi
-                  cpatch%qmean_a_closed      (t,ico) = cpatch%qmean_a_closed      (t,ico)  &
-                                                     + cpatch%fmean_a_closed        (ico)  &
-                                                     * ndaysi
-                  cpatch%qmean_a_net         (t,ico) = cpatch%qmean_a_net         (t,ico)  &
-                                                     + cpatch%fmean_a_net           (ico)  &
-                                                     * ndaysi
-                  cpatch%qmean_a_light       (t,ico) = cpatch%qmean_a_light       (t,ico)  &
-                                                     + cpatch%fmean_a_light         (ico)  &
-                                                     * ndaysi
-                  cpatch%qmean_a_rubp        (t,ico) = cpatch%qmean_a_rubp        (t,ico)  &
-                                                     + cpatch%fmean_a_rubp          (ico)  &
-                                                     * ndaysi
-                  cpatch%qmean_a_co2         (t,ico) = cpatch%qmean_a_co2         (t,ico)  &
-                                                     + cpatch%fmean_a_co2           (ico)  &
-                                                     * ndaysi
-                  cpatch%qmean_psi_open      (t,ico) = cpatch%qmean_psi_open      (t,ico)  &
-                                                     + cpatch%fmean_psi_open        (ico)  &
-                                                     * ndaysi
-                  cpatch%qmean_psi_closed    (t,ico) = cpatch%qmean_psi_closed    (t,ico)  &
-                                                     + cpatch%fmean_psi_closed      (ico)  &
-                                                     * ndaysi
-                  cpatch%qmean_water_supply  (t,ico) = cpatch%qmean_water_supply  (t,ico)  &
-                                                     + cpatch%fmean_water_supply    (ico)  &
-                                                     * ndaysi
-                  
-                  cpatch%qmean_par_level_beam(t,ico) = cpatch%qmean_par_level_beam(t,ico) &
-                                                     + cpatch%fmean_par_level_beam(ico)    &
-                                                     * ndaysi
-
-                  cpatch%qmean_par_level_diffd(t,ico)= cpatch%qmean_par_level_diffd(t,ico) &
-                                                     + cpatch%fmean_par_level_diffd(ico)    &
-                                                     * ndaysi
-
-                  cpatch%qmean_par_level_diffu(t,ico)= cpatch%qmean_par_level_diffu(t,ico) &
-                                                     + cpatch%fmean_par_level_diffu(ico)    &
-                                                     * ndaysi
-
-                  cpatch%qmean_light_level   (t,ico) = cpatch%qmean_light_level   (t,ico)  &
-                                                     + cpatch%fmean_light_level     (ico)  &
-                                                     * ndaysi
-
-                  cpatch%qmean_light_level_beam(t,ico) =                                   &
-                                                      cpatch%qmean_light_level_beam(t,ico) &
-                                                    + cpatch%fmean_light_level_beam  (ico) &
-                                                    * ndaysi
-                  cpatch%qmean_light_level_diff(t,ico) =                                   &
-                                                      cpatch%qmean_light_level_diff(t,ico) &
-                                                    + cpatch%fmean_light_level_diff  (ico) &
-                                                    * ndaysi
-                  cpatch%qmean_par_l         (t,ico) = cpatch%qmean_par_l         (t,ico)  &
-                                                     + cpatch%fmean_par_l           (ico)  &
-                                                     * ndaysi
-                  cpatch%qmean_par_l_beam    (t,ico) = cpatch%qmean_par_l_beam    (t,ico)  &
-                                                     + cpatch%fmean_par_l_beam      (ico)  &
-                                                     * ndaysi
-                  cpatch%qmean_par_l_diff    (t,ico) = cpatch%qmean_par_l_diff    (t,ico)  &
-                                                     + cpatch%fmean_par_l_diff      (ico)  &
-                                                     * ndaysi
-                  cpatch%qmean_rshort_l      (t,ico) = cpatch%qmean_rshort_l      (t,ico)  &
-                                                     + cpatch%fmean_rshort_l        (ico)  &
-                                                     * ndaysi
-                  cpatch%qmean_rlong_l       (t,ico) = cpatch%qmean_rlong_l       (t,ico)  &
-                                                     + cpatch%fmean_rlong_l         (ico)  &
-                                                     * ndaysi
-                  cpatch%qmean_sensible_lc   (t,ico) = cpatch%qmean_sensible_lc   (t,ico)  &
-                                                     + cpatch%fmean_sensible_lc     (ico)  &
-                                                     * ndaysi
-                  cpatch%qmean_vapor_lc      (t,ico) = cpatch%qmean_vapor_lc      (t,ico)  &
-                                                     + cpatch%fmean_vapor_lc        (ico)  &
-                                                     * ndaysi
-                  cpatch%qmean_transp        (t,ico) = cpatch%qmean_transp        (t,ico)  &
-                                                     + cpatch%fmean_transp          (ico)  &
-                                                     * ndaysi
-                  cpatch%qmean_intercepted_al(t,ico) = cpatch%qmean_intercepted_al(t,ico)  &
-                                                     + cpatch%fmean_intercepted_al  (ico)  &
-                                                     * ndaysi
-                  cpatch%qmean_wshed_lg      (t,ico) = cpatch%qmean_wshed_lg      (t,ico)  &
-                                                     + cpatch%fmean_wshed_lg        (ico)  &
-                                                     * ndaysi
-                  cpatch%qmean_rshort_w      (t,ico) = cpatch%qmean_rshort_w      (t,ico)  &
-                                                     + cpatch%fmean_rshort_w        (ico)  &
-                                                     * ndaysi
-                  cpatch%qmean_rlong_w       (t,ico) = cpatch%qmean_rlong_w       (t,ico)  &
-                                                     + cpatch%fmean_rlong_w         (ico)  &
-                                                     * ndaysi
-                  cpatch%qmean_rad_profile (:,t,ico) = cpatch%qmean_rad_profile (:,t,ico)  &
-                                                     + cpatch%fmean_rad_profile   (:,ico)  &
-                                                     * ndaysi
-                  cpatch%qmean_sensible_wc   (t,ico) = cpatch%qmean_sensible_wc   (t,ico)  &
-                                                     + cpatch%fmean_sensible_wc     (ico)  &
-                                                     * ndaysi
-                  cpatch%qmean_vapor_wc      (t,ico) = cpatch%qmean_vapor_wc      (t,ico)  &
-                                                     + cpatch%fmean_vapor_wc        (ico)  &
-                                                     * ndaysi
-                  cpatch%qmean_intercepted_aw(t,ico) = cpatch%qmean_intercepted_aw(t,ico)  &
-                                                     + cpatch%fmean_intercepted_aw  (ico)  &
-                                                     * ndaysi
-                  cpatch%qmean_wshed_wg      (t,ico) = cpatch%qmean_wshed_wg      (t,ico)  &
-                                                     + cpatch%fmean_wshed_wg        (ico)  &
-                                                     * ndaysi
-
-                  cpatch%qmean_leaf_psi      (t,ico) = cpatch%qmean_leaf_psi      (t,ico)  &
-                                                     + cpatch%fmean_leaf_psi        (ico)  &
-                                                     * ndaysi
-                  cpatch%qmean_wood_psi      (t,ico) = cpatch%qmean_wood_psi      (t,ico)  &
-                                                     + cpatch%fmean_wood_psi        (ico)  &
-                                                     * ndaysi
-                  cpatch%qmean_leaf_water_int(t,ico) = cpatch%qmean_leaf_water_int(t,ico)  &
-                                                     + cpatch%fmean_leaf_water_int  (ico)  &
-                                                     * ndaysi
-                  cpatch%qmean_leaf_water_im2(t,ico) = cpatch%qmean_leaf_water_im2(t,ico)  &
-                                                     + cpatch%fmean_leaf_water_im2  (ico)  &
-                                                     * ndaysi
-                  cpatch%qmean_wood_water_int(t,ico) = cpatch%qmean_wood_water_int(t,ico)  &
-                                                     + cpatch%fmean_wood_water_int  (ico)  &
-                                                     * ndaysi
-                  cpatch%qmean_wood_water_im2(t,ico) = cpatch%qmean_wood_water_im2(t,ico)  &
-                                                     + cpatch%fmean_wood_water_im2  (ico)  &
-                                                     * ndaysi
-                  cpatch%qmean_wflux_wl      (t,ico) = cpatch%qmean_wflux_wl      (t,ico)  &
-                                                     + cpatch%fmean_wflux_wl        (ico)  &
-                                                     * ndaysi
-                  cpatch%qmean_wflux_gw      (t,ico) = cpatch%qmean_wflux_gw      (t,ico)  &
-                                                     + cpatch%fmean_wflux_gw        (ico)  &
-                                                     * ndaysi
-
-                  !------ Mean sum of squares. --------------------------------------------!
-                  cpatch%qmsqu_gpp        (t,ico) = cpatch%qmsqu_gpp              (t,ico)  &
-                                                  + isqu_ftz(cpatch%fmean_gpp       (ico)) &
-                                                  * ndaysi
-                  cpatch%qmsqu_npp        (t,ico) = cpatch%qmsqu_npp              (t,ico)  &
-                                                  + isqu_ftz(cpatch%fmean_npp       (ico)) &
-                                                  * ndaysi
-                  cpatch%qmsqu_plresp     (t,ico) = cpatch%qmsqu_plresp           (t,ico)  &
-                                                  + isqu_ftz(cpatch%fmean_plresp    (ico)) &
-                                                  * ndaysi
-                  cpatch%qmsqu_sensible_lc(t,ico) = cpatch%qmsqu_sensible_lc      (t,ico)  &
-                                                + isqu_ftz(cpatch%fmean_sensible_lc (ico)) &
-                                                * ndaysi
-                  cpatch%qmsqu_vapor_lc   (t,ico) = cpatch%qmsqu_vapor_lc         (t,ico)  &
-                                                  + isqu_ftz(cpatch%fmean_vapor_lc  (ico)) &
-                                                  * ndaysi
-                  cpatch%qmsqu_transp     (t,ico) = cpatch%qmsqu_transp           (t,ico)  &
-                                                  + isqu_ftz(cpatch%fmean_transp    (ico)) &
-                                                  * ndaysi
-                  cpatch%qmsqu_wflux_wl   (t,ico) = cpatch%qmsqu_wflux_wl         (t,ico)  &
-                                                  + isqu_ftz(cpatch%fmean_wflux_wl  (ico)) &
-                                                  * ndaysi
-                  cpatch%qmsqu_wflux_gw   (t,ico) = cpatch%qmsqu_wflux_gw         (t,ico)  &
-                                                  + isqu_ftz(cpatch%fmean_wflux_gw  (ico)) &
-                                                  * ndaysi
-                  cpatch%qmsqu_sensible_wc(t,ico) = cpatch%qmsqu_sensible_wc      (t,ico)  &
-                                                + isqu_ftz(cpatch%fmean_sensible_wc (ico)) &
-                                                * ndaysi
-                  cpatch%qmsqu_vapor_wc   (t,ico) = cpatch%qmsqu_vapor_wc         (t,ico)  &
-                                                  + isqu_ftz(cpatch%fmean_vapor_wc  (ico)) &
-                                                  * ndaysi
-                  !------------------------------------------------------------------------!
-               end do cohortloop
-               !---------------------------------------------------------------------------!
-            end do patchloop
-            !------------------------------------------------------------------------------!
-         end do siteloop
+         call integrate_ed_qmean_sites(cgrid,ipy,t,ndaysi)
          !---------------------------------------------------------------------------------!
       end do polyloop
       !------------------------------------------------------------------------------------!
       return
-   end subroutine integrate_ed_qmean_vars
+   end subroutine integrate_ed_qmean_polygons
    !=======================================================================================!
    !=======================================================================================!
 
@@ -7736,12 +7759,703 @@ module average_utils
 
    !=======================================================================================!
    !=======================================================================================!
-   !  SUBROUTINE: NORMALIZE_ED_QMEAN_VARS   
-   !> \brief This subroutine normalises the daily mean variables of those variables that could
-   !> not be integrated directly.  These are pretty much just temperature, density, and
-   !> liquid water fraction.
+   !  SUBROUTINE: INTEGRATE_ED_QMEAN_SITES   
+   !> \brief This subroutine integrates most of the mean diel variables.  This subroutine is
+   !> called after the fmean variables have been normalised, so we can leverage these 
+   !> averages.
+   !> \author Marcos Longo
+   !> \brief A few variables are _NOT_ integrated here: quantities such as temperature and
+   !> liquid fraction are found after the mean diel of the extensive variables have been
+   !> normalised. We use a hierarchical approach and call separate sub-routines for patch-
+   !> and cohort-level variables. This reduces the length of these sub-routines, which
+   !> reduces the risk of compilation errors (especially with intel compilers).
    !---------------------------------------------------------------------------------------!
-   subroutine normalize_ed_qmean_vars(cgrid)
+   subroutine integrate_ed_qmean_sites(cgrid,ipy,t,ndaysi)
+      use ed_state_vars, only : edtype              & ! structure
+                              , polygontype         ! ! structure
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      type(edtype)      , target     :: cgrid
+      integer           , intent(in) :: ipy
+      integer           , intent(in) :: t
+      real              , intent(in) :: ndaysi
+      !----- Local variables --------------------------------------------------------------!
+      type(polygontype) , pointer :: cpoly
+      integer                     :: isi
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !   Select polygon, then loop through sites.                                         !
+      !------------------------------------------------------------------------------------!
+      cpoly => cgrid%polygon(ipy)
+      siteloop: do isi=1,cpoly%nsites
+         cpoly%qmean_atm_theiv      (t,isi) = cpoly%qmean_atm_theiv      (t,isi)           &
+                                            + cpoly%fmean_atm_theiv        (isi)           &
+                                            * ndaysi
+         cpoly%qmean_atm_theta      (t,isi) = cpoly%qmean_atm_theta      (t,isi)           &
+                                            + cpoly%fmean_atm_theta        (isi)           &
+                                            * ndaysi
+         cpoly%qmean_atm_vpdef      (t,isi) = cpoly%qmean_atm_vpdef      (t,isi)           &
+                                            + cpoly%fmean_atm_vpdef        (isi)           &
+                                            * ndaysi
+         cpoly%qmean_atm_shv        (t,isi) = cpoly%qmean_atm_shv        (t,isi)           &
+                                            + cpoly%fmean_atm_shv          (isi)           &
+                                            * ndaysi
+         cpoly%qmean_atm_rshort     (t,isi) = cpoly%qmean_atm_rshort     (t,isi)           &
+                                            + cpoly%fmean_atm_rshort       (isi)           &
+                                            * ndaysi
+         cpoly%qmean_atm_rshort_diff(t,isi) = cpoly%qmean_atm_rshort_diff(t,isi)           &
+                                            + cpoly%fmean_atm_rshort_diff  (isi)           &
+                                            * ndaysi
+         cpoly%qmean_atm_par        (t,isi) = cpoly%qmean_atm_par        (t,isi)           &
+                                            + cpoly%fmean_atm_par          (isi)           &
+                                            * ndaysi
+         cpoly%qmean_atm_par_diff   (t,isi) = cpoly%qmean_atm_par_diff   (t,isi)           &
+                                            + cpoly%fmean_atm_par_diff     (isi)           &
+                                            * ndaysi
+         cpoly%qmean_atm_rlong      (t,isi) = cpoly%qmean_atm_rlong      (t,isi)           &
+                                            + cpoly%fmean_atm_rlong        (isi)           &
+                                            * ndaysi
+         cpoly%qmean_atm_vels       (t,isi) = cpoly%qmean_atm_vels       (t,isi)           &
+                                            + cpoly%fmean_atm_vels         (isi)           &
+                                            * ndaysi
+         cpoly%qmean_atm_prss       (t,isi) = cpoly%qmean_atm_prss       (t,isi)           &
+                                            + cpoly%fmean_atm_prss         (isi)           &
+                                            * ndaysi
+         cpoly%qmean_atm_co2        (t,isi) = cpoly%qmean_atm_co2        (t,isi)           &
+                                            + cpoly%fmean_atm_co2          (isi)           &
+                                            * ndaysi
+         cpoly%qmean_pcpg           (t,isi) = cpoly%qmean_pcpg           (t,isi)           &
+                                            + cpoly%fmean_pcpg             (isi)           &
+                                            * ndaysi
+         cpoly%qmean_qpcpg          (t,isi) = cpoly%qmean_qpcpg          (t,isi)           &
+                                            + cpoly%fmean_qpcpg            (isi)           &
+                                            * ndaysi
+         cpoly%qmean_dpcpg          (t,isi) = cpoly%qmean_dpcpg          (t,isi)           &
+                                            + cpoly%fmean_dpcpg            (isi)           &
+                                            * ndaysi
+
+         !---------------------------------------------------------------------------------!
+         !   Call the sub-routine that will integrate patch- (and cohort-) level averages. !
+         !---------------------------------------------------------------------------------!
+         call integrate_ed_qmean_patches(cpoly,isi,t,ndaysi)
+         !---------------------------------------------------------------------------------!
+      end do siteloop
+      !------------------------------------------------------------------------------------!
+      return
+   end subroutine integrate_ed_qmean_sites
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !  SUBROUTINE: INTEGRATE_ED_QMEAN_PATCHES 
+   !> \brief This subroutine integrates most of the mean diel variables.  This subroutine is
+   !> called after the fmean variables have been normalised, so we can leverage these 
+   !> averages.
+   !> \author Marcos Longo
+   !> \details A few variables are _NOT_ integrated here: quantities such as temperature and
+   !> liquid fraction are found after the mean diel of the extensive variables have been
+   !> normalised. We use a hierarchical approach and call separate sub-routines for
+   !> cohort-level variables. This reduces the length of these sub-routines, which reduces
+   !> the risk of compilation errors (especially with intel compilers).
+   !---------------------------------------------------------------------------------------!
+   subroutine integrate_ed_qmean_patches(cpoly,isi,t,ndaysi)
+      use ed_state_vars, only : polygontype         & ! structure
+                              , sitetype            ! ! structure
+      implicit none
+      !----- Argument ---------------------------------------------------------------------!
+      type(polygontype) , pointer    :: cpoly
+      integer           , intent(in) :: isi
+      integer           , intent(in) :: t
+      real              , intent(in) :: ndaysi
+      !----- Local variables --------------------------------------------------------------!
+      type(sitetype)    , pointer :: csite
+      integer                     :: ipa
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !   Select site, then loop through patches.                                          !
+      !------------------------------------------------------------------------------------!
+      csite => cpoly%site(isi)
+      patchloop: do ipa=1,csite%npatches
+         csite%qmean_rh               (t,ipa) = csite%qmean_rh               (t,ipa)       &
+                                              + csite%fmean_rh                 (ipa)       &
+                                              * ndaysi
+         csite%qmean_fgc_rh           (t,ipa) = csite%qmean_fgc_rh           (t,ipa)       &
+                                              + csite%fmean_fgc_rh             (ipa)       &
+                                              * ndaysi
+         csite%qmean_fsc_rh           (t,ipa) = csite%qmean_fsc_rh           (t,ipa)       &
+                                              + csite%fmean_fsc_rh             (ipa)       &
+                                              * ndaysi
+         csite%qmean_stgc_rh          (t,ipa) = csite%qmean_stgc_rh          (t,ipa)       &
+                                              + csite%fmean_stgc_rh            (ipa)       &
+                                              * ndaysi
+         csite%qmean_stsc_rh          (t,ipa) = csite%qmean_stsc_rh          (t,ipa)       &
+                                              + csite%fmean_stsc_rh            (ipa)       &
+                                              * ndaysi
+         csite%qmean_msc_rh           (t,ipa) = csite%qmean_msc_rh           (t,ipa)       &
+                                              + csite%fmean_msc_rh             (ipa)       &
+                                              * ndaysi
+         csite%qmean_ssc_rh           (t,ipa) = csite%qmean_ssc_rh           (t,ipa)       &
+                                              + csite%fmean_ssc_rh             (ipa)       &
+                                              * ndaysi
+         csite%qmean_psc_rh           (t,ipa) = csite%qmean_psc_rh           (t,ipa)       &
+                                              + csite%fmean_psc_rh             (ipa)       &
+                                              * ndaysi
+         csite%qmean_nep              (t,ipa) = csite%qmean_nep              (t,ipa)       &
+                                              + csite%fmean_nep                (ipa)       &
+                                              * ndaysi
+         csite%qmean_rk4step          (t,ipa) = csite%qmean_rk4step          (t,ipa)       &
+                                              + csite%fmean_rk4step            (ipa)       &
+                                              * ndaysi
+         csite%qmean_available_water  (t,ipa) = csite%qmean_available_water  (t,ipa)       &
+                                              + csite%fmean_available_water    (ipa)       &
+                                              * ndaysi
+         csite%qmean_veg_displace     (t,ipa) = csite%qmean_veg_displace     (t,ipa)       &
+                                              + csite%fmean_veg_displace       (ipa)       &
+                                              * ndaysi
+         csite%qmean_rough            (t,ipa) = csite%qmean_rough            (t,ipa)       &
+                                              + csite%fmean_rough              (ipa)       &
+                                              * ndaysi
+         csite%qmean_can_theiv        (t,ipa) = csite%qmean_can_theiv        (t,ipa)       &
+                                              + csite%fmean_can_theiv          (ipa)       &
+                                              * ndaysi
+         csite%qmean_can_theta        (t,ipa) = csite%qmean_can_theta        (t,ipa)       &
+                                              + csite%fmean_can_theta          (ipa)       &
+                                              * ndaysi
+         csite%qmean_can_vpdef        (t,ipa) = csite%qmean_can_vpdef        (t,ipa)       &
+                                              + csite%fmean_can_vpdef          (ipa)       &
+                                              * ndaysi
+         csite%qmean_can_shv          (t,ipa) = csite%qmean_can_shv          (t,ipa)       &
+                                              + csite%fmean_can_shv            (ipa)       &
+                                              * ndaysi
+         csite%qmean_can_co2          (t,ipa) = csite%qmean_can_co2          (t,ipa)       &
+                                              + csite%fmean_can_co2            (ipa)       &
+                                              * ndaysi
+         csite%qmean_can_prss         (t,ipa) = csite%qmean_can_prss         (t,ipa)       &
+                                              + csite%fmean_can_prss           (ipa)       &
+                                              * ndaysi
+         csite%qmean_gnd_temp         (t,ipa) = csite%qmean_gnd_temp         (t,ipa)       &
+                                              + csite%fmean_gnd_temp           (ipa)       &
+                                              * ndaysi
+         csite%qmean_gnd_shv          (t,ipa) = csite%qmean_gnd_shv          (t,ipa)       &
+                                              + csite%fmean_gnd_shv            (ipa)       &
+                                              * ndaysi
+         csite%qmean_can_ggnd         (t,ipa) = csite%qmean_can_ggnd         (t,ipa)       &
+                                              + csite%fmean_can_ggnd           (ipa)       &
+                                              * ndaysi
+         csite%qmean_sfcw_depth       (t,ipa) = csite%qmean_sfcw_depth       (t,ipa)       &
+                                              + csite%fmean_sfcw_depth         (ipa)       &
+                                              * ndaysi
+         !------ Integrate pounding internal energy in extensive format [J/m2]. -----------!
+         csite%qmean_sfcw_energy      (t,ipa) = csite%qmean_sfcw_energy      (t,ipa)       &
+                                              + csite%fmean_sfcw_energy        (ipa)       &
+                                              * csite%fmean_sfcw_mass          (ipa)       &
+                                              * ndaysi
+         csite%qmean_sfcw_mass        (t,ipa) = csite%qmean_sfcw_mass        (t,ipa)       &
+                                              + csite%fmean_sfcw_mass          (ipa)       &
+                                              * ndaysi
+         csite%qmean_snowfac          (t,ipa) = csite%qmean_snowfac          (t,ipa)       &
+                                              + csite%fmean_snowfac            (ipa)       &
+                                              * ndaysi
+         csite%qmean_soil_energy    (:,t,ipa) = csite%qmean_soil_energy    (:,t,ipa)       &
+                                              + csite%fmean_soil_energy      (:,ipa)       &
+                                              * ndaysi
+         csite%qmean_soil_mstpot    (:,t,ipa) = csite%qmean_soil_mstpot    (:,t,ipa)       &
+                                              + csite%fmean_soil_mstpot      (:,ipa)       &
+                                              * ndaysi
+         csite%qmean_soil_water     (:,t,ipa) = csite%qmean_soil_water     (:,t,ipa)       &
+                                              + csite%fmean_soil_water       (:,ipa)       &
+                                              * ndaysi
+         csite%qmean_rshort_gnd       (t,ipa) = csite%qmean_rshort_gnd       (t,ipa)       &
+                                              + csite%fmean_rshort_gnd         (ipa)       &
+                                              * ndaysi
+         csite%qmean_par_gnd          (t,ipa) = csite%qmean_par_gnd          (t,ipa)       &
+                                              + csite%fmean_par_gnd            (ipa)       &
+                                              * ndaysi
+         csite%qmean_rlong_gnd        (t,ipa) = csite%qmean_rlong_gnd        (t,ipa)       &
+                                              + csite%fmean_rlong_gnd          (ipa)       &
+                                              * ndaysi
+         csite%qmean_rlongup          (t,ipa) = csite%qmean_rlongup          (t,ipa)       &
+                                              + csite%fmean_rlongup            (ipa)       &
+                                              * ndaysi
+         csite%qmean_parup            (t,ipa) = csite%qmean_parup            (t,ipa)       &
+                                              + csite%fmean_parup              (ipa)       &
+                                              * ndaysi
+         csite%qmean_nirup            (t,ipa) = csite%qmean_nirup            (t,ipa)       &
+                                              + csite%fmean_nirup              (ipa)       &
+                                              * ndaysi
+         csite%qmean_rshortup         (t,ipa) = csite%qmean_rshortup         (t,ipa)       &
+                                              + csite%fmean_rshortup           (ipa)       &
+                                              * ndaysi
+         csite%qmean_rnet             (t,ipa) = csite%qmean_rnet             (t,ipa)       &
+                                              + csite%fmean_rnet               (ipa)       &
+                                              * ndaysi
+         csite%qmean_albedo           (t,ipa) = csite%qmean_albedo           (t,ipa)       &
+                                              + csite%fmean_albedo             (ipa)       &
+                                              * ndaysi
+         csite%qmean_albedo_par       (t,ipa) = csite%qmean_albedo_par       (t,ipa)       &
+                                              + csite%fmean_albedo_par         (ipa)       &
+                                              * ndaysi
+         csite%qmean_albedo_nir       (t,ipa) = csite%qmean_albedo_nir       (t,ipa)       &
+                                              + csite%fmean_albedo_nir         (ipa)       &
+                                              * ndaysi
+         csite%qmean_rlong_albedo     (t,ipa) = csite%qmean_rlong_albedo     (t,ipa)       &
+                                              + csite%fmean_rlong_albedo       (ipa)       &
+                                              * ndaysi
+         csite%qmean_ustar            (t,ipa) = csite%qmean_ustar            (t,ipa)       &
+                                              + csite%fmean_ustar              (ipa)       &
+                                              * ndaysi
+         csite%qmean_tstar            (t,ipa) = csite%qmean_tstar            (t,ipa)       &
+                                              + csite%fmean_tstar              (ipa)       &
+                                              * ndaysi
+         csite%qmean_qstar            (t,ipa) = csite%qmean_qstar            (t,ipa)       &
+                                              + csite%fmean_qstar              (ipa)       &
+                                              * ndaysi
+         csite%qmean_cstar            (t,ipa) = csite%qmean_cstar            (t,ipa)       &
+                                              + csite%fmean_cstar              (ipa)       &
+                                              * ndaysi
+         csite%qmean_carbon_ac        (t,ipa) = csite%qmean_carbon_ac        (t,ipa)       &
+                                              + csite%fmean_carbon_ac          (ipa)       &
+                                              * ndaysi
+         csite%qmean_carbon_st        (t,ipa) = csite%qmean_carbon_st        (t,ipa)       &
+                                              + csite%fmean_carbon_st          (ipa)       &
+                                              * ndaysi
+         csite%qmean_vapor_gc         (t,ipa) = csite%qmean_vapor_gc         (t,ipa)       &
+                                              + csite%fmean_vapor_gc           (ipa)       &
+                                              * ndaysi
+         csite%qmean_vapor_ac         (t,ipa) = csite%qmean_vapor_ac         (t,ipa)       &
+                                              + csite%fmean_vapor_ac           (ipa)       &
+                                              * ndaysi
+         csite%qmean_smoist_gg      (:,t,ipa) = csite%qmean_smoist_gg      (:,t,ipa)       &
+                                              + csite%fmean_smoist_gg        (:,ipa)       &
+                                              * ndaysi
+         csite%qmean_throughfall      (t,ipa) = csite%qmean_throughfall      (t,ipa)       &
+                                              + csite%fmean_throughfall        (ipa)       &
+                                              * ndaysi
+         csite%qmean_transloss      (:,t,ipa) = csite%qmean_transloss      (:,t,ipa)       &
+                                              + csite%fmean_transloss        (:,ipa)       &
+                                              * ndaysi
+         csite%qmean_runoff           (t,ipa) = csite%qmean_runoff           (t,ipa)       &
+                                              + csite%fmean_runoff             (ipa)       &
+                                              * ndaysi
+         csite%qmean_drainage         (t,ipa) = csite%qmean_drainage         (t,ipa)       &
+                                              + csite%fmean_drainage           (ipa)       &
+                                              * ndaysi
+         csite%qmean_sensible_gc      (t,ipa) = csite%qmean_sensible_gc      (t,ipa)       &
+                                              + csite%fmean_sensible_gc        (ipa)       &
+                                              * ndaysi
+         csite%qmean_sensible_ac      (t,ipa) = csite%qmean_sensible_ac      (t,ipa)       &
+                                              + csite%fmean_sensible_ac        (ipa)       &
+                                              * ndaysi
+         csite%qmean_sensible_gg    (:,t,ipa) = csite%qmean_sensible_gg    (:,t,ipa)       &
+                                              + csite%fmean_sensible_gg      (:,ipa)       &
+                                              * ndaysi
+         csite%qmean_qthroughfall     (t,ipa) = csite%qmean_qthroughfall     (t,ipa)       &
+                                              + csite%fmean_qthroughfall       (ipa)       &
+                                              * ndaysi
+         csite%qmean_qrunoff          (t,ipa) = csite%qmean_qrunoff          (t,ipa)       &
+                                              + csite%fmean_qrunoff            (ipa)       &
+                                              * ndaysi
+         csite%qmean_qdrainage        (t,ipa) = csite%qmean_qdrainage        (t,ipa)       &
+                                              + csite%fmean_qdrainage          (ipa)       &
+                                              * ndaysi
+         !------ Integrate the mean sum of squares. ---------------------------------------!
+         csite%qmsqu_rh           (t,ipa) = csite%qmsqu_rh                  (t,ipa)        &
+                                          + isqu_ftz(csite%fmean_rh           (ipa))       &
+                                          * ndaysi                                 
+         csite%qmsqu_fgc_rh       (t,ipa) = csite%qmsqu_fgc_rh              (t,ipa)        &
+                                          + isqu_ftz(csite%fmean_fgc_rh       (ipa))       &
+                                          * ndaysi
+         csite%qmsqu_fsc_rh       (t,ipa) = csite%qmsqu_fsc_rh              (t,ipa)        &
+                                          + isqu_ftz(csite%fmean_fsc_rh       (ipa))       &
+                                          * ndaysi
+         csite%qmsqu_stgc_rh      (t,ipa) = csite%qmsqu_stgc_rh             (t,ipa)        &
+                                          + isqu_ftz(csite%fmean_stgc_rh      (ipa))       &
+                                          * ndaysi
+         csite%qmsqu_stsc_rh      (t,ipa) = csite%qmsqu_stsc_rh             (t,ipa)        &
+                                          + isqu_ftz(csite%fmean_stsc_rh      (ipa))       &
+                                          * ndaysi
+         csite%qmsqu_msc_rh       (t,ipa) = csite%qmsqu_msc_rh              (t,ipa)        &
+                                          + isqu_ftz(csite%fmean_msc_rh       (ipa))       &
+                                          * ndaysi
+         csite%qmsqu_ssc_rh       (t,ipa) = csite%qmsqu_ssc_rh              (t,ipa)        &
+                                          + isqu_ftz(csite%fmean_ssc_rh       (ipa))       &
+                                          * ndaysi
+         csite%qmsqu_psc_rh       (t,ipa) = csite%qmsqu_psc_rh              (t,ipa)        &
+                                          + isqu_ftz(csite%fmean_psc_rh       (ipa))       &
+                                          * ndaysi
+         csite%qmsqu_nep          (t,ipa) = csite%qmsqu_nep                 (t,ipa)        &
+                                          + isqu_ftz(csite%fmean_nep          (ipa))       &
+                                          * ndaysi
+         csite%qmsqu_rlongup      (t,ipa) = csite%qmsqu_rlongup             (t,ipa)        &
+                                          + isqu_ftz(csite%fmean_rlongup      (ipa))       &
+                                          * ndaysi
+         csite%qmsqu_parup        (t,ipa) = csite%qmsqu_parup               (t,ipa)        &
+                                          + isqu_ftz(csite%fmean_parup        (ipa))       &
+                                          * ndaysi
+         csite%qmsqu_nirup        (t,ipa) = csite%qmsqu_nirup               (t,ipa)        &
+                                          + isqu_ftz(csite%fmean_nirup        (ipa))       &
+                                          * ndaysi                                 
+         csite%qmsqu_rshortup     (t,ipa) = csite%qmsqu_rshortup            (t,ipa)        &
+                                          + isqu_ftz(csite%fmean_rshortup     (ipa))       &
+                                          * ndaysi
+         csite%qmsqu_rnet         (t,ipa) = csite%qmsqu_rnet                (t,ipa)        &
+                                          + isqu_ftz(csite%fmean_rnet         (ipa))       &
+                                          * ndaysi
+         csite%qmsqu_albedo       (t,ipa) = csite%qmsqu_albedo              (t,ipa)        &
+                                          + isqu_ftz(csite%fmean_albedo       (ipa))       &
+                                          * ndaysi
+         csite%qmsqu_ustar        (t,ipa) = csite%qmsqu_ustar               (t,ipa)        &
+                                          + isqu_ftz(csite%fmean_ustar        (ipa))       &
+                                          * ndaysi
+         csite%qmsqu_carbon_ac    (t,ipa) = csite%qmsqu_carbon_ac           (t,ipa)        &
+                                          + isqu_ftz(csite%fmean_carbon_ac    (ipa))       &
+                                          * ndaysi
+         csite%qmsqu_carbon_st    (t,ipa) = csite%qmsqu_carbon_st           (t,ipa)        &
+                                          + isqu_ftz(csite%fmean_carbon_st    (ipa))       &
+                                          * ndaysi
+         csite%qmsqu_vapor_gc     (t,ipa) = csite%qmsqu_vapor_gc            (t,ipa)        &
+                                          + isqu_ftz(csite%fmean_vapor_gc     (ipa))       &
+                                          * ndaysi
+         csite%qmsqu_vapor_ac     (t,ipa) = csite%qmsqu_vapor_ac            (t,ipa)        &
+                                          + isqu_ftz(csite%fmean_vapor_ac     (ipa))       &
+                                          * ndaysi
+         csite%qmsqu_sensible_gc  (t,ipa) = csite%qmsqu_sensible_gc         (t,ipa)        &
+                                          + isqu_ftz(csite%fmean_sensible_gc  (ipa))       &
+                                          * ndaysi
+         csite%qmsqu_sensible_ac  (t,ipa) = csite%qmsqu_sensible_ac         (t,ipa)        &
+                                          + isqu_ftz(csite%fmean_sensible_ac  (ipa))       &
+                                          * ndaysi
+         !---------------------------------------------------------------------------------!
+
+         !---------------------------------------------------------------------------------!
+         !   Call the sub-routine that will integrate cohort-level averages.               !
+         !---------------------------------------------------------------------------------!
+         call integrate_ed_qmean_cohorts(csite,ipa,t,ndaysi)
+         !---------------------------------------------------------------------------------!
+      end do patchloop
+      !------------------------------------------------------------------------------------!
+      return
+   end subroutine integrate_ed_qmean_patches
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !  SUBROUTINE: INTEGRATE_ED_QMEAN_COHORTS   
+   !> \brief This subroutine integrates most of the mean diel variables.  This subroutine is
+   !> called after the fmean variables have been normalised, so we can leverage these 
+   !> averages.
+   !> \author Marcos Longo
+   !> \details A few variables are _NOT_ integrated here: quantities such as temperature and
+   !> liquid fraction are found after the mean diel of the extensive variables have been
+   !> normalised.
+   !---------------------------------------------------------------------------------------!
+   subroutine integrate_ed_qmean_cohorts(csite,ipa,t,ndaysi)
+      use ed_state_vars, only : sitetype            & ! structure
+                              , patchtype           ! ! structure
+      implicit none
+      !----- Argument ---------------------------------------------------------------------!
+      type(sitetype)    , target     :: csite
+      integer           , intent(in) :: ipa
+      integer           , intent(in) :: t
+      real              , intent(in) :: ndaysi
+      !----- Local variables --------------------------------------------------------------!
+      type(patchtype)   , pointer :: cpatch
+      integer                     :: ico
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !   Select patch, and loop through cohorts.                                          !
+      !------------------------------------------------------------------------------------!
+      cpatch => csite%patch(ipa)
+      cohortloop: do ico=1,cpatch%ncohorts
+         cpatch%qmean_gpp               (t,ico) = cpatch%qmean_gpp                (t,ico)  &
+                                                + cpatch%fmean_gpp                  (ico)  &
+                                                * ndaysi
+         cpatch%qmean_npp               (t,ico) = cpatch%qmean_npp                (t,ico)  &
+                                                + cpatch%fmean_npp                  (ico)  &
+                                                * ndaysi
+         cpatch%qmean_leaf_resp         (t,ico) = cpatch%qmean_leaf_resp          (t,ico)  &
+                                                + cpatch%fmean_leaf_resp            (ico)  &
+                                                * ndaysi
+         cpatch%qmean_root_resp         (t,ico) = cpatch%qmean_root_resp          (t,ico)  &
+                                                + cpatch%fmean_root_resp            (ico)  &
+                                                * ndaysi
+         cpatch%qmean_stem_resp         (t,ico) = cpatch%qmean_stem_resp          (t,ico)  &
+                                                + cpatch%fmean_stem_resp            (ico)  &
+                                                * ndaysi
+         cpatch%qmean_leaf_growth_resp  (t,ico) = cpatch%qmean_leaf_growth_resp   (t,ico)  &
+                                                + cpatch%fmean_leaf_growth_resp     (ico)  &
+                                                * ndaysi
+         cpatch%qmean_root_growth_resp  (t,ico) = cpatch%qmean_root_growth_resp   (t,ico)  &
+                                                + cpatch%fmean_root_growth_resp     (ico)  &
+                                                * ndaysi
+         cpatch%qmean_sapa_growth_resp  (t,ico) = cpatch%qmean_sapa_growth_resp   (t,ico)  &
+                                                + cpatch%fmean_sapa_growth_resp     (ico)  &
+                                                * ndaysi
+         cpatch%qmean_sapb_growth_resp  (t,ico) = cpatch%qmean_sapb_growth_resp   (t,ico)  &
+                                                + cpatch%fmean_sapb_growth_resp     (ico)  &
+                                                * ndaysi
+         cpatch%qmean_barka_growth_resp (t,ico) = cpatch%qmean_barka_growth_resp  (t,ico)  &
+                                                + cpatch%fmean_barka_growth_resp    (ico)  &
+                                                * ndaysi
+         cpatch%qmean_barkb_growth_resp (t,ico) = cpatch%qmean_barkb_growth_resp  (t,ico)  &
+                                                + cpatch%fmean_barkb_growth_resp    (ico)  &
+                                                * ndaysi
+         cpatch%qmean_leaf_storage_resp (t,ico) = cpatch%qmean_leaf_storage_resp  (t,ico)  &
+                                                + cpatch%fmean_leaf_storage_resp    (ico)  &
+                                                * ndaysi
+         cpatch%qmean_root_storage_resp (t,ico) = cpatch%qmean_root_storage_resp  (t,ico)  &
+                                                + cpatch%fmean_root_storage_resp    (ico)  &
+                                                * ndaysi
+         cpatch%qmean_sapa_storage_resp (t,ico) = cpatch%qmean_sapa_storage_resp  (t,ico)  &
+                                                + cpatch%fmean_sapa_storage_resp    (ico)  &
+                                                * ndaysi
+         cpatch%qmean_sapb_storage_resp (t,ico) = cpatch%qmean_sapb_storage_resp  (t,ico)  &
+                                                + cpatch%fmean_sapb_storage_resp    (ico)  &
+                                                * ndaysi
+         cpatch%qmean_barka_storage_resp(t,ico) = cpatch%qmean_barka_storage_resp (t,ico)  &
+                                                + cpatch%fmean_barka_storage_resp   (ico)  &
+                                                * ndaysi
+         cpatch%qmean_barkb_storage_resp(t,ico) = cpatch%qmean_barkb_storage_resp (t,ico)  &
+                                                + cpatch%fmean_barkb_storage_resp   (ico)  &
+                                                * ndaysi
+         cpatch%qmean_plresp            (t,ico) = cpatch%qmean_plresp             (t,ico)  &
+                                                + cpatch%fmean_plresp               (ico)  &
+                                                * ndaysi
+         cpatch%qmean_leaf_energy       (t,ico) = cpatch%qmean_leaf_energy        (t,ico)  &
+                                                + cpatch%fmean_leaf_energy          (ico)  &
+                                                * ndaysi
+         cpatch%qmean_leaf_water        (t,ico) = cpatch%qmean_leaf_water         (t,ico)  &
+                                                + cpatch%fmean_leaf_water           (ico)  &
+                                                * ndaysi
+         cpatch%qmean_leaf_hcap         (t,ico) = cpatch%qmean_leaf_hcap          (t,ico)  &
+                                                + cpatch%fmean_leaf_hcap            (ico)  &
+                                                * ndaysi
+         cpatch%qmean_leaf_vpdef        (t,ico) = cpatch%qmean_leaf_vpdef         (t,ico)  &
+                                                + cpatch%fmean_leaf_vpdef           (ico)  &
+                                                * ndaysi
+         cpatch%qmean_leaf_gsw          (t,ico) = cpatch%qmean_leaf_gsw           (t,ico)  &
+                                                + cpatch%fmean_leaf_gsw             (ico)  &
+                                                * ndaysi
+         cpatch%qmean_leaf_gbw          (t,ico) = cpatch%qmean_leaf_gbw           (t,ico)  &
+                                                + cpatch%fmean_leaf_gbw             (ico)  &
+                                                * ndaysi
+         cpatch%qmean_wood_energy       (t,ico) = cpatch%qmean_wood_energy        (t,ico)  &
+                                                + cpatch%fmean_wood_energy          (ico)  &
+                                                * ndaysi
+         cpatch%qmean_wood_water        (t,ico) = cpatch%qmean_wood_water         (t,ico)  &
+                                                + cpatch%fmean_wood_water           (ico)  &
+                                                * ndaysi
+         cpatch%qmean_wood_hcap         (t,ico) = cpatch%qmean_wood_hcap          (t,ico)  &
+                                                + cpatch%fmean_wood_hcap            (ico)  &
+                                                * ndaysi
+         cpatch%qmean_wood_gbw          (t,ico) = cpatch%qmean_wood_gbw           (t,ico)  &
+                                                + cpatch%fmean_wood_gbw             (ico)  &
+                                                * ndaysi
+         cpatch%qmean_fs_open           (t,ico) = cpatch%qmean_fs_open            (t,ico)  &
+                                                + cpatch%fmean_fs_open              (ico)  &
+                                                * ndaysi
+         cpatch%qmean_fsw               (t,ico) = cpatch%qmean_fsw                (t,ico)  &
+                                                + cpatch%fmean_fsw                  (ico)  &
+                                                * ndaysi
+         cpatch%qmean_fsn               (t,ico) = cpatch%qmean_fsn                (t,ico)  &
+                                                + cpatch%fmean_fsn                  (ico)  &
+                                                * ndaysi
+         cpatch%qmean_a_open            (t,ico) = cpatch%qmean_a_open             (t,ico)  &
+                                                + cpatch%fmean_a_open               (ico)  &
+                                                * ndaysi
+         cpatch%qmean_a_closed          (t,ico) = cpatch%qmean_a_closed           (t,ico)  &
+                                                + cpatch%fmean_a_closed             (ico)  &
+                                                * ndaysi
+         cpatch%qmean_a_net             (t,ico) = cpatch%qmean_a_net              (t,ico)  &
+                                                + cpatch%fmean_a_net                (ico)  &
+                                                * ndaysi
+         cpatch%qmean_a_light           (t,ico) = cpatch%qmean_a_light            (t,ico)  &
+                                                + cpatch%fmean_a_light              (ico)  &
+                                                * ndaysi
+         cpatch%qmean_a_rubp            (t,ico) = cpatch%qmean_a_rubp             (t,ico)  &
+                                                + cpatch%fmean_a_rubp               (ico)  &
+                                                * ndaysi
+         cpatch%qmean_a_co2             (t,ico) = cpatch%qmean_a_co2              (t,ico)  &
+                                                + cpatch%fmean_a_co2                (ico)  &
+                                                * ndaysi
+         cpatch%qmean_psi_open          (t,ico) = cpatch%qmean_psi_open           (t,ico)  &
+                                                + cpatch%fmean_psi_open             (ico)  &
+                                                * ndaysi
+         cpatch%qmean_psi_closed        (t,ico) = cpatch%qmean_psi_closed         (t,ico)  &
+                                                + cpatch%fmean_psi_closed           (ico)  &
+                                                * ndaysi
+         cpatch%qmean_water_supply      (t,ico) = cpatch%qmean_water_supply       (t,ico)  &
+                                                + cpatch%fmean_water_supply         (ico)  &
+                                                * ndaysi
+         cpatch%qmean_par_level_beam    (t,ico) = cpatch%qmean_par_level_beam     (t,ico)  &
+                                                + cpatch%fmean_par_level_beam       (ico)  &
+                                                * ndaysi
+         cpatch%qmean_par_level_diffd   (t,ico) = cpatch%qmean_par_level_diffd    (t,ico)  &
+                                                + cpatch%fmean_par_level_diffd      (ico)  &
+                                                * ndaysi
+         cpatch%qmean_par_level_diffu   (t,ico) = cpatch%qmean_par_level_diffu    (t,ico)  &
+                                                + cpatch%fmean_par_level_diffu      (ico)  &
+                                                * ndaysi
+
+         cpatch%qmean_light_level       (t,ico) = cpatch%qmean_light_level        (t,ico)  &
+                                                + cpatch%fmean_light_level          (ico)  &
+                                                * ndaysi
+         cpatch%qmean_light_level_beam  (t,ico) = cpatch%qmean_light_level_beam   (t,ico)  &
+                                                + cpatch%fmean_light_level_beam     (ico)  &
+                                                * ndaysi
+         cpatch%qmean_light_level_diff  (t,ico) = cpatch%qmean_light_level_diff   (t,ico)  &
+                                                + cpatch%fmean_light_level_diff     (ico)  &
+                                                * ndaysi
+         cpatch%qmean_par_l             (t,ico) = cpatch%qmean_par_l              (t,ico)  &
+                                                + cpatch%fmean_par_l                (ico)  &
+                                                * ndaysi
+         cpatch%qmean_par_l_beam        (t,ico) = cpatch%qmean_par_l_beam         (t,ico)  &
+                                                + cpatch%fmean_par_l_beam           (ico)  &
+                                                * ndaysi
+         cpatch%qmean_par_l_diff        (t,ico) = cpatch%qmean_par_l_diff         (t,ico)  &
+                                                + cpatch%fmean_par_l_diff           (ico)  &
+                                                * ndaysi
+         cpatch%qmean_rshort_l          (t,ico) = cpatch%qmean_rshort_l           (t,ico)  &
+                                                + cpatch%fmean_rshort_l             (ico)  &
+                                                * ndaysi
+         cpatch%qmean_rlong_l           (t,ico) = cpatch%qmean_rlong_l            (t,ico)  &
+                                                + cpatch%fmean_rlong_l              (ico)  &
+                                                * ndaysi
+         cpatch%qmean_sensible_lc       (t,ico) = cpatch%qmean_sensible_lc        (t,ico)  &
+                                                + cpatch%fmean_sensible_lc          (ico)  &
+                                                * ndaysi
+         cpatch%qmean_vapor_lc          (t,ico) = cpatch%qmean_vapor_lc           (t,ico)  &
+                                                + cpatch%fmean_vapor_lc             (ico)  &
+                                                * ndaysi
+         cpatch%qmean_transp            (t,ico) = cpatch%qmean_transp             (t,ico)  &
+                                                + cpatch%fmean_transp               (ico)  &
+                                                * ndaysi
+         cpatch%qmean_intercepted_al    (t,ico) = cpatch%qmean_intercepted_al     (t,ico)  &
+                                                + cpatch%fmean_intercepted_al       (ico)  &
+                                                * ndaysi
+         cpatch%qmean_wshed_lg          (t,ico) = cpatch%qmean_wshed_lg           (t,ico)  &
+                                                + cpatch%fmean_wshed_lg             (ico)  &
+                                                * ndaysi
+         cpatch%qmean_rshort_w          (t,ico) = cpatch%qmean_rshort_w           (t,ico)  &
+                                                + cpatch%fmean_rshort_w             (ico)  &
+                                                * ndaysi
+         cpatch%qmean_rlong_w           (t,ico) = cpatch%qmean_rlong_w            (t,ico)  &
+                                                + cpatch%fmean_rlong_w              (ico)  &
+                                                * ndaysi
+         cpatch%qmean_rad_profile     (:,t,ico) = cpatch%qmean_rad_profile      (:,t,ico)  &
+                                                + cpatch%fmean_rad_profile        (:,ico)  &
+                                                * ndaysi
+         cpatch%qmean_sensible_wc       (t,ico) = cpatch%qmean_sensible_wc        (t,ico)  &
+                                                + cpatch%fmean_sensible_wc          (ico)  &
+                                                * ndaysi
+         cpatch%qmean_vapor_wc          (t,ico) = cpatch%qmean_vapor_wc           (t,ico)  &
+                                                + cpatch%fmean_vapor_wc             (ico)  &
+                                                * ndaysi
+         cpatch%qmean_intercepted_aw    (t,ico) = cpatch%qmean_intercepted_aw     (t,ico)  &
+                                                + cpatch%fmean_intercepted_aw       (ico)  &
+                                                * ndaysi
+         cpatch%qmean_wshed_wg          (t,ico) = cpatch%qmean_wshed_wg           (t,ico)  &
+                                                + cpatch%fmean_wshed_wg             (ico)  &
+                                                * ndaysi
+
+         cpatch%qmean_leaf_psi          (t,ico) = cpatch%qmean_leaf_psi           (t,ico)  &
+                                                + cpatch%fmean_leaf_psi             (ico)  &
+                                                * ndaysi
+         cpatch%qmean_wood_psi          (t,ico) = cpatch%qmean_wood_psi           (t,ico)  &
+                                                + cpatch%fmean_wood_psi             (ico)  &
+                                                * ndaysi
+         cpatch%qmean_leaf_water_int    (t,ico) = cpatch%qmean_leaf_water_int     (t,ico)  &
+                                                + cpatch%fmean_leaf_water_int       (ico)  &
+                                                * ndaysi
+         cpatch%qmean_leaf_water_im2    (t,ico) = cpatch%qmean_leaf_water_im2     (t,ico)  &
+                                                + cpatch%fmean_leaf_water_im2       (ico)  &
+                                                * ndaysi
+         cpatch%qmean_wood_water_int    (t,ico) = cpatch%qmean_wood_water_int     (t,ico)  &
+                                                + cpatch%fmean_wood_water_int       (ico)  &
+                                                * ndaysi
+         cpatch%qmean_wood_water_im2    (t,ico) = cpatch%qmean_wood_water_im2     (t,ico)  &
+                                                + cpatch%fmean_wood_water_im2       (ico)  &
+                                                * ndaysi
+         cpatch%qmean_wflux_wl          (t,ico) = cpatch%qmean_wflux_wl           (t,ico)  &
+                                                + cpatch%fmean_wflux_wl             (ico)  &
+                                                * ndaysi
+         cpatch%qmean_wflux_gw          (t,ico) = cpatch%qmean_wflux_gw           (t,ico)  &
+                                                + cpatch%fmean_wflux_gw             (ico)  &
+                                                * ndaysi
+         !------ Mean sum of squares. -----------------------------------------------------!
+         cpatch%qmsqu_gpp               (t,ico) = cpatch%qmsqu_gpp                (t,ico)  &
+                                                + isqu_ftz(cpatch%fmean_gpp         (ico)) &
+                                                * ndaysi
+         cpatch%qmsqu_npp               (t,ico) = cpatch%qmsqu_npp                (t,ico)  &
+                                                + isqu_ftz(cpatch%fmean_npp         (ico)) &
+                                                * ndaysi
+         cpatch%qmsqu_plresp            (t,ico) = cpatch%qmsqu_plresp             (t,ico)  &
+                                                + isqu_ftz(cpatch%fmean_plresp      (ico)) &
+                                                * ndaysi
+         cpatch%qmsqu_sensible_lc       (t,ico) = cpatch%qmsqu_sensible_lc        (t,ico)  &
+                                                + isqu_ftz(cpatch%fmean_sensible_lc (ico)) &
+                                                * ndaysi
+         cpatch%qmsqu_vapor_lc          (t,ico) = cpatch%qmsqu_vapor_lc           (t,ico)  &
+                                                + isqu_ftz(cpatch%fmean_vapor_lc    (ico)) &
+                                                * ndaysi
+         cpatch%qmsqu_transp            (t,ico) = cpatch%qmsqu_transp             (t,ico)  &
+                                                + isqu_ftz(cpatch%fmean_transp      (ico)) &
+                                                * ndaysi
+         cpatch%qmsqu_wflux_wl          (t,ico) = cpatch%qmsqu_wflux_wl           (t,ico)  &
+                                                + isqu_ftz(cpatch%fmean_wflux_wl    (ico)) &
+                                                * ndaysi
+         cpatch%qmsqu_wflux_gw          (t,ico) = cpatch%qmsqu_wflux_gw           (t,ico)  &
+                                                + isqu_ftz(cpatch%fmean_wflux_gw    (ico)) &
+                                                * ndaysi
+         cpatch%qmsqu_sensible_wc       (t,ico) = cpatch%qmsqu_sensible_wc        (t,ico)  &
+                                                + isqu_ftz(cpatch%fmean_sensible_wc (ico)) &
+                                                * ndaysi
+         cpatch%qmsqu_vapor_wc          (t,ico) = cpatch%qmsqu_vapor_wc           (t,ico)  &
+                                                + isqu_ftz(cpatch%fmean_vapor_wc    (ico)) &
+                                                * ndaysi
+      end do cohortloop
+      !------------------------------------------------------------------------------------!
+
+      return
+   end subroutine integrate_ed_qmean_cohorts
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !  SUBROUTINE: NORMALIZE_ED_QMEAN_POLYGONS   
+   !> \brief This subroutine normalises monthly averages that are not time-integrated.
+   !> \author Marcos Longo
+   !> \details Derived quantitites such as temperature, liquid fraction and soil matric
+   !> potential cannot be integrated, because otherwise thew would become detached from
+   !> the extensive quantitites. And unlike other sub-routines, we do not split this one
+   !> into smaller sub-routines for now because of the interdependency between variables 
+   !> of different hierarchical levels.
+   !---------------------------------------------------------------------------------------!
+   subroutine normalize_ed_qmean_polygons(cgrid)
       use ed_state_vars        , only : edtype             & ! structure
                                       , polygontype        & ! structure
                                       , sitetype           & ! structure
@@ -8101,7 +8815,7 @@ module average_utils
       end do polyloop
       !------------------------------------------------------------------------------------!
       return
-   end subroutine normalize_ed_qmean_vars
+   end subroutine normalize_ed_qmean_polygons
    !=======================================================================================!
    !=======================================================================================!
 
@@ -8112,25 +8826,20 @@ module average_utils
 
    !=======================================================================================!
    !=======================================================================================!
-   !  SUBROUTINE: ZERO_ED_QMEAN_VARS        
-   !> \brief This subroutine resets the mean diel once the "Q" file has been written.
+   !  SUBROUTINE: ZERO_ED_QMEAN_POLYGONS
+   !> \brief This subroutine resets the mean diel of polygon-level variables.
+   !> \author Marcos Longo
+   !> \details This subroutine flushes all averages to zero once the "Q" file has been 
+   !> written. To avoid issues with some compilers that have issues with very long sub-
+   !> routines, we split the sub-routine according to the hierarchical level.
    !---------------------------------------------------------------------------------------!
-   subroutine zero_ed_qmean_vars(cgrid)
-      use ed_state_vars, only : edtype        & ! structure
-                              , polygontype   & ! structure
-                              , sitetype      & ! structure
-                              , patchtype     ! ! structure
+   subroutine zero_ed_qmean_polygons(cgrid)
+      use ed_state_vars, only : edtype        ! ! structure
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       type(edtype)     , target  :: cgrid
       !----- Local variables. -------------------------------------------------------------!
-      type(polygontype), pointer :: cpoly
-      type(sitetype)   , pointer :: csite
-      type(patchtype)  , pointer :: cpatch
       integer                    :: ipy
-      integer                    :: isi
-      integer                    :: ipa
-      integer                    :: ico
       !------------------------------------------------------------------------------------!
 
 
@@ -8138,8 +8847,6 @@ module average_utils
       !       Loop over polygons.                                                          !
       !------------------------------------------------------------------------------------!
       polyloop: do ipy = 1,cgrid%npolygons
-         cpoly => cgrid%polygon(ipy)
-
          cgrid%qmean_gpp                (:,ipy) = 0.0
          cgrid%qmean_npp                (:,ipy) = 0.0
          cgrid%qmean_leaf_resp          (:,ipy) = 0.0
@@ -8321,234 +9028,350 @@ module average_utils
          cgrid%qmsqu_sensible_gc        (:,ipy) = 0.0
          cgrid%qmsqu_sensible_ac        (:,ipy) = 0.0
 
-
          !---------------------------------------------------------------------------------!
-         !       Loop over sites.                                                          !
+         !   Call sub-routine that will reset site- (and patch- and cohort-) level         !
+         ! variables.                                                                      !
          !---------------------------------------------------------------------------------!
-         siteloop: do isi=1,cpoly%nsites
-            csite => cpoly%site(isi)
-
-            cpoly%qmean_atm_theiv      (:,isi) = 0.0
-            cpoly%qmean_atm_theta      (:,isi) = 0.0
-            cpoly%qmean_atm_temp       (:,isi) = 0.0
-            cpoly%qmean_atm_vpdef      (:,isi) = 0.0
-            cpoly%qmean_atm_shv        (:,isi) = 0.0
-            cpoly%qmean_atm_rshort     (:,isi) = 0.0
-            cpoly%qmean_atm_rshort_diff(:,isi) = 0.0
-            cpoly%qmean_atm_par        (:,isi) = 0.0
-            cpoly%qmean_atm_par_diff   (:,isi) = 0.0
-            cpoly%qmean_atm_rlong      (:,isi) = 0.0
-            cpoly%qmean_atm_vels       (:,isi) = 0.0
-            cpoly%qmean_atm_rhos       (:,isi) = 0.0
-            cpoly%qmean_atm_prss       (:,isi) = 0.0
-            cpoly%qmean_atm_co2        (:,isi) = 0.0
-            cpoly%qmean_pcpg           (:,isi) = 0.0
-            cpoly%qmean_qpcpg          (:,isi) = 0.0
-            cpoly%qmean_dpcpg          (:,isi) = 0.0
-
-            !------------------------------------------------------------------------------!
-            !       Loop over sites.                                                       !
-            !------------------------------------------------------------------------------!
-            patchloop: do ipa=1,csite%npatches
-               cpatch => csite%patch(ipa)
-               csite%qmean_rh                     (:,ipa) = 0.0
-               csite%qmean_fgc_rh                 (:,ipa) = 0.0
-               csite%qmean_fsc_rh                 (:,ipa) = 0.0
-               csite%qmean_stgc_rh                (:,ipa) = 0.0
-               csite%qmean_stsc_rh                (:,ipa) = 0.0
-               csite%qmean_msc_rh                 (:,ipa) = 0.0
-               csite%qmean_ssc_rh                 (:,ipa) = 0.0
-               csite%qmean_psc_rh                 (:,ipa) = 0.0
-               csite%qmean_nep                    (:,ipa) = 0.0
-               csite%qmean_rk4step                (:,ipa) = 0.0
-               csite%qmean_available_water        (:,ipa) = 0.0
-               csite%qmean_veg_displace           (:,ipa) = 0.0
-               csite%qmean_rough                  (:,ipa) = 0.0
-               csite%qmean_can_theiv              (:,ipa) = 0.0
-               csite%qmean_can_theta              (:,ipa) = 0.0
-               csite%qmean_can_vpdef              (:,ipa) = 0.0
-               csite%qmean_can_temp               (:,ipa) = 0.0
-               csite%qmean_can_shv                (:,ipa) = 0.0
-               csite%qmean_can_co2                (:,ipa) = 0.0
-               csite%qmean_can_rhos               (:,ipa) = 0.0
-               csite%qmean_can_dmol               (:,ipa) = 0.0
-               csite%qmean_can_prss               (:,ipa) = 0.0
-               csite%qmean_gnd_temp               (:,ipa) = 0.0
-               csite%qmean_gnd_shv                (:,ipa) = 0.0
-               csite%qmean_can_ggnd               (:,ipa) = 0.0
-               csite%qmean_sfcw_depth             (:,ipa) = 0.0
-               csite%qmean_sfcw_energy            (:,ipa) = 0.0
-               csite%qmean_sfcw_mass              (:,ipa) = 0.0
-               csite%qmean_sfcw_temp              (:,ipa) = 0.0
-               csite%qmean_sfcw_fliq              (:,ipa) = 0.0
-               csite%qmean_snowfac                (:,ipa) = 0.0
-               csite%qmean_soil_energy          (:,:,ipa) = 0.0
-               csite%qmean_soil_mstpot          (:,:,ipa) = 0.0
-               csite%qmean_soil_water           (:,:,ipa) = 0.0
-               csite%qmean_soil_temp            (:,:,ipa) = 0.0
-               csite%qmean_soil_fliq            (:,:,ipa) = 0.0
-               csite%qmean_rshort_gnd             (:,ipa) = 0.0
-               csite%qmean_par_gnd                (:,ipa) = 0.0
-               csite%qmean_rlong_gnd              (:,ipa) = 0.0
-               csite%qmean_rlongup                (:,ipa) = 0.0
-               csite%qmean_parup                  (:,ipa) = 0.0
-               csite%qmean_nirup                  (:,ipa) = 0.0
-               csite%qmean_rshortup               (:,ipa) = 0.0
-               csite%qmean_rnet                   (:,ipa) = 0.0
-               csite%qmean_albedo                 (:,ipa) = 0.0
-               csite%qmean_albedo_par             (:,ipa) = 0.0
-               csite%qmean_albedo_nir             (:,ipa) = 0.0
-               csite%qmean_rlong_albedo           (:,ipa) = 0.0
-               csite%qmean_ustar                  (:,ipa) = 0.0
-               csite%qmean_tstar                  (:,ipa) = 0.0
-               csite%qmean_qstar                  (:,ipa) = 0.0
-               csite%qmean_cstar                  (:,ipa) = 0.0
-               csite%qmean_carbon_ac              (:,ipa) = 0.0
-               csite%qmean_carbon_st              (:,ipa) = 0.0
-               csite%qmean_vapor_gc               (:,ipa) = 0.0
-               csite%qmean_vapor_ac               (:,ipa) = 0.0
-               csite%qmean_smoist_gg            (:,:,ipa) = 0.0
-               csite%qmean_throughfall            (:,ipa) = 0.0
-               csite%qmean_transloss            (:,:,ipa) = 0.0
-               csite%qmean_runoff                 (:,ipa) = 0.0
-               csite%qmean_drainage               (:,ipa) = 0.0
-               csite%qmean_sensible_gc            (:,ipa) = 0.0
-               csite%qmean_sensible_ac            (:,ipa) = 0.0
-               csite%qmean_sensible_gg          (:,:,ipa) = 0.0
-               csite%qmean_qthroughfall           (:,ipa) = 0.0
-               csite%qmean_qrunoff                (:,ipa) = 0.0
-               csite%qmean_qdrainage              (:,ipa) = 0.0
-               csite%qmsqu_rh                     (:,ipa) = 0.0
-               csite%qmsqu_fgc_rh                 (:,ipa) = 0.0
-               csite%qmsqu_fsc_rh                 (:,ipa) = 0.0
-               csite%qmsqu_stgc_rh                (:,ipa) = 0.0
-               csite%qmsqu_stsc_rh                (:,ipa) = 0.0
-               csite%qmsqu_msc_rh                 (:,ipa) = 0.0
-               csite%qmsqu_ssc_rh                 (:,ipa) = 0.0
-               csite%qmsqu_psc_rh                 (:,ipa) = 0.0
-               csite%qmsqu_nep                    (:,ipa) = 0.0
-               csite%qmsqu_rlongup                (:,ipa) = 0.0
-               csite%qmsqu_parup                  (:,ipa) = 0.0
-               csite%qmsqu_nirup                  (:,ipa) = 0.0
-               csite%qmsqu_rshortup               (:,ipa) = 0.0
-               csite%qmsqu_rnet                   (:,ipa) = 0.0
-               csite%qmsqu_albedo                 (:,ipa) = 0.0
-               csite%qmsqu_ustar                  (:,ipa) = 0.0
-               csite%qmsqu_carbon_ac              (:,ipa) = 0.0
-               csite%qmsqu_carbon_st              (:,ipa) = 0.0
-               csite%qmsqu_vapor_gc               (:,ipa) = 0.0
-               csite%qmsqu_vapor_ac               (:,ipa) = 0.0
-               csite%qmsqu_sensible_gc            (:,ipa) = 0.0
-               csite%qmsqu_sensible_ac            (:,ipa) = 0.0
-
-
-
-               !---------------------------------------------------------------------------!
-               !       Loop over cohorts.                                                  !
-               !---------------------------------------------------------------------------!
-               cohortloop: do ico=1, cpatch%ncohorts
-                  cpatch%qmean_gpp                 (:,ico) = 0.0
-                  cpatch%qmean_npp                 (:,ico) = 0.0
-                  cpatch%qmean_leaf_resp           (:,ico) = 0.0
-                  cpatch%qmean_root_resp           (:,ico) = 0.0
-                  cpatch%qmean_stem_resp           (:,ico) = 0.0
-                  cpatch%qmean_leaf_growth_resp    (:,ico) = 0.0
-                  cpatch%qmean_root_growth_resp    (:,ico) = 0.0
-                  cpatch%qmean_sapa_growth_resp    (:,ico) = 0.0
-                  cpatch%qmean_sapb_growth_resp    (:,ico) = 0.0
-                  cpatch%qmean_barka_growth_resp   (:,ico) = 0.0
-                  cpatch%qmean_barkb_growth_resp   (:,ico) = 0.0
-                  cpatch%qmean_leaf_storage_resp   (:,ico) = 0.0
-                  cpatch%qmean_root_storage_resp   (:,ico) = 0.0
-                  cpatch%qmean_sapa_storage_resp   (:,ico) = 0.0
-                  cpatch%qmean_sapb_storage_resp   (:,ico) = 0.0
-                  cpatch%qmean_barka_storage_resp  (:,ico) = 0.0
-                  cpatch%qmean_barkb_storage_resp  (:,ico) = 0.0
-                  cpatch%qmean_plresp              (:,ico) = 0.0
-                  cpatch%qmean_leaf_energy         (:,ico) = 0.0
-                  cpatch%qmean_leaf_water          (:,ico) = 0.0
-                  cpatch%qmean_leaf_hcap           (:,ico) = 0.0
-                  cpatch%qmean_leaf_vpdef          (:,ico) = 0.0
-                  cpatch%qmean_leaf_temp           (:,ico) = 0.0
-                  cpatch%qmean_leaf_fliq           (:,ico) = 0.0
-                  cpatch%qmean_leaf_gsw            (:,ico) = 0.0
-                  cpatch%qmean_leaf_gbw            (:,ico) = 0.0
-                  cpatch%qmean_wood_energy         (:,ico) = 0.0
-                  cpatch%qmean_wood_water          (:,ico) = 0.0
-                  cpatch%qmean_wood_hcap           (:,ico) = 0.0
-                  cpatch%qmean_wood_temp           (:,ico) = 0.0
-                  cpatch%qmean_wood_fliq           (:,ico) = 0.0
-                  cpatch%qmean_wood_gbw            (:,ico) = 0.0
-                  cpatch%qmean_fs_open             (:,ico) = 0.0
-                  cpatch%qmean_fsw                 (:,ico) = 0.0
-                  cpatch%qmean_fsn                 (:,ico) = 0.0
-                  cpatch%qmean_a_open              (:,ico) = 0.0
-                  cpatch%qmean_a_closed            (:,ico) = 0.0
-                  cpatch%qmean_a_net               (:,ico) = 0.0
-                  cpatch%qmean_a_light             (:,ico) = 0.0
-                  cpatch%qmean_a_rubp              (:,ico) = 0.0
-                  cpatch%qmean_a_co2               (:,ico) = 0.0
-                  cpatch%qmean_psi_open            (:,ico) = 0.0
-                  cpatch%qmean_psi_closed          (:,ico) = 0.0
-                  cpatch%qmean_water_supply        (:,ico) = 0.0
-
-                  cpatch%qmean_par_level_beam      (:,ico) = 0.0
-                  cpatch%qmean_par_level_diffu     (:,ico) = 0.0
-                  cpatch%qmean_par_level_diffd     (:,ico) = 0.0
-
-                  cpatch%qmean_light_level         (:,ico) = 0.0
-                  cpatch%qmean_light_level_beam    (:,ico) = 0.0
-                  cpatch%qmean_light_level_diff    (:,ico) = 0.0
-                  cpatch%qmean_par_l               (:,ico) = 0.0
-                  cpatch%qmean_par_l_beam          (:,ico) = 0.0
-                  cpatch%qmean_par_l_diff          (:,ico) = 0.0
-                  cpatch%qmean_rshort_l            (:,ico) = 0.0
-                  cpatch%qmean_rlong_l             (:,ico) = 0.0
-                  cpatch%qmean_sensible_lc         (:,ico) = 0.0
-                  cpatch%qmean_vapor_lc            (:,ico) = 0.0
-                  cpatch%qmean_transp              (:,ico) = 0.0
-                  cpatch%qmean_intercepted_al      (:,ico) = 0.0
-                  cpatch%qmean_wshed_lg            (:,ico) = 0.0
-                  cpatch%qmean_rshort_w            (:,ico) = 0.0
-                  cpatch%qmean_rlong_w             (:,ico) = 0.0
-                  cpatch%qmean_rad_profile       (:,:,ico) = 0.0
-                  cpatch%qmean_sensible_wc         (:,ico) = 0.0
-                  cpatch%qmean_vapor_wc            (:,ico) = 0.0
-                  cpatch%qmean_intercepted_aw      (:,ico) = 0.0
-                  cpatch%qmean_wshed_wg            (:,ico) = 0.0
-
-                  cpatch%qmean_leaf_psi            (:,ico) = 0.0
-                  cpatch%qmean_wood_psi            (:,ico) = 0.0
-                  cpatch%qmean_leaf_water_int      (:,ico) = 0.0
-                  cpatch%qmean_leaf_water_im2      (:,ico) = 0.0
-                  cpatch%qmean_wood_water_int      (:,ico) = 0.0
-                  cpatch%qmean_wood_water_im2      (:,ico) = 0.0
-                  cpatch%qmean_wflux_wl            (:,ico) = 0.0
-                  cpatch%qmean_wflux_gw            (:,ico) = 0.0
-
-                  cpatch%qmsqu_gpp                 (:,ico) = 0.0
-                  cpatch%qmsqu_npp                 (:,ico) = 0.0
-                  cpatch%qmsqu_plresp              (:,ico) = 0.0
-                  cpatch%qmsqu_sensible_lc         (:,ico) = 0.0
-                  cpatch%qmsqu_vapor_lc            (:,ico) = 0.0
-                  cpatch%qmsqu_transp              (:,ico) = 0.0
-                  cpatch%qmsqu_wflux_wl            (:,ico) = 0.0
-                  cpatch%qmsqu_wflux_gw            (:,ico) = 0.0
-                  cpatch%qmsqu_sensible_wc         (:,ico) = 0.0
-                  cpatch%qmsqu_vapor_wc            (:,ico) = 0.0
-               end do cohortloop
-               !---------------------------------------------------------------------------!
-            end do patchloop
-            !------------------------------------------------------------------------------!
-         end do siteloop
+         call zero_ed_qmean_sites(cgrid,ipy)
          !---------------------------------------------------------------------------------!
       end do polyloop
       !------------------------------------------------------------------------------------!
 
       return
-   end subroutine zero_ed_qmean_vars
+   end subroutine zero_ed_qmean_polygons
    !=======================================================================================!
    !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !  SUBROUTINE: ZERO_ED_QMEAN_SITES
+   !> \brief This subroutine resets the mean diel of site-level variables.
+   !> \author Marcos Longo
+   !> \details This subroutine flushes all averages to zero once the "Q" file has been 
+   !> written. To avoid issues with some compilers that have issues with very long sub-
+   !> routines, we split the sub-routine according to the hierarchical level.
+   !---------------------------------------------------------------------------------------!
+   subroutine zero_ed_qmean_sites(cgrid,ipy)
+      use ed_state_vars, only : edtype        & ! structure
+                              , polygontype   ! ! structure
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      type(edtype)     , target     :: cgrid
+      integer          , intent(in) :: ipy
+      !----- Local variables. -------------------------------------------------------------!
+      type(polygontype), pointer :: cpoly
+      integer                    :: isi
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !   Select polygon, then loop through sites.                                         !
+      !------------------------------------------------------------------------------------!
+      cpoly => cgrid%polygon(ipy)
+      siteloop: do isi=1,cpoly%nsites
+         cpoly%qmean_atm_theiv      (:,isi) = 0.0
+         cpoly%qmean_atm_theta      (:,isi) = 0.0
+         cpoly%qmean_atm_temp       (:,isi) = 0.0
+         cpoly%qmean_atm_vpdef      (:,isi) = 0.0
+         cpoly%qmean_atm_shv        (:,isi) = 0.0
+         cpoly%qmean_atm_rshort     (:,isi) = 0.0
+         cpoly%qmean_atm_rshort_diff(:,isi) = 0.0
+         cpoly%qmean_atm_par        (:,isi) = 0.0
+         cpoly%qmean_atm_par_diff   (:,isi) = 0.0
+         cpoly%qmean_atm_rlong      (:,isi) = 0.0
+         cpoly%qmean_atm_vels       (:,isi) = 0.0
+         cpoly%qmean_atm_rhos       (:,isi) = 0.0
+         cpoly%qmean_atm_prss       (:,isi) = 0.0
+         cpoly%qmean_atm_co2        (:,isi) = 0.0
+         cpoly%qmean_pcpg           (:,isi) = 0.0
+         cpoly%qmean_qpcpg          (:,isi) = 0.0
+         cpoly%qmean_dpcpg          (:,isi) = 0.0
+
+         !---------------------------------------------------------------------------------!
+         !   Call sub-routine that will reset patch- (and cohort-) level variables.        !
+         !---------------------------------------------------------------------------------!
+         call zero_ed_qmean_patches(cpoly,isi)
+         !---------------------------------------------------------------------------------!
+      end do siteloop
+      !------------------------------------------------------------------------------------!
+
+      return
+   end subroutine zero_ed_qmean_sites
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !  SUBROUTINE: ZERO_ED_QMEAN_PATCHES
+   !> \brief This subroutine resets the mean diel of patch-level variables.
+   !> \author Marcos Longo
+   !> \details This subroutine flushes all averages to zero once the "Q" file has been 
+   !> written. To avoid issues with some compilers that have issues with very long sub-
+   !> routines, we split the sub-routine according to the hierarchical level.
+   !---------------------------------------------------------------------------------------!
+   subroutine zero_ed_qmean_patches(cpoly,isi)
+      use ed_state_vars, only : polygontype   & ! structure
+                              , sitetype      ! ! structure
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      type(polygontype), target     :: cpoly
+      integer          , intent(in) :: isi
+      !----- Local variables. -------------------------------------------------------------!
+      type(sitetype)   , pointer    :: csite
+      integer                       :: ipa
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !   Select site, then loop through patches.                                          !
+      !------------------------------------------------------------------------------------!
+      csite => cpoly%site(isi)
+      patchloop: do ipa=1,csite%npatches
+         csite%qmean_rh                     (:,ipa) = 0.0
+         csite%qmean_fgc_rh                 (:,ipa) = 0.0
+         csite%qmean_fsc_rh                 (:,ipa) = 0.0
+         csite%qmean_stgc_rh                (:,ipa) = 0.0
+         csite%qmean_stsc_rh                (:,ipa) = 0.0
+         csite%qmean_msc_rh                 (:,ipa) = 0.0
+         csite%qmean_ssc_rh                 (:,ipa) = 0.0
+         csite%qmean_psc_rh                 (:,ipa) = 0.0
+         csite%qmean_nep                    (:,ipa) = 0.0
+         csite%qmean_rk4step                (:,ipa) = 0.0
+         csite%qmean_available_water        (:,ipa) = 0.0
+         csite%qmean_veg_displace           (:,ipa) = 0.0
+         csite%qmean_rough                  (:,ipa) = 0.0
+         csite%qmean_can_theiv              (:,ipa) = 0.0
+         csite%qmean_can_theta              (:,ipa) = 0.0
+         csite%qmean_can_vpdef              (:,ipa) = 0.0
+         csite%qmean_can_temp               (:,ipa) = 0.0
+         csite%qmean_can_shv                (:,ipa) = 0.0
+         csite%qmean_can_co2                (:,ipa) = 0.0
+         csite%qmean_can_rhos               (:,ipa) = 0.0
+         csite%qmean_can_dmol               (:,ipa) = 0.0
+         csite%qmean_can_prss               (:,ipa) = 0.0
+         csite%qmean_gnd_temp               (:,ipa) = 0.0
+         csite%qmean_gnd_shv                (:,ipa) = 0.0
+         csite%qmean_can_ggnd               (:,ipa) = 0.0
+         csite%qmean_sfcw_depth             (:,ipa) = 0.0
+         csite%qmean_sfcw_energy            (:,ipa) = 0.0
+         csite%qmean_sfcw_mass              (:,ipa) = 0.0
+         csite%qmean_sfcw_temp              (:,ipa) = 0.0
+         csite%qmean_sfcw_fliq              (:,ipa) = 0.0
+         csite%qmean_snowfac                (:,ipa) = 0.0
+         csite%qmean_soil_energy          (:,:,ipa) = 0.0
+         csite%qmean_soil_mstpot          (:,:,ipa) = 0.0
+         csite%qmean_soil_water           (:,:,ipa) = 0.0
+         csite%qmean_soil_temp            (:,:,ipa) = 0.0
+         csite%qmean_soil_fliq            (:,:,ipa) = 0.0
+         csite%qmean_rshort_gnd             (:,ipa) = 0.0
+         csite%qmean_par_gnd                (:,ipa) = 0.0
+         csite%qmean_rlong_gnd              (:,ipa) = 0.0
+         csite%qmean_rlongup                (:,ipa) = 0.0
+         csite%qmean_parup                  (:,ipa) = 0.0
+         csite%qmean_nirup                  (:,ipa) = 0.0
+         csite%qmean_rshortup               (:,ipa) = 0.0
+         csite%qmean_rnet                   (:,ipa) = 0.0
+         csite%qmean_albedo                 (:,ipa) = 0.0
+         csite%qmean_albedo_par             (:,ipa) = 0.0
+         csite%qmean_albedo_nir             (:,ipa) = 0.0
+         csite%qmean_rlong_albedo           (:,ipa) = 0.0
+         csite%qmean_ustar                  (:,ipa) = 0.0
+         csite%qmean_tstar                  (:,ipa) = 0.0
+         csite%qmean_qstar                  (:,ipa) = 0.0
+         csite%qmean_cstar                  (:,ipa) = 0.0
+         csite%qmean_carbon_ac              (:,ipa) = 0.0
+         csite%qmean_carbon_st              (:,ipa) = 0.0
+         csite%qmean_vapor_gc               (:,ipa) = 0.0
+         csite%qmean_vapor_ac               (:,ipa) = 0.0
+         csite%qmean_smoist_gg            (:,:,ipa) = 0.0
+         csite%qmean_throughfall            (:,ipa) = 0.0
+         csite%qmean_transloss            (:,:,ipa) = 0.0
+         csite%qmean_runoff                 (:,ipa) = 0.0
+         csite%qmean_drainage               (:,ipa) = 0.0
+         csite%qmean_sensible_gc            (:,ipa) = 0.0
+         csite%qmean_sensible_ac            (:,ipa) = 0.0
+         csite%qmean_sensible_gg          (:,:,ipa) = 0.0
+         csite%qmean_qthroughfall           (:,ipa) = 0.0
+         csite%qmean_qrunoff                (:,ipa) = 0.0
+         csite%qmean_qdrainage              (:,ipa) = 0.0
+         csite%qmsqu_rh                     (:,ipa) = 0.0
+         csite%qmsqu_fgc_rh                 (:,ipa) = 0.0
+         csite%qmsqu_fsc_rh                 (:,ipa) = 0.0
+         csite%qmsqu_stgc_rh                (:,ipa) = 0.0
+         csite%qmsqu_stsc_rh                (:,ipa) = 0.0
+         csite%qmsqu_msc_rh                 (:,ipa) = 0.0
+         csite%qmsqu_ssc_rh                 (:,ipa) = 0.0
+         csite%qmsqu_psc_rh                 (:,ipa) = 0.0
+         csite%qmsqu_nep                    (:,ipa) = 0.0
+         csite%qmsqu_rlongup                (:,ipa) = 0.0
+         csite%qmsqu_parup                  (:,ipa) = 0.0
+         csite%qmsqu_nirup                  (:,ipa) = 0.0
+         csite%qmsqu_rshortup               (:,ipa) = 0.0
+         csite%qmsqu_rnet                   (:,ipa) = 0.0
+         csite%qmsqu_albedo                 (:,ipa) = 0.0
+         csite%qmsqu_ustar                  (:,ipa) = 0.0
+         csite%qmsqu_carbon_ac              (:,ipa) = 0.0
+         csite%qmsqu_carbon_st              (:,ipa) = 0.0
+         csite%qmsqu_vapor_gc               (:,ipa) = 0.0
+         csite%qmsqu_vapor_ac               (:,ipa) = 0.0
+         csite%qmsqu_sensible_gc            (:,ipa) = 0.0
+         csite%qmsqu_sensible_ac            (:,ipa) = 0.0
+
+         !---------------------------------------------------------------------------------!
+         !   Call sub-routine that will reset cohort-level variables.                      !
+         !---------------------------------------------------------------------------------!
+         call zero_ed_qmean_cohorts(csite,ipa)
+         !---------------------------------------------------------------------------------!
+      end do patchloop
+      !------------------------------------------------------------------------------------!
+
+      return
+   end subroutine zero_ed_qmean_patches
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !  SUBROUTINE: ZERO_ED_QMEAN_COHORTS
+   !> \brief This subroutine resets the mean diel of cohort-level variables.
+   !> \author Marcos Longo
+   !> \details This subroutine flushes all averages to zero once the "Q" file has been 
+   !> written. To avoid issues with some compilers that have issues with very long sub-
+   !> routines, we split the sub-routine according to the hierarchical level.
+   !---------------------------------------------------------------------------------------!
+   subroutine zero_ed_qmean_cohorts(csite,ipa)
+      use ed_state_vars, only : sitetype      & ! structure
+                              , patchtype     ! ! structure
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      type(sitetype)   , target     :: csite
+      integer          , intent(in) :: ipa
+      !----- Local variables. -------------------------------------------------------------!
+      type(patchtype)  , pointer    :: cpatch
+      integer                       :: ico
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !   Select patch, then loop through cohorts.                                         !
+      !------------------------------------------------------------------------------------!
+      cpatch => csite%patch(ipa)
+      cohortloop: do ico=1, cpatch%ncohorts
+         cpatch%qmean_gpp                 (:,ico) = 0.0
+         cpatch%qmean_npp                 (:,ico) = 0.0
+         cpatch%qmean_leaf_resp           (:,ico) = 0.0
+         cpatch%qmean_root_resp           (:,ico) = 0.0
+         cpatch%qmean_stem_resp           (:,ico) = 0.0
+         cpatch%qmean_leaf_growth_resp    (:,ico) = 0.0
+         cpatch%qmean_root_growth_resp    (:,ico) = 0.0
+         cpatch%qmean_sapa_growth_resp    (:,ico) = 0.0
+         cpatch%qmean_sapb_growth_resp    (:,ico) = 0.0
+         cpatch%qmean_barka_growth_resp   (:,ico) = 0.0
+         cpatch%qmean_barkb_growth_resp   (:,ico) = 0.0
+         cpatch%qmean_leaf_storage_resp   (:,ico) = 0.0
+         cpatch%qmean_root_storage_resp   (:,ico) = 0.0
+         cpatch%qmean_sapa_storage_resp   (:,ico) = 0.0
+         cpatch%qmean_sapb_storage_resp   (:,ico) = 0.0
+         cpatch%qmean_barka_storage_resp  (:,ico) = 0.0
+         cpatch%qmean_barkb_storage_resp  (:,ico) = 0.0
+         cpatch%qmean_plresp              (:,ico) = 0.0
+         cpatch%qmean_leaf_energy         (:,ico) = 0.0
+         cpatch%qmean_leaf_water          (:,ico) = 0.0
+         cpatch%qmean_leaf_hcap           (:,ico) = 0.0
+         cpatch%qmean_leaf_vpdef          (:,ico) = 0.0
+         cpatch%qmean_leaf_temp           (:,ico) = 0.0
+         cpatch%qmean_leaf_fliq           (:,ico) = 0.0
+         cpatch%qmean_leaf_gsw            (:,ico) = 0.0
+         cpatch%qmean_leaf_gbw            (:,ico) = 0.0
+         cpatch%qmean_wood_energy         (:,ico) = 0.0
+         cpatch%qmean_wood_water          (:,ico) = 0.0
+         cpatch%qmean_wood_hcap           (:,ico) = 0.0
+         cpatch%qmean_wood_temp           (:,ico) = 0.0
+         cpatch%qmean_wood_fliq           (:,ico) = 0.0
+         cpatch%qmean_wood_gbw            (:,ico) = 0.0
+         cpatch%qmean_fs_open             (:,ico) = 0.0
+         cpatch%qmean_fsw                 (:,ico) = 0.0
+         cpatch%qmean_fsn                 (:,ico) = 0.0
+         cpatch%qmean_a_open              (:,ico) = 0.0
+         cpatch%qmean_a_closed            (:,ico) = 0.0
+         cpatch%qmean_a_net               (:,ico) = 0.0
+         cpatch%qmean_a_light             (:,ico) = 0.0
+         cpatch%qmean_a_rubp              (:,ico) = 0.0
+         cpatch%qmean_a_co2               (:,ico) = 0.0
+         cpatch%qmean_psi_open            (:,ico) = 0.0
+         cpatch%qmean_psi_closed          (:,ico) = 0.0
+         cpatch%qmean_water_supply        (:,ico) = 0.0
+
+         cpatch%qmean_par_level_beam      (:,ico) = 0.0
+         cpatch%qmean_par_level_diffu     (:,ico) = 0.0
+         cpatch%qmean_par_level_diffd     (:,ico) = 0.0
+
+         cpatch%qmean_light_level         (:,ico) = 0.0
+         cpatch%qmean_light_level_beam    (:,ico) = 0.0
+         cpatch%qmean_light_level_diff    (:,ico) = 0.0
+         cpatch%qmean_par_l               (:,ico) = 0.0
+         cpatch%qmean_par_l_beam          (:,ico) = 0.0
+         cpatch%qmean_par_l_diff          (:,ico) = 0.0
+         cpatch%qmean_rshort_l            (:,ico) = 0.0
+         cpatch%qmean_rlong_l             (:,ico) = 0.0
+         cpatch%qmean_sensible_lc         (:,ico) = 0.0
+         cpatch%qmean_vapor_lc            (:,ico) = 0.0
+         cpatch%qmean_transp              (:,ico) = 0.0
+         cpatch%qmean_intercepted_al      (:,ico) = 0.0
+         cpatch%qmean_wshed_lg            (:,ico) = 0.0
+         cpatch%qmean_rshort_w            (:,ico) = 0.0
+         cpatch%qmean_rlong_w             (:,ico) = 0.0
+         cpatch%qmean_rad_profile       (:,:,ico) = 0.0
+         cpatch%qmean_sensible_wc         (:,ico) = 0.0
+         cpatch%qmean_vapor_wc            (:,ico) = 0.0
+         cpatch%qmean_intercepted_aw      (:,ico) = 0.0
+         cpatch%qmean_wshed_wg            (:,ico) = 0.0
+
+         cpatch%qmean_leaf_psi            (:,ico) = 0.0
+         cpatch%qmean_wood_psi            (:,ico) = 0.0
+         cpatch%qmean_leaf_water_int      (:,ico) = 0.0
+         cpatch%qmean_leaf_water_im2      (:,ico) = 0.0
+         cpatch%qmean_wood_water_int      (:,ico) = 0.0
+         cpatch%qmean_wood_water_im2      (:,ico) = 0.0
+         cpatch%qmean_wflux_wl            (:,ico) = 0.0
+         cpatch%qmean_wflux_gw            (:,ico) = 0.0
+
+         cpatch%qmsqu_gpp                 (:,ico) = 0.0
+         cpatch%qmsqu_npp                 (:,ico) = 0.0
+         cpatch%qmsqu_plresp              (:,ico) = 0.0
+         cpatch%qmsqu_sensible_lc         (:,ico) = 0.0
+         cpatch%qmsqu_vapor_lc            (:,ico) = 0.0
+         cpatch%qmsqu_transp              (:,ico) = 0.0
+         cpatch%qmsqu_wflux_wl            (:,ico) = 0.0
+         cpatch%qmsqu_wflux_gw            (:,ico) = 0.0
+         cpatch%qmsqu_sensible_wc         (:,ico) = 0.0
+         cpatch%qmsqu_vapor_wc            (:,ico) = 0.0
+      end do cohortloop
+      !------------------------------------------------------------------------------------!
+
+      return
+   end subroutine zero_ed_qmean_cohorts
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
    !=======================================================================================!
    !=======================================================================================!
    !=======================================================================================!
@@ -8588,10 +9411,12 @@ module average_utils
 
    !=======================================================================================!
    !=======================================================================================!
-   !  SUBROUTINE: UPDATE_ED_YEARLY_VARS     
+   !  SUBROUTINE: UPDATE_ED_YEARLY_POLYGONS
    !> \brief This sub-routine updates the yearly variables.
+   !> \details This sub-routine is rather short, so we do not split it according to the 
+   !> hierarchical level.
    !---------------------------------------------------------------------------------------!
-   subroutine update_ed_yearly_vars(cgrid)
+   subroutine update_ed_yearly_polygons(cgrid)
 
       use ed_state_vars, only : edtype       & ! structure
                               , polygontype  & ! structure
@@ -8732,7 +9557,7 @@ module average_utils
       end do polyloop
       !------------------------------------------------------------------------------------!
       return
-   end subroutine update_ed_yearly_vars
+   end subroutine update_ed_yearly_polygons
    !=======================================================================================!
    !=======================================================================================!
 
@@ -8743,10 +9568,12 @@ module average_utils
 
    !=======================================================================================!
    !=======================================================================================!
-   !  SUBROUTINE: ZERO_ED_YEARLY_VARS       
+   !  SUBROUTINE: ZERO_ED_YEARLY_POLYGONS
    !> \brief This sub-routine re-sets the yearly variables.
+   !> \details This sub-routine is rather short, so we do not split it according to the 
+   !> hierarchical level.
    !---------------------------------------------------------------------------------------!
-   subroutine zero_ed_yearly_vars(cgrid)
+   subroutine zero_ed_yearly_polygons(cgrid)
 
       use ed_max_dims  , only : n_pft       & ! intent(in)
                               , n_dbh       ! ! intent(in)
@@ -8786,7 +9613,7 @@ module average_utils
       !------------------------------------------------------------------------------------!
 
       return
-   end subroutine zero_ed_yearly_vars
+   end subroutine zero_ed_yearly_polygons
    !=======================================================================================!
    !=======================================================================================!
 

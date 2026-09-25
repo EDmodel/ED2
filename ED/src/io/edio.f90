@@ -18,20 +18,20 @@ module edio
                               , writing_mont            & ! intent(in)
                               , writing_dcyc            & ! intent(in)
                               , iprintpolys             ! ! intent(in)
-      use average_utils, only : aggregate_polygon_fmean & ! sub-routine
-                              , normalize_ed_fmean_vars & ! sub-routine
-                              , integrate_ed_dmean_vars & ! sub-routine
-                              , integrate_ed_qmean_vars & ! sub-routine
-                              , normalize_ed_dmean_vars & ! sub-routine
-                              , integrate_ed_mmean_vars & ! sub-routine
-                              , zero_ed_dmean_vars      & ! sub-routine
-                              , zero_ed_dx_vars         & ! sub-routine
-                              , normalize_ed_mmean_vars & ! sub-routine
-                              , normalize_ed_qmean_vars & ! sub-routine
-                              , zero_ed_mmean_vars      & ! sub-routine
-                              , zero_ed_qmean_vars      & ! sub-routine
-                              , zero_ed_qmean_vars      & ! sub-routine
-                              , zero_ed_yearly_vars     ! ! sub-routine
+      use average_utils, only : aggregate_ed_fmean_polygons & ! sub-routine
+                              , normalize_ed_fmean_polygons & ! sub-routine
+                              , integrate_ed_dmean_polygons & ! sub-routine
+                              , integrate_ed_qmean_polygons & ! sub-routine
+                              , normalize_ed_dmean_polygons & ! sub-routine
+                              , integrate_ed_mmean_polygons & ! sub-routine
+                              , zero_ed_dmean_polygons      & ! sub-routine
+                              , zero_ed_dx_polygons         & ! sub-routine
+                              , normalize_ed_mmean_polygons & ! sub-routine
+                              , normalize_ed_qmean_polygons & ! sub-routine
+                              , zero_ed_mmean_polygons      & ! sub-routine
+                              , zero_ed_qmean_polygons      & ! sub-routine
+                              , zero_ed_qmean_polygons      & ! sub-routine
+                              , zero_ed_yearly_polygons     ! ! sub-routine
       use ed_print     , only : print_fields            ! ! sub-routine
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
@@ -80,14 +80,14 @@ module edio
           (new_day       .and. (writing_dail .or. writing_mont .or. writing_dcyc)     ))   &
       then
          do ifm=1,ngrids
-            call normalize_ed_fmean_vars    (edgrid_g(ifm))
-            call aggregate_polygon_fmean    (edgrid_g(ifm))
+            call normalize_ed_fmean_polygons(edgrid_g(ifm))
+            call aggregate_ed_fmean_polygons(edgrid_g(ifm))
          end do
 
          if (writing_dail .or. writing_mont .or. writing_dcyc) then
             do ifm=1,ngrids
-               call integrate_ed_dmean_vars(edgrid_g(ifm))
-               if (writing_dcyc) call integrate_ed_qmean_vars(edgrid_g(ifm))
+               call integrate_ed_dmean_polygons(edgrid_g(ifm))
+               if (writing_dcyc) call integrate_ed_qmean_polygons(edgrid_g(ifm))
             end do
          end if
       end if
@@ -124,16 +124,16 @@ module edio
       if (new_day .and. (writing_dail .or. writing_mont .or. writing_dcyc)) then
 
          do ifm=1,ngrids
-            call normalize_ed_dmean_vars(edgrid_g(ifm))
+            call normalize_ed_dmean_polygons(edgrid_g(ifm))
             if (writing_mont .or. writing_dcyc) then
-               call integrate_ed_mmean_vars(edgrid_g(ifm))
+               call integrate_ed_mmean_polygons(edgrid_g(ifm))
             end if
          end do
 
          if (dail_analy_time) call h5_output('DAIL')
 
          do ifm=1,ngrids
-            call zero_ed_dmean_vars(edgrid_g(ifm))
+            call zero_ed_dmean_polygons(edgrid_g(ifm))
          end do
       end if
       !------------------------------------------------------------------------------------!
@@ -143,7 +143,7 @@ module edio
       !----- Reset extreme daily values. --------------------------------------------------!
       if (new_day) then
          do ifm=1,ngrids
-            call zero_ed_dx_vars(edgrid_g(ifm))
+            call zero_ed_dx_polygons(edgrid_g(ifm))
          end do
       end if
       !------------------------------------------------------------------------------------!
@@ -154,14 +154,14 @@ module edio
       !----- Monthly analysis and monthly mean diurnal cycle output. ----------------------!
       if (mont_analy_time .or. dcyc_analy_time) then
          do ifm=1,ngrids
-            call normalize_ed_mmean_vars(edgrid_g(ifm))
-            if (writing_dcyc) call normalize_ed_qmean_vars(edgrid_g(ifm))
+            call normalize_ed_mmean_polygons(edgrid_g(ifm))
+            if (writing_dcyc) call normalize_ed_qmean_polygons(edgrid_g(ifm))
          end do
          if (mont_analy_time) call h5_output('MONT')
          if (dcyc_analy_time) call h5_output('DCYC')
          do ifm=1,ngrids
-            call zero_ed_mmean_vars(edgrid_g(ifm))
-            if (writing_dcyc) call zero_ed_qmean_vars(edgrid_g(ifm))
+            call zero_ed_mmean_polygons(edgrid_g(ifm))
+            if (writing_dcyc) call zero_ed_qmean_polygons(edgrid_g(ifm))
          end do
       end if
       !------------------------------------------------------------------------------------!
@@ -174,7 +174,7 @@ module edio
       end if
       if (new_year) then
          do ifm=1,ngrids
-            call zero_ed_yearly_vars(edgrid_g(ifm))
+            call zero_ed_yearly_polygons(edgrid_g(ifm))
          end do
       end if
       !------------------------------------------------------------------------------------!

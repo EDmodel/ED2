@@ -10,91 +10,90 @@
 !> \author  Translated from ED1 by David Medvigy, Ryan Knox and Marcos Longo
 !------------------------------------------------------------------------------------------!
 subroutine ed_model()
-   use ed_misc_coms        , only : simtime                     & ! structure
-                                  , fmtrest                     & ! intent(in)
-                                  , ivegt_dynamics              & ! intent(in)
-                                  , integration_scheme          & ! intent(in)
-                                  , current_time                & ! intent(in)
-                                  , frqfast                     & ! intent(in)
-                                  , frqstate                    & ! intent(in)
-                                  , out_time_fast               & ! intent(in)
-                                  , dtlsm                       & ! intent(in)
-                                  , ifoutput                    & ! intent(in)
-                                  , isoutput                    & ! intent(in)
-                                  , iqoutput                    & ! intent(in)
-                                  , itoutput                    & ! intent(in)
-                                  , iooutput                    & ! intent(in)
-                                  , restore_file                & ! intent(in)
-                                  , frqsum                      & ! intent(in)
-                                  , unitfast                    & ! intent(in)
-                                  , unitstate                   & ! intent(in)
-                                  , imontha                     & ! intent(in)
-                                  , iyeara                      & ! intent(in)
-                                  , outstate                    & ! intent(in)
-                                  , outfast                     & ! intent(in)
-                                  , nrec_fast                   & ! intent(in)
-                                  , nrec_state                  & ! intent(in)
-                                  , runtype                     & ! intent(in)
-                                  , month_yrstep                & ! intent(in)
-                                  , writing_dail                & ! intent(in)
-                                  , writing_mont                & ! intent(in)
-                                  , writing_dcyc                & ! intent(in)
-                                  , writing_eorq                & ! intent(in)
-                                  , writing_long                & ! intent(in)
-                                  , writing_year                ! ! intent(in)
-   use ed_init             , only : remove_obstime              & ! sub-routine
-                                  , is_obstime                  ! ! sub-routine
-   use grid_coms           , only : ngrids                      & ! intent(in)
-                                  , istp                        & ! intent(in)
-                                  , time                        & ! intent(in)
-                                  , timmax                      ! ! intent(in)
-   use ed_state_vars       , only : edgrid_g                    & ! intent(in)
-                                  , edtype                      & ! intent(in)
-                                  , patchtype                   & ! intent(in)
-                                  , filltab_alltypes            & ! intent(in)
-                                  , filltables                  ! ! intent(in)
-   use rk4_driver          , only : rk4_timestep                ! ! sub-routine
-   use rk4_coms            , only : integ_err                   & ! intent(in)
-                                  , integ_lab                   & ! intent(in)
-                                  , record_err                  & ! intent(inout)
-                                  , print_detailed              & ! intent(inout)
-                                  , nerr                        & ! intent(in)
-                                  , errmax_fout                 & ! intent(in)
-                                  , sanity_fout                 & ! intent(in)
-                                  , alloc_integ_err             & ! subroutine
-                                  , assign_err_label            & ! subroutine
-                                  , reset_integ_err             ! ! subroutine
-   use ed_node_coms        , only : mynum                       & ! intent(in)
-                                  , nnodetot                    ! ! intent(in)
-   use mem_polygons        , only : n_ed_region                 & ! intent(in)
-                                  , n_poi                       ! ! intent(in)
-   use consts_coms         , only : day_sec                     ! ! intent(in)
-   use average_utils       , only : update_ed_yearly_vars       & ! sub-routine
-                                  , zero_ed_dmean_vars          & ! sub-routine
-                                  , zero_ed_mmean_vars          & ! sub-routine
-                                  , zero_ed_qmean_vars          & ! sub-routine
-                                  , zero_ed_fmean_vars          & ! sub-routine
-                                  , integrate_ed_fmean_met_vars & ! sub-routine
-                                  , zero_ed_yearly_vars         ! ! sub-routine
-   use edio                , only : ed_output                   ! ! sub-routine
-   use ed_met_driver       , only : read_met_drivers            & ! sub-routine
-                                  , update_met_drivers          ! ! sub-routine
-   use euler_driver        , only : euler_timestep              ! ! sub-routine
-   use heun_driver         , only : heun_timestep               ! ! sub-routine
-   use hybrid_driver       , only : hybrid_timestep             ! ! sub-routine
-   use lsm_hyd             , only : updateHydroParms            & ! sub-routine
-                                  , calcHydroSubsurface         & ! sub-routine
-                                  , calcHydroSurface            & ! sub-routine
-                                  , writeHydro                  ! ! sub-routine
-   use radiate_driver      , only : canopy_radiation            ! ! sub-routine
-   use rk4_integ_utils     , only : initialize_rk4patches       & ! sub-routine
-                                  , initialize_misc_stepvars    ! ! sub-routine
-   use stable_cohorts      , only : flag_stable_cohorts         ! ! sub-routine
-   use update_derived_utils, only : update_model_time_dm        ! ! sub-routine
-   use budget_utils        , only : ed_init_budget              ! ! sub-routine
-   use vegetation_dynamics , only : veg_dynamics_driver         ! ! sub-routine
-   use ed_type_init        , only : ed_init_viable              ! ! sub-routine
-   use soil_respiration    , only : zero_litter_inputs          ! ! sub-routine
+   use ed_misc_coms        , only : simtime                         & ! structure
+                                  , fmtrest                         & ! intent(in)
+                                  , ivegt_dynamics                  & ! intent(in)
+                                  , integration_scheme              & ! intent(in)
+                                  , current_time                    & ! intent(in)
+                                  , frqfast                         & ! intent(in)
+                                  , frqstate                        & ! intent(in)
+                                  , out_time_fast                   & ! intent(in)
+                                  , dtlsm                           & ! intent(in)
+                                  , ifoutput                        & ! intent(in)
+                                  , isoutput                        & ! intent(in)
+                                  , iqoutput                        & ! intent(in)
+                                  , itoutput                        & ! intent(in)
+                                  , iooutput                        & ! intent(in)
+                                  , restore_file                    & ! intent(in)
+                                  , frqsum                          & ! intent(in)
+                                  , unitfast                        & ! intent(in)
+                                  , unitstate                       & ! intent(in)
+                                  , imontha                         & ! intent(in)
+                                  , iyeara                          & ! intent(in)
+                                  , outstate                        & ! intent(in)
+                                  , outfast                         & ! intent(in)
+                                  , nrec_fast                       & ! intent(in)
+                                  , nrec_state                      & ! intent(in)
+                                  , runtype                         & ! intent(in)
+                                  , month_yrstep                    & ! intent(in)
+                                  , writing_dail                    & ! intent(in)
+                                  , writing_mont                    & ! intent(in)
+                                  , writing_dcyc                    & ! intent(in)
+                                  , writing_eorq                    & ! intent(in)
+                                  , writing_long                    & ! intent(in)
+                                  , writing_year                    ! ! intent(in)
+   use ed_init             , only : remove_obstime                  & ! sub-routine
+                                  , is_obstime                      ! ! sub-routine
+   use grid_coms           , only : ngrids                          & ! intent(in)
+                                  , istp                            & ! intent(in)
+                                  , time                            & ! intent(in)
+                                  , timmax                          ! ! intent(in)
+   use ed_state_vars       , only : edgrid_g                        & ! intent(in)
+                                  , edtype                          & ! intent(in)
+                                  , patchtype                       & ! intent(in)
+                                  , filltab_alltypes                & ! intent(in)
+                                  , filltables                      ! ! intent(in)
+   use rk4_driver          , only : rk4_timestep                    ! ! sub-routine
+   use rk4_coms            , only : integ_err                       & ! intent(in)
+                                  , integ_lab                       & ! intent(in)
+                                  , record_err                      & ! intent(inout)
+                                  , print_detailed                  & ! intent(inout)
+                                  , nerr                            & ! intent(in)
+                                  , errmax_fout                     & ! intent(in)
+                                  , sanity_fout                     & ! intent(in)
+                                  , alloc_integ_err                 & ! subroutine
+                                  , assign_err_label                & ! subroutine
+                                  , reset_integ_err                 ! ! subroutine
+   use ed_node_coms        , only : mynum                           & ! intent(in)
+                                  , nnodetot                        ! ! intent(in)
+   use mem_polygons        , only : n_ed_region                     & ! intent(in)
+                                  , n_poi                           ! ! intent(in)
+   use consts_coms         , only : day_sec                         ! ! intent(in)
+   use average_utils       , only : update_ed_yearly_polygons       & ! sub-routine
+                                  , zero_ed_dmean_polygons          & ! sub-routine
+                                  , zero_ed_mmean_polygons          & ! sub-routine
+                                  , zero_ed_qmean_polygons          & ! sub-routine
+                                  , zero_ed_fmean_polygons          & ! sub-routine
+                                  , integrate_ed_fmean_met_polygons ! ! sub-routine
+   use edio                , only : ed_output                       ! ! sub-routine
+   use ed_met_driver       , only : read_met_drivers                & ! sub-routine
+                                  , update_met_drivers              ! ! sub-routine
+   use euler_driver        , only : euler_timestep                  ! ! sub-routine
+   use heun_driver         , only : heun_timestep                   ! ! sub-routine
+   use hybrid_driver       , only : hybrid_timestep                 ! ! sub-routine
+   use lsm_hyd             , only : updateHydroParms                & ! sub-routine
+                                  , calcHydroSubsurface             & ! sub-routine
+                                  , calcHydroSurface                & ! sub-routine
+                                  , writeHydro                      ! ! sub-routine
+   use radiate_driver      , only : canopy_radiation                ! ! sub-routine
+   use rk4_integ_utils     , only : initialize_rk4patches           & ! sub-routine
+                                  , initialize_misc_stepvars        ! ! sub-routine
+   use stable_cohorts      , only : flag_stable_cohorts             ! ! sub-routine
+   use update_derived_utils, only : update_model_time_dm            ! ! sub-routine
+   use budget_utils        , only : ed_init_budget                  ! ! sub-routine
+   use vegetation_dynamics , only : veg_dynamics_driver             ! ! sub-routine
+   use ed_type_init        , only : ed_init_viable                  ! ! sub-routine
+   use soil_respiration    , only : zero_litter_inputs              ! ! sub-routine
 #if defined(RAMS_MPI)
    use mpi
 #endif
@@ -198,14 +197,14 @@ subroutine ed_model()
    case default
 
       do ifm=1,ngrids
-         if (writing_long) call zero_ed_dmean_vars(edgrid_g(ifm))
-         if (writing_eorq) call zero_ed_mmean_vars(edgrid_g(ifm))
-         if (writing_dcyc) call zero_ed_qmean_vars(edgrid_g(ifm))
+         if (writing_long) call zero_ed_dmean_polygons(edgrid_g(ifm))
+         if (writing_eorq) call zero_ed_mmean_polygons(edgrid_g(ifm))
+         if (writing_dcyc) call zero_ed_qmean_polygons(edgrid_g(ifm))
       end do
 
       !----- Long-term dynamics structure. ------------------------------------------------!
       do ifm=1,ngrids
-         call update_ed_yearly_vars(edgrid_g(ifm))
+         call update_ed_yearly_polygons(edgrid_g(ifm))
       end do
       !------------------------------------------------------------------------------------!
    end select
@@ -216,7 +215,7 @@ subroutine ed_model()
    !      The fast analysis is always reset, including history runs.                       !
    !---------------------------------------------------------------------------------------!
    do ifm=1,ngrids
-      call zero_ed_fmean_vars(edgrid_g(ifm))
+      call zero_ed_fmean_polygons(edgrid_g(ifm))
    end do
    !---------------------------------------------------------------------------------------!
 
@@ -324,7 +323,7 @@ subroutine ed_model()
       ! diagnostic.                                                                        !
       !------------------------------------------------------------------------------------!
       do ifm=1,ngrids
-         call integrate_ed_fmean_met_vars(edgrid_g(ifm))
+         call integrate_ed_fmean_met_polygons(edgrid_g(ifm))
       end do
       !------------------------------------------------------------------------------------!
 
@@ -545,7 +544,7 @@ subroutine ed_model()
       !------------------------------------------------------------------------------------!
       if (analysis_time .and. new_year .and. new_day) then
          do ifm = 1,ngrids
-            call update_ed_yearly_vars(edgrid_g(ifm))
+            call update_ed_yearly_polygons(edgrid_g(ifm))
          end do
       end if
       !------------------------------------------------------------------------------------!
@@ -581,7 +580,7 @@ subroutine ed_model()
       !------------------------------------------------------------------------------------!
       if (reset_time) then
          do ifm=1,ngrids
-            call zero_ed_fmean_vars(edgrid_g(ifm))
+            call zero_ed_fmean_polygons(edgrid_g(ifm))
          end do
       end if
       !------------------------------------------------------------------------------------!
@@ -620,7 +619,7 @@ subroutine ed_model()
       !------------------------------------------------------------------------------------!
       !if (analysis_time .and. new_month .and. new_day .and. current_time%month == 6) then
       !   do ifm = 1,ngrids
-      !      call update_ed_yearly_vars(edgrid_g(ifm))
+      !      call update_ed_yearly_polygons(edgrid_g(ifm))
       !   end do
       !end if
       !------------------------------------------------------------------------------------!

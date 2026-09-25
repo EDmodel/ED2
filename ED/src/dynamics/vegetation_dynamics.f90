@@ -33,9 +33,9 @@ module vegetation_dynamics
       use consts_coms          , only : day_sec                       & ! intent(in)
                                       , yr_day                        ! ! intent(in)
       use mem_polygons         , only : maxpatch                      ! ! intent(in)
-      use average_utils        , only : normalize_ed_today_vars       & ! sub-routine
-                                      , copy_today_to_dmean_vars      & ! sub-routine
-                                      , zero_ed_today_vars            ! ! sub-routine
+      use average_utils        , only : normalize_ed_today_polygons   & ! sub-routine
+                                      , copy_today_to_dmean_polygons  & ! sub-routine
+                                      , zero_ed_today_polygons        ! ! sub-routine
       use canopy_radiation_coms, only : ihrzrad                       ! ! intent(in)
       use hrzshade_utils       , only : split_hrzshade                & ! sub-routine
                                       , reset_hrzshade                ! ! sub-routine
@@ -97,7 +97,7 @@ module vegetation_dynamics
          !     The following block corresponds to the daily time-step.                     !
          !---------------------------------------------------------------------------------!
          !----- Standardise the fast-scale uptake and respiration, for growth rates. ------!
-         call normalize_ed_today_vars(cgrid)
+         call normalize_ed_today_polygons(cgrid)
          !----- Update phenology and growth of live tissues. ------------------------------!
          call phenology_driver(cgrid,doy,current_time%month, dtlsm_o_day,veget_dyn_on)
          call dbalive_dt(cgrid,gr_tfact0,year_o_day,veget_dyn_on)
@@ -129,7 +129,7 @@ module vegetation_dynamics
 
 
          !------  update dmean and mmean values for NPP allocation terms ------------------!
-         call copy_today_to_dmean_vars(cgrid)
+         call copy_today_to_dmean_polygons(cgrid)
          !---------------------------------------------------------------------------------!
 
 
@@ -144,7 +144,7 @@ module vegetation_dynamics
          if (veget_dyn_on) then
             call update_C_and_N_pools(cgrid)
          end if
-         call zero_ed_today_vars(cgrid)
+         call zero_ed_today_polygons(cgrid)
          !---------------------------------------------------------------------------------!
 
 
