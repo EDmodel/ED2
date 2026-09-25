@@ -38,6 +38,9 @@ program main
    integer                               :: nslaves
    integer                               :: isingle
    integer                               :: n
+   integer                               :: m
+   integer                               :: used_threads
+   integer                               :: used_cpus
    !------ Local variables (MPI only). ----------------------------------------------------!
 #if defined(RAMS_MPI)
    integer                               :: ierr
@@ -49,8 +52,8 @@ program main
    integer                               :: num_procs        !<= omp_get_num_procs()
    integer                               :: thread
    integer                               :: cpu
-   integer, dimension(64)                :: thread_use
-   integer, dimension(64)                :: cpu_use
+   integer, dimension(:), allocatable    :: thread_use
+   integer, dimension(:), allocatable    :: cpu_use
    integer, external                     :: findmycpu
    !---------------------------------------------------------------------------------------!
 
@@ -187,19 +190,55 @@ program main
    num_procs     = 1
    thread        = 1
    cpu           = 1
-   thread_use(:) = 0
-   cpu_use(:)    = 0
    !$ max_threads = omp_get_max_threads()
    !$ num_procs   = omp_get_num_procs()
+   allocate(thread_use(max_threads))
+   allocate(cpu_use(num_procs))
+   thread_use(:) = 0
+   cpu_use(:)    = 0
 
    !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(thread,cpu)
    do n = 1,max_threads
      !$ thread = omp_get_thread_num() + 1
      !$ cpu    = findmycpu() + 1
-     thread_use(thread) = 1
-     cpu_use(cpu)       = 1
+  
+     !----- Add the thread ID to the next available slot (the first slot that = 0) -------!     
+     manage_threads: do m = 1,max_threads     
+       if (thread_use(m) .eq. 0) then
+         thread_use(m) = thread
+         exit manage_threads
+       end if
+     end do manage_threads
+     
+     !---- Add the CPU to the next available slot, allowing for possible duplicates ------!
+     manage_cpus: do m = 1,num_procs
+       if (cpu_use(m) .eq. cpu) then
+         ! Duplicate CPU ID, do nothing
+         exit manage_cpus
+       else if (cpu_use(m) .eq. 0) then
+         ! Reached the next open slot without finding a duplicate, add this CPU
+         cpu_use(m) = cpu
+         exit manage_cpus
+       end if
+     end do manage_cpus
    end do
    !$OMP END PARALLEL DO
+
+   !----- Count the resulting used threads and cpus ---------------------------------------!
+   used_threads = 0
+   used_cpus = 0
+   
+   do n = 1,max_threads
+     if (thread_use(n) .ne. 0) then
+       used_threads = used_threads + 1
+     end if
+   end do
+   
+   do n = 1,num_procs
+     if (cpu_use(n) .ne. 0) then
+       used_cpus = used_cpus + 1
+     end if
+   end do
    !---------------------------------------------------------------------------------------!
 
 
@@ -209,9 +248,9 @@ program main
    write (*,'(a,1x,i6)') '+  - Machnum  =',machnum
    write (*,'(a,1x,i6)') '+  - Machsize =',machsize
    write (*,'(a)')       '+---------------- OMP parallel info: --------------------+'
-   write (*,'(a,1x,i6)') '+  - thread  use: ', sum(thread_use)
+   write (*,'(a,1x,i6)') '+  - thread  use: ', used_threads
    write (*,'(a,1x,i6)') '+  - threads max: ', max_threads
-   write (*,'(a,1x,i6)') '+  - cpu     use: ', sum(cpu_use)
+   write (*,'(a,1x,i6)') '+  - cpu     use: ', used_cpus
    write (*,'(a,1x,i6)') '+  - cpus    max: ', num_procs
    write (*,'(a)')       '+  Note: Max vals are for node, not sockets.'
    write (*,'(a)')       '+--------------------------------------------------------+'
