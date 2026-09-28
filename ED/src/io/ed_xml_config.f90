@@ -268,6 +268,8 @@ recursive subroutine read_ed_xml_config(filename)
          if(texist) ivegt_dynamics = ival
          call getConfigINT  ('ibigleaf','misc',i,ival,texist)
          if(texist) ibigleaf = ival
+         call getConfigINT  ('esat_method','misc',i,ival,texist)
+         if(texist) esat_method = ival
          call getConfigINT  ('integration_scheme','misc',i,ival,texist)
          if(texist) integration_scheme = ival
 
@@ -1939,6 +1941,7 @@ subroutine write_ed_xml_config
      call putConfigSTRING("history_out_filepath",sfilout)
      call putConfigINT("ivegt_dynamics",ivegt_dynamics)
      call putConfigINT("ibigleaf",ibigleaf)
+     call putConfigINT("esat_method",esat_method)
      call putConfigINT("integration_scheme",integration_scheme)
   call libxml2f90_ll_closetag("misc")
 

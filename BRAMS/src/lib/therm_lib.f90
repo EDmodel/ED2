@@ -27,9 +27,6 @@ module therm_lib
    integer, parameter ::   maxlev = 16              ! Maximum # of levels for adaptive     
                                                     !   quadrature methods.    
 
-
-   logical, parameter ::   newthermo = .true.      ! Use new thermodynamics [T|F]
-
    !---------------------------------------------------------------------------------------!
    !   This is the "level" variable, that used to be in micphys. Since it affects more the !
    ! thermodynamics choices than the microphysics, it was moved to here.                   !
@@ -131,7 +128,15 @@ module therm_lib
    ! Kelvin temperature. This expression came from MK05, equation (10).                    !
    !---------------------------------------------------------------------------------------!
    real(kind=4) function eslf(temp,l1funout,l2funout,ttfunout)
-      use rconstants , only : t00 ! ! intent(in)
+      use rconstants , only : t00         & ! intent(in)
+                            , es3ple      & ! intent(in)
+                            , t3ple       & ! intent(in)
+                            , dcplorv     & ! intent(in)
+                            , lvorvot3    & ! intent(in)
+                            , rh2o        & ! intent(in)
+                            , lnexp_min   & ! intent(in)
+                            , lnexp_max   ! ! intent(in)
+      use mem_basic , only  : esat_method ! ! intent(in)
       implicit none
       !----- Required arguments. ----------------------------------------------------------!
       real(kind=4), intent(in)            :: temp     ! Temperature                [     K]
@@ -149,30 +154,59 @@ module therm_lib
 
 
       !------------------------------------------------------------------------------------!
-      !     Choose between the old and the new thermodynamics.                             !
+      !     Choose the thermodynamic approach.                                             !
       !------------------------------------------------------------------------------------!
-      if (newthermo) then
-         !----- Updated method, using MK05 ------------------------------------------------!
+      select case (esat_method)
+      case (0)
+         !---------------------------------------------------------------------------------!
+         !   Original ED2.0 method,  polynomial fit based on FWC92.                        !
+         !---------------------------------------------------------------------------------!
+         x    = max(-80.,temp-t00)
+         eslf = cll(0) + x * (cll(1) + x * (cll(2) + x * (cll(3) + x * (cll(4)             &
+                       + x * (cll(5) + x * (cll(6) + x * (cll(7) + x * cll(8)) ) ) ) ) ) )
+         !---------------------------------------------------------------------------------!
+
+         !----- Dummy values for optional functions in case they are requested. -----------!
+         if (present(l1funout)) l1funout = eslf
+         if (present(l2funout)) l2funout = eslf
+         if (present(ttfunout)) ttfunout = eslf
+         !---------------------------------------------------------------------------------!
+      case (1)
+         !---------------------------------------------------------------------------------!
+         !   ED-2.2 method, use MK05 (equation 10).                                        !
+         !---------------------------------------------------------------------------------!
          l1fun = l01_10(0) + l01_10(1)/temp + l01_10(2)*log(temp) + l01_10(3) * temp
          l2fun = l02_10(0) + l02_10(1)/temp + l02_10(2)*log(temp) + l02_10(3) * temp
          ttfun = tanh(ttt_10(1) * (temp - ttt_10(2)))
          eslf  = exp(l1fun + ttfun*l2fun)
          !---------------------------------------------------------------------------------!
 
+         !----- These are useful for the derivative calculation. --------------------------!
          if (present(l1funout)) l1funout = l1fun
          if (present(l2funout)) l2funout = l2fun
          if (present(ttfunout)) ttfunout = ttfun
-      else
-         !----- Original method, using polynomial fit (FWC92) -----------------------------!
-         x    = max(-80.,temp-t00)
-         eslf = cll(0) + x * (cll(1) + x * (cll(2) + x * (cll(3) + x * (cll(4)             &
-                       + x * (cll(5) + x * (cll(6) + x * (cll(7) + x * cll(8)) ) ) ) ) ) )
+         !---------------------------------------------------------------------------------!
+      case (2)
+         !---------------------------------------------------------------------------------!
+         !   Use A20's method, which is thermodynamically more consistent with the other   !
+         ! ED-2.2 assumptions.                                                             !
+         !                                                                                 !
+         ! Ambaum, M. H. P., 2020: Accurate, simple equation for saturated vapour pressure !
+         !    over water and ice. Quart. J. Royal Meteorol. Soc., 146 (733), 4252-4258,    !
+         !    doi:10.1002/qj.3899 (hereafter A20).                                         !
+         !---------------------------------------------------------------------------------!
+         l1fun = min(lnexp_max,max(lnexp_min, lvorvot3 - alvl(temp) / (rh2o * temp)))
+         eslf  = es3ple * (t3ple/temp) ** dcplorv * exp(l1fun)
          !---------------------------------------------------------------------------------!
 
+
+         !----- Dummy values for optional functions in case they are requested. -----------!
          if (present(l1funout)) l1funout = eslf
          if (present(l2funout)) l2funout = eslf
          if (present(ttfunout)) ttfunout = eslf
-      end if
+         !---------------------------------------------------------------------------------!
+      end select
+      !------------------------------------------------------------------------------------!
 
       return
    end function eslf
@@ -190,7 +224,15 @@ module therm_lib
    ! Kelvin temperature, based on MK05 equation (7).                                       !
    !---------------------------------------------------------------------------------------!
    real(kind=4) function esif(temp,iifunout)
-      use rconstants , only : t00 ! ! intent(in)
+      use rconstants  , only : t00         & ! intent(in)
+                             , es3ple      & ! intent(in)
+                             , t3ple       & ! intent(in)
+                             , dcpiorv     & ! intent(in)
+                             , lsorvot3    & ! intent(in)
+                             , rh2o        & ! intent(in)
+                             , lnexp_min   & ! intent(in)
+                             , lnexp_max   ! ! intent(in)
+      use mem_basic   , only : esat_method ! ! intent(in)
       implicit none
       !----- Required arguments. ----------------------------------------------------------!
       real(kind=4), intent(in)            :: temp     ! Temperature                 [    K]
@@ -202,27 +244,53 @@ module therm_lib
       !------------------------------------------------------------------------------------!
 
 
-      !------------------------------------------------------------------------------------!
-      !     Choose between the old and the new thermodynamics.                             !
-      !------------------------------------------------------------------------------------!
-      if (newthermo) then
 
-         !----- Updated method, using MK05 ------------------------------------------------!
-         iifun = iii_7(0) + iii_7(1)/temp + iii_7(2) * log(temp) + iii_7(3) * temp
-         esif  = exp(iifun)
+      !------------------------------------------------------------------------------------!
+      !     Choose the thermodynamic approach.                                             !
+      !------------------------------------------------------------------------------------!
+      select case (esat_method)
+      case (0)
          !---------------------------------------------------------------------------------!
-
-
-         if (present(iifunout)) iifunout=iifun
-      else
-         !----- Original method, using polynomial fit (FWC92) -----------------------------!
+         !   Original ED2.0 method,  polynomial fit based on FWC92.                        !
+         !---------------------------------------------------------------------------------!
          x=max(-80.,temp-t00)
          esif = cii(0) + x * (cii(1) + x * (cii(2) + x * (cii(3) + x * (cii(4)             &
                        + x * (cii(5) + x * (cii(6) + x * (cii(7) + x * cii(8)) ) ) ) ) ) )
          !---------------------------------------------------------------------------------!
 
+         !----- Dummy values for optional function in case they are requested. ------------!
          if (present(iifunout)) iifunout=esif
-      end if
+         !---------------------------------------------------------------------------------!
+      case (1)
+         !---------------------------------------------------------------------------------!
+         !   ED-2.2 method, use MK05 (equation 7).                                         !
+         !---------------------------------------------------------------------------------!
+         iifun = iii_7(0) + iii_7(1)/temp + iii_7(2) * log(temp) + iii_7(3) * temp
+         esif  = exp(iifun)
+         !---------------------------------------------------------------------------------!
+
+
+         !----- This is useful for the derivative calculation. ------==--------------------!
+         if (present(iifunout)) iifunout=iifun
+         !---------------------------------------------------------------------------------!
+      case (2)
+         !---------------------------------------------------------------------------------!
+         !   Use A20's method, which is thermodynamically more consistent with the other   !
+         ! ED-2.2 assumptions.                                                             !
+         !                                                                                 !
+         ! Ambaum, M. H. P., 2020: Accurate, simple equation for saturated vapour pressure !
+         !    over water and ice. Quart. J. Royal Meteorol. Soc., 146 (733), 4252-4258,    !
+         !    doi:10.1002/qj.3899 (hereafter A20).                                         !
+         !---------------------------------------------------------------------------------!
+         iifun = min(lnexp_max,max(lnexp_min, lsorvot3 - alvi(temp) / (rh2o * temp)))
+         esif  = es3ple * (t3ple/temp) ** dcpiorv * exp(iifun)
+         !---------------------------------------------------------------------------------!
+
+
+         !----- Dummy values for optional functions in case they are requested. -----------!
+         if (present(iifunout)) iifunout=esif
+         !---------------------------------------------------------------------------------!
+      end select
       !------------------------------------------------------------------------------------!
 
       return
@@ -708,7 +776,9 @@ module therm_lib
    ! pressure with respect to temperature as a function of Kelvin temperature.             !
    !---------------------------------------------------------------------------------------!
    real(kind=4) function eslfp(temp)
-      use rconstants , only : t00 ! ! intent(in)
+      use rconstants , only : t00         & ! intent(in)
+                            , rh2o        ! ! intent(in)
+      use mem_basic  , only : esat_method ! ! intent(in)
       implicit none
       !------ Arguments. ------------------------------------------------------------------!
       real(kind=4), intent(in) :: temp
@@ -725,21 +795,37 @@ module therm_lib
 
 
       !------------------------------------------------------------------------------------!
-      !      Decide which function to use, based on the thermodynamics.                    !
+      !     Choose the thermodynamic approach.                                             !
       !------------------------------------------------------------------------------------!
-      if (newthermo) then
-         !----- Updated method, using MK05 ------------------------------------------------!
+      select case (esat_method)
+      case (0)
+         !---------------------------------------------------------------------------------!
+         !   Original ED2.0 method,  polynomial fit based on FWC92.                        !
+         !---------------------------------------------------------------------------------!
+         x     = max(-80.,temp-t00)
+         eslfp = dll(0) + x * (dll(1) + x * (dll(2) + x * (dll(3) + x * (dll(4)            &
+                        + x * (dll(5) + x * (dll(6) + x * (dll(7) + x * dll(8)) ) ) ) ) ) )
+         !---------------------------------------------------------------------------------!
+      case (1)
+         !---------------------------------------------------------------------------------!
+         !   ED-2.2 method, use MK05 (equation 10).                                        !
+         !---------------------------------------------------------------------------------!
          esl     = eslf(temp,l2funout=l2fun,ttfunout=ttfun)
          l1prime = -l01_10(1)/(temp*temp) + l01_10(2)/temp + l01_10(3)
          l2prime = -l02_10(1)/(temp*temp) + l02_10(2)/temp + l02_10(3)
          ttprime =  ttt_10(1)*(1.-ttfun*ttfun)
          eslfp   = esl * (l1prime + l2prime*ttfun + l2fun*ttprime)
-      else
-         !----- Original method, using polynomial fit (FWC92) -----------------------------!
-         x     = max(-80.,temp-t00)
-         eslfp = dll(0) + x * (dll(1) + x * (dll(2) + x * (dll(3) + x * (dll(4)            &
-                        + x * (dll(5) + x * (dll(6) + x * (dll(7) + x * dll(8)) ) ) ) ) ) )
-      end if
+         !---------------------------------------------------------------------------------!
+      case (2)
+         !---------------------------------------------------------------------------------!
+         !   Use A20's method. The derivative is by definition the Clausius-Clapeyron      !
+         ! equation. This is the key advantage of this approach as it makes the            !
+         ! formulation consistent with the second law of thermodynamics.                   !
+         !---------------------------------------------------------------------------------!
+         esl   = eslf(temp)
+         eslfp = esl * alvl(temp) / (rh2o * temp * temp)
+         !---------------------------------------------------------------------------------!
+      end select
       !------------------------------------------------------------------------------------!
 
 
@@ -759,7 +845,9 @@ module therm_lib
    ! with respect to temperature as a function of Kelvin temperature.                      !
    !---------------------------------------------------------------------------------------!
    real(kind=4) function esifp(temp)
-      use rconstants , only : t00 ! ! intent(in)
+      use rconstants  , only : t00         & ! intent(in)
+                             , rh2o        ! ! intent(in)
+      use mem_basic   , only : esat_method ! ! intent(in)
       implicit none
       !------ Arguments. ------------------------------------------------------------------!
       real(kind=4), intent(in) :: temp
@@ -772,20 +860,37 @@ module therm_lib
 
 
       !------------------------------------------------------------------------------------!
-      !      Decide which function to use, based on the thermodynamics.                    !
+      !     Choose the thermodynamic approach.                                             !
       !------------------------------------------------------------------------------------!
-      if (newthermo) then
-         !----- Updated method, using MK05 ------------------------------------------------!
-         esi     = esif(temp)
-         iiprime = -iii_7(1)/(temp*temp) + iii_7(2)/temp + iii_7(3)
-         esifp   = esi * iiprime
-      else
-         !----- Original method, using polynomial fit (FWC92) -----------------------------!
+      select case (esat_method)
+      case (0)
+         !---------------------------------------------------------------------------------!
+         !   Original ED2.0 method,  polynomial fit based on FWC92.                        !
+         !---------------------------------------------------------------------------------!
          x=max(-80.,temp-t00)
          esifp = dii(0) + x * (dii(1) + x * (dii(2) + x * (dii(3) + x * (dii(4)            &
                         + x * (dii(5) + x * (dii(6) + x * (dii(7) + x * dii(8)) ) ) ) ) ) )
-      end if
+         !---------------------------------------------------------------------------------!
+      case (1)
+         !---------------------------------------------------------------------------------!
+         !   ED-2.2 method, use MK05 (equation 7).                                         !
+         !---------------------------------------------------------------------------------!
+         esi     = esif(temp)
+         iiprime = -iii_7(1)/(temp*temp) + iii_7(2)/temp + iii_7(3)
+         esifp   = esi * iiprime
+         !---------------------------------------------------------------------------------!
+      case (2)
+         !---------------------------------------------------------------------------------!
+         !   Use A20's method. The derivative is by definition the Clausius-Clapeyron      !
+         ! equation. This is the key advantage of this approach as it makes the            !
+         ! formulation consistent with the second law of thermodynamics.                   !
+         !---------------------------------------------------------------------------------!
+         esi   = esif(temp)
+         esifp = esi * alvi(temp) / (rh2o * temp * temp)
+         !---------------------------------------------------------------------------------!
+      end select
       !------------------------------------------------------------------------------------!
+
 
       return
    end function esifp
@@ -2249,7 +2354,7 @@ module therm_lib
       if (frozen) then
          psat = esif(temp)
       else
-         psat = esif(temp)
+         psat = eslf(temp)
       end if
       !------------------------------------------------------------------------------------!
 
@@ -2722,9 +2827,9 @@ module therm_lib
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This function computes the extensive internal energy of water [J/m²] or [  J/m³], !
-   ! given the temperature [K], the heat capacity of the "dry" part [J/m²/K] or [J/m³/K],  !
-   ! water mass [ kg/m²] or [ kg/m³], and liquid fraction [---].                           !
+   !     This function computes the extensive internal energy of water [J/m2] or [  J/m3], !
+   ! given the temperature [K], the heat capacity of the "dry" part [J/m2/K] or [J/m3/K],  !
+   ! water mass [ kg/m2] or [ kg/m3], and liquid fraction [---].                           !
    !---------------------------------------------------------------------------------------!
    real(kind=4) function cmtl2uext(dryhcap,wmass,temp,fliq)
       use rconstants , only : cice           & ! intent(in)
@@ -2733,8 +2838,8 @@ module therm_lib
                             
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
-      real(kind=4), intent(in)  :: dryhcap ! Heat cap. of "dry" part   [J/m²/K] or [J/m³/K]
-      real(kind=4), intent(in)  :: wmass   ! Water mass                [ kg/m²] or [ kg/m³]
+      real(kind=4), intent(in)  :: dryhcap ! Heat cap. of "dry" part   [J/m2/K] or [J/m3/K]
+      real(kind=4), intent(in)  :: wmass   ! Water mass                [ kg/m2] or [ kg/m3]
       real(kind=4), intent(in)  :: temp    ! Temperature                           [     K]
       real(kind=4), intent(in)  :: fliq    ! Liquid fraction (0-1)                 [   ---]
       !------------------------------------------------------------------------------------!
@@ -2940,10 +3045,7 @@ module therm_lib
    real(kind=4) function theta_iceliq(exner,temp,rliq,rice)
       use rconstants , only : alvl3      & ! intent(in)
                             , alvi3      & ! intent(in)
-                            , cpdry      & ! intent(in)
-                            , ttripoli   & ! intent(in)
-                            , htripoli   & ! intent(in)
-                            , htripolii  ! ! intent(in)
+                            , cpdry      ! ! intent(in)
 
       implicit none
       !----- Arguments --------------------------------------------------------------------!
@@ -2962,36 +3064,13 @@ module therm_lib
       !------------------------------------------------------------------------------------!
 
 
-      !------------------------------------------------------------------------------------!
-      !      Find the latent heat enthalpy.  If using the old thermodynamics, we use the   !
-      ! latent heat at T = T3ple, otherwise we use the temperature-dependent one.          !
-      !------------------------------------------------------------------------------------!
-      if (newthermo) then
-         qq = alvl(temp) * rliq + alvi(temp) * rice
-      else
-         qq = alvl3 * rliq + alvi3 * rice
-      end if
+      !----- Find the latent heat enthalpy. -----------------------------------------------!
+      qq = alvl(temp) * rliq + alvi(temp) * rice
       !------------------------------------------------------------------------------------!
 
 
-      !------------------------------------------------------------------------------------!
-      !      Solve the thermodynamics.  For the new thermodynamics we don't approximate    !
-      ! the exponential to a linear function, nor do we impose temperature above the thre- !
-      ! shold from Tripoli and Cotton (1981).                                              !
-      !------------------------------------------------------------------------------------!
-      if (newthermo) then
-         !----- Decide how to compute, based on temperature. ------------------------------!
-         theta_iceliq = hh * exp(-qq / hh) / exner
-         !---------------------------------------------------------------------------------!
-      else
-         !----- Decide how to compute, based on temperature. ------------------------------!
-         if (temp > ttripoli) then
-            theta_iceliq = hh * hh / (exner * ( hh + qq))
-         else
-            theta_iceliq = hh * htripoli / (exner * ( htripoli + qq))
-         end if
-         !---------------------------------------------------------------------------------!
-      end if
+      !----- Find theta_iceliq. -----------------------------------------------------------!
+      theta_iceliq = hh * exp(-qq / hh) / exner
       !------------------------------------------------------------------------------------!
 
       return
@@ -3015,9 +3094,6 @@ module therm_lib
                             , dcpvi      & ! intent(in)
                             , dcpvl      & ! intent(in)
                             , cpdry      & ! intent(in)
-                            , ttripoli   & ! intent(in)
-                            , htripoli   & ! intent(in)
-                            , htripolii  & ! intent(in)
                             , t3ple      ! ! intent(in)
 
       implicit none
@@ -3031,8 +3107,8 @@ module therm_lib
       real(kind=4), intent(in), optional :: ricein     ! Ice mixing ratio          [ kg/kg]
       !----- Local variables --------------------------------------------------------------!
       real(kind=4)                       :: rice       ! Ice mixing ratio or 0.    [ kg/kg]
-      real(kind=4)                       :: ldrst      ! L × d(rs)/dT × T          [  J/kg]
-      real(kind=4)                       :: rdlt       ! r × d(L)/dT × T           [  J/kg]
+      real(kind=4)                       :: ldrst      ! L * d(rs)/dT * T          [  J/kg]
+      real(kind=4)                       :: rdlt       ! r * d(L)/dT * T           [  J/kg]
       real(kind=4)                       :: hh         ! Sensible heat enthalpy    [  J/kg]
       real(kind=4)                       :: qq         ! Latent heat enthalpy      [  J/kg]
       logical                            :: thereisice ! Is ice present            [   ---]
@@ -3070,43 +3146,25 @@ module therm_lib
          !---------------------------------------------------------------------------------!
 
 
-         !---------------------------------------------------------------------------------!
-         !      Find the latent heat enthalpy.  If using the old thermodynamics, we use    !
-         ! the latent heat at T = T3ple, otherwise we use the temperature-dependent one.   !
-         ! The term r × d(L)/dT × T is computed only when we use the new thermodynamics.   !
-         !---------------------------------------------------------------------------------!
-         if (newthermo) then
-            qq   = alvl(temp) * rliq + alvi(temp) * rice
-            rdlt = (dcpvl * rliq + dcpvi * rice ) * temp
-         else
-            qq   = alvl3 * rliq + alvi3 * rice
-            rdlt = 0.0
-         end if
+         !----- Find the latent heat enthalpy. --------------------------------------------!
+         qq   = alvl(temp) * rliq + alvi(temp) * rice
+         rdlt = (dcpvl * rliq + dcpvi * rice ) * temp
          !---------------------------------------------------------------------------------!
 
 
 
          !---------------------------------------------------------------------------------!
-         !    This is the term L×[d(rs)/dt]×T. L may be either the vapourisation or        !
+         !    This is the term Lx[d(rs)/dt]xT. L may be either the vapourisation or        !
          ! sublimation latent heat, depending on the temperature and whether we are consi- !
-         ! dering ice or not.  We still need to check whether latent heat is a function of !
-         ! temperature or not.  Also, if condensation mixing ratio is constant, then this  !
-         ! term will be always zero.                                                       !
+         ! dering ice or not.  If condensation mixing ratio is constant, then this term    !
+         ! will be always zero.                                                            !
          !---------------------------------------------------------------------------------!
          if (condconst) then
             ldrst = 0.
          elseif (thereisice .and. temp < t3ple) then
-            if (newthermo) then
-               ldrst = alvi3 * rsifp(pres,temp) * temp
-            else
-               ldrst = alvi(temp) * rsifp(pres,temp) * temp
-            end if
+            ldrst = alvi(temp) * rsifp(pres,temp) * temp
          else
-            if (newthermo) then
-               ldrst = alvl3 * rslfp(pres,temp) * temp
-            else
-               ldrst = alvl(temp) * rslfp(pres,temp) * temp
-            end if
+            ldrst = alvl(temp) * rslfp(pres,temp) * temp
          end if
          !---------------------------------------------------------------------------------!
       end if
@@ -3117,17 +3175,7 @@ module therm_lib
       !------------------------------------------------------------------------------------!
       !     Find the condensed phase consistent with the thermodynamics used.              !
       !------------------------------------------------------------------------------------!
-      if (newthermo) then
-         dthetail_dt = thil * ( 1. + (ldrst + qq - rdlt ) / hh ) / temp
-      else
-         !----- Decide how to compute, based on temperature. ------------------------------!
-         if (temp > ttripoli) then
-            dthetail_dt = thil * ( 1. + (ldrst + qq) / (hh+qq) ) / temp
-         else
-            dthetail_dt = thil * ( 1. + ldrst / (htripoli + alvl3 * rliq) ) / temp
-         end if
-         !---------------------------------------------------------------------------------!
-      end if
+      dthetail_dt = thil * ( 1. + (ldrst + qq - rdlt ) / hh ) / temp
       !------------------------------------------------------------------------------------!
 
       return
@@ -3144,9 +3192,6 @@ module therm_lib
    !=======================================================================================!
    !    This function computes temperature from the ice-liquid water potential temperature !
    !  in Kelvin, Exner function in J/kg/K, and liquid and ice mixing ratios in kg/kg.      !
-   !    For now t1stguess is used only to decide whether I should use the complete case or !
-   ! the 253 K to reduce the error on neglecting the changes on latent heat due to temper- !
-   ! ature.                                                                                !
    !---------------------------------------------------------------------------------------!
    real(kind=4) function thil2temp(thil,exner,pres,rliq,rice,t1stguess)
       use rconstants , only : cpdry      & ! intent(in)
@@ -3155,9 +3200,7 @@ module therm_lib
                             , alvl3      & ! intent(in)
                             , alvi3      & ! intent(in)
                             , t00        & ! intent(in)
-                            , t3ple      & ! intent(in)
-                            , ttripoli   & ! intent(in)
-                            , htripolii  ! ! intent(in)
+                            , t3ple      ! ! intent(in)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       real(kind=4), intent(in) :: thil      ! Ice-liquid water potential temp.     [     K]
@@ -3167,7 +3210,6 @@ module therm_lib
       real(kind=4), intent(in) :: rice      ! Ice mixing ratio                     [ kg/kg]
       real(kind=4), intent(in) :: t1stguess ! 1st. guess for temperature           [     K]
       !----- Local variables. -------------------------------------------------------------!
-      real(kind=4)             :: til       ! Ice liquid temperature               [     K]
       real(kind=4)             :: deriv     ! Function derivative 
       real(kind=4)             :: fun       ! Function for which we seek a root.
       real(kind=4)             :: funa      ! Smallest  guess function
@@ -3188,20 +3230,6 @@ module therm_lib
       if (rliq + rice == 0.) then
          !----- No condensation.  Theta_il is the same as theta. --------------------------!
          thil2temp = cpdryi * thil * exner
-         return
-         !---------------------------------------------------------------------------------!
-      elseif (.not. newthermo) then
-         !---------------------------------------------------------------------------------!
-         !    There is condensation but we are using the old thermodynamics, which can be  !
-         ! solved analytically.                                                            !
-         !---------------------------------------------------------------------------------!
-         til = cpdryi * thil * exner
-         if (t1stguess > ttripoli) then
-            thil2temp = 0.5                                                                &
-                      * (til + sqrt(til * (til + cpdryi4 * (alvl3 * rliq + alvi3 * rice))))
-         else
-            thil2temp = til * ( 1. + (alvl3 * rliq + alvi3 * rice) * htripolii)
-         end if
          return
          !---------------------------------------------------------------------------------!
       end if
@@ -3373,11 +3401,11 @@ module therm_lib
          write (unit=*,fmt='(a,1x,f12.4)' ) 'Exner           [J/kg/K] =',exner
          write (unit=*,fmt='(a,1x,f12.4)' ) 'rliq            [  g/kg] =',1000.*rliq
          write (unit=*,fmt='(a,1x,f12.4)' ) 'rice            [  g/kg] =',1000.*rice
-         write (unit=*,fmt='(a,1x,f12.4)' ) 't1stguess       [    °C] =',t1stguess-t00
+         write (unit=*,fmt='(a,1x,f12.4)' ) 't1stguess       [  degC] =',t1stguess-t00
          write (unit=*,fmt='(a)') ' '
          write (unit=*,fmt='(a)') ' Last iteration outcome (downdraft values).'
-         write (unit=*,fmt='(a,1x,f12.4)' ) 'tempa           [    °C] =',tempa-t00
-         write (unit=*,fmt='(a,1x,f12.4)' ) 'tempz           [    °C] =',tempz-t00
+         write (unit=*,fmt='(a,1x,f12.4)' ) 'tempa           [  degC] =',tempa-t00
+         write (unit=*,fmt='(a,1x,f12.4)' ) 'tempz           [  degC] =',tempz-t00
          write (unit=*,fmt='(a,1x,f12.4)' ) 'fun             [     K] =',fun
          write (unit=*,fmt='(a,1x,f12.4)' ) 'funa            [     K] =',funa
          write (unit=*,fmt='(a,1x,f12.4)' ) 'funz            [     K] =',funz
@@ -3407,34 +3435,26 @@ module therm_lib
    ! saturation mixing ratio [kg/kg], keeping pressure constant.  This is based on the     !
    ! ice-liquid potential temperature equation.                                            !
    !---------------------------------------------------------------------------------------!
-   real(kind=4) function dtempdrs(exner,thil,temp,rliq,rice,rconmin)
+   real(kind=4) function dtempdrs(temp,rliq,rice,rconmin)
       use rconstants , only : alvl3      & ! intent(in)
                             , alvi3      & ! intent(in)
                             , dcpvl      & ! intent(in)
                             , dcpvi      & ! intent(in)
                             , cpdry      & ! intent(in)
-                            , cpdryi     & ! intent(in)
-                            , ttripoli   & ! intent(in)
-                            , htripolii  ! ! intent(in)
+                            , cpdryi     ! ! intent(in)
 
       implicit none
       !----- Arguments --------------------------------------------------------------------!
-      real(kind=4), intent(in) :: exner   ! Exner function                        [ J/kg/K]
       real(kind=4), intent(in) :: thil    ! Ice-liquid potential temperature (*)  [      K]
       real(kind=4), intent(in) :: temp    ! Temperature                           [      K]
       real(kind=4), intent(in) :: rliq    ! Liquid mixing ratio                   [  kg/kg]
       real(kind=4), intent(in) :: rice    ! Ice mixing ratio                      [  kg/kg]
       real(kind=4), intent(in) :: rconmin ! Min. non-zero condensate mix. ratio   [  kg/kg]
-      !------------------------------------------------------------------------------------!
-      ! (*) Thil is not used in this formulation but it may be used should you opt by      !
-      !     other ways to compute theta_il, so don't remove this argument.                 !
-      !------------------------------------------------------------------------------------!
       !----- Local variables --------------------------------------------------------------!
       real(kind=4)             :: qq      ! Enthalpy -- latent heat               [   J/kg]
       real(kind=4)             :: qpt     ! d(qq)/dT * T                          [   J/kg]
       real(kind=4)             :: hh      ! Enthalpy -- sensible heat             [   J/kg]
       real(kind=4)             :: rcon    ! Condensate mixing ratio               [  kg/kg]
-      real(kind=4)             :: til     ! Ice-liquid temperature                [      K]
       !------------------------------------------------------------------------------------!
 
 
@@ -3453,15 +3473,10 @@ module therm_lib
 
          !---------------------------------------------------------------------------------!
          !     Find the enthalpy associated with latent heat and its derivative            !
-         ! correction.  This is dependent on the thermodynamics used.                      !
+         ! correction.                                                                     !
          !---------------------------------------------------------------------------------!
-         if (newthermo) then
-            qq  = alvl(temp) * rliq + alvi(temp) * rice
-            qpt = dcpvl * rliq + dcpvi * rice
-         else
-            qq  = alvl3 * rliq + alvi3 * rice
-            qpt = 0.0
-         end if
+         qq  = alvl(temp) * rliq + alvi(temp) * rice
+         qpt = dcpvl * rliq + dcpvi * rice
          !---------------------------------------------------------------------------------!
 
 
@@ -3470,21 +3485,8 @@ module therm_lib
          !---------------------------------------------------------------------------------!
 
 
-         !---------------------------------------------------------------------------------!
-         !    Decide how to compute, based on the thermodynamics method.                   !
-         !---------------------------------------------------------------------------------!
-         if (newthermo) then
-            dtempdrs = - temp * qq / ( rcon * (hh + qq - qpt) )
-         else
-            til   = cpdryi * thil * exner
-            !----- Decide how to compute, based on temperature. ---------------------------!
-            if (temp > ttripoli) then
-               dtempdrs = - til * qq / ( rcon * cpdry * (2.*temp-til))
-            else
-               dtempdrs = - til * qq * htripolii / rcon
-            end if
-            !------------------------------------------------------------------------------!
-         end if
+         !----- Find the temperature derivative wrt saturation mixing ratio. --------------!
+         dtempdrs = - temp * qq / ( rcon * (hh + qq - qpt) )
          !---------------------------------------------------------------------------------!
       end if
       !------------------------------------------------------------------------------------!
@@ -3770,7 +3772,7 @@ module therm_lib
       !----- Local variables for iterative method -----------------------------------------!
       real(kind=4)                       :: pvap      ! Sat. vapour pressure
       real(kind=4)                       :: theta     ! Potential temperature
-      real(kind=4)                       :: deriv     ! Function derivative 
+      real(kind=4)                       :: deriv     ! Function derivative
       real(kind=4)                       :: funnow    ! Function for which we seek a root.
       real(kind=4)                       :: funa      ! Smallest guess function
       real(kind=4)                       :: funz      ! Largest guess function
@@ -3785,8 +3787,6 @@ module therm_lib
       logical                            :: converged ! Convergence handle
       logical                            :: zside     ! Side checker for Regula Falsi
       logical                            :: frozen    ! Will use ice thermodynamics
-      !----- Local constants. -------------------------------------------------------------!
-      logical     , parameter            :: debug = .false.
       !------------------------------------------------------------------------------------!
 
 
@@ -3808,18 +3808,16 @@ module therm_lib
 
       !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
       !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
-      if (debug) then
-         write (unit=36,fmt='(a)') '------------------------------------------------------'
-         write (unit=36,fmt='(a,1x,i5,1x,3(a,1x,f11.4,1x))')                               &
-            'INPUT : it=',-1,'theiv=',theiv,'pres=',0.01*pres,'rtot=',rtot*1000.
-      end if
+      !write (unit=36,fmt='(a)') '----------------------------------------------------------'
+      !write (unit=36,fmt='(a,1x,i5,1x,3(a,1x,f11.4,1x))')                                  &
+      !   'INPUT : it=',-1,'theiv=',theiv,'pres=',0.01*pres,'rtot=',rtot*1000.
       !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
       !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
 
       !------------------------------------------------------------------------------------!
       !     The 1st. guess, we assume we are lucky and right at the LCL.                   !
       !------------------------------------------------------------------------------------!
-      pvap      = pres * rtot / (ep + rtot) 
+      pvap      = pres * rtot / (ep + rtot)
       tlclz     = tslif(pvap,frozen)
       theta     = tlclz * (es00 / pvap) ** rocp
       funnow    = thetaeivs(theta,tlclz,rtot,0.,0.)
@@ -3829,11 +3827,8 @@ module therm_lib
 
       !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
       !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
-      if (debug) then
-         write (unit=36,fmt='(a,1x,i5,1x,2(a,1x,f11.4,1x),2(a,1x,es11.4,1x))')             &
-             'NEWTON: it=',0,'tlclz=',tlclz-t00,'pvap=',0.01*pvap,'fun=',funnow            &
-            ,'deriv=',deriv
-      end if
+      !write (unit=36,fmt='(a,1x,i5,1x,2(a,1x,f11.4,1x),2(a,1x,es11.4,1x))')                &
+      !   'NEWTON: it=',0,'tlclz=',tlclz-t00,'pvap=',0.01*pvap,'fun=',funnow,'deriv=',deriv
       !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
       !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
 
@@ -3863,11 +3858,9 @@ module therm_lib
 
          !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
          !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
-         if (debug) then
-            write (unit=36,fmt='(a,1x,i5,1x,2(a,1x,f11.4,1x),2(a,1x,es11.4,1x))')          &
-               'NEWTON: it=',itn,'tlclz=',tlclz-t00,'pvap=',0.01*pvap,'fun=',funnow        &
-                      ,'deriv=',deriv
-         end if
+         !write (unit=36,fmt='(a,1x,i5,1x,2(a,1x,f11.4,1x),2(a,1x,es11.4,1x))')             &
+         !   'NEWTON: it=',itn,'tlclz=',tlclz-t00,'pvap=',0.01*pvap,'fun=',funnow           &
+         !          ,'deriv=',deriv
          !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
          !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
 
@@ -3903,11 +3896,9 @@ module therm_lib
 
             !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
             !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
-            if (debug) then
-               write (unit=36,fmt='(a,1x,i5,1x,3(a,1x,f11.4,1x),3(a,1x,es11.4,1x))')       &
-                  '2NGGSS: tt=',0,'tlclz=',tlclz-t00,'tlcla=',tlcla-t00,'pvap=',0.01*pvap  &
-                          ,'funa=',funa,'funz=',funnow,'delta=',delta
-            end if
+            !write (unit=36,fmt='(a,1x,i5,1x,3(a,1x,f11.4,1x),3(a,1x,es11.4,1x))')          &
+            !   '2NGGSS: tt=',0,'tlclz=',tlclz-t00,'tlcla=',tlcla-t00,'pvap=',0.01*pvap     &
+            !           ,'funa=',funa,'funz=',funnow,'delta=',delta
             !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
             !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
             zside = .false.
@@ -3920,11 +3911,9 @@ module therm_lib
 
                !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
                !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
-               if (debug) then
-                  write (unit=36,fmt='(a,1x,i5,1x,2(a,1x,f11.4,1x),2(a,1x,es11.4,1x))')    &
-                     '2NGGSS: tt=',itb,'tlclz=',tlclz-t00,'pvap=',0.01*pvap,'fun=',funz    &
-                             ,'delta=',delta
-               end if
+               !write (unit=36,fmt='(a,1x,i5,1x,2(a,1x,f11.4,1x),2(a,1x,es11.4,1x))')       &
+               !   '2NGGSS: tt=',itb,'tlclz=',tlclz-t00,'pvap=',0.01*pvap,'fun=',funz       &
+               !           ,'delta=',delta
                !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
                !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
 
@@ -3939,7 +3928,7 @@ module therm_lib
                write (unit=*,fmt='(2(a,1x,es14.7,1x))') 'theta =',theta ,'delta =',delta
                write (unit=*,fmt='(2(a,1x,es14.7,1x))') 'tlcla =',tlcla ,'funa  =',funa
                write (unit=*,fmt='(2(a,1x,es14.7,1x))') 'tlclz =',tlclz ,'funz  =',funz
-               call abort_run  ('Failed finding the second guess for regula falsi'         &
+               call fatal_error('Failed finding the second guess for regula falsi'         &
                                ,'thetaeiv2thil','therm_lib.f90')
             end if
          end if
@@ -3956,10 +3945,8 @@ module therm_lib
 
             !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
             !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
-            if (debug) then
-               write (unit=36,fmt='(a,1x,i5,1x,2(a,1x,f11.4,1x),1(a,1x,es11.4,1x))')       &
-                  'REGFAL: it=',itb,'tlcl =',tlcl -t00,'pvap=',0.01*pvap,'fun=',funnow
-            end if
+            !write (unit=36,fmt='(a,1x,i5,1x,2(a,1x,f11.4,1x),1(a,1x,es11.4,1x))')          &
+            !   'REGFAL: it=',itb,'tlcl =',tlcl -t00,'pvap=',0.01*pvap,'fun=',funnow
             !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
             !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
 
@@ -3970,7 +3957,7 @@ module therm_lib
             converged = abs(tlcl-tlcla) < toler * tlcl
             if (converged) then
                exit fpoloop
-            elseif (funnow*funa < 0.) then 
+            elseif (funnow*funa < 0.) then
                tlclz = tlcl
                funz  = funnow
                !----- If we are updating zside again, modify aside (Illinois method) ------!
@@ -3983,22 +3970,20 @@ module therm_lib
                !----- If we are updating aside again, modify zside (Illinois method) ------!
                if (.not.zside) funz = funz * 0.5
                !----- We just updated aside, setting zside to false -----------------------!
-               zside = .false. 
+               zside = .false.
             end if
          end do fpoloop
       end if
 
-      if (converged) then 
+      if (converged) then
          thetaeiv2thil  = theiv * exp (- alvl(tlcl) * rtot / (cpdry * tlcl) )
          !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
          !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
-         if (debug) then
-            write (unit=36,fmt='(a,1x,i5,1x,3(a,1x,f11.4,1x),2(a,1x,es11.4,1x))')          &
-               'ANSWER: itb=',itn,'tlcl=',tlcl-t00,'eslcl=',0.01*pvap                      &
-                      ,'thil=',thetaeiv2thil,'funa=',funa,'funz=',funz
-            write (unit=36,fmt='(a)') '---------------------------------------------------'
-            write (unit=36,fmt='(a)') ' '
-         end if
+         !write (unit=36,fmt='(a,1x,i5,1x,3(a,1x,f11.4,1x),2(a,1x,es11.4,1x))')             &
+         !   'ANSWER: itb=',itn,'tlcl=',tlcl-t00,'eslcl=',0.01*pvap                         &
+         !          ,'thil=',thetaeiv2thil,'funa=',funa,'funz=',funz
+         !write (unit=36,fmt='(a)') '-------------------------------------------------------'
+         !write (unit=36,fmt='(a)') ' '
          !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
          !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
       else
@@ -4014,9 +3999,9 @@ module therm_lib
          write (unit=*,fmt='(a,1x,i12)')    '    ITERATIONS       :',itb
          write (unit=*,fmt='(a,1x,f12.5)')  '    PVAP     [   hPa]:',pvap
          write (unit=*,fmt='(a,1x,f12.5)')  '    THETA    [     K]:',theta
-         write (unit=*,fmt='(a,1x,f12.5)')  '    TLCL     [    °C]:',tlcl-t00
-         write (unit=*,fmt='(a,1x,f12.5)')  '    TLCLA    [    °C]:',tlcla-t00
-         write (unit=*,fmt='(a,1x,f12.5)')  '    TLCLZ    [    °C]:',tlclz-t00
+         write (unit=*,fmt='(a,1x,f12.5)')  '    TLCL     [  degC]:',tlcl-t00
+         write (unit=*,fmt='(a,1x,f12.5)')  '    TLCLA    [  degC]:',tlcla-t00
+         write (unit=*,fmt='(a,1x,f12.5)')  '    TLCLZ    [  degC]:',tlclz-t00
          write (unit=*,fmt='(a,1x,es12.5)') '    FUNA     [     K]:',funa
          write (unit=*,fmt='(a,1x,es12.5)') '    FUNZ     [     K]:',funz
          write (unit=*,fmt='(a,1x,es12.5)') '    DERIV    [   ---]:',deriv
@@ -4025,11 +4010,12 @@ module therm_lib
          write (unit=*,fmt='(a)')           ' '
          write (unit=*,fmt='(60a1)')        ('-',ii=1,60)
 
-         call abort_run  ('TLCL didn''t converge, qgave up!'                               &
+         call fatal_error('TLCL didn''t converge, qgave up!'                               &
                          ,'thetaeiv2thil','therm_lib.f90')
       end if
 
       return
+
    end function thetaeiv2thil
    !=======================================================================================!
    !=======================================================================================!
@@ -4099,7 +4085,7 @@ module therm_lib
 
 
       !------------------------------------------------------------------------------------!
-      !     The 1st. guess, no idea, guess 0°C.                                            !
+      !     The 1st. guess, no idea, guess 0 degC.                                         !
       !------------------------------------------------------------------------------------!
       tempz     = t00
       theta     = tempz * exnernormi
@@ -4555,13 +4541,13 @@ module therm_lib
          write (unit=*,fmt='(a)') ' '
          write (unit=*,fmt='(a,1x,f12.4)' ) 'theta_il        [     K] =',thil
          write (unit=*,fmt='(a,1x,f12.4)' ) 'Pressure        [   hPa] =',0.01*pres
-         write (unit=*,fmt='(a,1x,f12.4)' ) 'Temperature     [    °C] =',temp-t00
+         write (unit=*,fmt='(a,1x,f12.4)' ) 'Temperature     [  degC] =',temp-t00
          write (unit=*,fmt='(a,1x,f12.4)' ) 'rtot            [  g/kg] =',1000.*rtot
          write (unit=*,fmt='(a,1x,f12.4)' ) 'rvap            [  g/kg] =',1000.*rvap
          write (unit=*,fmt='(a)') ' '
          write (unit=*,fmt='(a)') ' Last iteration outcome.'
-         write (unit=*,fmt='(a,1x,f12.4)' ) 'tlcla           [    °C] =',tlcla-t00
-         write (unit=*,fmt='(a,1x,f12.4)' ) 'tlclz           [    °C] =',tlclz-t00
+         write (unit=*,fmt='(a,1x,f12.4)' ) 'tlcla           [  degC] =',tlcla-t00
+         write (unit=*,fmt='(a,1x,f12.4)' ) 'tlclz           [  degC] =',tlclz-t00
          write (unit=*,fmt='(a,1x,f12.4)' ) 'fun             [     K] =',funnow
          write (unit=*,fmt='(a,1x,f12.4)' ) 'funa            [     K] =',funa
          write (unit=*,fmt='(a,1x,f12.4)' ) 'funz            [     K] =',funz
@@ -4569,7 +4555,7 @@ module therm_lib
          write (unit=*,fmt='(a,1x,es12.4)') 'toler           [  ----] =',toler
          write (unit=*,fmt='(a,1x,es12.4)') 'error           [  ----] ='                   &
                                                             ,abs(tlclz-tlcla)/tlclz
-         write (unit=*,fmt='(a,1x,f12.4)' ) 'tlcl            [    °C] =',tlcl
+         write (unit=*,fmt='(a,1x,f12.4)' ) 'tlcl            [  degC] =',tlcl
          call abort_run  ('TLCL didn''t converge, gave up!','lcl_il','therm_lib.f90')
       end if
       return
@@ -4618,7 +4604,7 @@ module therm_lib
       !----- Local variables --------------------------------------------------------------!
       real(kind=4)                :: tempa     ! Lower bound for regula falsi iteration
       real(kind=4)                :: tempz     ! Upper bound for regula falsi iteration
-      real(kind=4)                :: t1stguess ! Book keeping temperature 1st guess 
+      real(kind=4)                :: t1stguess ! Book keeping temperature 1st guess
       real(kind=4)                :: fun1st    ! Book keeping 1st guess function
       real(kind=4)                :: funa      ! Function evaluation at tempa
       real(kind=4)                :: funz      ! Function evaluation at tempz
@@ -4632,8 +4618,6 @@ module therm_lib
       logical                     :: zside     ! Aux. Flag, for two purposes:
                                                ! 1. Found a 2nd guess for regula falsi.
                                                ! 2. I retained the "zside" (T/F)
-      !----- Local constants. -------------------------------------------------------------!
-      logical     , parameter     :: debug = .false.
       !------------------------------------------------------------------------------------!
 
       t1stguess = temp
@@ -4683,12 +4667,7 @@ module therm_lib
 
       !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
       !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
-      if (debug) then
-         write (unit=46,fmt='(a)') '------------------------------------------------------'
-         write (unit=46,fmt='(a,1x,i5,1x,5(a,1x,f11.4,1x))')                               &
-            'INPUT: it=',-1,'thil=',thil,'exner=',exner,'press=',0.01*pres                 &
-           ,'rtot=',1000.*rtot,'t1st=',temp-t00
-      end if
+      !write (unit=46,fmt='(a)') '--------------------------------------------------------'
       !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
       !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
 
@@ -4700,18 +4679,16 @@ module therm_lib
       !------------------------------------------------------------------------------------!
       funnow = theta_iceliq(exner,tempz,rliq,rice)
       !----- Updating the derivative. -----------------------------------------------------!
-      deriv  = dthetail_dt(.false.,funnow,exner,pres,tempz,rliq,rice)
+      deriv  = dthetail_dt(.false.,funnow,pres,tempz,rliq,rice)
       funnow = funnow - thil
       fun1st = funnow
       !------------------------------------------------------------------------------------!
 
       !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
       !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
-      if (debug) then
-         write (unit=46,fmt='(a,1x,i5,1x,6(a,1x,f11.4,1x),a,1x,es11.4,1x)')                &
-            'NEWTON: it=',0,'temp=',tempz-t00,'rsat=',1000.*rsat,'rliq=',1000.*rliq        &
-           ,'rice=',1000.*rice,'rvap=',1000.*rvap,'fun=',funnow,'deriv=',deriv
-      end if
+      !write (unit=46,fmt='(a,1x,i5,1x,6(a,1x,f11.4,1x),a,1x,es11.4,1x)')                  &
+      !   'NEWTON: it=',0,'temp=',tempz-t00,'rsat=',1000.*rsat,'rliq=',1000.*rliq          &
+      !  ,'rice=',1000.*rice,'rvap=',1000.*rvap,'fun=',funnow,'deriv=',deriv
       !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
       !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
 
@@ -4749,19 +4726,17 @@ module therm_lib
          !----- Updating the function -----------------------------------------------------!
          funnow = theta_iceliq(exner,tempz,rliq,rice)
          !----- Updating the derivative. --------------------------------------------------!
-         deriv  = dthetail_dt(.false.,funnow,exner,pres,tempz,rliq,rice)
+         deriv  = dthetail_dt(.false.,funnow,pres,tempz,rliq,rice)
          funnow = funnow - thil
 
          !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
          !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
-         if (debug) then
-            write (unit=46,fmt='(a,1x,i5,1x,6(a,1x,f11.4,1x),a,1x,es11.4,1x)')             &
-               'NEWTON: it=',itn,'temp=',tempz-t00,'rsat=',1000.*rsat,'rliq=',1000.*rliq   &
-              ,'rice=',1000.*rice,'rvap=',1000.*rvap,'fun=',funnow,'deriv=',deriv
-         end if
+         !write (unit=46,fmt='(a,1x,i5,1x,6(a,1x,f11.4,1x),a,1x,es11.4,1x)')               &
+         !   'NEWTON: it=',itn,'temp=',tempz-t00,'rsat=',1000.*rsat,'rliq=',1000.*rliq     &
+         !  ,'rice=',1000.*rice,'rvap=',1000.*rvap,'fun=',funnow,'deriv=',deriv
          !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
          !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
-         
+
          converged = abs(tempa-tempz) < toler*tempz
          !---------------------------------------------------------------------------------!
          !   Convergence. The temperature will be the mid-point between tempa and tempz.   !
@@ -4815,14 +4790,14 @@ module therm_lib
          !---------------------------------------------------------------------------------!
          else
             if (abs(funnow-funa) < 100.*toler*tempa) then
-               delta = 0.5
+               delta = 100.*toler*tempa
             else
-               delta = max(abs(funa)*abs((tempz-tempa)/(funnow-funa)),0.5)
+               delta = max(abs(funa)*abs((tempz-tempa)/(funnow-funa)),100.*toler*tempa)
             end if
             tempz = tempa + delta
             funz  = funa
             !----- Just to enter at least once. The 1st time tempz=tempa-2*delta ----------!
-            zside = .false. 
+            zside = .false.
             zgssloop: do itb=1,maxfpo
                 tempz = tempa + real((-1)**itb * (itb+3)/2) * delta
                 rsat   = max(toodry,rslif(pres,tempz))
@@ -4856,7 +4831,7 @@ module therm_lib
                write (unit=*,fmt='(a,1x,f12.5)')  '    DELTA    [     K]:',delta
                write (unit=*,fmt='(60a1)')        ('-',ii=1,60)
 
-               call abort_run  ('Failed finding the second guess for regula falsi'         &
+               call fatal_error('Failed finding the second guess for regula falsi'         &
                                ,'thil2tqall','therm_lib.f90')
             end if
          end if
@@ -4892,12 +4867,10 @@ module therm_lib
 
             !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
             !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
-            if (debug) then
-               write (unit=46,fmt='(a,1x,i5,1x,10(a,1x,f11.4,1x))')                        &
-                  'REGFAL: it=',itb,'temp=',temp-t00,'tempa=',tempa-t00,'tempz=',tempz-t00 &
-                 ,'rsat=',1000.*rsat,'rliq=',1000.*rliq,'rice=',1000.*rice                 &
-                 ,'rvap=',1000.*rvap,'fun=',funnow,'funa=',funa,'funz=',funz
-            end if
+            !write (unit=46,fmt='(a,1x,i5,1x,10(a,1x,f11.4,1x))')                          &
+            !   'REGFAL: it=',itb,'temp=',temp-t00,'tempa=',tempa-t00,'tempz=',tempz-t00   &
+            !  ,'rsat=',1000.*rsat,'rliq=',1000.*rliq,'rice=',1000.*rice                   &
+            !  ,'rvap=',1000.*rvap,'fun=',funnow,'funa=',funa,'funz=',funz
             !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
             !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
 
@@ -4905,11 +4878,11 @@ module therm_lib
             !    Checking for convergence or lucky guess. If it did, return, we found the  !
             ! solution. Otherwise, constrain the guesses.                                  !
             !------------------------------------------------------------------------------!
-            converged = abs(temp-tempa) < toler*temp .and. abs(temp-tempz) < toler*temp 
+            converged = abs(temp-tempa) < toler*temp .and. abs(temp-tempz) < toler*temp
             if (funnow == 0. .or. converged) then
                converged = .true.
                exit fpoloop
-            elseif (funnow*funa < 0.) then 
+            elseif (funnow*funa < 0.) then
                tempz = temp
                funz  = funnow
                !----- If we are updating zside again, modify aside (Illinois method) ------!
@@ -4973,12 +4946,12 @@ module therm_lib
          write (unit=*,fmt='(a)')           ' '
          write (unit=*,fmt='(a)')           ' -> Output: '
          write (unit=*,fmt='(a,1x,i12)')    '    ITERATIONS       :',itb
-         write (unit=*,fmt='(a,1x,f12.5)')  '    TEMP     [    °C]:',temp-t00
+         write (unit=*,fmt='(a,1x,f12.5)')  '    TEMP     [  degC]:',temp-t00
          write (unit=*,fmt='(a,1x,f12.5)')  '    RVAP     [  g/kg]:',1000.*rvap
          write (unit=*,fmt='(a,1x,f12.5)')  '    RLIQ     [  g/kg]:',1000.*rliq
          write (unit=*,fmt='(a,1x,f12.5)')  '    RICE     [  g/kg]:',1000.*rice
-         write (unit=*,fmt='(a,1x,f12.5)')  '    TEMPA    [    °C]:',tempa-t00
-         write (unit=*,fmt='(a,1x,f12.5)')  '    TEMPZ    [    °C]:',tempz-t00
+         write (unit=*,fmt='(a,1x,f12.5)')  '    TEMPA    [  degC]:',tempa-t00
+         write (unit=*,fmt='(a,1x,f12.5)')  '    TEMPZ    [  degC]:',tempz-t00
          write (unit=*,fmt='(a,1x,es12.5)') '    FUNA     [     K]:',funnow
          write (unit=*,fmt='(a,1x,es12.5)') '    FUNZ     [     K]:',funnow
          write (unit=*,fmt='(a,1x,es12.5)') '    DERIV    [   ---]:',deriv
@@ -4986,20 +4959,18 @@ module therm_lib
          write (unit=*,fmt='(a,1x,es12.5)') '    ERR_Z    [   ---]:',abs(temp-tempz)/temp
          write (unit=*,fmt='(a)')           ' '
          write (unit=*,fmt='(60a1)')        ('-',ii=1,60)
-         call abort_run  ('Failed finding equilibrium, I gave up!','thil2tqall'            &
+         call fatal_error('Failed finding equilibrium, I gave up!','thil2tqall'            &
                          ,'therm_lib.f90')
       end if
       !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
       !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
-      if (debug) then
-         write (unit=46,fmt='(a,1x,i5,1x,6(a,1x,f11.4,1x))')                               &
-            'ANSWER: it=',itb,'temp=',temp-t00,'rsat=',1000.*rsat,'rliq=',1000.*rliq       &
-                             ,'rice=',1000.*rice,'rvap=',1000.*rvap,'funf=',funnow
-         write (unit=46,fmt='(a)') '------------------------------------------------------'
-         write (unit=46,fmt='(a)') ''
-      end if
+      !write (unit=46,fmt='(a,1x,i5,1x,6(a,1x,f11.4,1x))')                                 &
+      !   'ANSWER: it=',itb,'funf=',funnow,'temp=',temp-t00                                &
+      !  ,'rsat=',1000.*rsat,'rliq=',1000.*rliq,'rice=',1000.*rice,'rvap=',1000.*rvap
+      !write (unit=46,fmt='(a)') '---------------------------------------------------------!
       !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
       !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
+
       return
    end subroutine thil2tqall
    !=======================================================================================!
@@ -5271,7 +5242,7 @@ module therm_lib
       !----- Arguments --------------------------------------------------------------------!
       real(kind=4), intent(in)  :: uint     ! Internal energy                     [   J/kg]
       real(kind=4), intent(out) :: temp     ! Temperature                         [      K]
-      real(kind=4), intent(out) :: fliq  ! Liquid Fraction (0-1)               [    ---]
+      real(kind=4), intent(out) :: fliq     ! Liquid Fraction (0-1)               [    ---]
       !------------------------------------------------------------------------------------!
 
 
@@ -5310,8 +5281,8 @@ module therm_lib
    !=======================================================================================!
    !=======================================================================================!
    !    This subroutine computes the temperature (Kelvin) and liquid fraction from         !
-   ! extensive internal energy (J/m² or J/m³), water mass (kg/m² or kg/m³), and heat       !
-   ! capacity (J/m²/K or J/m³/K).                                                          !
+   ! extensive internal energy (J/m2 or J/m3), water mass (kg/m2 or kg/m3), and heat       !
+   ! capacity (J/m2/K or J/m3/K).                                                          !
    !---------------------------------------------------------------------------------------!
    subroutine uextcm2tl(uext,wmass,dryhcap,temp,fliq)
       use rconstants , only : cliqi          & ! intent(in)
@@ -5324,19 +5295,19 @@ module therm_lib
                             , tsupercool_liq ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
-      real(kind=4), intent(in)  :: uext    ! Extensive internal energy [  J/m²] or [  J/m³]
-      real(kind=4), intent(in)  :: wmass   ! Water mass                [ kg/m²] or [ kg/m³]
-      real(kind=4), intent(in)  :: dryhcap ! Heat cap. of "dry" part   [J/m²/K] or [J/m³/K]
+      real(kind=4), intent(in)  :: uext    ! Extensive internal energy [  J/m2] or [  J/m3]
+      real(kind=4), intent(in)  :: wmass   ! Water mass                [ kg/m2] or [ kg/m3]
+      real(kind=4), intent(in)  :: dryhcap ! Heat cap. of "dry" part   [J/m2/K] or [J/m3/K]
       real(kind=4), intent(out) :: temp    ! Temperature                           [     K]
       real(kind=4), intent(out) :: fliq    ! Liquid fraction (0-1)                 [   ---]
       !----- Local variable ---------------------------------------------------------------!
-      real(kind=4)              :: uefroz  ! qw of ice at triple pt.   [  J/m²] or [  J/m³] 
-      real(kind=4)              :: uemelt  ! qw of liq. at triple pt.  [  J/m²] or [  J/m³]
+      real(kind=4)              :: uefroz  ! qw of ice at triple pt.   [  J/m2] or [  J/m3]
+      real(kind=4)              :: uemelt  ! qw of liq. at triple pt.  [  J/m2] or [  J/m3]
       !------------------------------------------------------------------------------------!
 
 
 
-      !----- Convert melting heat to J/m² or J/m³ -----------------------------------------!
+      !----- Convert melting heat to J/m2 or J/m3 -----------------------------------------!
       uefroz = (dryhcap + wmass * cice) * t3ple
       uemelt = uefroz   + wmass * alli
       !------------------------------------------------------------------------------------!

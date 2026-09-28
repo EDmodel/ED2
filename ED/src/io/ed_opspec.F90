@@ -1175,6 +1175,7 @@ subroutine ed_opspec_misc
                                     , ied_init_mode                & ! intent(in)
                                     , ivegt_dynamics               & ! intent(in)
                                     , ibigleaf                     & ! intent(in)
+                                    , esat_method                  & ! intent(in)
                                     , integration_scheme           & ! intent(in)
                                     , nsub_euler                   & ! intent(in)
                                     , iallom                       & ! intent(in)
@@ -1674,6 +1675,14 @@ end do
    elseif (ibigleaf == 1 .and. ( crown_mod /= 0 .or. abs(maxpatch) == 1 )) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
          'CROWN_MOD must be 0 and MAXPATCH cannot be -1 or 1 when IBIGLEAF is set to 1...'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+   end if
+
+   if (esat_method < 0 .or. esat_method > 2) then
+      write (reason,fmt='(a,1x,i4,a)')                                                     &
+         'Invalid ESAT_METHOD, it must be between 0 and 2. Yours is set to'                &
+        ,esat_method,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if

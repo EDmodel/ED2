@@ -165,6 +165,29 @@ module ed_misc_coms
 
 
 
+
+   !---------------------------------------------------------------------------------------!
+   ! ESAT_METHOD -- Which method to use for computing vapour pressure at saturation.       !
+   !                0.  (Deprecated) Original ED2 formulation, based on Flatau et al.      !
+   !                    (1992). This is not recommended because the function is not        !
+   !                    continuous at T = 0 degC.                                          !
+   !                1.  (ED-2.2 default) Based on Murphy and Koop (2005). This is a fairly !
+   !                    robust approach and it is continuous at the triple point. The main !
+   !                    downside is that it makes the estimate slightly inconsistent with  !
+   !                    the second law of thermodynamics.                                  !
+   !                2.  (ED-2.2 alternative) Based on Ambaum (2020). This is intended to   !
+   !                    become the default. It is accurate, and uses the same assumptions  !
+   !                    as the definition of enthalpy and latent heat of vaporisation and  !
+   !                    sublimation, so it is consistent with the second law of            !
+   !                    thermodynamics. The only minor disadvantage is that the function   !
+   !                    is continuous but not differentiable at the fusion point.          !
+   !---------------------------------------------------------------------------------------!
+   integer :: esat_method
+   !---------------------------------------------------------------------------------------!
+
+
+
+
    !---------------------------------------------------------------------------------------!
    ! INTEGRATION_SCHEME -- The biophysics integration scheme.                              !
    !                       0.  Euler step.  The fastest, but it doesn't estimate           !

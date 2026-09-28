@@ -1063,7 +1063,8 @@ subroutine read_nl(filename)
                                  , maxubtp                 ! ! intent(out)
    use mem_basic          , only : co2_on                  & ! intent(out)
                                  , co2con                  & ! intent(out)
-                                 , ico2                    ! ! intent(out)
+                                 , ico2                    & ! intent(out)
+                                 , esat_method             ! ! intent(out)
    use domain_decomp      , only : domain_fname            ! ! intent(out)
    use therm_lib          , only : vapour_on               & ! intent(out)
                                  , cloud_on                & ! intent(out)
@@ -1141,15 +1142,15 @@ subroutine read_nl(filename)
    namelist /MODEL_OPTIONS/       naddsc,icorflg,iadvec,iexev,imassflx,ibnd,jbnd,cphas     &
                                  ,lsflg,nfpt,distim,iswrtyp,ilwrtyp,icumfdbk,radfrq,lonrad &
                                  ,npatch,nvegpat,min_patch_area,isfcl,dtleaf,ndtveg,istar  &
-                                 ,igrndvap,ubmin,ugbmin,ustmin,gamm,gamh,tprandtl,ribmax   &
-                                 ,leaf_maxwhc,ico2,co2con,nvgcon,pctlcon,nslcon,isoilcol   &
-                                 ,drtcon,zrough,albedo,seatmp,dthcon,soil_moist            &
-                                 ,soil_moist_fail,usdata_in,usmodel_in,slz,slmstr,stgoff   &
-                                 ,isoilbc,sldrain,ipercol,runoff_time,if_urban_canopy      &
-                                 ,idiffk,ibruvais,ibotflx,ihorgrad,csx,csz,xkhkm,zkhkm     &
-                                 ,nna,nnb,nnc,akmin,akmax,hgtmin,hgtmax,level,icloud,irain &
-                                 ,ipris,isnow,iaggr,igraup,ihail,cparm,rparm,pparm,sparm   &
-                                 ,aparm,gparm,hparm,gnu
+                                 ,esat_method,igrndvap,ubmin,ugbmin,ustmin,gamm,gamh       &
+                                 ,tprandtl,ribmax,leaf_maxwhc,ico2,co2con,nvgcon,pctlcon   &
+                                 ,nslcon,isoilcol,drtcon,zrough,albedo,seatmp,dthcon       &
+                                 ,soil_moist,soil_moist_fail,usdata_in,usmodel_in,slz      &
+                                 ,slmstr,stgoff,isoilbc,sldrain,ipercol,runoff_time        &
+                                 ,if_urban_canopy,idiffk,ibruvais,ibotflx,ihorgrad,csx,csz &
+                                 ,xkhkm,zkhkm,nna,nnb,nnc,akmin,akmax,hgtmin,hgtmax,level  &
+                                 ,icloud,irain,ipris,isnow,iaggr,igraup,ihail,cparm,rparm  &
+                                 ,pparm,sparm,aparm,gparm,hparm,gnu
 
    namelist /MODEL_SOUND/         ipsflg,itsflg,irtsflg,iusflg,hs,ps,ts,rts,us,vs,co2s
 
@@ -1811,6 +1812,7 @@ subroutine read_nl(filename)
       write (unit=*,fmt=*) ' dtleaf          =',dtleaf
       write (unit=*,fmt=*) ' ndtveg          =',ndtveg
       write (unit=*,fmt=*) ' istar           =',istar
+      write (unit=*,fmt=*) ' esat_method     =',esat_method
       write (unit=*,fmt=*) ' igrndvap        =',igrndvap
       write (unit=*,fmt=*) ' ubmin           =',ubmin
       write (unit=*,fmt=*) ' ugbmin          =',ugbmin

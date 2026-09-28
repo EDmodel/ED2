@@ -143,6 +143,10 @@ Module consts_coms
                         , b_uiliqt3        => uiliqt3        & ! intent(in)
                         , b_dcpvl          => dcpvl          & ! intent(in)
                         , b_dcpvi          => dcpvi          & ! intent(in)
+                        , b_dcplorv        => dcplorv        & ! intent(in)
+                        , b_dcpiorv        => dcpiorv        & ! intent(in)
+                        , b_lvorvot3       => lvorvot3       & ! intent(in)
+                        , b_lsorvot3       => lsorvot3       & ! intent(in)
                         , b_del_alvl3      => del_alvl3      & ! intent(in)
                         , b_del_alvi3      => del_alvi3      & ! intent(in)
                         , b_tsupercool_liq => tsupercool_liq & ! intent(in)
@@ -318,6 +322,10 @@ Module consts_coms
    real        , parameter :: uiliqt3        = b_uiliqt3
    real        , parameter :: dcpvl          = b_dcpvl
    real        , parameter :: dcpvi          = b_dcpvi
+   real        , parameter :: dcplorv        = b_dcplorv
+   real        , parameter :: dcpiorv        = b_dcpiorv
+   real        , parameter :: lvorvot3       = b_lvorvot3
+   real        , parameter :: lsorvot3       = b_lsorvot3
    real        , parameter :: del_alvl3      = b_del_alvl3
    real        , parameter :: del_alvi3      = b_del_alvi3
    real        , parameter :: tsupercool_liq = b_tsupercool_liq
@@ -396,7 +404,7 @@ Module consts_coms
    !---------------------------------------------------------------------------------------!
    real, parameter :: stefan    = 5.6696e-8        ! Stefan-Boltzmann constant [   W/m2/K4]
    real, parameter :: boltzmann = 1.3806503e-23    ! Boltzmann constant        [m2 kg/s2/K]
-   real, parameter :: t00       = 273.15           ! 0 degC                    [      degC]
+   real, parameter :: t00       = 273.15           ! 0 degC                    [         K]
    real, parameter :: rmol      = 8.314510         ! Molar gas constant        [   J/mol/K]
    real, parameter :: volmol    = 0.022710980      ! Molar volume at STP       [        m3]
    real, parameter :: volmoll   = volmol*1e3       ! Molar volume at STP       [         L]
@@ -566,6 +574,20 @@ Module consts_coms
    real, parameter :: dcpvi     = cph2o - cice   ! difference of sp. heat       [   J/kg/K]
    !---------------------------------------------------------------------------------------!
 
+
+   !---------------------------------------------------------------------------------------!
+   !     These derived variables are used for computing vapour pressure at saturation when !
+   ! using the method proposed by Ambaum (2020).                                           !
+   !                                                                                       !
+   ! Ambaum, M. H. P., 2020: Accurate, simple equation for saturated vapour pressure over  !
+   !    water and ice. Quart. J. Royal Meteorol. Soc., 146 (733), 4252-4258,               !
+   !    doi:10.1002/qj.3899.                                                               !
+   !---------------------------------------------------------------------------------------!
+   real, parameter :: dcplorv  = (cliq - cph2o) / rh2o  ! (cl - cp) / Rv        [   ------]
+   real, parameter :: dcpiorv  = (cice - cph2o) / rh2o  ! (ci - cp) / Rv        [   ------]
+   real, parameter :: lvorvot3 = alvl3 / (rh2o * t3ple) ! Lv0 / ( Rv * T3)      [   ------]
+   real, parameter :: lsorvot3 = alvi3 / (rh2o * t3ple) ! Ls0 / ( Rv * T3)      [   ------]
+   !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
    !     The following variables are useful when defining the derivatives of theta_il.     !
@@ -782,6 +804,10 @@ Module consts_coms
    real(kind=8), parameter :: uiliqt38        = dble(uiliqt3       )
    real(kind=8), parameter :: dcpvl8          = dble(dcpvl         )
    real(kind=8), parameter :: dcpvi8          = dble(dcpvi         )
+   real(kind=8), parameter :: dcplorv8        = dble(dcplorv       )
+   real(kind=8), parameter :: dcpiorv8        = dble(dcpiorv       )
+   real(kind=8), parameter :: lvorvot38       = dble(lvorvot3      )
+   real(kind=8), parameter :: lsorvot38       = dble(lsorvot3      )
    real(kind=8), parameter :: del_alvl38      = dble(del_alvl3     )
    real(kind=8), parameter :: del_alvi38      = dble(del_alvi3     )
    real(kind=8), parameter :: tsupercool_liq8 = dble(tsupercool_liq)

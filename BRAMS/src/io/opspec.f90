@@ -1136,6 +1136,13 @@ subroutine opspec3
      ifaterr=ifaterr+1
   end if
   
+  ! Check whether the choice of vapour pressure formula is valid. 
+  if (esat_method < 0 .or. esat_method > 2) then
+     print *, 'fatal - ESAT_METHOD must be between 0 and 2, and yours is set to '          &
+            ,esat_method,'...'
+     ifaterr=ifaterr+1
+  end if
+  
   ! Check whether the ground vapour method scheme the user chose is fine or not. 
   if (isfcl /= 0 .and. (igrndvap < 0 .or. igrndvap > 5)) then
      print *, 'fatal - IGRNDVAP must be between 0 and 5, and yours is set to '            &
