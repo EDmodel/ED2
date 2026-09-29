@@ -15,7 +15,6 @@ module therm_lib8
                        , maxfpo4    => maxfpo    & ! intent(in)
                        , maxit4     => maxit     & ! intent(in)
                        , maxlev4    => maxlev    & ! intent(in)
-                       , newthermo4 => newthermo & ! intent(in)
                        , fthva_rp4  => fthva_rp  ! ! intent(in)
 
    !---------------------------------------------------------------------------------------!
@@ -34,8 +33,6 @@ module therm_lib8
 
    integer, parameter ::   maxlev = maxlev4         ! Maximum # of levels for adaptive     
                                                     !   quadrature methods.    
-
-   logical, parameter ::   newthermo = newthermo4   ! Use new thermodynamics [T|F]
 
    !---------------------------------------------------------------------------------------!
    !   This is the "level" variable, that used to be in micphys. Since it affects more the !
@@ -135,10 +132,18 @@ module therm_lib8
    !=======================================================================================!
    !=======================================================================================!
    !     This function calculates the liquid saturation vapour pressure as a function of   !
-   ! Kelvin temperature. This expression came from MK05, equation (10).                    !
+   ! Kelvin temperature.                                                                   !
    !---------------------------------------------------------------------------------------!
    real(kind=8) function eslf8(temp,l1funout,l2funout,ttfunout)
-      use rconstants , only : t008 ! ! intent(in)
+      use rconstants  , only : t008        & ! intent(in)
+                             , es3ple8     & ! intent(in)
+                             , t3ple8      & ! intent(in)
+                             , dcplorv8    & ! intent(in)
+                             , lvorvot38   & ! intent(in)
+                             , rh2o8       & ! intent(in)
+                             , lnexp_min8  & ! intent(in)
+                             , lnexp_max8  ! ! intent(in)
+      use mem_basic   , only : esat_method ! ! intent(in)
       implicit none
       !----- Required arguments. ----------------------------------------------------------!
       real(kind=8), intent(in)            :: temp     ! Temperature                [     K]
@@ -147,39 +152,66 @@ module therm_lib8
       real(kind=8), intent(out), optional :: ttfunout ! Interpolation function
       real(kind=8), intent(out), optional :: l2funout ! Function for low temperatures
       !----- Local variables. -------------------------------------------------------------!
-      real(kind=8)                        :: l1fun    ! 
-      real(kind=8)                        :: ttfun    ! 
-      real(kind=8)                        :: l2fun    ! 
-      real(kind=8)                        :: x        ! 
+      real(kind=8)                        :: l1fun    !
+      real(kind=8)                        :: ttfun    !
+      real(kind=8)                        :: l2fun    !
+      real(kind=8)                        :: x        !
       !------------------------------------------------------------------------------------!
 
 
 
       !------------------------------------------------------------------------------------!
-      !     Choose between the old and the new thermodynamics.                             !
+      !     Choose the thermodynamic approach.                                             !
       !------------------------------------------------------------------------------------!
-      if (newthermo) then
-         !----- Updated method, using MK05 ------------------------------------------------!
-         l1fun = l01_108(0) + l01_108(1)/temp + l01_108(2)*log(temp) + l01_108(3) * temp
-         l2fun = l02_108(0) + l02_108(1)/temp + l02_108(2)*log(temp) + l02_108(3) * temp
-         ttfun = tanh(ttt_108(1) * (temp - ttt_108(2)))
-         eslf8 = exp(l1fun + ttfun*l2fun)
-         !---------------------------------------------------------------------------------!
-
-         if (present(l1funout)) l1funout = l1fun
-         if (present(l2funout)) l2funout = l2fun
-         if (present(ttfunout)) ttfunout = ttfun
-      else
+      select case (esat_method)
+      case (0)
          !----- Original method, using polynomial fit (FWC92) -----------------------------!
          x     = max(-8.0d1,temp-t008)
          eslf8 = cll8(0) + x * (cll8(1) + x * (cll8(2) + x * (cll8(3) + x * (cll8(4)       &
                          + x * (cll8(5) + x * (cll8(6) + x * (cll8(7) + x * cll8(8)) ))))))
          !---------------------------------------------------------------------------------!
 
+         !----- Dummy values for optional functions in case they are requested. -----------!
          if (present(l1funout)) l1funout = eslf8
          if (present(l2funout)) l2funout = eslf8
          if (present(ttfunout)) ttfunout = eslf8
-      end if
+         !---------------------------------------------------------------------------------!
+      case (1)
+         !---------------------------------------------------------------------------------!
+         !   ED-2.2 method, use MK05 (equation 10).                                        !
+         !---------------------------------------------------------------------------------!
+         l1fun = l01_108(0) + l01_108(1)/temp + l01_108(2)*log(temp) + l01_108(3) * temp
+         l2fun = l02_108(0) + l02_108(1)/temp + l02_108(2)*log(temp) + l02_108(3) * temp
+         ttfun = tanh(ttt_108(1) * (temp - ttt_108(2)))
+         eslf8 = exp(l1fun + ttfun*l2fun)
+         !---------------------------------------------------------------------------------!
+
+         !----- These are useful for the derivative calculation. --------------------------!
+         if (present(l1funout)) l1funout = l1fun
+         if (present(l2funout)) l2funout = l2fun
+         if (present(ttfunout)) ttfunout = ttfun
+         !---------------------------------------------------------------------------------!
+      case (2)
+         !---------------------------------------------------------------------------------!
+         !   Use A20's method, which is thermodynamically more consistent with the other   !
+         ! ED-2.2 assumptions.                                                             !
+         !                                                                                 !
+         ! Ambaum, M. H. P., 2020: Accurate, simple equation for saturated vapour pressure !
+         !    over water and ice. Quart. J. Royal Meteorol. Soc., 146 (733), 4252-4258,    !
+         !    doi:10.1002/qj.3899 (hereafter A20).                                         !
+         !---------------------------------------------------------------------------------!
+         l1fun = min(lnexp_max8,max(lnexp_min8, lvorvot38 - alvl8(temp) / (rh2o8 * temp)))
+         eslf8 = es3ple8 * (t3ple8/temp) ** dcplorv8 * exp(l1fun)
+         !---------------------------------------------------------------------------------!
+
+
+         !----- Dummy values for optional functions in case they are requested. -----------!
+         if (present(l1funout)) l1funout = eslf8
+         if (present(l2funout)) l2funout = eslf8
+         if (present(ttfunout)) ttfunout = eslf8
+         !---------------------------------------------------------------------------------!
+      end select
+      !------------------------------------------------------------------------------------!
 
       return
    end function eslf8
@@ -194,10 +226,18 @@ module therm_lib8
    !=======================================================================================!
    !=======================================================================================!
    !     This function calculates the ice saturation vapour pressure as a function of      !
-   ! Kelvin temperature, based on MK05 equation (7).                                       !
+   ! Kelvin temperature.                                                                   !
    !---------------------------------------------------------------------------------------!
    real(kind=8) function esif8(temp,iifunout)
-      use rconstants , only : t008 ! ! intent(in)
+      use rconstants  , only : t008        & ! intent(in)
+                             , es3ple8     & ! intent(in)
+                             , t3ple8      & ! intent(in)
+                             , dcpiorv8    & ! intent(in)
+                             , lsorvot38   & ! intent(in)
+                             , rh2o8       & ! intent(in)
+                             , lnexp_min8  & ! intent(in)
+                             , lnexp_max8  ! ! intent(in)
+      use mem_basic   , only : esat_method ! ! intent(in)
       implicit none
       !----- Required arguments. ----------------------------------------------------------!
       real(kind=8), intent(in)            :: temp     ! Temperature                 [    K]
@@ -209,27 +249,51 @@ module therm_lib8
       !------------------------------------------------------------------------------------!
 
 
+
       !------------------------------------------------------------------------------------!
-      !     Choose between the old and the new thermodynamics.                             !
+      !     Choose the thermodynamic approach.                                             !
       !------------------------------------------------------------------------------------!
-      if (newthermo) then
-
-         !----- Updated method, using MK05 ------------------------------------------------!
-         iifun = iii_78(0) + iii_78(1)/temp + iii_78(2) * log(temp) + iii_78(3) * temp
-         esif8 = exp(iifun)
-         !---------------------------------------------------------------------------------!
-
-
-         if (present(iifunout)) iifunout=iifun
-      else
+      select case (esat_method)
+      case (0)
          !----- Original method, using polynomial fit (FWC92) -----------------------------!
          x     = max(-8.d1,temp-t008)
          esif8 = cii8(0) + x * (cii8(1) + x * (cii8(2) + x * (cii8(3) + x * (cii8(4)       &
                         + x * (cii8(5) + x * (cii8(6) + x * (cii8(7) + x * cii8(8))))))))
          !---------------------------------------------------------------------------------!
 
+         !----- Dummy values for optional function in case they are requested. ------------!
          if (present(iifunout)) iifunout=esif8
-      end if
+         !---------------------------------------------------------------------------------!
+      case (1)
+         !---------------------------------------------------------------------------------!
+         !   ED-2.2 method, use MK05 (equation 7).                                         !
+         !---------------------------------------------------------------------------------!
+         iifun = iii_78(0) + iii_78(1)/temp + iii_78(2) * log(temp) + iii_78(3) * temp
+         esif8 = exp(iifun)
+         !---------------------------------------------------------------------------------!
+
+
+         !----- This is useful for the derivative calculation. ------==--------------------!
+         if (present(iifunout)) iifunout=iifun
+         !---------------------------------------------------------------------------------!
+      case (2)
+         !---------------------------------------------------------------------------------!
+         !   Use A20's method, which is thermodynamically more consistent with the other   !
+         ! ED-2.2 assumptions.                                                             !
+         !                                                                                 !
+         ! Ambaum, M. H. P., 2020: Accurate, simple equation for saturated vapour pressure !
+         !    over water and ice. Quart. J. Royal Meteorol. Soc., 146 (733), 4252-4258,    !
+         !    doi:10.1002/qj.3899 (hereafter A20).                                         !
+         !---------------------------------------------------------------------------------!
+         iifun = min(lnexp_max8,max(lnexp_min8, lsorvot38 - alvi8(temp) / (rh2o8 * temp)))
+         esif8 = es3ple8 * (t3ple8/temp) ** dcpiorv8 * exp(iifun)
+         !---------------------------------------------------------------------------------!
+
+
+         !----- Dummy values for optional functions in case they are requested. -----------!
+         if (present(iifunout)) iifunout=esif8
+         !---------------------------------------------------------------------------------!
+      end select
       !------------------------------------------------------------------------------------!
 
       return
@@ -715,7 +779,9 @@ module therm_lib8
    ! pressure with respect to temperature as a function of Kelvin temperature.             !
    !---------------------------------------------------------------------------------------!
    real(kind=8) function eslfp8(temp)
-      use rconstants , only : t008 ! ! intent(in)
+      use rconstants  , only : t008        & ! intent(in)
+                             , rh2o8       ! ! intent(in)
+      use mem_basic   , only : esat_method ! ! intent(in)
       implicit none
       !------ Arguments. ------------------------------------------------------------------!
       real(kind=8), intent(in) :: temp
@@ -732,23 +798,38 @@ module therm_lib8
 
 
       !------------------------------------------------------------------------------------!
-      !      Decide which function to use, based on the thermodynamics.                    !
+      !     Choose the thermodynamic approach.                                             !
       !------------------------------------------------------------------------------------!
-      if (newthermo) then
-         !----- Updated method, using MK05 ------------------------------------------------!
+      select case (esat_method)
+      case (0)
+         !---------------------------------------------------------------------------------!
+         !   Original ED2.0 method,  polynomial fit based on FWC92.                        !
+         !---------------------------------------------------------------------------------!
+         x      = max(-8.d1,temp-t008)
+         eslfp8 = dll8(0) + x * (dll8(1) + x * (dll8(2) + x * (dll8(3) + x * (dll8(4)      &
+                          + x * (dll8(5) + x * (dll8(6) + x * (dll8(7) + x * dll8(8))))))))
+         !---------------------------------------------------------------------------------!
+      case (1)
+         !---------------------------------------------------------------------------------!
+         !   ED-2.2 method, use MK05 (equation 10).                                        !
+         !---------------------------------------------------------------------------------!
          esl     = eslf8(temp,l2funout=l2fun,ttfunout=ttfun)
          l1prime = -l01_108(1)/(temp*temp) + l01_108(2)/temp + l01_108(3)
          l2prime = -l02_108(1)/(temp*temp) + l02_108(2)/temp + l02_108(3)
          ttprime =  ttt_108(1)*(1.d0 - ttfun*ttfun)
          eslfp8  = esl * (l1prime + l2prime*ttfun + l2fun*ttprime)
-      else
-         !----- Original method, using polynomial fit (FWC92) -----------------------------!
-         x      = max(-8.d1,temp-t008)
-         eslfp8 = dll8(0) + x * (dll8(1) + x * (dll8(2) + x * (dll8(3) + x * (dll8(4)      &
-                          + x * (dll8(5) + x * (dll8(6) + x * (dll8(7) + x * dll8(8))))))))
-      end if
+         !---------------------------------------------------------------------------------!
+      case (2)
+         !---------------------------------------------------------------------------------!
+         !   Use A20's method. The derivative is by definition the Clausius-Clapeyron      !
+         ! equation. This is the key advantage of this approach as it makes the            !
+         ! formulation consistent with the second law of thermodynamics.                   !
+         !---------------------------------------------------------------------------------!
+         esl    = eslf8(temp)
+         eslfp8 = esl * alvl8(temp) / (rh2o8 * temp * temp)
+         !---------------------------------------------------------------------------------!
+      end select
       !------------------------------------------------------------------------------------!
-
 
       return
    end function eslfp8
@@ -766,7 +847,9 @@ module therm_lib8
    ! with respect to temperature as a function of Kelvin temperature.                      !
    !---------------------------------------------------------------------------------------!
    real(kind=8) function esifp8(temp)
-      use rconstants , only : t008 ! ! intent(in)
+      use rconstants  , only : t008        & ! intent(in)
+                             , rh2o8       ! ! intent(in)
+      use mem_basic   , only : esat_method ! ! intent(in)
       implicit none
       !------ Arguments. ------------------------------------------------------------------!
       real(kind=8), intent(in) :: temp
@@ -779,19 +862,35 @@ module therm_lib8
 
 
       !------------------------------------------------------------------------------------!
-      !      Decide which function to use, based on the thermodynamics.                    !
+      !     Choose the thermodynamic approach.                                             !
       !------------------------------------------------------------------------------------!
-      if (newthermo) then
-         !----- Updated method, using MK05 ------------------------------------------------!
-         esi     = esif8(temp)
-         iiprime = -iii_78(1)/(temp*temp) + iii_78(2)/temp + iii_78(3)
-         esifp8  = esi * iiprime
-      else
-         !----- Original method, using polynomial fit (FWC92) -----------------------------!
+      select case (esat_method)
+      case (0)
+         !---------------------------------------------------------------------------------!
+         !   Original ED2.0 method,  polynomial fit based on FWC92.                        !
+         !---------------------------------------------------------------------------------!
          x      = max(-8.d1,temp-t008)
          esifp8 = dii8(0) + x * (dii8(1) + x * (dii8(2) + x * (dii8(3) + x * (dii8(4)      &
                           + x * (dii8(5) + x * (dii8(6) + x * (dii8(7) + x * dii8(8))))))))
-      end if
+         !---------------------------------------------------------------------------------!
+      case (1)
+         !---------------------------------------------------------------------------------!
+         !   ED-2.2 method, use MK05 (equation 7).                                         !
+         !---------------------------------------------------------------------------------!
+         esi     = esif8(temp)
+         iiprime = -iii_78(1)/(temp*temp) + iii_78(2)/temp + iii_78(3)
+         esifp8  = esi * iiprime
+         !---------------------------------------------------------------------------------!
+      case (2)
+         !---------------------------------------------------------------------------------!
+         !   Use A20's method. The derivative is by definition the Clausius-Clapeyron      !
+         ! equation. This is the key advantage of this approach as it makes the            !
+         ! formulation consistent with the second law of thermodynamics.                   !
+         !---------------------------------------------------------------------------------!
+         esi    = esif8(temp)
+         esifp8 = esi * alvi8(temp) / (rh2o8 * temp * temp)
+         !---------------------------------------------------------------------------------!
+      end select
       !------------------------------------------------------------------------------------!
 
       return
@@ -2255,7 +2354,7 @@ module therm_lib8
       if (frozen) then
          psat = esif8(temp)
       else
-         psat = esif8(temp)
+         psat = eslf8(temp)
       end if
       !------------------------------------------------------------------------------------!
 
@@ -2728,9 +2827,9 @@ module therm_lib8
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This function computes the internal energy of water [J/m²] or [  J/m³], given the !
-   ! temperature [K], the heat capacity of the "dry" part [J/m²/K] or [J/m³/K], water mass !
-   ! [ kg/m²] or [ kg/m³], and liquid fraction [---].                                      !
+   !     This function computes the internal energy of water [J/m2] or [  J/m3], given the !
+   ! temperature [K], the heat capacity of the "dry" part [J/m2/K] or [J/m3/K], water mass !
+   ! [ kg/m2] or [ kg/m3], and liquid fraction [---].                                      !
    !---------------------------------------------------------------------------------------!
    real(kind=8) function cmtl2uext8(dryhcap,wmass,temp,fliq)
       use rconstants , only : cice8           & ! intent(in)
@@ -2739,8 +2838,8 @@ module therm_lib8
                             
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
-      real(kind=8), intent(in)  :: dryhcap ! Heat cap. of "dry" part   [J/m²/K] or [J/m³/K]
-      real(kind=8), intent(in)  :: wmass   ! Mass                      [ kg/m²] or [ kg/m³]
+      real(kind=8), intent(in)  :: dryhcap ! Heat cap. of "dry" part   [J/m2/K] or [J/m3/K]
+      real(kind=8), intent(in)  :: wmass   ! Mass                      [ kg/m2] or [ kg/m3]
       real(kind=8), intent(in)  :: temp    ! Temperature                           [     K]
       real(kind=8), intent(in)  :: fliq    ! Liquid fraction (0-1)                 [   ---]
       !------------------------------------------------------------------------------------!
@@ -2945,10 +3044,7 @@ module therm_lib8
    real(kind=8) function theta_iceliq8(exner,temp,rliq,rice)
       use rconstants , only : alvl38      & ! intent(in)
                             , alvi38      & ! intent(in)
-                            , cpdry8      & ! intent(in)
-                            , ttripoli8   & ! intent(in)
-                            , htripoli8   & ! intent(in)
-                            , htripolii8  ! ! intent(in)
+                            , cpdry8      ! ! intent(in)
 
       implicit none
       !----- Arguments --------------------------------------------------------------------!
@@ -2967,36 +3063,13 @@ module therm_lib8
       !------------------------------------------------------------------------------------!
 
 
-      !------------------------------------------------------------------------------------!
-      !      Find the latent heat enthalpy.  If using the old thermodynamics, we use the   !
-      ! latent heat at T = T3ple, otherwise we use the temperature-dependent one.          !
-      !------------------------------------------------------------------------------------!
-      if (newthermo) then
-         qq = alvl8(temp) * rliq + alvi8(temp) * rice
-      else
-         qq = alvl38 * rliq + alvi38 * rice
-      end if
+      !----- Find the latent heat enthalpy. -----------------------------------------------!
+      qq = alvl8(temp) * rliq + alvi8(temp) * rice
       !------------------------------------------------------------------------------------!
 
 
-      !------------------------------------------------------------------------------------!
-      !      Solve the thermodynamics.  For the new thermodynamics we don't approximate    !
-      ! the exponential to a linear function, nor do we impose temperature above the thre- !
-      ! shold from Tripoli and Cotton (1981).                                              !
-      !------------------------------------------------------------------------------------!
-      if (newthermo) then
-         !----- Decide how to compute, based on temperature. ------------------------------!
-         theta_iceliq8 = hh * exp(-qq / hh) / exner
-         !---------------------------------------------------------------------------------!
-      else
-         !----- Decide how to compute, based on temperature. ------------------------------!
-         if (temp > ttripoli8) then
-            theta_iceliq8 = hh * hh / (exner * ( hh + qq))
-         else
-            theta_iceliq8 = hh * htripoli8 / (exner * ( htripoli8 + qq))
-         end if
-         !---------------------------------------------------------------------------------!
-      end if
+      !----- Find theta_iceliq. -----------------------------------------------------------!
+      theta_iceliq8 = hh * exp(-qq / hh) / exner
       !------------------------------------------------------------------------------------!
 
       return
@@ -3020,9 +3093,6 @@ module therm_lib8
                             , dcpvi8      & ! intent(in)
                             , dcpvl8      & ! intent(in)
                             , cpdry8      & ! intent(in)
-                            , ttripoli8   & ! intent(in)
-                            , htripoli8   & ! intent(in)
-                            , htripolii8  & ! intent(in)
                             , t3ple8      ! ! intent(in)
 
       implicit none
@@ -3036,8 +3106,8 @@ module therm_lib8
       real(kind=8), intent(in), optional :: ricein     ! Ice mixing ratio          [ kg/kg]
       !----- Local variables --------------------------------------------------------------!
       real(kind=8)                       :: rice       ! Ice mixing ratio or 0.    [ kg/kg]
-      real(kind=8)                       :: ldrst      ! L × d(rs)/dT × T          [  J/kg]
-      real(kind=8)                       :: rdlt       ! r × d(L)/dT × T           [  J/kg]
+      real(kind=8)                       :: ldrst      ! L * d(rs)/dT * T          [  J/kg]
+      real(kind=8)                       :: rdlt       ! r * d(L)/dT * T           [  J/kg]
       real(kind=8)                       :: hh         ! Sensible heat enthalpy    [  J/kg]
       real(kind=8)                       :: qq         ! Latent heat enthalpy      [  J/kg]
       logical                            :: thereisice ! Is ice present            [   ---]
@@ -3075,42 +3145,24 @@ module therm_lib8
          !---------------------------------------------------------------------------------!
 
 
-         !---------------------------------------------------------------------------------!
-         !      Find the latent heat enthalpy.  If using the old thermodynamics, we use    !
-         ! the latent heat at T = T3ple, otherwise we use the temperature-dependent one.   !
-         ! The term r × d(L)/dT × T is computed only when we use the new thermodynamics.   !
-         !---------------------------------------------------------------------------------!
-         if (newthermo) then
-            qq   = alvl8(temp) * rliq + alvi8(temp) * rice
-            rdlt = (dcpvl8 * rliq + dcpvi8 * rice ) * temp
-         else
-            qq   = alvl38 * rliq + alvi38 * rice
-            rdlt = 0.d0
-         end if
+         !----- Find the latent heat enthalpy. --------------------------------------------!
+         qq   = alvl8(temp) * rliq + alvi8(temp) * rice
+         rdlt = (dcpvl8 * rliq + dcpvi8 * rice ) * temp
          !---------------------------------------------------------------------------------!
 
 
          !---------------------------------------------------------------------------------!
-         !    This is the term L×[d(rs)/dt]×T. L may be either the vapourisation or        !
+         !    This is the term Lx[d(rs)/dt]xT. L may be either the vapourisation or        !
          ! sublimation latent heat, depending on the temperature and whether we are consi- !
-         ! dering ice or not.  We still need to check whether latent heat is a function of !
-         ! temperature or not.  Also, if condensation mixing ratio is constant, then this  !
-         ! term will be always zero.                                                       !
+         ! dering ice or not.  If condensation mixing ratio is constant, then this term    !
+         ! will be always zero.                                                            !
          !---------------------------------------------------------------------------------!
          if (condconst) then
             ldrst = 0.d0
          elseif (thereisice .and. temp < t3ple8) then
-            if (newthermo) then
-               ldrst = alvi38 * rsifp8(pres,temp) * temp
-            else
-               ldrst = alvi8(temp) * rsifp8(pres,temp) * temp
-            end if
+            ldrst = alvi8(temp) * rsifp8(pres,temp) * temp
          else
-            if (newthermo) then
-               ldrst = alvl38 * rslfp8(pres,temp) * temp
-            else
-               ldrst = alvl8(temp) * rslfp8(pres,temp) * temp
-            end if
+            ldrst = alvl8(temp) * rslfp8(pres,temp) * temp
          end if
          !---------------------------------------------------------------------------------!
       end if
@@ -3121,17 +3173,7 @@ module therm_lib8
       !------------------------------------------------------------------------------------!
       !     Find the condensed phase consistent with the thermodynamics used.              !
       !------------------------------------------------------------------------------------!
-      if (newthermo) then
-         dthetail_dt8 = thil * ( 1.d0 + (ldrst + qq - rdlt ) / hh ) / temp
-      else
-         !----- Decide how to compute, based on temperature. ------------------------------!
-         if (temp > ttripoli8) then
-            dthetail_dt8 = thil * ( 1.d0 + (ldrst + qq) / (hh+qq) ) / temp
-         else
-            dthetail_dt8 = thil * ( 1.d0 + ldrst / (htripoli8 + alvl38 * rliq) ) / temp
-         end if
-         !---------------------------------------------------------------------------------!
-      end if
+      dthetail_dt8 = thil * ( 1.d0 + (ldrst + qq - rdlt ) / hh ) / temp
       !------------------------------------------------------------------------------------!
 
       return
@@ -3159,9 +3201,7 @@ module therm_lib8
                             , alvl38      & ! intent(in)
                             , alvi38      & ! intent(in)
                             , t008        & ! intent(in)
-                            , t3ple8      & ! intent(in)
-                            , ttripoli8   & ! intent(in)
-                            , htripolii8  ! ! intent(in)
+                            , t3ple8      ! ! intent(in)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       real(kind=8), intent(in) :: thil      ! Ice-liquid water potential temp.     [     K]
@@ -3171,7 +3211,6 @@ module therm_lib8
       real(kind=8), intent(in) :: rice      ! Ice mixing ratio                     [ kg/kg]
       real(kind=8), intent(in) :: t1stguess ! 1st. guess for temperature           [     K]
       !----- Local variables. -------------------------------------------------------------!
-      real(kind=8)             :: til       ! Ice liquid temperature               [     K]
       real(kind=8)             :: deriv     ! Function derivative 
       real(kind=8)             :: fun       ! Function for which we seek a root.
       real(kind=8)             :: funa      ! Smallest  guess function
@@ -3194,21 +3233,6 @@ module therm_lib8
          thil2temp8 = cpdryi8 * thil * exner
          return
          !---------------------------------------------------------------------------------!
-      elseif (.not. newthermo) then
-         !---------------------------------------------------------------------------------!
-         !    There is condensation but we are using the old thermodynamics, which can be  !
-         ! solved analytically.                                                            !
-         !---------------------------------------------------------------------------------!
-         til = cpdryi8 * thil * exner
-         if (t1stguess > ttripoli8) then
-            thil2temp8 = 5.d-1                                                             &
-                       * (til + sqrt( til                                                  &
-                                    * (til + cpdryi48 * (alvl38 * rliq + alvi38 * rice))))
-         else
-            thil2temp8 = til * ( 1.d0 + (alvl38 * rliq + alvi38 * rice) * htripolii8)
-         end if
-         return
-         !---------------------------------------------------------------------------------!
       end if
       !------------------------------------------------------------------------------------!
 
@@ -3229,7 +3253,7 @@ module therm_lib8
       !------------------------------------------------------------------------------------!
       tempz     = t1stguess
       fun       = theta_iceliq8(exner,tempz,rliq,rice)
-      deriv     = dthetail_dt8(.true.,fun,exner,pres,tempz,rliq,rice)
+      deriv     = dthetail_dt8(.true.,fun,pres,tempz,rliq,rice)
       fun       = fun - thil
       !------------------------------------------------------------------------------------!
 
@@ -3244,7 +3268,7 @@ module therm_lib8
          thil2temp8 = tempz
          converged = .true.
          return
-      else 
+      else
          tempa = tempz
          funa  = fun
       end if
@@ -3257,7 +3281,7 @@ module therm_lib8
          funa  = fun
          tempz = tempa - fun/deriv
          fun   = theta_iceliq8(exner,tempz,rliq,rice)
-         deriv = dthetail_dt8(.true.,fun,exner,pres,tempz,rliq,rice)
+         deriv = dthetail_dt8(.true.,fun,pres,tempz,rliq,rice)
          fun   = fun - thil
          !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
          !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
@@ -3293,7 +3317,7 @@ module therm_lib8
       else
          if (abs(fun-funa) < toler8 * tempa) then
             delta = 1.d2 * toler8 * tempa
-         else 
+         else
             delta = max(abs(funa * (tempz-tempa)/(fun-funa)),1.d2 * toler8 * tempa)
          end if
          tempz = tempa + delta
@@ -3313,7 +3337,7 @@ module therm_lib8
             write (unit=*,fmt='(2(a,1x,es14.7,1x))') 'tempa=',tempa,'funa=',funa
             write (unit=*,fmt='(2(a,1x,es14.7,1x))') 'tempz=',tempz,'funz=',funz
             write (unit=*,fmt='(1(a,1x,es14.7,1x))') 'delta=',delta
-            call abort_run  ('Failed finding the second guess for regula falsi'            &
+            call fatal_error('Failed finding the second guess for regula falsi'            &
                             ,'thil2temp8','therm_lib8.f90')
          end if
       end if
@@ -3378,11 +3402,11 @@ module therm_lib8
          write (unit=*,fmt='(a,1x,f12.4)' ) 'Exner           [J/kg/K] =',exner
          write (unit=*,fmt='(a,1x,f12.4)' ) 'rliq            [  g/kg] =',1.d3*rliq
          write (unit=*,fmt='(a,1x,f12.4)' ) 'rice            [  g/kg] =',1.d3*rice
-         write (unit=*,fmt='(a,1x,f12.4)' ) 't1stguess       [    °C] =',t1stguess-t008
+         write (unit=*,fmt='(a,1x,f12.4)' ) 't1stguess       [  degC] =',t1stguess-t008
          write (unit=*,fmt='(a)') ' '
          write (unit=*,fmt='(a)') ' Last iteration outcome (downdraft values).'
-         write (unit=*,fmt='(a,1x,f12.4)' ) 'tempa           [    °C] =',tempa-t008
-         write (unit=*,fmt='(a,1x,f12.4)' ) 'tempz           [    °C] =',tempz-t008
+         write (unit=*,fmt='(a,1x,f12.4)' ) 'tempa           [  degC] =',tempa-t008
+         write (unit=*,fmt='(a,1x,f12.4)' ) 'tempz           [  degC] =',tempz-t008
          write (unit=*,fmt='(a,1x,f12.4)' ) 'fun             [     K] =',fun
          write (unit=*,fmt='(a,1x,f12.4)' ) 'funa            [     K] =',funa
          write (unit=*,fmt='(a,1x,f12.4)' ) 'funz            [     K] =',funz
@@ -3392,7 +3416,7 @@ module therm_lib8
                                            , abs(thil2temp8-tempa)/thil2temp8
          write (unit=*,fmt='(a,1x,f12.4)' ) 'thil2temp8      [     K] =',thil2temp8
 
-         call abort_run  ('Temperature didn''t converge, giving up!!!'                     &
+         call fatal_error('Temperature didn''t converge, giving up!!!'                     &
                          ,'thil2temp8','therm_lib8.f90')
       end if
 
@@ -3412,34 +3436,25 @@ module therm_lib8
    ! saturation mixing ratio [kg/kg], keeping pressure constant.  This is based on the     !
    ! ice-liquid potential temperature equation.                                            !
    !---------------------------------------------------------------------------------------!
-   real(kind=8) function dtempdrs8(exner,thil,temp,rliq,rice,rconmin)
+   real(kind=8) function dtempdrs8(temp,rliq,rice,rconmin)
       use rconstants , only : alvl38      & ! intent(in)
                             , alvi38      & ! intent(in)
                             , dcpvl8      & ! intent(in)
                             , dcpvi8      & ! intent(in)
                             , cpdry8      & ! intent(in)
-                            , cpdryi8     & ! intent(in)
-                            , ttripoli8   & ! intent(in)
-                            , htripolii8  ! ! intent(in)
+                            , cpdryi8     ! ! intent(in)
 
       implicit none
       !----- Arguments --------------------------------------------------------------------!
-      real(kind=8), intent(in) :: exner   ! Exner function                        [ J/kg/K]
-      real(kind=8), intent(in) :: thil    ! Ice-liquid potential temperature (*)  [      K]
       real(kind=8), intent(in) :: temp    ! Temperature                           [      K]
       real(kind=8), intent(in) :: rliq    ! Liquid mixing ratio                   [  kg/kg]
       real(kind=8), intent(in) :: rice    ! Ice mixing ratio                      [  kg/kg]
       real(kind=8), intent(in) :: rconmin ! Min. non-zero condensate mix. ratio   [  kg/kg]
-      !------------------------------------------------------------------------------------!
-      ! (*) Thil is not used in this formulation but it may be used should you opt by      !
-      !     other ways to compute theta_il, so don't remove this argument.                 !
-      !------------------------------------------------------------------------------------!
       !----- Local variables --------------------------------------------------------------!
       real(kind=8)             :: qq      ! Enthalpy -- latent heat               [   J/kg]
       real(kind=8)             :: qpt     ! d(qq)/dT * T                          [   J/kg]
       real(kind=8)             :: hh      ! Enthalpy -- sensible heat             [   J/kg]
       real(kind=8)             :: rcon    ! Condensate mixing ratio               [  kg/kg]
-      real(kind=8)             :: til     ! Ice-liquid temperature                [      K]
       !------------------------------------------------------------------------------------!
 
 
@@ -3458,15 +3473,10 @@ module therm_lib8
 
          !---------------------------------------------------------------------------------!
          !     Find the enthalpy associated with latent heat and its derivative            !
-         ! correction.  This is dependent on the thermodynamics used.                      !
+         ! correction.                                                                     !
          !---------------------------------------------------------------------------------!
-         if (newthermo) then
-            qq  = alvl8(temp) * rliq + alvi8(temp) * rice
-            qpt = dcpvl8 * rliq + dcpvi8 * rice
-         else
-            qq  = alvl38 * rliq + alvi38 * rice
-            qpt = 0.d0
-         end if
+         qq  = alvl8(temp) * rliq + alvi8(temp) * rice
+         qpt = dcpvl8 * rliq + dcpvi8 * rice
          !---------------------------------------------------------------------------------!
 
 
@@ -3475,21 +3485,8 @@ module therm_lib8
          !---------------------------------------------------------------------------------!
 
 
-         !---------------------------------------------------------------------------------!
-         !    Decide how to compute, based on the thermodynamics method.                   !
-         !---------------------------------------------------------------------------------!
-         if (newthermo) then
-            dtempdrs8 = - temp * qq / ( rcon * (hh + qq - qpt) )
-         else
-            til   = cpdryi8 * thil * exner
-            !----- Decide how to compute, based on temperature. ---------------------------!
-            if (temp > ttripoli8) then
-               dtempdrs8 = - til * qq / ( rcon * cpdry8 * (2.*temp-til))
-            else
-               dtempdrs8 = - til * qq * htripolii8 / rcon
-            end if
-            !------------------------------------------------------------------------------!
-         end if
+         !----- Find the temperature derivative wrt saturation mixing ratio. --------------!
+         dtempdrs8 = - temp * qq / ( rcon * (hh + qq - qpt) )
          !---------------------------------------------------------------------------------!
       end if
       !------------------------------------------------------------------------------------!
@@ -4002,9 +3999,9 @@ module therm_lib8
          write (unit=*,fmt='(a,1x,i12)')    '    ITERATIONS       :',itb
          write (unit=*,fmt='(a,1x,f12.5)')  '    PVAP     [   hPa]:',pvap
          write (unit=*,fmt='(a,1x,f12.5)')  '    THETA    [     K]:',theta
-         write (unit=*,fmt='(a,1x,f12.5)')  '    TLCL     [    °C]:',tlcl-t008
-         write (unit=*,fmt='(a,1x,f12.5)')  '    TLCLA    [    °C]:',tlcla-t008
-         write (unit=*,fmt='(a,1x,f12.5)')  '    TLCLZ    [    °C]:',tlclz-t008
+         write (unit=*,fmt='(a,1x,f12.5)')  '    TLCL     [  degC]:',tlcl-t008
+         write (unit=*,fmt='(a,1x,f12.5)')  '    TLCLA    [  degC]:',tlcla-t008
+         write (unit=*,fmt='(a,1x,f12.5)')  '    TLCLZ    [  degC]:',tlclz-t008
          write (unit=*,fmt='(a,1x,es12.5)') '    FUNA     [     K]:',funa
          write (unit=*,fmt='(a,1x,es12.5)') '    FUNZ     [     K]:',funz
          write (unit=*,fmt='(a,1x,es12.5)') '    DERIV    [   ---]:',deriv
@@ -4087,7 +4084,7 @@ module therm_lib8
 
 
       !------------------------------------------------------------------------------------!
-      !     The 1st. guess, no idea, guess 0°C.                                            !
+      !     The 1st. guess, no idea, guess 0 degC.                                         !
       !------------------------------------------------------------------------------------!
       tempz     = t008
       theta     = tempz * exnernormi
@@ -4543,13 +4540,13 @@ module therm_lib8
          write (unit=*,fmt='(a)') ' '
          write (unit=*,fmt='(a,1x,f12.4)' ) 'theta_il        [     K] =',thil
          write (unit=*,fmt='(a,1x,f12.4)' ) 'Pressure        [   hPa] =',1.d-2*pres
-         write (unit=*,fmt='(a,1x,f12.4)' ) 'Temperature     [    °C] =',temp-t008
+         write (unit=*,fmt='(a,1x,f12.4)' ) 'Temperature     [  degC] =',temp-t008
          write (unit=*,fmt='(a,1x,f12.4)' ) 'rtot            [  g/kg] =',1.d3*rtot
          write (unit=*,fmt='(a,1x,f12.4)' ) 'rvap            [  g/kg] =',1.d3*rvap
          write (unit=*,fmt='(a)') ' '
          write (unit=*,fmt='(a)') ' Last iteration outcome.'
-         write (unit=*,fmt='(a,1x,f12.4)' ) 'tlcla           [    °C] =',tlcla-t008
-         write (unit=*,fmt='(a,1x,f12.4)' ) 'tlclz           [    °C] =',tlclz-t008
+         write (unit=*,fmt='(a,1x,f12.4)' ) 'tlcla           [  degC] =',tlcla-t008
+         write (unit=*,fmt='(a,1x,f12.4)' ) 'tlclz           [  degC] =',tlclz-t008
          write (unit=*,fmt='(a,1x,f12.4)' ) 'fun             [     K] =',funnow
          write (unit=*,fmt='(a,1x,f12.4)' ) 'funa            [     K] =',funa
          write (unit=*,fmt='(a,1x,f12.4)' ) 'funz            [     K] =',funz
@@ -4557,7 +4554,7 @@ module therm_lib8
          write (unit=*,fmt='(a,1x,es12.4)') 'toler8          [  ----] =',toler8
          write (unit=*,fmt='(a,1x,es12.4)') 'error           [  ----] ='                   &
                                                             ,abs(tlclz-tlcla)/tlclz
-         write (unit=*,fmt='(a,1x,f12.4)' ) 'tlcl            [    °C] =',tlcl
+         write (unit=*,fmt='(a,1x,f12.4)' ) 'tlcl            [  degC] =',tlcl
          call abort_run  ('TLCL didn''t converge, gave up!','lcl_il8','therm_lib8.f90')
       end if
       return
@@ -4590,8 +4587,7 @@ module therm_lib8
                             , cpdryi8   & ! intent(in)
                             , t008      & ! intent(in)
                             , toodry8   & ! intent(in)
-                            , t3ple8    & ! intent(in)
-                            , ttripoli8 ! ! intent(in)
+                            , t3ple8    ! ! intent(in)
 
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
@@ -4949,12 +4945,12 @@ module therm_lib8
          write (unit=*,fmt='(a)')           ' '
          write (unit=*,fmt='(a)')           ' -> Output: '
          write (unit=*,fmt='(a,1x,i12)')    '    ITERATIONS       :',itb
-         write (unit=*,fmt='(a,1x,f12.5)')  '    TEMP     [    °C]:',temp-t008
+         write (unit=*,fmt='(a,1x,f12.5)')  '    TEMP     [  degC]:',temp-t008
          write (unit=*,fmt='(a,1x,f12.5)')  '    RVAP     [  g/kg]:',1.d3*rvap
          write (unit=*,fmt='(a,1x,f12.5)')  '    RLIQ     [  g/kg]:',1.d3*rliq
          write (unit=*,fmt='(a,1x,f12.5)')  '    RICE     [  g/kg]:',1.d3*rice
-         write (unit=*,fmt='(a,1x,f12.5)')  '    TEMPA    [    °C]:',tempa-t008
-         write (unit=*,fmt='(a,1x,f12.5)')  '    TEMPZ    [    °C]:',tempz-t008
+         write (unit=*,fmt='(a,1x,f12.5)')  '    TEMPA    [  degC]:',tempa-t008
+         write (unit=*,fmt='(a,1x,f12.5)')  '    TEMPZ    [  degC]:',tempz-t008
          write (unit=*,fmt='(a,1x,es12.5)') '    FUNA     [     K]:',funnow
          write (unit=*,fmt='(a,1x,es12.5)') '    FUNZ     [     K]:',funnow
          write (unit=*,fmt='(a,1x,es12.5)') '    DERIV    [   ---]:',deriv
@@ -5283,8 +5279,8 @@ module therm_lib8
    !=======================================================================================!
    !=======================================================================================!
    !    This subroutine computes the temperature (Kelvin) and liquid fraction from         !
-   ! extensive internal energy (J/m² or J/m³), water mass (kg/m² or kg/m³), and heat       !
-   ! capacity (J/m²/K or J/m³/K).                                                          !
+   ! extensive internal energy (J/m2 or J/m3), water mass (kg/m2 or kg/m3), and heat       !
+   ! capacity (J/m2/K or J/m3/K).                                                          !
    !---------------------------------------------------------------------------------------!
    subroutine uextcm2tl8(uext,wmass,dryhcap,temp,fliq)
       use rconstants , only : cliqi8          & ! intent(in)
@@ -5297,19 +5293,19 @@ module therm_lib8
                             , tsupercool_liq8 ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
-      real(kind=8), intent(in)  :: uext    ! Extensive internal energy [  J/m²] or [  J/m³]
-      real(kind=8), intent(in)  :: wmass   ! Water mass                [ kg/m²] or [ kg/m³]
-      real(kind=8), intent(in)  :: dryhcap ! Heat cap. of "dry" part   [J/m²/K] or [J/m³/K]
+      real(kind=8), intent(in)  :: uext    ! Extensive internal energy [  J/m2] or [  J/m3]
+      real(kind=8), intent(in)  :: wmass   ! Water mass                [ kg/m2] or [ kg/m3]
+      real(kind=8), intent(in)  :: dryhcap ! Heat cap. of "dry" part   [J/m2/K] or [J/m3/K]
       real(kind=8), intent(out) :: temp    ! Temperature                           [     K]
       real(kind=8), intent(out) :: fliq    ! Liquid fraction (0-1)                 [   ---]
       !----- Local variable ---------------------------------------------------------------!
-      real(kind=8)              :: uefroz  ! qw of ice at triple pt.   [  J/m²] or [  J/m³] 
-      real(kind=8)              :: uemelt  ! qw of liq. at triple pt.  [  J/m²] or [  J/m³]
+      real(kind=8)              :: uefroz  ! qw of ice at triple pt.   [  J/m2] or [  J/m3]
+      real(kind=8)              :: uemelt  ! qw of liq. at triple pt.  [  J/m2] or [  J/m3]
       !------------------------------------------------------------------------------------!
 
 
 
-      !----- Convert melting heat to J/m² or J/m³ -----------------------------------------!
+      !----- Convert melting heat to J/m2 or J/m3 -----------------------------------------!
       uefroz = (dryhcap + wmass * cice8) * t3ple8
       uemelt = uefroz   + wmass * alli8
       !------------------------------------------------------------------------------------!

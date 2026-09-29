@@ -422,6 +422,7 @@ subroutine masterput_nl(master_num)
    call MPI_Bcast(DTLEAF,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(NDTVEG,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(ISTAR,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(ESAT_METHOD,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(IGRNDVAP,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
 
    call MPI_Bcast(ICO2,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
@@ -1302,6 +1303,7 @@ subroutine nodeget_nl
    call MPI_Bcast(DTLEAF,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(NDTVEG,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(ISTAR,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(ESAT_METHOD,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(IGRNDVAP,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
 
    call MPI_Bcast(ICO2,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)

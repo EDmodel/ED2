@@ -170,6 +170,7 @@ subroutine copy_nl(copy_type)
                                    , radfrq                    & ! intent(out)
                                    , ivegt_dynamics            & ! intent(out)
                                    , ibigleaf                  & ! intent(out)
+                                   , esat_method               & ! intent(out)
                                    , integration_scheme        & ! intent(out)
                                    , nsub_euler                & ! intent(out)
                                    , ffilout                   & ! intent(out)
@@ -372,6 +373,7 @@ subroutine copy_nl(copy_type)
 
       ivegt_dynamics            = nl%ivegt_dynamics
       ibigleaf                  = nl%ibigleaf
+      esat_method               = nl%esat_method
       integration_scheme        = nl%integration_scheme
       nsub_euler                = nl%nsub_euler
       rk4_tolerance             = nl%rk4_tolerance

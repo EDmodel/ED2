@@ -416,7 +416,7 @@ subroutine fill_thermovars(m1,i,j,flpw,thp,btheta,pp,rtp,rv,wp,dn0,pi0,micro)
       tairstr(k) = tair(k)
       pottemp(k) = extemp2theta(exner(k),tair(k))
       !----- The A1 term in Walko et al. (2000) according to the new thermodynamics. ------!
-      sa1(k) = (-1.) * dtempdrs(exner(k),thil(k),tairstr(k),rliq(k),rice(k),1.e-12)
+      sa1(k) = (-1.) * dtempdrs(tairstr(k),rliq(k),rice(k),1.e-12)
 
       !------------------------------------------------------------------------------------!
       !    Ice-vapour equivalent potential temperature. This variable is conserved even    !
@@ -1032,7 +1032,7 @@ subroutine x02(lcat)
                rx(k,lcat) = rx(k,lcat) - rmelt - ricetor6
                rx(k,6)    = rx(k,6) + rmelt + ricetor6
                qr(k,6)    = qr(k,6) + rmelt * uiliqt3 + ricetor6 * uiicet3
-               qx(k,lcat) = uiicet3 !---- All water is gone, leave ice at 0°C only --------!
+               qx(k,lcat) = uiicet3 !---- All water is gone, leave ice at 0C only ---------!
                qr(k,lcat) = qx(k,lcat) * rx(k,lcat)
                if (rx(k,6) > rxmin(6)) qx(k,6)    = qr(k,6)    / rx(k,6)
 

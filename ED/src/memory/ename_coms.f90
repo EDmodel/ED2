@@ -146,6 +146,7 @@ module ename_coms
       !----- Options for model dynamics. --------------------------------------------------!
       integer                                           :: ivegt_dynamics
       integer                                           :: ibigleaf
+      integer                                           :: esat_method
       integer                                           :: integration_scheme
       integer                                           :: nsub_euler
       integer                                           :: plant_hydro_scheme
@@ -393,6 +394,7 @@ module ename_coms
 
       enl%ivegt_dynamics            = undef_integer
       enl%ibigleaf                  = undef_integer
+      enl%esat_method               = undef_integer
       enl%integration_scheme        = undef_integer
       enl%nsub_euler                = undef_integer
       enl%plant_hydro_scheme        = undef_integer

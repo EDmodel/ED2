@@ -158,6 +158,14 @@ subroutine read_ednl(iunit,filename)
    use canopy_layer_coms    , only : crown_mod                             ! ! intent(out)
    use canopy_radiation_coms, only : icanrad                               & ! intent(out)
                                    , ihrzrad                               ! ! intent(out)
+   use consts_coms          , only : day_sec                               ! ! intent(in)
+   use detailed_coms        , only : dt_census                             & ! intent(out)
+                                   , yr1st_census                          & ! intent(out)
+                                   , mon1st_census                         & ! intent(out)
+                                   , min_recruit_dbh                       & ! intent(out)
+                                   , idetailed                             & ! intent(out)
+                                   , patch_keep                            ! ! intent(out)
+   use fusion_fission_coms  , only : ifusion                               ! ! intent(out)
    !----- Coupled ED-BRAMS modules. -------------------------------------------------------!
    use mem_edcp             , only : co2_offset                            ! ! intent(out)
    !----- BRAMS modules. ------------------------------------------------------------------!
@@ -194,6 +202,7 @@ subroutine read_ednl(iunit,filename)
                                    , itimeh                                & ! intent(in)
                                    , imonthh                               & ! intent(in)
                                    , isoilflg                              ! ! intent(in)
+   use mem_basic            , only : brams_esat_method   => esat_method    ! ! intent(in)
    use mem_leaf             , only : nslcon                                & ! intent(in)
                                    , isoilcol                              & ! intent(in)
                                    , slz                                   & ! intent(in)
@@ -207,7 +216,7 @@ subroutine read_ednl(iunit,filename)
                                    , leaf_sldrain        => sldrain        & ! intent(in)
                                    , leaf_ipercol        => ipercol        & ! intent(in)
                                    , leaf_runoff_time    => runoff_time    ! ! intent(in)
-   use leaf_coms            , only : leaf_ubmin          => ubmin          & ! intent(in)
+                                   , leaf_ubmin          => ubmin          & ! intent(in)
                                    , leaf_ugbmin         => ugbmin         & ! intent(in)
                                    , leaf_ustmin         => ustmin         & ! intent(in)
                                    , leaf_gamm           => gamm           & ! intent(in)
@@ -217,14 +226,6 @@ subroutine read_ednl(iunit,filename)
                                    , leaf_leaf_maxwhc    => leaf_maxwhc    & ! intent(in)
                                    , leaf_min_patch_area => min_patch_area ! ! intent(in)
    use mem_radiate          , only : radfrq                                ! ! intent(in)
-   use consts_coms          , only : day_sec                               ! ! intent(in)
-   use detailed_coms        , only : dt_census                             & ! intent(out)
-                                   , yr1st_census                          & ! intent(out)
-                                   , mon1st_census                         & ! intent(out)
-                                   , min_recruit_dbh                       & ! intent(out)
-                                   , idetailed                             & ! intent(out)
-                                   , patch_keep                            ! ! intent(out)
-   use fusion_fission_coms  , only : ifusion                               ! ! intent(out)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    integer         , intent(in) :: iunit    ! Namelist unit number
@@ -406,7 +407,7 @@ subroutine read_ednl(iunit,filename)
                        ,nzg,nzs,isoilflg,nslcon,isoilcol,slz,slmstr,stgoff,ngrids          &
                        ,leaf_ubmin,leaf_ugbmin,leaf_ustmin,leaf_isoilbc,leaf_sldrain       &
                        ,leaf_ipercol,leaf_runoff_time,leaf_gamm,leaf_gamh,leaf_tprandtl    &
-                       ,leaf_ribmax,leaf_leaf_maxwhc)
+                       ,leaf_ribmax,leaf_leaf_maxwhc,brams_esat_method)
 
    !---------------------------------------------------------------------------------------!
    !      The following variables can be defined in the regular ED2IN file for stand-alone !
@@ -592,7 +593,7 @@ subroutine copy_in_bramsnl(expnme_b,runtype_b,itimez_b,idatez_b,imonthz_b,iyearz
                           ,iclobber_b,nzg_b,nzs_b,isoilflg_b,nslcon_b,isoilcol_b,slz_b     &
                           ,slmstr_b,stgoff_b,ngrids_b,ubmin_b,ugbmin_b,ustmin_b,isoilbc_b  &
                           ,sldrain_b,ipercol_b,runoff_time_b,gamm_b,gamh_b,tprandtl_b      &
-                          ,ribmax_b,leaf_maxwhc_b)
+                          ,ribmax_b,leaf_maxwhc_b,esat_method_b)
    use ed_misc_coms   , only : expnme            & ! intent(out)
                              , runtype           & ! intent(out)
                              , itimez            & ! intent(out)
@@ -608,7 +609,8 @@ subroutine copy_in_bramsnl(expnme_b,runtype_b,itimez_b,idatez_b,imonthz_b,iyearz
                              , imonthh           & ! intent(out)
                              , iyearh            & ! intent(out)
                              , iclobber          & ! intent(out)
-                             , radfrq            ! ! intent(out)
+                             , radfrq            & ! intent(out)
+                             , esat_method       ! ! intent(out)
    use grid_coms      , only : centlon           & ! intent(out)
                              , centlat           & ! intent(out)
                              , deltax            & ! intent(out)
@@ -698,6 +700,7 @@ subroutine copy_in_bramsnl(expnme_b,runtype_b,itimez_b,idatez_b,imonthz_b,iyearz
    real                      , intent(in) :: gamh_b        ! Sfc. lyr. Gamma for heat
    real                      , intent(in) :: tprandtl_b    ! Turbulent Prandtl number
    real                      , intent(in) :: leaf_maxwhc_b ! Leaf max. water holding cap.
+   integer                   , intent(in) :: esat_method_b ! Method for esat.
    !---------------------------------------------------------------------------------------!
 
 
@@ -760,6 +763,8 @@ subroutine copy_in_bramsnl(expnme_b,runtype_b,itimez_b,idatez_b,imonthz_b,iyearz
    ribmax      = ribmax_b
    leaf_maxwhc = leaf_maxwhc_b
    isoilcol    = isoilcol_b
+   
+   esat_method = esat_method_b
    !---------------------------------------------------------------------------------------!
 
    return
